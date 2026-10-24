@@ -9,8 +9,8 @@
 //!       files the permissions of the application and not the ones of the
 //!       archive, and counts the bytes it writes against a budget.
 //!
-//!       The write itself happens relative to the opened destination
-//!       directory (the `openat` semantics of ADR-0004, decision 6). A
+//! The write itself happens relative to the opened destination
+//!       directory (the {openat} semantics of ADR-0004, decision 6). A
 //!       symbolic link that is swapped in between the check and the write
 //!       therefore cannot redirect the write out of the destination.
 //! EXAMPLE:
@@ -52,36 +52,36 @@ const COPY_BUFFER_BYTES: usize = 64 * 1024;
 /// What the extraction does when the target of an entry already exists.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ConflictPolicy {
-    /// The file is written over the existing one.
+/// The file is written over the existing one.
     #[default]
     Overwrite,
 
-    /// The existing file is kept and the entry is skipped.
+/// The existing file is kept and the entry is skipped.
     Skip,
 }
 
 /// The options of one extraction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExtractionOptions {
-    /// The limits of the extraction.
+/// The limits of the extraction.
     pub limits: ExtractionLimits,
 
-    /// What happens when the target of an entry already exists.
+/// What happens when the target of an entry already exists.
     pub conflict: ConflictPolicy,
 
-    /// Whether a refused entry aborts the whole extraction.
-    ///
-    /// WHY: the strict setting is the default. An archive that carries an
-    ///       entry that leaves the destination is an attack, and an attack
-    ///       that is only half refused is an attack that the user does not
-    ///       learn about.
+/// Whether a refused entry aborts the whole extraction.
+///
+/// WHY: the strict setting is the default. An archive that carries an
+///       entry that leaves the destination is an attack, and an attack
+///       that is only half refused is an attack that the user does not
+///       learn about.
     pub abort_on_refused_entry: bool,
 }
 
 impl Default for ExtractionOptions {
-    /// Returns the options of the specification: the limits of the
-    /// specification, overwriting an existing file and aborting on the first
-    /// refused entry.
+/// Returns the options of the specification: the limits of the
+/// specification, overwriting an existing file and aborting on the first
+/// refused entry.
     fn default() -> Self {
         Self {
             limits: ExtractionLimits::default(),
@@ -94,60 +94,60 @@ impl Default for ExtractionOptions {
 /// The reason why an entry was skipped.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SkipReason {
-    /// The entry is a symbolic link; links are never created from archive
-    /// material.
+/// The entry is a symbolic link; links are never created from archive
+/// material.
     Symlink {
-        /// The target the link points to.
+/// The target the link points to.
         target: String,
     },
 
-    /// The entry is a symbolic link whose target would leave the destination.
+/// The entry is a symbolic link whose target would leave the destination.
     SymlinkWithRefusedTarget {
-        /// The target the link points to.
+/// The target the link points to.
         target: String,
     },
 
-    /// The entry is of a kind that is never created: a hard link, a device
-    /// node or a named pipe.
+/// The entry is of a kind that is never created: a hard link, a device
+/// node or a named pipe.
     UnsupportedKind {
-        /// What the entry is, in words.
+/// What the entry is, in words.
         kind: &'static str,
     },
 
-    /// The target of the entry exists and the policy is to keep it.
+/// The target of the entry exists and the policy is to keep it.
     ExistingFile,
 }
 
 /// What happened with one entry of the archive.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EntryOutcome {
-    /// The entry was written.
+/// The entry was written.
     Written {
-        /// The name of the entry.
+/// The name of the entry.
         name: String,
-        /// The number of bytes that were written.
+/// The number of bytes that were written.
         bytes: u64,
     },
 
-    /// The entry was a directory and the directory exists.
+/// The entry was a directory and the directory exists.
     Directory {
-        /// The name of the entry.
+/// The name of the entry.
         name: String,
     },
 
-    /// The entry was not written, and that is not an error.
+/// The entry was not written, and that is not an error.
     Skipped {
-        /// The name of the entry.
+/// The name of the entry.
         name: String,
-        /// The reason of the skip.
+/// The reason of the skip.
         reason: SkipReason,
     },
 
-    /// The entry was refused.
+/// The entry was refused.
     Refused {
-        /// The name of the entry.
+/// The name of the entry.
         name: String,
-        /// The reason of the refusal.
+/// The reason of the refusal.
         reason: RefusalReason,
     },
 }
@@ -159,19 +159,19 @@ pub enum EntryOutcome {
 ///       the user believes that the archive was unpacked completely.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ExtractionReport {
-    /// What happened with every entry of the archive.
+/// What happened with every entry of the archive.
     pub outcomes: Vec<EntryOutcome>,
 
-    /// The number of bytes that were written.
+/// The number of bytes that were written.
     pub written_bytes: u64,
 
-    /// The number of files that were written.
+/// The number of files that were written.
     pub written_entries: u64,
 
-    /// The number of entries that were skipped.
+/// The number of entries that were skipped.
     pub skipped_entries: u64,
 
-    /// The number of entries that were refused.
+/// The number of entries that were refused.
     pub refused_entries: u64,
 }
 
@@ -247,7 +247,7 @@ struct Extraction {
 }
 
 impl Extraction {
-    /// Opens the destination directory and prepares the extraction.
+/// Opens the destination directory and prepares the extraction.
     fn new(destination: &Path, options: &ExtractionOptions) -> Result<Self, ArchiveError> {
         fs::create_dir_all(destination).map_err(|source| ArchiveError::io(destination, source))?;
         let canonical_destination =
@@ -274,7 +274,7 @@ impl Extraction {
         })
     }
 
-    /// Returns the report of the extraction.
+/// Returns the report of the extraction.
     fn into_report(self) -> ExtractionReport {
         ExtractionReport {
             outcomes: self.outcomes,
@@ -285,12 +285,12 @@ impl Extraction {
         }
     }
 
-    /// Returns the path of the target of an entry on the file system.
+/// Returns the path of the target of an entry on the file system.
     fn target_path(&self, relative: &Path) -> PathBuf {
         self.destination.join(relative)
     }
 
-    /// Records a refusal and decides whether the extraction stops.
+/// Records a refusal and decides whether the extraction stops.
     fn refuse(
         &mut self,
         entry: &ArchiveEntry,
@@ -311,12 +311,12 @@ impl Extraction {
         }
     }
 
-    /// Creates the directories of the path of an entry.
-    ///
-    /// WHY: the directories are created one by one and every existing one is
-    ///       looked at. A directory that is a symbolic link is refused, so
-    ///       that an entry cannot be written through a link that points out
-    ///       of the destination.
+/// Creates the directories of the path of an entry.
+///
+/// WHY: the directories are created one by one and every existing one is
+///       looked at. A directory that is a symbolic link is refused, so
+///       that an entry cannot be written through a link that points out
+///       of the destination.
     fn create_parent_directories(&self, relative: &Path) -> Result<(), ParentFailure> {
         let parent = match relative.parent() {
             Some(parent) => parent,
@@ -345,11 +345,11 @@ impl Extraction {
         Ok(())
     }
 
-    /// Checks that the target of an entry lies inside the destination.
-    ///
-    /// WHY: the check is the second half of the rule H3 of the threat model.
-    ///       The name of the entry decides the path, and the path is
-    ///       canonicalised and compared with the canonical destination.
+/// Checks that the target of an entry lies inside the destination.
+///
+/// WHY: the check is the second half of the rule H3 of the threat model.
+///       The name of the entry decides the path, and the path is
+///       canonicalised and compared with the canonical destination.
     fn confine(&self, relative: &Path) -> Result<(), RefusalReason> {
         let target = self.target_path(relative);
         let parent = target.parent().unwrap_or(&self.destination);
@@ -363,7 +363,7 @@ impl Extraction {
         Ok(())
     }
 
-    /// Looks at the target of an entry.
+/// Looks at the target of an entry.
     fn check_target(&self, relative: &Path) -> Result<TargetState, io::Error> {
         let target = self.target_path(relative);
         match fs::symlink_metadata(&target) {
@@ -381,11 +381,11 @@ impl Extraction {
         }
     }
 
-    /// Gives a file or a directory the permissions of the application.
-    ///
-    /// WHY: the mode of an archive is chosen by its sender. The set-user-id,
-    ///       the set-group-id and the sticky bit are never carried over, and
-    ///       the group and the other never get a write bit.
+/// Gives a file or a directory the permissions of the application.
+///
+/// WHY: the mode of an archive is chosen by its sender. The set-user-id,
+///       the set-group-id and the sticky bit are never carried over, and
+///       the group and the other never get a write bit.
     #[cfg(unix)]
     fn set_mode(&self, relative: &Path, mode: u32) -> Result<(), ArchiveError> {
         use cap_std::fs::PermissionsExt;
@@ -396,16 +396,16 @@ impl Extraction {
             .map_err(|source| ArchiveError::io(self.target_path(relative), source))
     }
 
-    /// Gives a file or a directory the permissions of the application.
-    ///
-    /// WHY: the permission bits of Windows are the read-only flag, and the
-    ///       extraction has no reason to make a file read-only.
+/// Gives a file or a directory the permissions of the application.
+///
+/// WHY: the permission bits of Windows are the read-only flag, and the
+///       extraction has no reason to make a file read-only.
     #[cfg(not(unix))]
     fn set_mode(&self, _relative: &Path, _mode: u32) -> Result<(), ArchiveError> {
         Ok(())
     }
 
-    /// Writes the directory of an entry.
+/// Writes the directory of an entry.
     fn write_directory(&mut self, entry: &ArchiveEntry) -> Result<VisitDecision, ArchiveError> {
         let relative = match self.resolve_name(entry) {
             Ok(relative) => relative,
@@ -449,7 +449,7 @@ impl Extraction {
         Ok(VisitDecision::Continue)
     }
 
-    /// Writes the file of an entry.
+/// Writes the file of an entry.
     fn write_file(
         &mut self,
         entry: &ArchiveEntry,
@@ -539,13 +539,13 @@ impl Extraction {
         Ok(VisitDecision::Continue)
     }
 
-    /// Skips a symbolic link.
-    ///
-    /// WHY: a symbolic link is never created from archive material. The link
-    ///       could point anywhere, and a later entry of the same archive
-    ///       would then be written through it. The entry is reported, so
-    ///       that the user learns that the archive contains something that
-    ///       was not unpacked.
+/// Skips a symbolic link.
+///
+/// WHY: a symbolic link is never created from archive material. The link
+///       could point anywhere, and a later entry of the same archive
+///       would then be written through it. The entry is reported, so
+///       that the user learns that the archive contains something that
+///       was not unpacked.
     fn skip_symlink(&mut self, entry: &ArchiveEntry) -> Result<VisitDecision, ArchiveError> {
         let target = entry.link_target.clone().unwrap_or_default();
         let reason = match resolve_entry_name(&target) {
@@ -560,7 +560,7 @@ impl Extraction {
         Ok(VisitDecision::Continue)
     }
 
-    /// Skips an entry of a kind that is never created.
+/// Skips an entry of a kind that is never created.
     fn skip_unsupported(&mut self, entry: &ArchiveEntry) -> Result<VisitDecision, ArchiveError> {
         self.skipped_entries += 1;
         self.outcomes.push(EntryOutcome::Skipped {
@@ -572,8 +572,8 @@ impl Extraction {
         Ok(VisitDecision::Continue)
     }
 
-    /// Resolves the name of an entry and refuses the names that may not be
-    /// written.
+/// Resolves the name of an entry and refuses the names that may not be
+/// written.
     fn resolve_name(&self, entry: &ArchiveEntry) -> Result<PathBuf, RefusalReason> {
         if entry.name_is_lossy {
             return Err(RefusalReason::InvalidName);
@@ -609,28 +609,28 @@ impl EntryVisitor for Extraction {
 /// The state of the target of an entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TargetState {
-    /// Nothing is at the target.
+/// Nothing is at the target.
     Missing,
 
-    /// A file is at the target.
+/// A file is at the target.
     Existing,
 
-    /// A symbolic link is at the target.
+/// A symbolic link is at the target.
     Symlink,
 
-    /// A directory is at the target.
+/// A directory is at the target.
     Directory,
 }
 
 /// The reason why a directory of the path of an entry could not be used.
 enum ParentFailure {
-    /// The directory is a symbolic link.
+/// The directory is a symbolic link.
     Symlink,
 
-    /// The directory is not a directory.
+/// The directory is not a directory.
     NotADirectory,
 
-    /// The operating system refused the operation.
+/// The operating system refused the operation.
     Io(io::Error),
 }
 

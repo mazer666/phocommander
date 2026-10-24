@@ -1,10 +1,10 @@
 //! The archive adapters of Phocommander.
 //!
 //! WHAT: the hardened resolution of the names an archive contains
-//!       ([`entry_name`]), the rules of the file names of Windows
-//!       ([`windows_name`]), the limits of an extraction ([`limits`]), the
-//!       container adapters ([`formats`]) and the extraction itself
-//!       ([`extract`]).
+//!       ([{entry_name}]), the rules of the file names of Windows
+//!       ([{windows_name}]), the limits of an extraction ([{limits}]), the
+//!       container adapters ([{formats}]) and the extraction itself
+//!       ([{extract}]).
 //! WHY: an archive is untrusted input, exactly like a file that comes from a
 //!       network source. The name of an entry decides where the entry is
 //!       written. A name that leaves the destination directory, that is an
@@ -13,7 +13,7 @@
 //!       place, so that every reader has to use it and no reader can forget
 //!       it.
 //!
-//!       The extraction never calls the `extract()` of a container crate. It
+//! The extraction never calls the {extract()} of a container crate. It
 //!       iterates over the entries and writes every entry itself, so that
 //!       the decision about *where* something is written comes from this
 //!       project and not from a dependency.

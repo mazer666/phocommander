@@ -18,8 +18,8 @@
 
 /// The characters that Windows forbids in the name of a file.
 ///
-/// WHY: `<`, `>`, `:`, `"`, `|`, `?` and `*` are the characters that the
-///       Windows file system rejects. The two separators `/` and `\` are not
+/// WHY: {<}, {>}, {:}, {"}, {|}, {?} and {*} are the characters that the
+///       Windows file system rejects. The two separators {/} and {\} are not
 ///       part of this list: they split a name into segments, and the segments
 ///       are checked by the resolution of the name itself.
 pub const FORBIDDEN_CHARACTERS: [char; 7] = ['<', '>', ':', '"', '|', '?', '*'];
@@ -37,7 +37,7 @@ pub fn first_forbidden_character(segment: &str) -> Option<char> {
 /// Whether the segment ends in a dot or in a space.
 ///
 /// WHY: Windows removes such an ending silently. A file that is called
-///       `report.` is stored as `report`, so two entries of an archive that
+///       {report.} is stored as {report}, so two entries of an archive that
 ///       differ only in that ending would fight for one file.
 pub fn has_forbidden_ending(segment: &str) -> bool {
     segment.ends_with('.') || segment.ends_with(' ')

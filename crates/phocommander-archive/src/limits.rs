@@ -9,12 +9,12 @@
 //!       set-user-id bit to a privileged process, which then runs it with the
 //!       rights of the archive sender (RUSTSEC-2026-0367).
 //!
-//!       The limits live here and nowhere else. The crate cannot depend on
-//!       `phocommander-core` — no crate below `crates/` may depend on a
-//!       sibling — so the two numbers that the core crate also names are
-//!       written down a second time. The integration test of the package
-//!       `tests` holds both writings against each other, so the duplication
-//!       cannot drift apart unnoticed.
+//! The limits live here and nowhere else. The crate 'phocommander-core'
+//!       cannot be a dependency of this crate, because no crate below
+//!       {crates/} may depend on a sibling. The two numbers that the core
+//!       crate also names are therefore written down a second time. The
+//!       integration test of the package {tests} holds both writings against
+//!       each other, so the duplication cannot drift apart unnoticed.
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_archive::ExtractionLimits;
@@ -28,7 +28,7 @@
 ///
 /// WHY: without a total limit a small archive can fill the disk of the
 ///       machine it is unpacked on. The value is the one the specification
-///       fixes in the `[archives]` section of the configuration file.
+///       fixes in the {[archives]} section of the configuration file.
 pub const MAX_EXTRACTED_BYTES: u64 = 2_147_483_648;
 
 /// The largest number of entries that a single archive may contain.
@@ -48,7 +48,7 @@ pub const MAX_ARCHIVE_ENTRIES: u64 = 100_000;
 ///       extraction may use at all.
 pub const MAX_SINGLE_ENTRY_BYTES: u64 = 1_073_741_824;
 
-/// The mode of a file that the extraction writes: `rw-r--r--`.
+/// The mode of a file that the extraction writes: 'rw-r--r--'.
 ///
 /// WHY: the mode of an extracted file is decided by the application and not
 ///       by the archive. The set-user-id, the set-group-id and the sticky bit
@@ -56,7 +56,7 @@ pub const MAX_SINGLE_ENTRY_BYTES: u64 = 1_073_741_824;
 ///       get a write bit.
 pub const EXTRACTED_FILE_MODE: u32 = 0o644;
 
-/// The mode of a directory that the extraction creates: `rwxr-xr-x`.
+/// The mode of a directory that the extraction creates: 'rwxr-xr-x'.
 ///
 /// WHY: the same rule as for a file. The owner may enter the directory, the
 ///       group and the other may read it, nobody but the owner may write in
@@ -70,18 +70,18 @@ pub const EXTRACTED_DIRECTORY_MODE: u32 = 0o755;
 ///       can exercise the mechanism with a budget that fits into a test run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExtractionLimits {
-    /// The largest total number of bytes that the extraction may write.
+/// The largest total number of bytes that the extraction may write.
     pub max_total_bytes: u64,
 
-    /// The largest number of entries that the extraction may write.
+/// The largest number of entries that the extraction may write.
     pub max_entries: u64,
 
-    /// The largest number of bytes that a single entry may have.
+/// The largest number of bytes that a single entry may have.
     pub max_entry_bytes: u64,
 }
 
 impl Default for ExtractionLimits {
-    /// Returns the limits of the specification.
+/// Returns the limits of the specification.
     fn default() -> Self {
         Self {
             max_total_bytes: MAX_EXTRACTED_BYTES,
@@ -92,15 +92,15 @@ impl Default for ExtractionLimits {
 }
 
 impl ExtractionLimits {
-    /// Builds a set of limits from the three values.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_archive::ExtractionLimits;
-    ///
-    /// let limits = ExtractionLimits::new(1024, 10, 512);
-    /// assert_eq!(limits.max_total_bytes, 1024);
-    /// ```
+/// Builds a set of limits from the three values.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::ExtractionLimits;
+///
+/// let limits = ExtractionLimits::new(1024, 10, 512);
+/// assert_eq!(limits.max_total_bytes, 1024);
+/// ```
     pub const fn new(max_total_bytes: u64, max_entries: u64, max_entry_bytes: u64) -> Self {
         Self {
             max_total_bytes,
@@ -109,44 +109,44 @@ impl ExtractionLimits {
         }
     }
 
-    /// Whether an entry of the given size may be written.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_archive::ExtractionLimits;
-    ///
-    /// let limits = ExtractionLimits::new(1024, 10, 512);
-    /// assert!(limits.allows_entry_size(512));
-    /// assert!(!limits.allows_entry_size(513));
-    /// ```
+/// Whether an entry of the given size may be written.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::ExtractionLimits;
+///
+/// let limits = ExtractionLimits::new(1024, 10, 512);
+/// assert!(limits.allows_entry_size(512));
+/// assert!(!limits.allows_entry_size(513));
+/// ```
     pub const fn allows_entry_size(&self, size: u64) -> bool {
         size <= self.max_entry_bytes
     }
 
-    /// Whether the given number of entries may be written.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_archive::ExtractionLimits;
-    ///
-    /// let limits = ExtractionLimits::new(1024, 10, 512);
-    /// assert!(limits.allows_entry_count(10));
-    /// assert!(!limits.allows_entry_count(11));
-    /// ```
+/// Whether the given number of entries may be written.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::ExtractionLimits;
+///
+/// let limits = ExtractionLimits::new(1024, 10, 512);
+/// assert!(limits.allows_entry_count(10));
+/// assert!(!limits.allows_entry_count(11));
+/// ```
     pub const fn allows_entry_count(&self, count: u64) -> bool {
         count <= self.max_entries
     }
 
-    /// Whether the given number of bytes may be written in total.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_archive::ExtractionLimits;
-    ///
-    /// let limits = ExtractionLimits::new(1024, 10, 512);
-    /// assert!(limits.allows_total_size(1024));
-    /// assert!(!limits.allows_total_size(1025));
-    /// ```
+/// Whether the given number of bytes may be written in total.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::ExtractionLimits;
+///
+/// let limits = ExtractionLimits::new(1024, 10, 512);
+/// assert!(limits.allows_total_size(1024));
+/// assert!(!limits.allows_total_size(1025));
+/// ```
     pub const fn allows_total_size(&self, bytes: u64) -> bool {
         bytes <= self.max_total_bytes
     }

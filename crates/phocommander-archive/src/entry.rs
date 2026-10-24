@@ -25,16 +25,16 @@
 /// What an entry of an archive is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EntryKind {
-    /// A regular file with content.
+/// A regular file with content.
     File,
 
-    /// A directory.
+/// A directory.
     Directory,
 
-    /// A symbolic link.
+/// A symbolic link.
     Symlink,
 
-    /// Something else: a hard link, a device node, a named pipe.
+/// Something else: a hard link, a device node, a named pipe.
     Other,
 }
 
@@ -46,87 +46,87 @@ pub enum EntryKind {
 ///       whoever built the archive.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArchiveEntry {
-    /// The name of the entry, as the container carries it.
+/// The name of the entry, as the container carries it.
     pub name: String,
 
-    /// Whether the name could be decoded without a loss.
-    ///
-    /// WHY: a container can carry a name that is not valid UTF-8. Such a
-    ///       name is shown in the report with a replacement character, but
-    ///       the entry is refused instead of being written under a name that
-    ///       the archive does not carry.
+/// Whether the name could be decoded without a loss.
+///
+/// WHY: a container can carry a name that is not valid UTF-8. Such a
+///       name is shown in the report with a replacement character, but
+///       the entry is refused instead of being written under a name that
+///       the archive does not carry.
     pub name_is_lossy: bool,
 
-    /// What the entry is.
+/// What the entry is.
     pub kind: EntryKind,
 
-    /// The number of bytes the entry announces.
+/// The number of bytes the entry announces.
     pub size: u64,
 
-    /// The mode bits the entry carries, if the format has them.
+/// The mode bits the entry carries, if the format has them.
     pub mode: Option<u32>,
 
-    /// The target of the link, if the entry is a link.
+/// The target of the link, if the entry is a link.
     pub link_target: Option<String>,
 }
 
 impl ArchiveEntry {
-    /// Whether the entry is a regular file.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_archive::{ArchiveEntry, EntryKind};
-    ///
-    /// # let entry = ArchiveEntry {
-    /// #     name: "a.txt".to_string(),
-    /// #     name_is_lossy: false,
-    /// #     kind: EntryKind::File,
-    /// #     size: 0,
-    /// #     mode: None,
-    /// #     link_target: None,
-    /// # };
-    /// assert!(entry.is_file());
-    /// ```
+/// Whether the entry is a regular file.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::{ArchiveEntry, EntryKind};
+///
+/// # let entry = ArchiveEntry {
+/// #     name: "a.txt".to_string(),
+/// #     name_is_lossy: false,
+/// #     kind: EntryKind::File,
+/// #     size: 0,
+/// #     mode: None,
+/// #     link_target: None,
+/// # };
+/// assert!(entry.is_file());
+/// ```
     pub const fn is_file(&self) -> bool {
         matches!(self.kind, EntryKind::File)
     }
 
-    /// Whether the entry is a directory.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_archive::{ArchiveEntry, EntryKind};
-    ///
-    /// # let entry = ArchiveEntry {
-    /// #     name: "docs".to_string(),
-    /// #     name_is_lossy: false,
-    /// #     kind: EntryKind::Directory,
-    /// #     size: 0,
-    /// #     mode: None,
-    /// #     link_target: None,
-    /// # };
-    /// assert!(entry.is_directory());
-    /// ```
+/// Whether the entry is a directory.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::{ArchiveEntry, EntryKind};
+///
+/// # let entry = ArchiveEntry {
+/// #     name: "docs".to_string(),
+/// #     name_is_lossy: false,
+/// #     kind: EntryKind::Directory,
+/// #     size: 0,
+/// #     mode: None,
+/// #     link_target: None,
+/// # };
+/// assert!(entry.is_directory());
+/// ```
     pub const fn is_directory(&self) -> bool {
         matches!(self.kind, EntryKind::Directory)
     }
 
-    /// Whether the entry is a symbolic link.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_archive::{ArchiveEntry, EntryKind};
-    ///
-    /// # let entry = ArchiveEntry {
-    /// #     name: "link".to_string(),
-    /// #     name_is_lossy: false,
-    /// #     kind: EntryKind::Symlink,
-    /// #     size: 0,
-    /// #     mode: None,
-    /// #     link_target: Some("../outside".to_string()),
-    /// # };
-    /// assert!(entry.is_symlink());
-    /// ```
+/// Whether the entry is a symbolic link.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::{ArchiveEntry, EntryKind};
+///
+/// # let entry = ArchiveEntry {
+/// #     name: "link".to_string(),
+/// #     name_is_lossy: false,
+/// #     kind: EntryKind::Symlink,
+/// #     size: 0,
+/// #     mode: None,
+/// #     link_target: Some("../outside".to_string()),
+/// # };
+/// assert!(entry.is_symlink());
+/// ```
     pub const fn is_symlink(&self) -> bool {
         matches!(self.kind, EntryKind::Symlink)
     }
