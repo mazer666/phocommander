@@ -17,7 +17,12 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+eframe = { workspace = true }
 egui = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+egui_kittest = { workspace = true }
 
 [lints]
 workspace = true
