@@ -2,18 +2,22 @@
 """Check the action catalogue of config/keymap.toml for consistency.
 
 WHAT: verifies that every action ID occurs exactly once per operating context,
-that the keyboard bindings match the key table of the specification, that the
-dpad and controller contexts refer to the action palette, and that every action
-ID is referenced in the acceptance criteria or in the specification.
+that every action ID of the catalogue is documented exactly once in the binding
+table of ``docs/KEYMAP.md``, that the keyboard bindings match the key table of
+the specification, that the dpad and controller contexts refer to the action
+palette, and that every action ID is referenced in the acceptance criteria or in
+the specification.
 
 WHY: the action ID is the contract between the input layer, the surface and
 the configuration file. A duplicated ID, an ID that appears in only one context
 or a binding that silently drifts away from the specification breaks that
-contract without any compiler noticing.
+contract without any compiler noticing. An action that the catalogue binds but
+the reference does not document is an action the user cannot look up.
 
 EXAMPLE:
     python3 scripts/check-action-ids.py
     python3 scripts/check-action-ids.py --keymap config/keymap.toml
+    python3 scripts/check-action-ids.py --keymap-doc docs/KEYMAP.md
 
 The script exits with code 0 when every check passes and with code 1 when at
 least one check fails. It prints one line per check.
@@ -92,6 +96,46 @@ PALETTE_PATTERN = re.compile(r"^palette:[a-z]+(\.[a-z0-9_]+)+$")
 
 # The pattern of an action ID.
 ACTION_PATTERN = re.compile(r"^[a-z]+(\.[a-z0-9_]+)+$")
+
+# A code span of a Markdown table cell.
+CODE_SPAN = re.compile(r"`([^`]+)`")
+
+# The separators of a compact range such as "panel.tab.1 … panel.tab.9".
+RANGE_SEPARATORS = ("…", "–", "—", "-")
+
+# The header of the binding table of the reference document.
+TABLE_HEADER = "| Action | Default | Context | Platform variant | Note |"
+
+
+def expand(cell: str) -> list[str]:
+    """Return the code spans of a cell, expanding a compact range.
+
+    WHAT: the reference documents the nine tab actions in one row, written as
+    ``panel.tab.1`` … ``panel.tab.9``. The row documents every action of that
+    range, so the range is expanded into the single action IDs.
+
+    EXAMPLE:
+    ```text
+    expand("`panel.tab.1` … `panel.tab.9`") -> ["panel.tab.1", ..., "panel.tab.9"]
+    ```
+    """
+    spans = CODE_SPAN.findall(cell)
+    if len(spans) != 2:
+        return spans
+    if not any(separator in cell for separator in RANGE_SEPARATORS):
+        return spans
+    first, last = spans
+    first_match = re.match(r"^(.*?)(\d+)$", first)
+    last_match = re.match(r"^(.*?)(\d+)$", last)
+    if not first_match or not last_match:
+        return spans
+    if first_match.group(1) != last_match.group(1):
+        return spans
+    width = len(first_match.group(2))
+    start, end = int(first_match.group(1) or 0), int(last_match.group(2))
+    if end < start:
+        return spans
+    return [f"{first_match.group(1)}{number:0{width}d}" for number in range(start, end + 1)]
 
 
 def repository_root() -> Path:
