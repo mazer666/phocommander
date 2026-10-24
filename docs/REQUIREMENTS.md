@@ -1,963 +1,1528 @@
-# Phocommander — Anforderungsspezifikation 1.1
+# Phocommander — Requirements and Technical Specification
 
-**Status:** Entwurf zur Abstimmung · **Datum:** 24.10.2026 · **Änderung 1.1:** Eingabemodelle, Netzwerk- und Cloud-Zugriffe, Produktmaximen · **Sprache des Projekts:** Englisch (UI zweisprachig DE/EN)
-**Repository-Ziel:** `github.com/mazer666/phocommander` (public) · **Lizenz:** `MIT OR Apache-2.0`
-
----
-
-## Zweck und Geltungsbereich
-
-Phocommander ist ein Datei-Browser-Ersatz mit eingebautem Betrachter für macOS, Android, iPadOS, Windows, Linux und BSD. Das Dokument legt Produktumfang, Architektur, Sicherheits- und Qualitätsanforderungen fest und ist die verbindliche Grundlage für alle weiteren Arbeitspakete.
-
-Der Geltungsbereich umfasst die Kern-Desktop-Funktionalität, die gemeinsame Rust-Bibliothek für alle sechs Zielplattformen sowie die plattformspezifischen Verpackungen. Nicht umfasst sind Cloud-Speicher-Anbindungen Dritter, ein Makro-Skriptsprachen-Interpreter mit VBScript-Kompatibilität, Brennfunktionen für optische Medien und ein AddIn-Binärinterface nach dem Vorbild von SpeedCommander — diese Funktionen sind in der Zielarchitektur vorgesehen, aber nicht Teil des ersten Auslieferungsumfangs.
-
-### Clean-Room-Erklärung
-
-Phocommander ist eine eigenständige Implementierung. Grundlage sind ausschließlich öffentlich dokumentierte Beobachtungen zum Funktionsumfang klassischer Zwei-Fenster-Dateimanager der Norton-Commander-Linie sowie der Quasi-Standard-Tastenbelegung, die sich seit den 1980er-Jahren als De-facto-Standard etabliert hat [4][36]. Weder Code, noch Bilder, noch Icons, noch Texte, noch Layoutvorgaben des Originalherstellers werden übernommen, gespiegelt oder nachgebaut.
-
-Kopiert wird ausschließlich die *Idee* einer Funktion: zwei synchron sichtbare Verzeichnisfenster, ein eingebetteter Betrachter, ein Mehrfach-Umbenennungsdialog mit Platzhaltern. Die konkrete Umsetzung, das Bedienkonzept, die Oberflächengestaltung und die Codebasis sind eigenständig. Der Begriff „Clean Room" bezeichnet in der Softwareentwicklung ein Vorgehen, bei dem die Spezifikation ohne Kenntnis der Originalimplementierung erstellt wird — genau so wird hier verfahren [2][4].
-
+**Version:** 2.0 · **Status:** Draft for owner review · **Supersedes:** 1.1 · **Date:** 24 October 2026
+**Repository:** `github.com/mazer666/phocommander` (public) · **Licence:** `MIT OR Apache-2.0`
+**Language of this document:** English. The user interface ships in English and German first.
 
 ---
 
-## Produktvision
+## 1. Purpose and Scope
 
-Phocommander richtet sich an Menschen, die große Dateimengen bewusst ordnen, vergleichen, umbenennen und sichten — im Terminal, in der IDE, in der Bildverwaltung, im Backup. Die Zielgruppe arbeitet den ganzen Tag mit Dateien und empfindet den Finder oder den Explorer als zu ablenkend, zu langsam oder zu unklar.
+Phocommander is a dual-pane file manager with an integrated viewer, built in Rust, for macOS,
+Android, iPadOS, Windows, Linux and BSD. This document is the binding specification for the
+project: it defines the product, its architecture, its organisational plan, its milestone
+sequence, and the acceptance rules that allow every piece of work to be signed off.
 
-Der Nutzen liegt in drei Punkten, die gemeinsam den Produktkern ausmachen:
+This document supersedes version 1.1. Version 1.1 defined the product concept and the platform
+matrix. Version 2.0 adds the technical plan, the organisational plan, the modular decomposition,
+the configurable interface model, the internationalisation plan, and the acceptance framework that
+turns the document into something work can be measured against.
 
-**Sichtbarkeit beider Seiten.** Quelle und Ziel sind gleichzeitig im Bild. Dadurch ist vor dem Kopieren klar, wohin kopiert wird, und Verzeichnisse lassen sich direkt gegenüberstellen, ohne den Explorer zu verlassen.
+### 1.1 Scope
 
-**Tastatur als Hauptweg.** Die vollständige Bedienung funktioniert ohne Maus. Das ist kein Komfort-Feature, sondern der Grund, warum sich Zwei-Fenster-Manager über Jahrzehnte halten. Eine Eingabezeile und ein Filterfeld beschleunigen Sprung und Selektion um Größenordnungen gegenüber reinem Maus-Navigieren.
+In scope: the desktop core, the shared Rust library used by all six targets, the platform
+shells, the archive and viewer subsystems, the remote source subsystem, the input model across
+five interaction contexts, the internationalisation framework, and the project organisation that
+produces and verifies all of it.
 
-**Betrachter im Fenster.** Dateien werden angezeigt, ohne dass ein externes Programm startet. Das spart bei der Sichtung von Logdateien, Screenshots, Konfigurationen und Codefragmenten den Anwendungskontext-Wechsel und ist der Hauptgrund, weshalb SpeedCommander und Forklift beide einen eingebauten Betrachter führen [1][5].
+Out of scope for the first release cycle: third-party cloud storage with vendor-specific
+sync semantics, a scripting engine compatible with VBScript, optical media burning, a binary
+plugin interface modelled on the reference product's add-in system, and an immersive virtual
+reality port. The architecture reserves a place for each of these; none of them is part of the
+committed delivery.
 
-### Abgrenzung zu SpeedCommander und Forklift
+### 1.2 How to read this document
 
-SpeedCommander ist das funktionale Referenzprodukt: Zwei-Fenster-Technik, 13 Archivformate, Betrachter für über 80 Formate, integrierte FTP/FTPS/SFTP-Anbindung, Ordnersynchronisation, Mehrfach-Umbenennung, Dateisuche, integrierte Kommandozeile, Makros und AddIn-Schnittstelle [1][2][3]. Die Oberfläche wirkt, wie der Nutzer selbst anmerkt, trocken — sie ist dicht, funktional und auf reine Tastaturbedienung ausgelegt.
+| Section | Contains | Read it when |
+|---|---|---|
+| 2 | Product principles, non-negotiable | You are about to make a design decision |
+| 3 | Product definition and reference analysis | You need to know what the product is |
+| 4 | Requirement catalogue, `FR-xx` and `NFR-xx` | You implement or verify a feature |
+| 5 | Technical plan: architecture, modules, data flows | You design or change a module |
+| 6 | Input model and interaction contexts | You work on navigation or an input device |
+| 7 | Interface configuration model | You design the settings surface |
+| 8 | Internationalisation plan | You add or change a user-visible string |
+| 9 | Security and privacy plan | You touch untrusted input or the network |
+| 10 | Test and quality strategy | You add or change a test |
+| 11. | Milestone plan M0–M9 | You plan work |
+| 12 | Organisational plan: roles, flow of work, review | You join the project or take a role |
+| 13 | Acceptance rules and gates | You accept or reject a milestone |
+| 14 | Decisions taken and open questions | You need the current state of play |
 
-Forklift ist das Qualitätsreferenzprodukt auf macOS: native Menüs, Finder-ähnliche Anmutung, Quick Look, Tags, Vorwärts/Rückwärts-Navigation, Time-Machine-Wiederherstellung [5][38]. Es gilt als das funktionalste Dateimanager-Werkzeug für macOS, verlangt aber eine Lizenz und deckt iOS/iPadOS nicht ab.
+Requirement identifiers are stable. A requirement never changes its meaning; when it does, the
+change is recorded in section 14 with the date and the reason. Acceptance criteria reference
+requirement identifiers, so a traceable chain runs from specification to test to acceptance
+document.
 
-Phocommander übernimmt von SpeedCommander das Bedienkonzept und von Forklift die Sorgfalt bei Oberfläche, Integration und Fehlermeldungen. Ziel ist nicht, eines der beiden Produkte zu kopieren, sondern deren jeweilige Stärken in einem freien, plattformübergreifenden Werkzeug zusammenzuführen.
+---
 
-| Merkmal | SpeedCommander [2][3] | Forklift [5] | Phocommander (Ziel) |
+## 2. Product Principles
+
+Three principles define the product. They are not slogans; they are constraints that every
+design decision is measured against, and several of them are enforced mechanically by the build.
+
+### 2.1 Free
+
+No licence fee, no subscription, no in-app purchase, no feature behind a paywall. Every feature
+that exists in one build exists in every build. No charge for security updates. The build does not
+phone home to check a licence.
+
+Enforced by: a CI check that fails the build if any dependency from the telemetry or analytics
+category is referenced, and a test that proves the process opens no network connection during
+start-up. The licence of every dependency is checked by `cargo deny` on every build.
+
+### 2.2 Clutter-free
+
+No banners, no recommendation columns, no news feeds, no mandatory account, no onboarding tour
+that insists on itself. The start screen is the work surface, not a landing page. No advertising
+inside the application, no sponsored entries in search or connection lists. No setting that has
+no purpose.
+
+Enforced by: a screenshot comparison of the start view per context, and a check that the
+connection list contains only entries the user created.
+
+### 2.3 Advertising-free
+
+No advertising, no tracking, no analytics, no telemetry, no user profiles, no disclosure to
+third parties, no affiliate links, no sponsored placements. Local functions work without
+registration and without a login. The source code shows it: there is no network request that the
+user did not initiate.
+
+Enforced by: the promise in `PRIVACY.md`, the zero-telemetry evidence in the security
+documentation, and the dependency check described in 2.1.
+
+### 2.4 The principles are testable
+
+A principle that cannot be falsified is a slogan. Each of the three principles above therefore
+names the mechanism that enforces it, and the mechanism is part of the acceptance criteria of the
+milestone in which it first becomes relevant.
+
+---
+
+## 3. Product Definition
+
+### 3.1 Vision
+
+Phocommander is for people who spend their working day deliberately organising, comparing,
+renaming and inspecting files — in a terminal, in an IDE, in a photo workflow, in a backup job.
+The target user finds the platform file manager too distracting, too slow, or too unclear.
+
+Three capabilities form the product core:
+
+**Both sides visible.** Source and destination are on screen at the same time. Before a copy, the
+user can see where the file will go, and two directories can be compared directly without leaving
+the tool.
+
+**The keyboard is the primary path.** The complete operation is possible without a mouse. This is
+not a convenience feature; it is the reason dual-pane managers have survived for decades. A
+command line and a filter field accelerate navigation and selection by an order of magnitude
+compared with pointer-only operation.
+
+**The viewer is in the window.** Files are inspected without launching an external application.
+For logs, screenshots, configurations and code fragments this saves the application-switch, and
+it is the reason both reference products ship an integrated viewer.
+
+### 3.2 Reference analysis
+
+The reference product defines the functional scope. SpeedCommander provides the behavioural
+model: dual pane with a configurable arrangement, tabbed directory windows, an integrated
+multi-format viewer, thirteen archive formats, FTP/FTPS/SFTP, folder synchronisation, multiple
+rename, file search, an integrated command line, macros and an add-in interface [1][2][3]. Its
+interface is dense and keyboard-driven, and the density is a deliberate choice.
+
+Forklift provides the quality reference on macOS: native menus, Finder-like appearance, Quick
+Look, tags, forward and backward navigation, Time Machine restoration [5][38]. It is regarded as
+the most capable file management utility for macOS, but it costs money and does not cover
+iOS or iPadOS.
+
+Phocommander takes the operating model from the first and the craft from the second. The goal is
+not to copy either product but to combine their respective strengths in one free, cross-platform
+tool.
+
+The three products are compared along the capabilities that decide daily work.
+
+| Capability | SpeedCommander [2][3] | Forklift [5] | Phocommander target |
 |---|---|---|---|
-| Plattformen | Windows 7–11 | macOS | macOS, Android, iPadOS, Windows, Linux, BSD |
-| Fensterprinzip | Zwei-Fenster, oben/unten | Zwei-Fenster, auch einzeln | Zwei-Fenster, oben/unten, Registerkarten |
-| Betrachter | 80+ Formate | Quick Look, PDF, Text | Text, Bild, PDF, Hex, Archiv, Metadaten (gestuft) |
-| Archivformate | 13 | ZIP u. a. | ZIP, TAR (+Kompression), 7z, GZip, BZip2, XZ, Zstd |
-| Mehrfach-Umbenennen | Platzhalter, Konfliktsprung F3 | Filter/Parameter, Presets | Platzhalter, Regex, Vorschau, Konfliktsprung |
-| Fernzugriff | FTP, FTPS, SFTP | FTP, SFTP, SMB, WebDAV, Cloud | SFTP, FTP (später) |
-| Bedienung | rein tastaturorientiert | Tastatur + Maus | rein tastaturorientiert, Maus optional |
-| Lizenz | Shareware (22.40) | kostenpflichtig | MIT OR Apache-2.0 |
+| Platforms | Windows 7–11 | macOS | macOS, Android, iPadOS, Windows, Linux, BSD |
+| Window model | Dual pane, above or below | Dual pane, also single | Dual pane, above or below, tabbed |
+| Viewer | 80+ formats | Quick Look, PDF, text | Text, image, PDF, hex, archive, metadata, staged |
+| Archive formats | 13 | ZIP and others | ZIP, TAR with compression, 7z |
+| Multiple rename | Placeholders, conflict jump F3 | Filters, parameters, presets | Placeholders, regex, preview, conflict jump |
+| Remote access | FTP, FTPS, SFTP | FTP, SFTP, SMB, WebDAV, cloud | SFTP, FTP, SMB, WebDAV, S3-compatible |
+| Operation | Purely keyboard-driven | Keyboard and pointer | Purely keyboard-driven, pointer optional |
+| Licence | Shareware | Commercial | MIT OR Apache-2.0 |
 
-Die Gegenüberstellung zeigt die Lücke, die Phocommander schließen will: die Bedienidee und die Tastaturorientierung des einen Produkts, die Integrationsqualität des anderen — und dazu eine freie Lizenz und sechs Plattformen, die keines der beiden erreicht.
+The gap the comparison shows is the one the project intends to close.: the operating idea and
+keyboard orientation of one product, the integration quality of the other, plus a free licence
+and six platforms that neither of them reaches.
 
----
+### 3.3 Clean room declaration
 
----
+Phocommander is an independent implementation. The only inputs are publicly documented
+observations of the functional scope of the classic dual-pane file manager lineage and of the
+quasi-standard key binding that has existed since the 1980s [4][36]. No code, image, icon, text
+or layout of the original vendor is taken, mirrored or reproduced.
 
-## Produktmaximen
+Only the *idea* of a function is taken: two synchronously visible directory windows, an embedded
+viewer, a multiple-rename dialog with placeholders. The concrete implementation, the interaction
+model, the interface design and the code base are original. In software engineering, a clean room
+is a development process in which the specification is written without knowledge of the original
+implementation — that is the process used here [2][4].
 
-Drei Devisen bestimmen das Produkt. Sie stehen hier, weil sie keine Absichtserklärung sind, sondern **prüfbare Anforderungen** — jede spätere Entscheidung wird gegen sie gemessen, und das CI-Gate überwacht sie.
-
-### Kostenlos
-
-Keine Lizenzgebühr, kein Abo, keine In-App-Käufe, keine geschlossenen Funktionen. Jede Funktion, die in einer Version existiert, existiert in allen Versionen identisch — es gibt keinen „Pro"-Zweig. Keine Wartungsgebühr für Sicherheitsupdates. Kein Build-Zeit-Check gegen eine Lizenzserver-Instanz. Der Quellcode baut die Anwendung ohne Netzwerkzugang.
-
-Prüfbar durch: eine CI-Prüfung, die bestätigt, dass kein Crate der Telemetrie- oder Analyse-Kategorien referenziert wird, und ein Test, der belegt, dass der Prozessstart keine Netzwerkverbindung öffnet.
-
-### Clutter-frei
-
-Keine Werbebanner, keine Empfehlungsspalten, keine Nachrichtendienste, kein Konto-Zwang, kein aufdrängender Onboarding-Tour. Der Startbildschirm ist die Arbeitsfläche, nicht eine Landingpage. Keine App-interne Werbung, keine gesponserten Treffer in Such- oder Verbindungslisten. Keine Einstellungen, die es nicht braucht.
-
-Prüfbar durch: ein Screenshot-Abgleich der Startansicht je Kontext, und eine Prüfung, dass die Verbindungsliste ausschließlich vom Nutzer selbst angelegte Einträge enthält.
-
-### Werbefrei
-
-Keine Werbung, kein Tracking, keine Analyse, keine Telemetrie, keine Nutzungsprofile, keine Weitergabe an Dritte, keine Affiliate-Links, keine gesponserten Platzierungen. Lokale Funktionen funktionieren ohne Registrierung und ohne Login. Der Quellcode zeigt es: Es gibt keine Netzwerkanfrage, die der Nutzer nicht selbst ausgelöst hat.
-
-Prüfbar durch: die Zusage in `PRIVACY.md`, den Null-Telemetrie-Nachweis im Sicherheitsdokument, und die CI-Prüfung auf Telemetrie-Abhängigkeiten.
+The reference product's feature names are used only to describe scope in this document. They are
+not used as identifiers in the code, the configuration files or the user interface. Phocommander
+uses its own vocabulary, defined in `docs/glossary.md`.
 
 ---
 
-## Eingabemodelle und Bedienkontexte
+## 4. Requirement Catalogue
 
-Phocommander wird auf sechs Plattformen und in bis zu fünf Bedienkontexten bedient. Der zentrale Satz dieser Spezifikation lautet: **Bedienung ist nicht an Geräte, sondern an Aktionen gebunden.**
+Every requirement has an identifier, a milestone, a priority and a verification method. The
+priority scale is **Must** (required for the milestone to be accepted), **Should** (required
+unless a documented reason exists), **Could** (nice to have, may be deferred with a note).
 
-### Das Aktionsmodell
+### 4.1 Product and principles
 
-Jede bedienbare Funktion ist eine benannte Aktion mit stabiler Aktions-ID (`panel.copy`, `panel.view`, `selection.toggle`). Die Eingabeschicht übersetzt physische Eingaben in Aktions-IDs. Auf Desktop liefert `winit` Tastatur-, Maus- und Touch-Ereignisse, Gamepad-Ereignisse jedoch nur auf Redox — auf Linux weder unter X11 noch unter Wayland [48]. Für den `dpad`- und den `controller`-Kontext heißt das: Die Eingabe kommt **nicht** aus `winit`, sondern aus der jeweiligen Plattform-Shell. Die `controller`-Anbindung auf Desktop ist deshalb eine eigene Aufgabe mit der Variante, Gamepads über eine plattformnative Bibliothek anzubinden, nicht über `winit`. Die Oberflächenschicht kennt ausschließlich Aktions-IDs und weiß nicht, ob eine Aktion per Taste, Klick, Wischgeste, D-Pad-Taste oder Controller-Trigger ausgelöst wurde.
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-01 | The application is free of charge, has no paid tier, and no feature is gated | M0 | Must | Dependency check plus licence review |
+| FR-02 | The application starts without an account, a login or a network connection | M0 | Must | Start-up test that asserts no socket is opened |
+| FR-03 | No telemetry, analytics, advertising or crash reporting is collected | M0 | Must | Dependency check plus code review |
+| FR-04 | The start view contains no banner, no promotional area and no onboarding overlay | M0 | Must | Screenshot review in the acceptance document |
+| FR-05 | Every user-visible string is externalised and translatable | M2 | Must | Gate that fails on a literal string in the UI layer |
+| FR-06 | The product ships under `MIT OR Apache-2.0` with no proprietary component | M0 | Must | `cargo deny` plus licence review |
 
-Diese Trennung ist keine Abstraktion um der Schönheit willen. Sie ist die Voraussetzung dafür, dass dieselbe Anwendung auf einem MacBook mit Tastatur, auf einem iPad mit Fingern, auf einem Fire TV mit Fernbedienung und in einer Quest mit Controller ohne vier getrennte Oberflächen funktioniert.
+### 4.2 Dual-pane work surface
 
-Der Aktionskatalog liegt in `config/keymap.toml` und wird von der Konfigurationsdatei referenziert. Die Datei `docs/KEYMAP.md` dokumentiert jede Aktion mit Vorgabe, Kontext und Plattformvariante.
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-10 | Two independent directory panels are shown side by side or stacked | M1 | Must | Manual test plus keyboard test |
+| FR-11 | The arrangement can be switched at run time without a restart | M2 | Should | Manual test |
+| FR-12 | Each panel owns its tabs, and a tab holds its own path, sorting and view state | M2 | Must | State model unit test |
+| FR-13 | Tabs can be moved between the two panels | M2 | Should | Manual test |
+| FR-14 | A directory tree can be toggled per panel | M2 | Should | Manual test |
+| FR-15 | A third area shows a preview of the marked file without opening it | M2 | Should | Manual test |
+| FR-16 | Operations act on the active panel; transfer to the other panel is always explicit | M1 | Must | State model test that asserts the target panel is never implied |
+| FR-17 | The column set is configurable: name, size, date, type | M1 | Must | Configuration test plus manual test |
+| FR-18 | The sort order is configurable and remembered per tab | M1 | Must | Configuration test |
 
-### Bedienkontexte
+### 4.3 File operations
 
-Jeder Kontext beschreibt, wie ein bestimmtes Eingabegerät die Aktions-IDs erreicht. Die Vorgabe wird je Kontext getrennt gespeichert, damit ein Nutzer auf dem Laptop dieselbe Anwendung auf dem Fernseher mit anderen Belegungen sieht.
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-20 | Copy, move, rename, delete and create-directory are available | M1 | Must | Unit test plus manual test |
+| FR-21 | Every operation runs in a background job; the interface stays responsive | M1 | Must | Test that asserts the UI thread is not blocked |
+| FR-22 | The conflict policy is configurable: ask, never, always, keep both | M1 | Must | Unit test per policy |
+| FR-22a | The copy mode is selectable: quick, verified, atomic, sync-mirror, sync-update, sync-two-way, sync-preview | M1 | Must | Unit test per mode |
+| FR-22b | The default copy mode is `verified` and the default synchronisation mode is `sync-preview` | M1 | Must | Configuration test |
+| FR-22c | The `verified` mode compares the checksum of source and destination after the copy and reports a mismatch as a job error | M1 | Must | Unit test with a corrupted destination |
+| FR-22d | The `atomic` mode writes to a temporary file next to the destination, verifies it, and renames it into place | M2 | Must | Integration test plus a failed-verification case |
+| FR-22e | `sync-mirror` is the only mode that deletes, and the deletion appears in the plan before it runs | M2 | Must | Unit test on the plan |
+| FR-22f | Every synchronisation produces a plan with the state per entry, and no data moves before the plan is confirmed | M2 | Must | Unit test on the plan |
+| FR-22g | The job cue shows the state, the progress, the rate, the estimate and the current item | M1 | Must | Manual test plus state model test |
+| FR-22h | The verification phase has its own progress and is visible as a separate state | M1 | Must | Manual test |
+| FR-22i | A queued job can be reprioritised, retargeted, and its conflict and verification modes changed | M1 | Must | Unit test per editable field |
+| FR-22j | A running job can be paused, resumed and cancelled, and a change takes effect at the next item boundary | M1 | Must | Unit test with a controlled source |
+| FR-22k | The failed items of a job can be retried on their own | M2 | Should | Unit test |
+| FR-22l | The job list can be reordered, filtered by state and inspected | M2 | Should | Manual test |
+| FR-23 | Overwrite is not the default | M1 | Must | Configuration test |
+| FR-24 | Every job reports progress with a rate and can be cancelled | M1 | Must | Unit test on the job queue |
+| FR-25 | A job collects its errors instead of stopping at the first one | M1 | Should | Unit test with a partially failing copy |
+| FR-26 | Undo exists for copy operations and is labelled as partial | M2 | Should | Manual test plus documentation review |
+| FR-27 | The trash is the default path for deletion | M1 | Must | Manual test |
+| FR-28 | The path length limit of the platform is detected and reported in plain language | M3 | Must | Manual test on Windows [35] |
 
-| Kontext | Eingabegerät | Verfügbare Signale | Layoutprinzip |
-|---|---|---|---|
-| `keyboard` | Tastatur | Tasten, Modifier, Eingabetext | Vollständige Aktionsbelegung, Norton-Commander-Kurztasten |
-| `pointer` | Maus | Zeiger, Klick, Doppelklick, Rechtsklick, Ziehen, Scrollrad | Zwei Panels nebeneinander, Menüleiste, Iconleiste, Hover |
-| `touch` | Finger | Tippen, Long-Press, Wischen, Zwei-Finger-Scroll, Pinch | Gestapelte Panels, große Ziele, Sheet-Dialoge, kein Hover |
-| `dpad` | TV-Fernbedienung | D-Pad, OK, Zurück, Home, Play/Pause | Ein Panel sichtbar, 10-Fuß-Skalierung, Fokusrahmen |
-| `controller` | Gamepad, VR-Controller | Trigger, Griff, Thumbstick, A/B/X/Y, D-Pad | Räumliche Anordnung, Strahlzeiger, keine Modifier |
+### 4.4 Multiple rename
 
-### Die Aktionspalette als Ersatz für F-Tasten
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-30 | The rename dialog offers placeholders for name, extension, parent, counter, date, time, size, short checksum, random value and case conversion | M1 | Must | Unit test per placeholder |
+| FR-31 | The dialog offers search-and-replace, optionally with regular expressions | M1 | Must | Unit test |
+| FR-32 | The dialog offers a counter with start value, step and zero-padded width | M1 | Must | Unit test |
+| FR-33 | The rename result is deterministic: the same input always yields the same output | M1 | Must | Property test |
+| FR-34 | The dialog shows a live preview of every new name before the rename runs | M1 | Must | Manual test |
+| FR-35 | Conflicts are marked and listed in a conflict jump list reachable with F3 and Shift+F3 | M1 | Must | Unit test plus manual test |
+| FR-36 | Named templates can be stored and re-applied | M1 | Must | Configuration test |
+| FR-37 | The series episode template detects season and episode in an existing name and offers them as pre-filled values | M1 | Must | Unit test per input pattern |
+| FR-38 | The series name defaults to the parent directory, is always visible and can be overridden | M1 | Must | Unit test plus manual test |
+| FR-39 | The season and episode numbers are zero-padded, and the width grows automatically when the selection contains a three-digit number | M1 | Must | Unit test |
+| FR-40 | Characters that the target platform forbids are reported before the rename and a replacement is suggested; nothing is changed silently | M1 | Must | Unit test |
+| FR-41 | The rename is atomic per selection: either every file is renamed or none is | M2 | Should | Unit test with a failing case in the middle |
 
-Das ist der zentrale Konflikt zwischen dem Bedienkonzept und der Fernbedienung. Die Norton-Commander-Kurztasten `F2` bis `F10` tragen die Hauptfunktionen — umbenennen, ansehen, kopieren, verschieben, löschen. Auf einer Fire-TV- oder Google-TV-Fernbedienung existieren diese Tasten nicht. Nur Richtungstasten, OK, Zurück und Home stehen zur Verfügung. Auch auf einem VR-Controller gibt es keine F-Tasten.
+### 4.5 Viewer
 
-Die Lösung ist die **Aktionspalette**: eine durchsuchbare Liste aller Aktionen, die im aktuellen Kontext verfügbar sind. Im `dpad`-Kontext öffnet sie sich über die Menü- oder Play/Pause-Taste und ist vollständig mit Richtungstasten und OK bedienbar. Sie ersetzt funktional die F-Tastenreihe und ist auf jedem Kontext verfügbar — auch auf dem Desktop als „Aktionen suchen".
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-50 | The viewer opens in an additional area without leaving the application | M1 | Must | Manual test |
+| FR-51 | Text is shown with character set detection for UTF-8 and UTF-16 | M1 | Must | Unit test per encoding |
+| FR-52 | A hex dump shows offset, hex and printable ASCII | M1 | Must | Unit test |
+| FR-53 | Common image formats are displayed | M1 | Must | Unit test per format |
+| FR-54 | The contents of an archive can be browsed and a single entry extracted | M1 | Must | Integration test |
+| FR-55 | File metadata is shown: size, type, timestamps, checksum | M1 | Must | Unit test |
+| FR-56 | PDF text and page navigation are supported | M2 | Should | Manual test |
+| FR-57 | Syntax highlighting is supported | M2 | Should | Manual test |
+| FR-58 | Audio and video metadata are shown with a still frame | M9 | Could | Manual test |
+| FR-59 | The viewer is read-only; editing is a separate later feature | M1 | Must | Code review |
+| FR-60 | The number of formats that are actually supported is stated truthfully in the about dialog | M2 | Must | Documentation review |
 
-Die Palette filtert dabei nach Kontext: Im `dpad`-Kontext erscheinen nur Aktionen, die ohne Maus und ohne Modifier sinnvoll ausführbar sind. Eine Aktion, die eine gedrückte Umschalt-Taste braucht, ist dort nicht erreichbar und wird nicht angezeigt.
+### 4.6 Archives
 
-### Fokus und Auswahl als getrennte Zustände
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-65 | An archive appears as a normal entry and opens as a virtual directory | M1 | Must | Integration test |
+| FR-66 | Entries can be listed, viewed and copied to the other panel without extracting the archive first | M1 | Must | Integration test |
+| FR-67 | ZIP, TAR with GZip, BZip2, XZ and Zstd, and 7z are supported | M1 | Must | Integration test per format |
+| FR-68 | Archives can be created, including encrypted | M1 | Must | Integration test |
+| FR-69 | RAR and the exotic formats are not supported | M0 | Must | Requirement, verified by the absence of a dependency |
+| FR-70 | Every extraction goes through the hardened path resolution | M1 | Must | Negative security test |
+| FR-71 | An archive can be tested for integrity | M2 | Should | Integration test |
 
-Auf Plattformen ohne Zeiger gibt es kein Hover. Der Fokus muss deshalb ein **sichtbarer, dauerhaft erkennbarer Zustand** sein, nicht ein Nebenprodukt der Mausposition.
+### 4.7 Search, compare, synchronise
 
-Im `dpad`- und `controller`-Kontext werden Fokus und Auswahl getrennt geführt. Der Fokus bezeichnet die Zeile, auf die die nächste Aktion wirkt. Die Auswahl bezeichnet die markierten Dateien, die eine Aktion betrifft. Beim Navigieren wandert der Fokus, ohne die Auswahl zu verändern. Beim Anwählen wird die Auswahl verändert, ohne den Fokus zu verlieren.
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-75 | The search matches name, size, date and content | M6 | Must | Integration test |
+| FR-76 | Text, hex and binary search are supported | M6 | Should | Integration test |
+| FR-77 | Boolean operators AND, OR, NOT are supported | M6 | Could | Integration test |
+| FR-78 | The content search runs in the background with a growing result list | M6 | Must | Manual test |
+| FR-79 | Two directories are compared for content, date and size | M2 | Must | Integration test |
+| FR-80 | The synchronisation transfers differences in both directions from a shown plan | M6 | Must | Integration test |
 
-Die Mehrfachauswahl braucht auf Fernbedienung einen expliziten Modus, weil die Tastenkombination aus Tastatur und Maus nicht existiert. Der `dpad`-Kontext bietet deshalb einen Auswahlmodus an, in dem OK die Markierung umschaltet und die Richtungstasten den Fokus bewegen. Der Modus wird sichtbar angezeigt und lässt sich jederzeit verlassen.
+### 4.8 Remote sources
 
-### Adaptive Layouts je Kontext
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-85 | A remote source behaves like a local directory in every operation | M6 | Must | Integration test with an in-process server |
+| FR-86 | SFTP, FTP, SMB and WebDAV are supported | M6 | Must | Integration test per protocol |
+| FR-87 | S3-compatible targets are supported | M7 | Must | Integration test |
+| FR-88 | Cloud sign-in uses OAuth 2.0 directly against the provider | M7 | Must | Manual test |
+| FR-89 | The application operates no server of its own | M7 | Must | Architecture review plus dependency review |
+| FR-90 | SMB 1 and NTLMv1 are not implemented | M6 | Must | Negative test against a server that offers only SMB 1 |
+| FR-91 | SMB signing and SMB 3 transport encryption are required where the server supports them | M6 | Must | Integration test against a server with and without signing |
+| FR-92 | The WebDAV client is part of the project, not a copyleft dependency | M6 | Must | `cargo deny` plus code review |
+| FR-93 | Every network operation has a timeout | M6 | Must | Integration test against a server that stalls |
+| FR-94 | The response size is bounded independently of the content length the server announces | M6 | Must | Integration test |
+| FR-95 | A server that offers an older protocol version is refused, not silently accepted | M6 | Must | Integration test |
 
-Die Layouts unterscheiden sich strukturell, nicht nur in Farbe und Schriftgröße.
+### 4.9 Input model
 
-Im `keyboard`- und `pointer`-Kontext stehen beide Panels gleichzeitig sichtbar. Quelle und Ziel sind auf einen Blick erfassbar, das ist der Kern des Bedienkonzepts.
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-100 | Every operation is bound to a named action, not to a physical key | M1 | Must | Unit test on the action catalogue |
+| FR-101 | The key binding, the pointer, the touch gesture, the D-pad and the controller each bind to the same actions | M1 | Must | Unit test per context |
+| FR-102 | The action palette lists every action that is reachable in the current context | M8 | Must | Reachability protocol |
+| FR-103 | The action palette is fully operable with a D-pad and the confirm key | M8 | Must | Manual test |
+| FR-104 | Focus and selection are separate states in the D-pad and controller contexts | M4 | Must | State model test |
+| FR-105 | The multi-selection on a remote control uses an explicit selection mode | M8 | Must | Manual test |
+| FR-106 | The interface adapts structurally per context, not only in colour and font size | M2 | Must | Screenshot review per context |
+| FR-107 | Every action reachable with the keyboard is reachable with the D-pad | M8 | Must | Reachability protocol |
 
-Im `touch`-Kontext sind die Panels gestapelt: eine Dateiliste füllt den Bildschirm, das zweite Panel liegt darunter und wird per Wischgeste oder über eine Umschaltfläche erreicht. Zeilenhöhen sind mindestens 44 Punkte hoch. Dialoge erscheinen als Sheet von unten, nicht als zentrale Box. Hover-Effekte entfallen, weil es sie nicht gibt.
+### 4.10 Interface configuration
 
-Im `dpad`-Kontext ist **ein Panel sichtbar**. Zwei gleichzeitige Panels wären auf einem Fernseher unlesbar. Das zweite Panel erscheint als Overlay, wenn eine Aktion ein Ziel braucht. Schriftgrößen sind für einen Betrachtungsabstand von etwa drei Metern ausgelegt, Fokusrahmen deutlich kräftiger als auf dem Desktop. Die Bedienhinweise („OK öffnet, Zurück geht zurück") sind sichtbar, weil eine Fernbedienung keine Tastenbeschriftung hat.
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-110 | The user chooses between a clean interface and a full interface | M2 | Must | Manual test |
+| FR-140 | The clean interface shows only the essential commands | M2 | Must | Screenshot review |
+| FR-141 | The full interface shows every command and every panel | M2 | Must | Screenshot review |
+| FR-142 | The choice can be made per platform and per device context | M2 | Should | Configuration test |
+| FR-143 | Every action can be shown or hidden individually | M2 | Should | Configuration test |
+| FR-144 | The interface profile can be exported and imported | M2 | Should | Round-trip test |
+| FR-145 | The interface profile contains no data beyond the settings it configures | M2 | Must | Documentation review |
 
-Im `controller`-Kontext werden die Panels räumlich angeordnet, nicht in einem Fenster. Die Bedienung erfolgt über einen Strahlzeiger mit Trigger-Auswahl; der Fokus liegt auf dem Strahlzeiger, nicht auf der Zeile.
+### 4.11 Internationalisation
 
-### Meta Quest als Android-Konfiguration
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| FR-120 | English and German are complete at the release of M2 | M2 | Must | Gate that compares the key sets of both catalogues |
+| FR-121 | The catalogue key set is identical in every language | M2 | Must | Gate comparing the catalogues |
+| FR-122 | A missing translation falls back to English and then to the key, never to an empty string | M2 | Must | Unit test |
+| FR-123 | Numbers, sizes, dates and times follow the system locale | M2 | Must | Unit test |
+| FR-124 | The language can be changed at run time without a restart | M2 | Must | Manual test |
+| FR-125 | Adding a language requires no change to the source code | M2 | Must | Documentation review |
+| FR-126 | The interface language and the content language are independent | M2 | Should | Manual test |
 
-Horizon OS ist ein Android-Betriebssystem. Eine Horizon-OS-Anwendung ist ein normales Android-Programm, das als **flaches Panel** im Raum steht; Touch-Gesten wie Tippen, Wischen, Scrollen und Pinchen werden vom System auf Controller- und Hand-Tracking-Eingaben abgebildet [44][45].
+### 4.12 Non-functional requirements
 
-Daraus folgt die Empfehlung: **Kein immersiver VR-Port.** Die Android-Version wird um einen `controller`-Bedienkontext erweitert, und Quest bedient die Anwendung als Panel. Das spart ein vollständiges OpenXR- und Vulkan-Frontend, das für einen Dateimanager keinen Mehrwert liefert. Die OpenXR-Bibliothek `openxr` steht unter `MIT OR Apache-2.0` [46] und wäre verfügbar — sie wird für eine mögliche spätere räumliche Variante vorgehalten, aber nicht für M0 bis M9 eingeplant.
+| ID | Requirement | Milestone | Priority | Verification |
+|---|---|---|---|---|
+| NFR-01 | A directory of 10,000 entries is on screen within 100 ms | M2 | Must | Benchmark |
+| NFR-02 | Switching between loaded directories takes less than 16 ms | M2 | Must | Benchmark |
+| NFR-03 | A key press produces a visible reaction within 50 ms | M2 | Must | Benchmark |
+| NFR-04 | The application is usable within 800 ms of start on macOS | M2 | Must | Measurement |
+| NFR-05 | Idle memory with two panels open stays below 120 MB | M2 | Must | Measurement |
+| NFR-06 | A sequential copy reaches at least 80 % of the sequential read and write bandwidth | M2 | Must | Benchmark |
+| NFR-07 | A name search across 100,000 files completes within 30 s | M6 | Must | Benchmark |
+| NFR-08 | Listing an archive with 5,000 entries takes less than 500 ms | M2 | Must | Benchmark |
+| NFR-09 | No operation that can take longer than 50 ms blocks the interface | M1 | Must | Test on the job queue |
+| NFR-09a | The verification of a copy raises the read volume to at most twice the copied volume | M1 | Must | Benchmark |
+| NFR-09b | The job cue updates at most ten times per second, and never blocks the interface | M1 | Must | Unit test on the update rate |
+| NFR-10 | The whole operation is operable with the keyboard alone | M2 | Must | Keyboard-only test protocol |
+| NFR-11 | Text contrast is at least 4.5:1, focus frames at least 3:1 | M2 | Must | Computed contrast |
+| NFR-12 | `prefers-reduced-motion` is respected | M2 | Must | Manual test |
+| NFR-13 | A screen reader can traverse the interface through AccessKit | M2 | Must | Manual test with a screen reader |
+| NFR-14 | No source file exceeds 400 lines soft or 550 lines hard | M0 | Must | `scripts/check-file-size.sh` |
+| NFR-15 | No `unsafe`, no `unwrap()` and no `expect()` on a reachable path | M0 | Must | Workspace lints plus clippy |
+| NFR-16 | Every public function carries a WHAT, WHY, EXAMPLE doc comment | M0 | Must | `missing_docs` lint |
+| NFR-17 | Every public function has at least one unit test | M1 | Must | Coverage review |
+| NFR-18 | No dependency carries a copyleft licence | M0 | Must | `cargo deny` |
+| NFR-19 | No dependency carries a known vulnerability | M0 | Must | `cargo audit` |
+| NFR-20 | The crate dependency direction is `apps` → `platform` → `crates` | M0 | Must | `scripts/check-crate-boundaries.sh` with a negative test |
+| NFR-21 | The build is reproducible from the committed lock file | M0 | Must | `cargo build --locked` |
+| NFR-22 | The application is fully operable with the keyboard, the pointer and the touch | M2 | Must | Per-context test protocol |
 
-Die Einschränkung ist ehrlich zu benennen: Im Panel-Modus ist die Bedienung auf Gesten und Controller-Aktionen beschränkt. Ein Dateimanager in VR lebt von Tastatur und Feinzeiger — beides hat ein Panel im Raum nicht. Quest ist deshalb als **Bedienkontext auf der Android-Version** eingeplant und nicht als eigenständiges Ziel.
+The non-functional requirements are the acceptance conditions of the milestones above. Every one
+of them is measured rather than estimated, and a value that was not measured is reported as not
+measured.
 
-### Fire TV und Google TV
-
-Auf Fernsehern ist das D-Pad die primäre Navigation [40]. Google Play prüft TV-Anwendungen darauf, ob die **gesamte Funktionalität mit einem Fünf-Wege-D-Pad und der Zurück-Taste** erreichbar ist [41]. Weitere Vorgaben:
-
-- Die Anwendung darf nicht auf eine Menü-Taste der Fernbedienung angewiesen sein [41].
-- Zurück navigiert zurück und führt aus der Anwendung heraus, ohne Endlosschleifen [40].
-- `android.hardware.touchscreen` wird als nicht erforderlich deklariert, `CATEGORY_LEANBACK_LAUNCHER` gesetzt, ein 320×180-Pixel-Banner hinterlegt.
-- Der Zeiger ist auf keinen Fall das primäre Bedienmittel.
-
-Für Phocommander bedeutet das: Der `dpad`-Kontext ist eine **vollwertige Bedienart**, keine Notlösung. Jede Funktion, die im `keyboard`-Kontext erreichbar ist, muss im `dpad`-Kontext über die Aktionspalette erreichbar sein. Diese Regel wird bei der Abnahme mit einem Prüfprotokoll belegt: die Liste aller Aktionen wird gegen ihre Erreichbarkeit im `dpad`-Kontext geprüft.
 
 ---
 
-## Netzwerk- und Cloud-Zugriffe
+## 5. Technical Plan
 
-### Quellen statt Funktionen
+### 5.1 Layer model
 
-Netzwerkzugriff ist kein eigener Funktionsbereich, sondern eine weitere **Quelle** in derselben Abstraktion. Eine SMB-Freigabe, ein WebDAV-Ordner, ein SFTP-Server und ein S3-Bucket liefern denselben „Ordnerinhalt" wie das lokale Dateisystem. Die Bedienung ist für alle Quellen identisch — kopieren, verschieben, umbenennen, löschen, ansehen, durchsuchen.
-
-Das ist die Konsequenz aus der Architekturentscheidung in der Plattform-Matrix: Die Dateisystemabstraktion kennt keine Quellenart. Jede Quelle implementiert dieselbe Schnittstelle, und der Kern bleibt frei von Protokolldetails.
-
-### Protokollunterstützung
-
-| Protokoll | Rust-Bibliothek | Lizenz | Anmerkung |
-|---|---|---|---|
-| SFTP | `russh` 0.64 | Apache-2.0 | Reines Rust, keine C-Abhängigkeit |
-| FTP, FTPS | `suppaftp` 12.2 | MIT OR Apache-2.0 | Reines Rust |
-| SMB 2/3 | `smb2` 0.35 | MIT OR Apache-2.0 | Reines Rust, pipelined I/O |
-| WebDAV | eigener Client auf `reqwest` | Apache-2.0 / MIT | `fast-dav-rs` ist LGPL-3.0 und fällt damit weg |
-| S3-kompatibel | `rusty-s3` 0.10 | BSD-2-Clause | AWS, Backblaze B2, Wasabi, MinIO |
-| OAuth 2.0 | `oauth2` 5.0 | MIT OR Apache-2.0 | Für Cloud-Anmeldung |
-
-Alle genannten Versionen und Lizenzen sind gegen das crates.io-Register geprüft [47].
-
-Der WebDAV-Client wird **selbst geschrieben** statt `fast-dav-rs` zu verwenden. Die Bibliothek ist funktional passend und LGPL-3.0-lizenziert [26]. LGPL erlaubt die Verwendung, verpflichtet aber bei statisch gelinkten Binaries zur Offenlegung oder Relinkbarkeit — das steht im Widerspruch zur Doppellizenz und zur Devise „kostenlos ohne Kompromisse". Der(WebDAV-)Zugriff braucht ohnehin nur `PROPFIND`, `GET`, `PUT`, `DELETE` und `MKCOL` [39], also ist der eigene Client klein und ohne Megabyte-Drittanbieter-Abhängigkeit gebaut.
-
-`pavao` (MIT) wäre für SMB eine Alternative, bindet aber `libsmbclient` ein und damit eine Systembibliothek. Das erschwert die Quer-Kompilierung für Android und iOS. `smb2` ist reines Rust und damit die bessere Wahl.
-
-### SMB-Sicherheitsregeln
-
-SMB ist das Protokoll mit der höchsten Angriffsfläche in dieser Liste. Die Regeln sind verbindlich:
-
-- **SMB1 wird nicht implementiert.** Das Protokoll ist deprecated, kennt keine moderne Signatur und war die Grundlage von EternalBlue; Microsoft liefert es seit Windows 10 1903 und Windows Server 2019 nicht mehr aus [43].
-- **NTLMv1 wird nicht verwendet.** Microsoft hat die NTLMv1-Netzwerkauthentifizierung in Windows 11 24H2 und Windows Server 2025 entfernt und plant, NTLM insgesamt standardmäßig abzuschalten [42]. Wo NTLM nötig wird, ist es NTLMv2.
-- **SMB-Signing wird verlangt, wenn der Server es unterstützt.** Ohne Signatur sind Relay-Angriffe möglich, bei denen ein Angreifer die Authentifizierung eines ahnungslosen Nutzers weiterreicht; Windows 11 24H2 verlangt die Signatur bei frischen Installationen bereits [43].
-- **Transportverschlüsselung (SMB 3) wird bevorzugt, Zugangsdaten liegen im Schlüsselbund.** Die Verschlüsselung schützt die Vertraulichkeit der Daten auf dem Weg, und Microsoft rät, sie zusätzlich zur Signatur einzusetzen, wo alle Geräte sie unterstützen [43]. Zugangsdaten stehen nie in der Konfigurationsdatei.
-
-Ein Verbindungsversuch gegen einen Server, der nur SMB1 oder nur NTLMv1 anbietet, schlägt mit einer verständlichen Meldung fehl. Er wird nicht „probiert und vielleicht klappt".
-
-### Cloud-Zugriff
-
-Cloud-Zugriff bedeutet OAuth 2.0 gegen den Anbieter und direkte API-Aufrufe über HTTPS. **Phocommander betreibt keinen eigenen Vermittlungsserver.** Jede Anmeldung läuft direkt zwischen der Anwendung und dem Anbieter; das Refresh-Token liegt im Schlüsselbund.
-
-Diese Entscheidung folgt aus der Devise „kostenlos, clutter-frei, werbefrei": Ein eigener Server wäre ein Betrieb, eine Kostenstelle, eine Datenverarbeitungsstelle und eine Datenschutzfrage — also das Gegenteil dessen, was das Produkt verspricht. Auch die Datenschutz-Zusage bleibt so vollständig: Es fließen nur die Daten, die der Nutzer selbst anfordert.
-
-S3-kompatible Ziele decken den großen Teil der privaten Cloud-Nutzung ab, weil Nextcloud, ownCloud, Seafile und viele NAS-Systeme WebDAV anbieten und die kommerziellen Object-Storage-Dienste S3 sprechen. Beide Wege sind abgedeckt, ohne einen Anbieter zu bevorzugen.
-
-### Verbindungsdaten und Protokollierung
-
-Zugangsdaten liegen im Schlüsselbund des Betriebssystems (Keychain, Credential Manager, Secret Service). Auf Plattformen ohne Schlüsselbund fällt die Anwendung auf die App-interne Sandbox zurück und weist darauf hin, dass die Daten dann nicht vom Betriebssystem geschützt sind.
-
-Verbindungen werden in einer vom Nutzer angelegten Liste verwaltet. Verbindungsnamen, Serveradressen und Benutzernamen gelten als personenbezogene Daten und erscheinen nicht im Protokoll. Das Protokoll nennt Protokoll, Zeitpunkt, Ergebnis und Dauer, niemals den Server oder den Benutzer.
-
----
-
-## Funktionsumfang
-
-### Zwei-Fenster-Arbeitsfläche
-
-Zwei unabhängige Verzeichnisfenster stehen nebeneinander (Standard) oder untereinander. Beide zeigen gleichzeitig Pfad, Dateiliste und Spalten (Name, Größe, Datum, Typ). Die Anordnung ist umschaltbar, ohne Neustart.
-
-Jedes Fenster besitzt eine Registerkartenleiste. Jede Registerkarte hält einen eigenen Verzeichnispfad, eine eigene Sortierung und eigene Anzeigeeinstellungen. Registerkarten lassen sich zwischen den beiden Fenstern verschieben.
-
-Ein Verzeichnisbaum ist je Fenster zuschaltbar. Beim Verlassen eines Ordners bleibt die Ansichtart erhalten — derselbe Verzeichnistyp wird immer gleich dargestellt [3].
-
-Ein dritter Bereich ist optional zuschaltbar: eine Schnellansicht, die den Inhalt der markierten Datei anzeigt, ohne sie zu öffnen. SpeedCommander führt diese Funktion als „SpeedView" [2].
-
-**Zustandsmodell der Arbeitsfläche.** Die Arbeitsfläche besteht aus genau zwei Panel-Objekten. Jedes Panel besitzt: aktive Registerkarte, Pfad, Cursorposition, Sortierung, Auswahlmenge, Ansichtmodus. Operationen wirken immer auf das *aktive* Panel; die Übergabe ans andere Panel erfolgt explizit (Tastatur `Ctrl+Enter`, oder per Drag & Drop). Eine Fehlbedienung kann so keine Datei versehentlich in das falsche Verzeichnis kopieren.
-
-### Dateioperationen
-
-Kopieren, Verschieben, Umbenennen, Löschen und Erstellen von Verzeichnissen sind die Grundoperationen. Jede Operation läuft über eine Auftragswarteschlange im Hintergrund, sodass die Oberfläche bedienbar bleibt — der Nutzer kann während einer laufenden Kopie weiterarbeiten. SpeedCommander bietet dieselbe Unterbrechbarkeit für Archivoperationen [3].
-
-Verhalten bei Konflikten ist explizit und konfigurierbar: überschreiben, überspringen, beide behalten (umbenennen), abfragen, oder den Vorgang abbrechen. Überschreiben ist **nicht** die Voreinstellung.
-
-Ein Rückgängig-Bereich für Operationen ist vorgesehen, aber klar als begrenzt gekennzeichnet: Rückgängig für Kopiervorgänge bedeutet „Kopie löschen“, nicht „Zielzustand wiederherstellen“. Bei Dateioperationen außerhalb des Papierkorbs gibt es keine Transaktions- garantie.
-
-### Mehrfaches Umbenennen
-
-Der Mehrfach-Umbenennungsdialog ist die Funktion, die der Nutzer ausdrücklich hervorhebt. Er arbeitet in drei Zonen: links die Liste der ausgewählten Dateien, rechts eine Tabelle aus *Originalname* und *Neuer Name*, unten die Regeldefinition.
-
-Die Regelauswertung kombiniert, in dieser Reihenfolge:
-
-1. **Textbausteine (Platzhalter)** — `[name]` Basisname, `[ext]` Endung, `[parent]` übergeordneter Ordner, `[n]` laufender Zähler, `[date]` Datum, `[time]` Uhrzeit, `[size]` Dateigröße, `[hash]` Kurz-Prüfsumme, `[rand]` Zufallswert, `[case]` / `[lower]` / `[upper]` / `[title]` Groß-/Kleinschreibung.
-2. **Ersetzen** — Suchtext und Ersetzungstext, optional als regulärer Ausdruck. SpeedCommander bietet reguläre Ausdrücke in der Pro-Version an [1]; für Phocommander ist Regex optional zuschaltbar.
-3. **Zähler** — Startwert, Schrittweite, Stellenzahl mit führenden Nullen, Sortierung der Zählerfolge.
-
-Der Dialog zeigt eine Live-Vorschau des Ergebnisses. Konflikte — der berechnete Name existiert bereits — werden farblich markiert und in einer eigenen Konfliktsprung-Liste geführt, die mit `F3` (nächster) und `Shift+F3` (vorheriger) durchlaufbar ist. Dieses Muster stammt aus SpeedCommander 18.00.9200 und hat sich bewährt [2].
-
-Regeln lassen sich als benannte Vorlagen speichern und wieder anwenden.
-
-**Das Serienfolgen-Muster.** Ein eigener Anwendungsfall treibt die Platzhalterauswahl: das Umbenennen von Serienfolgen nach dem Muster `Serienname - S01E01 - Titel der Folge.Format`.
-
-Der Dialog erkennt in einem vorhandenen Dateinamen zunächst die Staffel- und Episodennummer. Ein Dateiname wie `Duldung.avi` oder `The.Expanse.S01E03.avi` wird auf das Muster `SxxEyy` geprüft. Findet er eines, werden Staffel und Episode als Vorbelegung übernommen und der restliche Name als Episodentitel angeboten. Findet er keines, fragt der Dialog nach der Staffel und der Episodennummer ab, bevor er etwas vorbelegt — und merkt sich die letzte Eingabe als Vorbelegung für die nächste Datei, damit eine Serie in einem Durchgang benannt werden kann.
-
-Der Serienname stammt in der Regel aus dem übergeordneten Verzeichnis: Legt der Nutzer die Staffeln in einem Ordner `The Expanse` ab, ist das der Serienname. Das ist der Standard, wird aber immer angezeigt und ist überschreibbar — bei Serien, die in Sammelordner liegen, stimmt er sonst nicht.
-
-Die Zielformatierung lautet:
+The workspace is organised in four layers with a strictly enforced dependency direction. Every
+crate belongs to exactly one layer, and a crate may only depend on crates in the layer below it
+or on the same layer through an explicitly permitted exception.
 
 ```
-{serie} - S{staffel:02}E{episode:02} - {titel}.{format}
+┌─────────────────────────────────────────────────────────────────┐
+│ apps/                                                            │
+│   phocommander-desktop   phocommander-android   phocommander-ios │
+│   → binaries and shells, composition root, platform wiring       │
+├─────────────────────────────────────────────────────────────────┤
+│ platform/                                                        │
+│   phocommander-platform                                          │
+│   → OS integration: native menus, file dialogs, trash, rights    │
+├─────────────────────────────────────────────────────────────────┤
+│ crates/                                                          │
+│   core  config  keymap  ops  archive  viewer  remote  ui  i18n   │
+│   → the portable product: model, logic, adapters, presentation   │
+├─────────────────────────────────────────────────────────────────┤
+│ (no layer)                                                        │
+│   → only the Rust standard library and third-party crates        │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-Dabei gilt: `{staffel:02}` und `{episode:02}` sind zweistellig nullgefüllt, damit `S01E01` und nicht `S1E1` entsteht. Bei Serien mit dreistelligen Episodennummern wird die Stellenbreite automatisch auf drei angehoben, sobald eine Folge mit dreistelliger Nummer in der Auswahl liegt — sonst wären die Dateien eines Laufs nicht einheitlich benannt.
+The rule is checked by `scripts/check-crate-boundaries.sh`, which reads the `Cargo.toml` files and
+fails the build with exit code 1 on a violation. The rule was proven effective by a negative
+test during M0: a deliberately added dependency from `phocommander-core` to `phocommander-ui`
+made the gate fail, and removing it made the gate pass again.
 
-Der Episodentitel wird unverändert übernommen. Ein Doppelpunkt, ein Schrägstrich oder ein Fragezeichen im Titel sind auf Windows unzulässig und führen dort zu einem Fehler. Der Dialog weist darauf hin **bevor** die Umbenennung ausgeführt wird, und schlägt einen ersatz vor, statt stillschweigend zu ändern — der Nutzer entscheidet.
+### 5.2 Module catalogue
 
-Die Vorlage „Serienfolge" ist eine benannte Vorlage wie jede andere und damit Teil des Konfigurationsdatei-Mechanismus. Sie speichert das Zielformat, die Erkennungsregel und die Frage, ob der Serienname aus dem übergeordnern Verzeichnis übernommen werden soll.
+The product is decomposed into twelve modules. The table states, for each, what it owns, what it
+must not know, and the requirement IDs it carries.
 
-Ein Vorkonfiguriertes Set von Vorlagen liegt der Anwendung bei: „Serienfolge" (wie oben beschrieben), „Kamera" (Reihenfolge_Serienfolge_Titel, für Videokameras), „Podcast" (Datum_Titel), „Rechnung" (Jahr_Nummer_Beschreibung) und „Musik" (Interpret_Titel_Track). Jede Vorlage ist eine TOML-Datei im Konfigurationsverzeichnis und vom Nutzer anpassbar.
+| Module | Crate | Owns | Must not know about | Carries |
+|---|---|---|---|---|
+| **Model** | `phocommander-core` | `Entry`, `EntryKind`, path handling, the error hierarchy | Any window, widget or operating system | FR-16, FR-17, NFR-01 |
+| **Configuration** | `phocommander-config` | Schema, defaults, loading, migration, profiles | The user interface, the file system | FR-110 – FR-145 |
+| **Binding** | `phocommander-keymap` | The action catalogue, the binding tables, the context model | Concrete widgets, concrete input devices | FR-100 – FR-107 |
+| **Operations** | `phocommander-ops` | The job queue, copy, move, delete, rename rules | The file system directly, the widgets | FR-20 – FR-41, NFR-09 |
+| **Archive** | `phocommander-archive` | Format adapters, entry listing, hardened extraction | The user interface, the network | FR-65 – FR-71 |
+| **Viewer** | `phocommander-viewer` | Format adapters for the viewer, the read path | The user interface, the network | FR-50 – FR-60 |
+| **Remote** | `phocommander-remote` | SFTP, FTP, SMB, WebDAV, S3 adapters, credentials | The user interface, the archive format | FR-85 – FR-95 |
+| **Presentation** | `phocommander-ui` | Panels, widgets, theme, layout per context | The protocols, the job implementation | FR-10 – FR-18, FR-106 |
+| **Localisation** | `phocommander-i18n` | The catalogue, the lookup, the fallback chain | Everything except the catalogue format | FR-120 – FR-126 |
+| **Platform** | `phocommander-platform` | Native menu, file dialog, trash, permissions | The product logic | FR-04, FR-27, FR-28 |
+| **Desktop shell** | `apps/phocommander-desktop` | The binary, the event loop, the composition root | The internals of the modules it wires | FR-01 – FR-06 |
+| **Mobile shells** | `apps/phocommander-android`, `apps/phocommander-ios` | The store packaging, the platform bridge | The internals of the modules they wire | FR-87 – FR-89 |
 
-Vor dem Umbenennen zeigt der Dialog eine Vorschau der neuen Namen aller ausgewählten Dateien nebeneinander, mit den erkannten Feldern als eigener Spalte. So sieht der Nutzer vor dem Klick, ob die Erkennung funktioniert hat — bei Serien mit uneinheitlichen Dateinamen ist genau das der Punkt, an dem man sonst zwanzig Dateien falsch umbenennt.
+### 5.3 Module contracts
 
-### Dateibetrachter
+A module contract is what a module promises to its callers. Contracts are narrow on purpose: a
+contract that promises too much is the reason a codebase grows in the wrong direction.
 
-Der Betrachter öffnet in einem zusätzlichen Bereich, ohne die Anwendung zu verlassen. Er unterstützt eine geordnete Stufung:
+**The model module promises** a directory listing and nothing more. It answers the question "what
+is in this directory" and returns entries that carry a name, a kind, and — where the source can
+answer it — a size and a timestamp.
 
-| Stufe | Format | Verfahren | Terminierung |
-|---|---|---|---|
-| 1 | Text, Quellcode | Zeichensatz-Erkennung, UTF-8/16, Zeilenenden | M0 |
-| 1 | Hexdump | Offset, Hex, ASCII, ODER-Gruppe | M0 |
-| 1 | Bilder | PNG, JPEG, GIF, WebP, BMP, TIFF | M0 |
-| 1 | Archivinhalt | Verzeichnis des Archivs, Einzeldatei extrahieren | M0 |
-| 1 | Metadaten | Größe, Typ, Zeitstempel, Prüfsumme | M0 |
-| 2 | PDF | Textlayer, Seitennavigation | M1 |
-| 2 | Quellcode-Hervorhebung | Syntaxhervorhebung | M1 |
-| 3 | Audio, Video | Metadaten, Standbild, Wiedergabe | M3 |
-| 3 | Dokumente (Office) | Nurmetadaten, keine Volltextdarstellung | M3 |
+**The operations module promises** that a job completes, reports progress and can be cancelled.
+It does not promise that the operation succeeds: a job that copied 400 of 500 files and failed on
+the other 100 is a completed job with errors.
 
-SpeedCommander nennt „80+ Formate" [1]; dieses Ziel wird bewusst nicht übernommen. Eine ehrliche Angabe der tatsächlich unterstützten Formate im About-Dialog ist besser als eine überzogene Zahl. Vollständige Office-Dokumentdarstellung ohne nativen Renderer ist im reinen Rust-Umfeld nicht erreichbar und wird als „extern öffnen" ausgelagert.
+**The archive module promises** that an extracted entry never leaves the destination directory.
+This promise is enforced by a negative test, not by inspection.
 
-Der Betrachter ist read-only. Ein separater Editor ist eine spätere Ausbaustufe.
+**The presentation module promises** that it never blocks. Every slow operation is a job; the
+presentation layer only ever reads a snapshot of the job state.
 
-### Archivbehandlung
+**The remote module promises** that every operation terminates. A source that stops answering
+produces an error after the configured timeout, never a hanging job.
 
-Archive erscheinen in der Dateiliste als normale Einträge. Ein Doppelklick auf ein Archiv öffnet es als *virtuelles Verzeichnis*: die enthaltenen Dateien sind auflistbar, anzeigbar und in die andere Panel-Hälfte kopierbar, ohne dass das Archiv vorher entpackt werden muss. Genau dieses Verhalten ist der Grund, warum SpeedCommander und Forklift Archive wie Ordner behandeln [2][3].
+**The localisation module promises** that a string is never empty. A missing key falls back to
+English and then to the key itself.
 
-Unterstützte Formate zum Start: **ZIP**, **TAR** (mit GZip, BZip2, XZ, Zstd), **7z**. Für 7z existiert eine reine Rust-Implementierung `sevenz-rust2` [26]; für ZIP das `zip`-Crate [26]; TAR über `tar` [26]. Lesen und Schreiben sind möglich, Archive werden verschlüsselt erzeugt (AES).
+### 5.4 Extension points
 
-Formate, die nur mit propriären oder lizenzpflichtigen Bibliotheken machbar wären — RAR (proprietär), WIM, CAB, ARJ, LZH — bleiben außen vor. Ein RAR-Leser erfordert eine Lizenz der WinRAR-Eigentümer; diese wird nicht eingeholt.
+Four things in this product can be extended without touching an existing module. Each extension
+point is a trait plus a registration, and the documentation states what a new implementation must
+provide.
 
-Der Explorervergleich zeigt diese Einschränkung deutlich: das Original unterstützt 13 Archivformate inklusive RAR und SQX [2], Phocommander startet mit sieben Kompressionsverfahren in drei Containerformaten.
+Each extension point is a trait plus a registration. The table states what a new
+implementation has to provide.
 
-Alle Extraktionen laufen durch eine gehärtete Pfadauflösung (siehe *Sicherheit*).
+| Extension point | Trait | Where it lives | What a new implementation provides | Requirement |
+|---|---|---|---|---|
+| File source | `Source` | `phocommander-core` | A way to list a directory and report its errors | FR-85 |
+| Writable source | `MutableSource` | `phocommander-core` | Copy, move, rename, delete within a source | FR-20 |
+| Archive format | `ArchiveFormat` | `phocommander-archive` | Listing, reading, writing entries of one container format | FR-67 |
+| Viewer format | `ViewerFormat` | `phocommander-viewer` | Rendering one file kind into the viewer area | FR-51 |
+| Rename template | TOML file | `config/templates/` | A name pattern, a detection rule, a counter definition | FR-36 |
+| Action | `Action` | `phocommander-keymap` | An identifier, a label, a category, a default binding per context | FR-100 |
+| Interface profile | TOML file | `config/profiles/` | A set of visible commands and a panel arrangement | FR-110 |
 
-### Suche und Synchronisation
+The rule for all of them is the same: a new implementation is a new file plus a registration
+line. It never requires a change to an existing module, and it never requires a change to the
+model.
 
-Die Dateisuche durchsucht nach Name, Größe, Datum und Inhalt. Text-, Hex- und Binärsuche sind möglich, Unicode-Text wird korrekt behandelt. Suchoperatoren UND/ODER/NICHT stehen zur Verfügung, ebenso die Suche in Archiven [2].
+### 5.5 Data flow
 
-Die Inhaltssuche läuft in einem Hintergrundprozess mit fortschreibbarer Trefferliste; ein Treffer kann direkt in ein Panel übernommen werden.
+The path from a key press to a file being copied runs through five stages. Each stage has one
+owner, and the ownership is what keeps the layers apart.
 
-Der Verzeichnisvergleich stellt zwei Verzeichnisse gegenüber und meldet Unterschiede in Inhalt, Datum und Größe. Die Synchronisation überträgt Unterschiede in beide Richtungen und legt Profiloptionen fest, welche Verzeichnisse einbeziehen oder ausschließen. Vor der Ausführung wird ein Plan angezeigt, nicht nur ein Dialog mit „OK".
+```
+1. Input            the platform delivers a key, a click, a gesture or a button
+       │              → phocommander-platform normalises it into a platform-neutral event
+       ▼
+2. Binding          the event is resolved against the binding table of the active context
+       │              → phocommander-keymap produces an ActionId
+       ▼
+3. Command          the ActionId is dispatched to the command layer
+       │              → phocommander-ui or a headless dispatcher executes it
+       ▼
+4. Operation        the command builds a job and submits it
+       │              → phocommander-ops owns the queue, the progress and the cancellation
+       ▼
+5. Source           the job performs the work through the source interface
+                      → local, archive or remote, depending on the panel
+```
 
-### Favoriten, Dateiablage und Tags
+Two properties follow from this and are worth stating because they are what the diagram is for.
+First, the operation is testable without a user interface: stage 4 and stage 5 can be driven
+directly. Second, the input path is testable without a file system: stage 1 to stage 3 can be
+driven with synthetic events.
 
-Ordnerfavoriten und Anwendungsfavoriten sind über die Symbolleiste oder ein Tastenkürzel aufrufbar [2]. Die Dateiablage sammelt häufig benötigte Dateien an einem Ort, unabhängig von ihrem Fundort.
+### 5.6 Concurrency model
 
-Tags an Dateien und Ordnern sind eine spätere Ausbaustufe (M3); sie sind in SpeedCommander Pro-Funktion [1].
+| Concern | Owner | Rule |
+|---|---|---|
+| The interface thread | `phocommander-ui` | Never blocks. Never performs I/O. |
+| The job queue | `phocommander-ops` | Thread-safe. The interface reads a snapshot. |
+| Worker threads | `phocommander-ops` | Bounded by `advanced.worker_threads`, default the core count |
+| Directory listing | The source | Runs on a worker, returns a snapshot |
+| File watching | `notify` | One watcher per open panel, coalesced |
+| Progress reporting | `phocommander-ops` | At most ten updates per second, to avoid flooding the interface |
 
-### Eingabezeile und Werkzeuge
+The rule that everything slow is a job has one consequence worth naming: the panel state is
+updated from the job, never the other way round. A job that is cancelled mid-copy leaves the
+destination in a partially written state, and the interface reports that honestly rather than
+rolling back silently.
 
-Eine Eingabezeile am unteren Rand nimmt Pfade und Shell-Kommandos entgegen. Sie ist der direkte Weg zu einem Verzeichnis, ohne durch die Hierarchie zu klicken, und in SpeedCommander fest verankert [4].
+### 5.7 Error model
 
-Eine Kommandozeilenhistorie mit `Ctrl+Down` und ein Befehlsausgabefenster gehören zum Umfang.
+The error hierarchy follows ADR-0003. Every error carries a stable numeric code so that it can
+be referred to in documentation, in a bug report and in a test without quoting prose.
 
-Die Menüleiste folgt den Plattformkonventionen: auf macOS in der Systemmenüleiste, auf Windows und Linux im Fenster. Auf macOS liegen die Standardrollen (About, Services, Hide, Quit) an den erwarteten Stellen.
+| Layer | Error type | Carries |
+|---|---|---|
+| Model | `phocommander_core::Error` | A code, a message, an optional path |
+| Operations | `phocommander_ops::JobError` | The failing item, the reason, whether the job continues |
+| Archive | `phocommander_archive::ArchiveError` | The entry, the reason, whether the extraction was refused |
+| Remote | Per-source error type, converted at the boundary | The protocol, the reason |
+
+The conversion happens at the boundary: the core turns a source error into its own error, so that
+the presentation layer never sees a protocol-specific type. The presentation layer shows a
+message from the localisation catalogue, keyed by the error code, not by the error text.
+
+### 5.8 Build and dependency policy
+
+| Rule | Value | Reason |
+|---|---|---|
+| Rust edition | 2024 | Current stable |
+| Minimum supported Rust version | 1.95 | Fixed in `rust-toolchain.toml` |
+| Lock file | Committed | The build resolves to identical versions everywhere |
+| Copyleft dependencies | Forbidden | Would pull the whole product under a copyleft licence |
+| Dependencies with a C component | Avoided | Cross-compilation for Android and iOS |
+| `unsafe` | Forbidden by lint | Reviewability |
+| `unwrap()`, `expect()` | Forbidden on reachable paths | A panic in a file operation is a poor user experience |
+| Source file length | 400 lines soft, 550 hard | Forces separation of concerns |
+| Dependency additions | Require a licence check and a rationale in the pull request | Keeps the licence policy enforceable |
+
+Together these rules are what makes the quality gates enforceable rather than aspirational: each
+one has a script, and each script has a negative test that proves it fails when it should.
+
 
 ---
 
-## Nicht-funktionale Anforderungen
+## 6. Input Model and Interaction Contexts
 
-### Sicherheit
+### 6.1 The action model
 
-Die Trust Boundary verläuft zwischen dem Prozess und dem Dateisystem. Eingaben aus Dateisystem und aus Archiven gelten grundsätzlich als bösartig.
+Every operable function of Phocommander is a named action with a stable identifier. The input
+layer translates physical input into action identifiers. The presentation layer knows only action
+identifiers and never knows whether an action was triggered by a key, a click, a gesture, a D-pad
+button or a controller trigger.
 
-**Pfad-Traversal bei der Extraktion (Zip-Slip).** Das `zip`-Crate bietet mit `enclosed_name()` einen Schutz, der absolute Pfade und `..`-Komponenten ablehnt [25]. Diese Methode allein genügt jedoch nicht: Vor dem Zip-Slip gab es `CVE-2025-29787` (`RUSTSEC-2025-0168`), bei dem Symlinks innerhalb des Archivs den Pfad für nachfolgende Einträge aus dem Zielverzeichnis herausführten [24]. Weitere Advisories betrafen das Anlegen von Symlinks mit angreiferkontrollierten Zielen außerhalb des Zielverzeichnisses (`RUSTSEC-2026-0368`), das Setzen von Unix-Berechtigungen durch Symlinks hindurch (`RUSTSEC-2026-0369`) und das Erhalten von SUID/SGID-Bits mit möglicher Privilegienerhöhung (`RUSTSEC-2026-0367`) [21][22][23].
+This separation is not decoration. It is the precondition for the same application working with a
+keyboard on a laptop, with fingers on a tablet, with a remote control on a television and with a
+controller in a headset — without four separate interfaces.
 
-Daraus folgt die verbindliche Regel: Phocommander verwendet **nicht** die `extract()`-Funktionen der Crates, sondern iteriert über die Einträge und schreibt sie selbst. Jeder Zielpfad wird vor dem Schreiben kanonisiert und gegen das Zielverzeichnis geprüft; Symlinks werden grundsätzlich nicht aus Archivenmaterial erzeugt. Die Mindestversion des `zip`-Crates ist 9.0.5, die die genannten Advisorys behebt [26].
+The action catalogue lives in `config/keymap.toml` and is documented in `docs/KEYMAP.md`. An
+action carries an identifier, a label key, a category and a default binding per context.
 
-**Dekompressionsbomben.** Für die Entpackvorschau und die Extraktion gelten ein Limit für die Gesamtgröße, ein Limit für die Anzahl der Einträge und ein Limit für die Größe des einzelnen Eintrags. Wird ein Limit überschritten, bricht die Operation ab, statt den Speicher zu belasten.
+### 6.2 The interaction contexts
 
-**Zeitfenster zwischen Prüfung und Verwendung (TOCTOU).** Die Rust-Standardbibliothek bietet keine atomaren Dateioperationen mit Pfad-Semantik. Wo die Prüfung eines Ziels und der Zugriff darauf auseinanderfallen können, wird der Zugriff über Deskriptor-basierte Aufrufe (`openat`-Semantik über `rustix` oder `cap-std`) ausgeführt, oder die Prüfung wird unmittelbar vor dem Zugriff wiederholt. Die verbleibende Race-Bedingung wird im Bedrohungsmodell benannt, nicht verschwiegen.
+A context describes how a particular input device reaches the action identifiers. The bindings
+are stored per context, so a user sees a different set on the laptop than on the television.
 
-**Symlinks beim Kopieren und Löschen.** Beim rekursiven Kopieren werden Symlinks als Symlinks kopiert, nicht dereferenziert — andernfalls entstehen Kopien außerhalb des Zielbaums. Beim Löschen werden sie unlinkt, nicht rekursiv gelöscht.
+| Context | Device | Available signals | Layout principle |
+|---|---|---|---|
+| `keyboard` | Keyboard | Keys, modifiers, text input | Full binding set, Norton Commander function keys |
+| `pointer` | Mouse | Pointer, click, double click, right click, drag, scroll wheel | Two panels side by side, menu bar, toolbar, hover |
+| `touch` | Finger | Tap, long press, swipe, two-finger scroll, pinch | Stacked panels, large targets, sheet dialogs, no hover |
+| `dpad` | TV remote | D-pad, confirm, back, home, play/pause | One panel visible, 10-foot scaling, focus frame |
+| `controller` | Gamepad, VR controller | Trigger, grip, thumbstick, A/B/X/Y, D-pad | Spatial arrangement, ray pointer, no modifiers |
 
-**Sicheres Löschen.** SpeedCommander bewirbt das Löschen „nach Regierungsrichtlinien" [2][3]. Für Phocommander gilt stattdessen das aktuelle Regelwerk: **NIST SP 800-88 Rev. 2** mit den Stufen *Clear*, *Purge* und *Destroy* [19]. Konkret:
+### 6.3 The action palette
 
-- *Clear* (logisches Überschreiben) ist die Standardstufe für das Löschen in Phocommander und wird als „sicheres Löschen" bezeichnet.
-- Auf Flash-Medien ist Überschreiben **nicht** zuverlässig, weil Wear-Leveling und Over-Provisioning die Zellen umverteilen; NIST rät für SSDs ausdrücklich von Überschreibverfahren ab [19][20].
-- Der historische DoD-5220.22-M-Drei-Durchgang ist veraltet: Das US-Verteidigungsministerium hat die Überschreibspezifikation bereits 2006 aus NISPOM entfernt, weil Mehrfachdurchgänge auf modernen Medien keinen zusätzlichen Schutz bieten [19][20].
-- Der Papierkorb ist der Standardpfad. „Sicheres Löschen" ist eine bewusste Zusatzoption mit der Einschränkung, dass ihre Wirkung auf Flash-Medien nicht garantiert werden kann. Diese Einschränkung steht in der Oberfläche, nicht nur im Handbuch.
+The central conflict between the interaction model and a remote control: the Norton Commander
+function keys `F2` to `F10` carry the main operations, and on a Fire TV or Google TV remote those
+keys do not exist. Only a D-pad, confirm, back and home are available. A VR controller has no
+function keys either.
 
-**Abhängigkeiten.** Die CI prüft jede Abhängigkeit mit `cargo-deny` (Lizenz- und Advisories-Prüfung) und `cargo-audit` (bekannte Schwachstellen). Eine festgelegte Werkzeugversion wird verwendet, weil `cargo-deny` dieselbe Konfiguration je nach Version unterschiedlich liest — im Projekt Vocument hat dieser Umstand bereits zu einem falschen Fehlalarm geführt. `cargo-deny` 0.20.2 und `cargo-audit` 0.22.2 sind die aktuellen Stände [26].
+The solution is the **action palette**: a searchable list of every action that is reachable in the
+current context. In the `dpad` context it opens from the menu or play/pause key and is fully
+operable with the D-pad and the confirm key. It replaces the function key row functionally, and it
+is available in every context — on the desktop as "find action".
 
-**Netzwerkquellen als Angriffsfläche.** Jede entfernte Quelle ist bösartig, genauso wie ein Archiv. Der Server liefert Eintragsnamen, Größenangaben, Zeitstempel und Inhalte — alles davon ist ungeprüft zu behandeln.
+The palette filters by context. An action that requires a held modifier key does not appear in the
+`dpad` context, because it could not be triggered there. Showing it would be clutter, and clutter
+is what the product principles forbid.
 
-*Zertifikatsprüfung:* Bei HTTPS-basierten Quellen (WebDAV, S3, OAuth) wird das Serverzertifikat streng geprüft. Kein „bei Fehler fortfahren", kein Opt-out für die Prüfung. Ein selbstsigniertes Zertifikat kann der Nutzer bewusst hinterlegen, mit einer PIN-geschützten Ausnahme für genau diesen Host — und nur für diesen.
+### 6.4 Focus and selection as separate states
 
-*Antwortgrößen:* Die Antwort eines Servers darf die erwartete Größe überschreiten, ohne dass der Speicher mitwächst. Der Client liest in einem festen Budget, bricht ab und meldet den Fehler. Ein Server, der eine Verzeichnisliste mit einem Gigabyte Antwort liefert, darf den Prozess nicht in den Speicherdruck treiben.
+On platforms without a pointer there is no hover. Focus therefore has to be a visible, permanent
+state rather than a side effect of pointer position.
 
-*Protokoll-Downsizing:* Ein Server, der eine ältere Protokollversion anbietet, wird nicht stillschweigend akzeptiert. SMB1 und NTLMv1 werden abgelehnt; WebDAV-Server ohne TLS werden abgelehnt, sofern HTTPS nicht erreichbar ist.
+In the `dpad` and `controller` contexts, focus and selection are kept apart:
 
-*Eingeschleuste Verzeichnisnamen:* Ein SMB- oder WebDAV-Server kann Namen mit Trennzeichen, Steuerzeichen oder absurd langen Pfaden liefern. Namen werden normalisiert, auf unzulässige Zeichen geprüft und in der Oberfläche gekürzt dargestellt, ohne den echten Namen zu verlieren.
+| State | Meaning | Changed by |
+|---|---|---|
+| Focus | The entry the next action applies to | Navigation |
+| Selection | The marked entries an action applies to | Explicit selection commands |
 
-*Zeitlimits:* Jede Netzwerkoperation hat ein Zeitlimit. Ein Server, der eine Antwort nicht abschließt, führt nach Ablauf zu einem Abbruch mit verständlicher Meldung, nicht zu einem hängenden Auftrag.
+Navigating moves the focus without changing the selection. Selecting changes the selection
+without losing the focus. A remote control has no key combination for multi-selection, so the
+`dpad` context offers an explicit selection mode in which confirm toggles the mark and the
+direction keys move the focus. The mode is visible and can be left at any time.
 
-**Rechtsschutz.** Phocommander nutzt ausschließlich Bibliotheken mit permissiver Lizenz. Crates mit Copyleft-Wirkung (GPL, AGPL) sind ausgeschlossen, solange das Projekt unter `MIT OR Apache-2.0` steht. Das schließt `mupdf` (AGPL) und die `slint`-Laufzeit im GPL-Modus aus [10][11].
+### 6.5 Adaptive layouts per context
 
-### Datenschutz
+The layouts differ structurally, not only in colour and font size.
 
-Phocommander ist ein lokales Werkzeug. Es gibt keine Telemetrie, keine Analytics, keine Nutzungszählung, keine Werbung und keine Cloud-Anbindung. Es werden keine Daten an Dritte übertragen, außer der Nutzer stellt eine Netzwerkverbindung selbst her (SFTP/FTP) — und diese ist dann eine bewusste Handlung.
+**Native integration.** Four axes carry the platform character, and they are what separates
+Phocommander from a web form in a window:
 
-Es werden keine Nutzungsprofile, keine Absturzberichte und keine Inhaltsindizes gespeichert. Die Anwendung schreibt nur, was der Nutzer selbst konfiguriert: Einstellungen, Tastenbelegung, Favoriten, zuletzt geöffnete Verzeichnisse.
+| Axis | Implementation | Source |
+|---|---|---|
+| Menu | A real native menu through `muda` [32]; on macOS in the system menu bar, on Windows as an `HMENU` in the window, on Linux and BSD through GTK | [32][34] |
+| Keyboard | Platform modifiers: `Cmd` on macOS and iPadOS, `Ctrl` on Windows, Linux and BSD. The actions stay identical, only the binding varies | [36] |
+| Dialogs | Native file dialogs through `rfd`, so permission prompts and file type filters look and behave like the system's | [26] |
+| Metrics and theme | Platform-specific row heights, font sizes, focus frames, colour palettes and sidebar depth, so the interface does not look like a web application | [12] |
 
-Verbindungsdaten für SFTP/FTP werden nicht im Klartext in der Konfigurationsdatei abgelegt, sondern im Schlüsselbund des Betriebssystems (Keychain, Credential Manager, Secret Service) abgelegt. Das `keyring`-Crate kapselt diese Zugriffe [26]. Auf Plattformen ohne Schlüsselbund (Android/iPadOS ohne Keychain-Erweiterung) fällt Phocommander auf die App-interne Sandbox zurück und weist darauf hin, dass die Daten dann nicht vom Betriebssystem geschützt sind.
+This combination yields a dense, keyboard-oriented tool with system conventions. It does not
+yield the pixel accuracy of a native AppKit program, and the specification states that openly,
+because it is one of the open design decisions of the project.
 
-Protokolldaten enthalten keine Benutzernamen, keine Servernamen und keine IP-Adressen. Ist die Protokollierung für Fehlersuche nötig, werden personenbezogene Felder maskiert.
+**`keyboard` and `pointer`.** Both panels are visible at the same time. Source and destination
+are graspable at a glance, which is the core of the concept.
 
-### Leistung
+**`touch`.** The panels are stacked: one file list fills the screen, the second lies below and is
+reached by a swipe or a switching control. Row heights are at least 44 points. Dialogs appear as
+a sheet from the bottom, not as a centred box. Hover effects are absent, because hover does not
+exist.
 
-Die folgenden Zielwerte sind verbindliche Gates der CI, keine Absichtserklärung. Ein Meilenstein gilt erst als erreicht, wenn die Messung vorliegt.
+**`dpad`.** One panel is visible. Two simultaneous panels would be unreadable on a television.
+The second panel appears as an overlay when an action needs a destination. Type sizes are designed
+for a viewing distance of about three metres, focus frames are markedly stronger than on the
+desktop. The operation hints are visible, because a remote control has no key labels.
 
-| Vorgabe | Zielwert |
+**`controller`.** The panels are arranged spatially rather than in a window. The focus sits on
+the ray pointer, not on the row.
+
+### 6.6 Meta Quest as an Android configuration
+
+Horizon OS is an Android operating system [18][44]. A Horizon OS application is an ordinary
+Android program that runs as a **flat panel** in space; touch gestures such as tap, swipe, scroll
+and pinch are mapped by the system to controller and hand-tracking input [19][45].
+
+The consequence is a recommendation: **no immersive VR port**. The Android version gains a
+`controller` interaction context, and Quest operates the application as a panel. This avoids an
+entire OpenXR and Vulkan frontend that would bring no value to a file manager. The `openxr` crate
+is available under `MIT OR Apache-2.0` [28][46] and is held in reserve for a possible spatial
+variant later, but it is not planned for M0 through M9.
+
+On Android, the platform constraints are the same as on any other Android device: scoped storage
+applies [41], and full access to the shared storage is a special permission that has to be
+declared in the Play Console and explained to the user [40][42]. The same applies on Horizon OS,
+which shares the Android permission model.
+
+The limitation is stated honestly: in panel mode the operation is limited to gestures and
+controller actions. A file manager lives on a keyboard and a fine pointer, and a panel in space has
+neither. Quest is therefore planned as an **interaction context on the Android version**, not as
+an independent target.
+
+### 6.7 Fire TV and Google TV
+
+On a television the D-pad is the primary navigation [14][40]. Google Play tests television
+applications for whether the **entire functionality is reachable with a five-way D-pad and the
+back key** [15]. Further requirements:
+
+- The application must not depend on a menu key of the remote to reach interface controls [15].
+- Back navigates backwards and leaves the application without an endless loop [14][15].
+- `android.hardware.touchscreen` is declared as not required, `CATEGORY_LEANBACK_LAUNCHER` is set,
+  and a 320×180 pixel banner is provided.
+- The pointer is never the primary means of operation.
+
+For Phocommander this means the `dpad` context is a **complete** way of operating, not a fallback.
+Every action that is reachable with the keyboard must be reachable through the action palette in
+the `dpad` context. The acceptance milestone M8 carries a protocol that checks exactly this.
+
+### 6.8 Where the input comes from
+
+`winit` delivers keyboard, mouse and touch events on the desktop, but gamepad events only on [6][39][48]
+Redox — on Linux neither under X11 nor under Wayland [39][48]. The `dpad` and `controller` contexts
+therefore **do not** take their input from `winit`; they take it from the platform shell. On
+Android and iPadOS the D-pad arrives as ordinary key events and needs no special path. On the
+desktop, controller support is a separate task that binds gamepads through a platform-native
+library rather than through `winit`.
+
+
+### 6.9 Safe copy and synchronisation modes
+
+A copy is not one operation but a family of them, and the difference between them is the
+difference between a fast copy and a copy that can be trusted. The user chooses the mode; the
+default is the safe one, because the failure of a copy is discovered far too late otherwise.
+
+| Mode | What it does | Cost | When it applies |
+|---|---|---|---|
+| `quick` | Byte copy, no verification | The speed of the medium | Throwaway data, a known-good source |
+| `verified` | Byte copy, then a checksum of source and destination compared | Twice the read volume | The default for everything |
+| `atomic` | Write to a temporary file next to the destination, verify, then rename into place | The same as `verified`, plus one rename | Files that a running program may read |
+| `sync-mirror` | The destination becomes an exact copy of the source: files that are missing are copied, files that differ are overwritten, files that are extra in the destination are deleted | The full comparison | Maintaining a mirror |
+| `sync-update` | One-way: the destination is brought up to date with the source, but nothing is deleted | The full comparison | Keeping a backup current |
+| `sync-two-way` | The newer version wins in both directions, determined by timestamp and then by checksum | The full comparison | Two machines that both change | 
+| `sync-preview` | No data is moved. The comparison runs and produces a plan that the user confirms | The full comparison | Before any destructive synchronisation |
+
+The distinction between `sync-update` and `sync-two-way` is the distinction between a backup and
+a partnership, and it is the user's decision, never the tool's. `sync-mirror` is the only mode
+that deletes, and it requires the deletion to be listed in the preview before it runs.
+
+The comparison behind every synchronisation mode is the same and produces the same plan: per
+entry, the state is `identical`, `different`, `missing-in-destination` or `extra-in-destination`,
+together with the size and the timestamp of both sides and the checksum where one was computed.
+The plan is what the user confirms, and it is the same document that the acceptance of a
+synchronisation refers to.
+
+The modes are configurable per operation in the settings and selectable per operation in the
+dialog. The default is `verified` for a copy and `sync-preview` for a synchronisation, so that
+the destructive case always requires an explicit act.
+
+### 6.10 The job cue
+
+A running operation must be visible without hunting for it, and its state must be readable at a
+glance. The **job cue** is the permanent, always-present indicator that carries this information.
+
+| Element | Content |
 |---|---|
-| Verzeichnisliste bis 10.000 Einträge | < 100 ms bis zur ersten Darstellung |
-| Verzeichniswechsel, bereits geladen | < 16 ms (ein Bild) |
-| Tastendruck bis zur sichtbaren Reaktion | < 50 ms |
-| Startzeit bis zur bedienbaren Oberfläche | < 800 ms (macOS, warm) |
-| Speicherbedarf im Leerlauf, 2 Panels offen | < 120 MB |
-| Dateikopie, sequenziell | ≥ 80 % der sequenziellen Lese-/Schreibbandbreite |
-| Suchlauf über 100.000 Dateien (Namen) | < 30 s |
-| Archivauflistung, 5.000 Einträge | < 500 ms |
+| State | Queued, running, verifying, waiting, done, failed, cancelled |
+| Progress | Completed bytes against total bytes, and the number of items |
+| Rate | Current throughput, smoothed over a short window |
+| Estimate | The remaining time, derived from the rate |
+| Current item | The name of the item being worked on |
+| Verification | A second phase with its own progress when the mode includes verification |
 
-Hintergrundoperationen sind verpflichtend asynchron. Kein Vorgang, der länger als 50 ms dauern kann, blockiert die Oberfläche. Alle Operationen melden Fortschritt mit Ratenangabe und sind abbrechbar.
+The cue appears in three places, all driven by the same state: in the status bar of the active
+panel, in a list of all running operations, and as a marker on the panel that owns the
+operation. The user therefore sees the state whether they are working in the other panel, in the
+viewer, or in a dialog.
 
-### Barrierefreiheit
+The cue is deliberately plain. It shows a state, a number and a rate. It does not offer a
+progress bar with a percentage that has no meaning for a directory tree, and it does not
+celebrate completion.
 
-Bedienung vollständig per Tastatur, mit sichtbarer Fokusmarkierung und deterministischer Fokusreihenfolge. Kontrastverhältnis mindestens 4,5:1 für Text und 3:1 für Fokusrahmen. `prefers-reduced-motion` wird respektiert. Screenreader-Unterstützung über AccessKit, das in egui und Slint standardmäßig aktiviert ist [11].
+### 6.11 Editable jobs
 
-### Codequalität und Einsteigerfreundlichkeit
+A job that has been submitted is not frozen. As long as it has not finished, the user can change
+it — because a queue of twenty copy operations often contains one with the wrong target or the
+wrong mode, and discovering that only after the last one has run is the worst possible moment.
 
-Der „Noob-Stil" ist eine verbindliche Projektkonvention, kein Geschmack: Jede öffentliche Funktion trägt einen Doc-Kommentar nach dem Muster **WAS / WARUM / BEISPIEL**. Jedes Modul beginnt mit einem Kopfkommentar, der seine Verantwortung und seine Grenze benennt. Jede Konstante hat einen Namen, der seinen Zweck trägt — keine Magic Numbers. Jede öffentliche Funktion hat mindestens einen Unit-Test.
+| Action | Allowed while | Effect |
+|---|---|---|
+| Change the priority | Queued | The job moves within the queue |
+| Change the conflict policy | Queued | The job uses the new policy when it starts |
+| Change the verification mode | Queued | The job verifies with the new mode |
+| Change the destination | Queued | The job targets the new destination |
+| Pause and resume | Running | The job stops and continues at the same item |
+| Cancel | Queued or running | The job ends, and what it has already done stays done |
+| Retry the failed items | Failed | Only the failed items run again |
 
-Die überarbeitungsresistente Grundregel: Was ein Anfänger nicht nachvollziehen kann, wird umgeschrieben, nicht weggelassen. Tiefe Verschachtelung wird durch early returns vermieden. Der Code ist auf Englisch, die Dokumentation zweisprachig (DE/EN), die Oberflächentexte internationalisierbar mit Deutsch als Vorgabe.
+A change to a running job takes effect at the next item boundary, never in the middle of a file
+being written. The change is recorded in the job's history, so that an interrupted and corrected
+operation remains traceable.
 
-Verbindliche Grenzwerte, aus dem Vocument-Vorbild übernommen und hier bestätigt: keine Quelldatei über 400 Zeilen (weich) beziehungsweise 550 Zeilen (hart); `unsafe_code`, `unwrap_used` und `expect_used` sind im Workspace verboten; `missing_docs` ist Warnstufe und wird für `pub`-API zur Fehlerstufe in den Kerncrates.
-
-### Internationalisierung
-
-Alle Oberflächentexte laufen durch einen Übersetzungsschlüssel, keine Zeichenketten stehen hart im Code. Deutsch und Englisch sind vollständig abgedeckt. Datums-, Zahlen- und Größenformate folgen der Systemsprache.
+The jobs are edited in the job list, which is the same list the cue refers to. The list is a
+first-class surface, not a notification area: it can be reordered, filtered by state and
+inspected.
 
 ---
 
-## Systemarchitektur
+## 7. Interface Configuration Model
 
-### Crate-Struktur
+The user decides how much interface they see. Two extremes exist, and everything between them is
+reachable.
 
-Der Workspace folgt dem im Photocraft-Projekt etablierten Muster — flache `crates/*`-Kisten, `apps/*` für die Binärdateien, `xtask` für Build-Hilfen [28]. Das hält Werkzeuge, Reviewer und Mitwirkende zwischen den Projekten konsistent.
+### 7.1 The two extremes
 
-```
-phocommander/
-├── Cargo.toml                 # Workspace, gemeinsame Dependency-Versionen
-├── rust-toolchain.toml        # gepinnte Toolchain
-├── deny.toml                  # cargo-deny-Konfiguration (Lizenzen + Advisories)
-├── config/
-│   ├── defaults.toml          # zentrale Konfigurationsdatei (Vorlage)
-│   └── keymap.toml            # Tastenbelegung (Vorlage)
-├── crates/
-│   ├── phocommander-core/     # Dateisystemmodell, Pfade, Symbole, Fehler
-│   ├── phocommander-config/   # Konfigurationsparser, Schema-Versionierung
-│   ├── phocommander-keymap/   # Aktionskatalog, Auflösung, Bedienkontexte
-│   ├── phocommander-ops/      # Kopieren, Verschieben, Löschen, Auftragswarteschlange
-│   ├── phocommander-archive/  # Archivadapter, gehärtete Extraktion
-│   ├── phocommander-viewer/   # Betrachterregistry und Formatadapter
-│   ├── phocommander-remote/   # Netzwerkquellen: SFTP, FTP, SMB, WebDAV, S3
-│   └── phocommander-ui/       # egui-Oberfläche, Panels, Theme
-├── platform/
-│   └── phocommander-platform/ # OS-Adapter: Menü, Dialoge, Papierkorb, Berechtigungen
-├── apps/
-│   ├── phocommander-desktop/  # macOS, Windows, Linux, BSD
-│   ├── phocommander-android/  # Gradle-Wrapper, Rust-Bibliothekscrate
-│   └── phocommander-ios/      # Xcode-Projekt, Rust-Bibliothekscrate
-├── scripts/                   # Prüfskripte (Crate-Grenzen, Dateigrößen, Links)
-├── config/                    # Vorgaben: defaults.toml, keymap.toml, Vorlagen/
-└── docs/
-    ├── REQUIREMENTS.md        # dieses Dokument
-    ├── ARCHITECTURE.md
-    ├── adr/                   # Architecture Decision Records
-    ├── user-guide/            # DE + EN
-    ├── security/THREAT_MODEL.md
-    └── glossary/
-```
+| Profile | What it shows | Who it is for |
+|---|---|---|
+| `clean` | The panel pair, the path, the file list, the command line. Nothing else | Someone who knows the keys and wants nothing between them and the files |
+| `full` | The panel pair, the menu bar, the toolbar, the directory tree, the quick view, the job list, the status bar, every command | Someone who arrived from a desktop file manager and expects the furniture |
 
-**Abhängigkeitsrichtung.** `apps/*` → `platform/*` → `crates/*`. Innerhalb von `crates/*` darf keine Kiste in eine andere Kiste der gleichen Ebene ableiten. Diese Regel wird maschinell geprüft, nicht per Konvention: ein Prüfskript liest die `Cargo.toml`-Dateien und schlägt bei Verstoß mit Exit-Code 1 fehl. Ein Negativtest (Verstoß bauen → Gate rot → zurückbauen → Gate grün) belegt, dass das Gate wirkt.
+The choice is not a hidden preference. It is a visible setting with a one-line description of
+what it changes.
 
-Der Kern ist frei von UI-Abhängigkeiten. `phocommander-core` kennt keine Fenster, keine Crates des UI-Stack und keine plattformspezifischen APIs — dadurch ist er auf jeder Zielplattform testbar und der einzige Weg, die Testabdeckung überhaupt sinnvoll zu messen.
+### 7.2 The profile system
 
-### Benutzerschnittstelle und Plattformanpassung
-
-**Framework-Wahl: egui/eframe 0.37.** Die Entscheidung ist bewusst gegen vier Alternativen abgewogen:
-
-*egui* liegt unter `MIT OR Apache-2.0` [7] und deckt alle sechs Zielplattformen ab — Windows, macOS und Linux stabil, Android über `android-activity`, iOS über `objc2`/UIKit, mit sicherer-area-Unterstützung [32][33]. Das Projekt Photocraft verwendet bereits dieselbe Framework-Generation, dieselbe `MIT OR Apache-2.0`-Kombination und Rust 2024 [28]; das Muster für ein natives Menü über ein eigenes Backend-Trait ist dort bereits erprobt und übertragbar [29].
-
-*Slint* bietet native Menüs, eine eigene Markup-Sprache und gute Mobiltauglichkeit, steht aber unter `GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0` [8]. Die royalty-free-Lizenz ist kostenlos, verlangt aber einen sichtbaren Slint-Nachweis und untersagt eingebettete Nutzung; der GPL-Modus würde das gesamte Produkt auf GPL ziehen [9][10]. Für ein Projekt unter `MIT OR Apache-2.0` ist das eine dauerhafte Lizenzhürde.
-
-*iced* ist reines Rust mit Elm-Architektur, hat aber weiterhin keine Mobilunterstützung — das Ticket ist seit April 2020 offen [12]. Es scheidet für Android und iPadOS aus.
-
-*Tauri 2* unterstützt Mobil seit Oktober 2024 stabil [34][37], bringt aber eine Web-Frontend-Schicht mit HTML, CSS und JavaScript mit. Das verletzt die Vorgabe „in Rust" und erzeugt plattformabhängige Darstellungsunterschiede durch die unterschiedlichen Webview-Engines (WebKit, WebView2, WebKitGTK) [11][37].
-
-*Natives UI je Plattform* (AppKit, UIKit, Win32, GTK) ergäbe echte Systemoptik, vervielfacht aber den Pflegeaufwand um den Faktor sechs und verlangt je Plattform eine eigene Sprache oder ein eigenes FFI-Team.
-
-**Definition der Plattformanpassung.** egui zeichnet seine Widgets selbst; ein Look-and-Feel wie Forklifts echtes AppKit ist damit nicht erreichbar [11]. Der Ausgleich besteht aus vier Achsen, die gemeinsam das Plattformgefühl tragen:
-
-- *Menü*: echtes natives Menü über `muda` [27] — auf macOS in der Systemmenüleiste, auf Windows als `HMENU` im Fenster, auf Linux und BSD über GTK. `muda` unterstützt Windows, macOS und Linux/BSD mit GTK 3 oder 4 [27]. Photocraft hat dafür bereits eine plattformfreie `Backend`-Abstraktion mit Sync-Schnittstelle [29].
-- *Tastatur*: Plattformspezifische Modifikatoren. `Cmd` auf macOS und iPadOS, `Ctrl` auf Windows, Linux und BSD. Die *Aktionen* bleiben identisch, nur die Tastenbelegung variiert.
-- *Dialoge*: native Dateidialoge über `rfd` [26], damit Erlaubnis-Dialoge und Dateityp-Filter wie im System aussehen und funktionieren.
-- *Metrik und Theme*: plattformspezifische Zeilenhöhen, Schriftgrößen, Fokusrahmen, Farbpaletten (hell/dunkel) und Sidebar-Tiefe, damit die Oberfläche nicht wie eine Webanwendung wirkt.
-
-Diese Kombination liefert ein dichtes, tastaturorientiertes Werkzeug mit systemspezifischen Konventionen. Sie liefert nicht die Pixelgenauigkeit eines nativen AppKit-Programms. Diese Einschränkung wird in der Spezifikation offen benannt, weil sie eine der offenen Designentscheidungen des Projekts ist (siehe *Offene Entscheidungen*, Frage E1).
-
-**Modellierung der Oberfläche.** egui ist ein Immediate-Mode-Framework: der Widget-Baum wird in jedem Bild neu beschrieben. Für eine Dateiliste mit 100.000 Einträgen ist das zu teuer. Die UI-Schicht hält deshalb den Verzeichnisinhalt in einem eigenen Zustandsobjekt außerhalb des egui-Kontexts und zeichnet nur den sichtbaren Ausschnitt. Zeichnen und Zustand sind getrennt; das entspricht dem Muster, das im Photocraft-Projekt für große Ansichten etabliert ist.
-
-### Tastatursteuerung
-
-Die Belegung folgt der Norton-Commander-Tradition, die sich als Quasi-Standard etabliert hat [4][36]:
-
-| Taste | Aktion | Taste | Aktion |
-|---|---|---|---|
-| `F2` | Umbenennen (auch Mehrfach) | `Ctrl+R` | Panel neu laden |
-| `F3` | Betrachter öffnen | `Ctrl+U` | Panels tauschen |
-| `F4` | Editor (später) | `Ctrl+Enter` | in Gegenpanel öffnen |
-| `F5` | Kopieren | `Ctrl+1`–`Ctrl+9` | Registerkarte |
-| `F6` | Verschieben | `Ctrl+Tab` | nächste Registerkarte |
-| `F7` | Verzeichnis anlegen | `Ins` | Auswahl umschalten |
-| `F8` | Löschen | `Ctrl+A` | alle auswählen |
-| `F9` | Menü | `Ctrl+Num-` | Auswahl aufheben |
-| `F10` | Beenden | `Ctrl+Num*` | Auswahl invertieren |
-| `Tab` | Panel wechseln | `Leertaste` | Auswahl per Muster |
-| `Alt+F1`/`Alt+F2` | Laufwerke | `Ctrl+PgUp` | übergeordnetes Verzeichnis |
-
-Die Zuordnung ist konfigurierbar. Die Konfigurationsdatei enthält eine Sektion, in der jede Aktion an beliebige Tasten gebunden werden kann; die Voreinstellung pro Betriebssystem liegt als eigene Vorlage bei. `F3` im Betrachter sucht weiter, `Shift+F3` sucht rückwärts — durchgängig, auch in den Einzelfenstern des Mehrfach-Umbenennungsdialogs, wo `F3` und `Shift+F3` den Konfliktsprung steuern [2].
-
-### Konfigurationsdatei
-
-Es gibt genau eine zentrale Konfigurationsdatei im TOML-Format, unterstützt durch `toml` und `serde` [26]. Ihr Speicherort folgt den Betriebssystemkonventionen: `~/Library/Application Support/Phocommander/` auf macOS, `%APPDATA%\Phocommander\` auf Windows, `$XDG_CONFIG_HOME/phocommander/` auf Linux und BSD, App-Sandbox auf Android und iPadOS.
-
-Aufbau:
+A profile is a named set of decisions:
 
 ```toml
-# Schema-Version: wird bei inkompatiblen Änderungen erhöht.
-# Bei older Version wird automatisch migriert; die Originaldatei
-# bleibt als .bak erhalten.
-schema_version = 1
-
-[general]
-# Sprache der Oberfläche: "de", "en" oder "system"
-language = "system"
-# Verhalten bei dem Start: zuletzt geöffnete Verzeichnisse wiederherstellen
-restore_session = true
-
-[appearance]
-theme = "system"          # "system" | "light" | "dark"
-row_height = 0            # 0 = plattformabhängiger Standard
-show_hidden_files = false
-show_system_files = false
-file_size_format = "binary"   # "binary" | "decimal" | "iec"
+# Interface profile — an example.
+name = "clean"
+description = "Only the two panels and the command line."
 
 [panels]
-# Standardanordnung der beiden Fenster
-layout = "horizontal"     # "horizontal" | "vertical"
-# Standardverhalten bei einem Rechtsklick: Kontextmenü oder Auswahl umschalten
-right_click_action = "context_menu"
-# Überschreiben beim Kopieren niemals automatisch
-overwrite_policy = "ask"  # "ask" | "never" | "always" | "keep_both"
+# Which auxiliary areas exist in this profile.
+show_toolbar = false
+show_directory_tree = false
+show_quick_view = false
+show_job_list = false
+show_status_bar = true
+show_menu_bar = false
 
-[keymap]
-# Überschreibt einzelne Zuordnungen der Plattformvorgabe.
-# "primary" ist Cmd auf macOS/iPadOS, Ctrl unter Windows/Linux/BSD.
-"panel.copy" = "F5"
-"panel.move" = "F6"
+[commands]
+# How commands are presented. "hidden" removes them from every menu and
+# palette; "palette" keeps them reachable but out of sight.
+visibility = "palette"
 
-[viewer]
-# Maximale Dateigröße, die der Betrachter in den Speicher lädt
-max_file_size = 10485760
-# Textdateien mit mehr als N Bytes werden nicht geladen
-max_text_size = 4194304
-
-[archives]
-# Obergrenze für entpackte Daten (Schutz vor Dekompressionsbomben)
-max_extracted_bytes = 2147483648
-max_entries = 100000
-
-[privacy]
-# Protokollebene. Phocommander protokolliert grundsätzlich nicht
-# auf Benutzer- oder Rechnernamen.
-log_level = "warn"
-
-[advanced]
-# Anzahl der Worker-Threads für Hintergrundoperationen.
-# 0 = automatisch (Anzahl der verfügbaren Kerne)
-worker_threads = 0
-
-[input]
-# Welcher Bedienkontext aktiv ist. "auto" erkennt das Eingabegerät
-# zur Laufzeit: Tastatur oder Maus -> keyboard/pointer, Touch -> touch,
-# Fernbedienung -> dpad, Controller -> controller.
-context = "auto"
-# Tastenbelegung je Kontext. Jede Aktion hat eine eigene Vorgabe,
-# damit dieselbe Anwendung auf jedem Gerät richtig bedient wird.
-[input.keyboard]
-"panel.copy" = "F5"
-"panel.move" = "F6"
-[input.dpad]
-# Auf der Fernbedienung ersetzt die Aktionspalette die F-Tastenreihe.
-# "panel.copy" = "palette:file.copy"
-"panel.copy" = "palette:file.copy"
-"panel.move" = "palette:file.move"
-"palette.open" = "Menu"
-[input.controller]
-# Trigger = Aktion ausloesen, Griff = Auswahl umschalten.
-"panel.copy" = "palette:file.copy"
-"selection.toggle" = "Grip"
-
-[remote]
-# Verhalten bei Verbindungsproblemen: "retry" versucht es erneut,
-# "fail" bricht ab. Timeouts gelten pro Verbindungsaufbau.
-connect_timeout_seconds = 15
-# SMB: Signatur verlangen, wenn der Server sie unterstuetzt.
-# "require" lehnt Server ohne Signatur ab, "prefer" verhandelt.
-smb_signing = "prefer"
-# SMB: Transportverschluesselung (SMB 3) bevorzugen.
-smb_encryption = "prefer"
-# Groesster erlaubter Download einzelner Dateien aus entfernten Quellen.
-# 0 = unbegrenzt (nur bei bewusst vertrauenswürdigen Quellen).
-max_remote_download_bytes = 0
+[display]
+# Per-command overrides. A command that is visible by default can be
+# hidden, and a command that is hidden by default can be made visible.
+hidden = ["panel.tree.toggle", "panel.view.tabs"]
 ```
 
-Die Datei ist vollständig kommentiert, weil sie die erste Anlaufstelle für Nutzer und Mitwirkende ist. Sie enthält ein `schema_version`-Feld; bei inkompatiblen Änderungen migriert Phocommander die alte Datei und legt das Original als `.bak` daneben. Import und Export einer Konfiguration sind vorgesehen, damit Einstellungen zwischen Rechnern übertragen werden können.
+The profile is a normal TOML file in the configuration directory. The built-in profiles `clean`
+and `full` ship with the application; the user can create their own, and can export and import
+them. A profile contains nothing but interface decisions — no paths, no history, no credentials.
 
-### Auftragsverarbeitung
+### 7.3 Resolution order
 
-Alle verlangsamen Vorgänge laufen über eine Auftragswarteschlange. Ein Auftrag hat: Typ, Status, Fortschritt, Ratenangabe, Abbruchflagge, Fehlerliste. Die Warteschlange ist threadsicher; die UI liest einen Snapshot.
+The interface resolves what to show in a fixed order, so that the answer is predictable:
 
-Mehrere Aufträge laufen parallel bis zu einem konfigurierbaren Limit, standardmäßig der Zahl der verfügbaren Kerne. Eine Panel-Hälfte blockiert nicht, während in der anderen gearbeitet wird. SpeedCommander bietet hier priorisierbare Hintergrund-Archivoperationen [2]; die Priorisierung ist für Phocommander eine geplante Ausbaustufe.
+1. The built-in default for the active context.
+2. The profile selected in the configuration.
+3. The per-command overrides of that profile.
+4. The per-platform override, if one exists.
 
-### Viewer- und Archivregistrierung
+The last step is what allows the same profile to behave differently on a television and on a
+desktop without the user maintaining two files: the platform override can, for example, force the
+menu bar on for a pointer context where the menu bar is the expected affordance.
 
-Betrachter und Archivadapter werden über ein Trait registriert. Ein neuer Adapter ist eine neue Implementierung plus eine Registrierungszeile — ohne Änderung am Kern. Damit ist der Funktionsumfang erweiterbar, ohne dass die Codebasis an einem Ort zusammenwächst.
+### 7.4 What the clean profile does not remove
 
----
+The `clean` profile removes furniture, never capability. Every action stays reachable through the
+action palette. A clean interface is a smaller interface, not a reduced product. This is the
+difference between a profile and a feature gate, and it is what keeps principle 2.1 intact.
 
-## Plattform-Matrix
+### 7.5 Configurability without complexity
 
-Die Zugriffsrechte unterscheiden sich je Plattform grundlegend. Das ist der größte Unterschied zwischen den sechs Zielsystemen und bestimmt den Zuschnitt der jeweiligen Version.
-
-| Plattform | Zugriff auf das Dateisystem | Konsequenz für Phocommander |
-|---|---|---|
-| macOS | App-Sandbox erlaubt nur ausgewählte Dateien; „Full Disk Access" muss der Nutzer manuell in den Systemeinstellungen erteilen [35][15] | Dateimanager ohne weitreichende Rechte ist unbrauchbar. Ohne Sandbox, mit Notarisierung, mit einer Anleitung zur Freigabe |
-| iPadOS | Vollständig sandboxed. Zugriff nur über `UIDocumentPickerViewController` und security-scoped URLs [13][14] | Kein Dateisystemdurchsuchen möglich. „Verzeichnisse" sind nur vom Nutzer ausgewählte Wurzeln |
-| Android | Scoped Storage ab API 30; `MANAGE_EXTERNAL_STORAGE` ist auf File-Manager-Funktion beschränkt und braucht eine Deklaration im Play Console [16][17][18] | Ohne die Spezialberechtigung funktioniert nur der SAF-Zugriff. Als Dateimanager ist die Berechtigung fachlich zulässig [18] |
-| Windows | Keine Sandbox. Pfadlänge 260 Zeichen ohne Opt-in, bis 32.767 mit `longPathAware` im Manifest [30][31] | Manifesteintrag `longPathAware` wird gesetzt. Fehlermeldungen bei Pfadlänge werden verständlich formuliert |
-| Linux | Keine Sandbox. X11 und Wayland | Standardpfad über `winit` [6]. Wayland-Eigenheiten beachten |
-| BSD | Keine Sandbox. FreeBSD und NetBSD sind bei `winit` Tier 2 (Bau garantiert, getestet nicht) [6] | Bau auf FreeBSD und NetBSD wird in der CI geprüft, Funktionstests erfolgen manuell |
-| Fire TV, Google TV | Android mit Leanback. Kein Touchscreen, D-Pad als primäre Navigation [40] | Eigener `dpad`-Bedienkontext, Aktionspalette, 10-Fuß-Layout, ein Panel sichtbar |
-| Meta Quest | Horizon OS ist Android [44]. Flat Panel, Gesten werden auf Controller abgebildet [45] | Kein eigener Port, sondern `controller`-Kontext auf der Android-Version |
-
-Die Matrix zeigt die eigentliche Architekturentscheidung: Phocommander braucht eine Dateisystemabstraktion, die einen „Ordnerinhalt" liefert, ohne zu wissen, ob er aus dem lokalen Dateisystem, aus einem Archiv, aus einem über SFTP erreichten Verzeichnis oder aus einem vom Nutzer freigegebenen Wurzelverzeichnis auf iPadOS stammt. Ohne diese Abstraktion entstehen für jede Quelle eigene Sonderfälle, die den Kern auseinanderziehen.
-
-### macOS
-
-Die macOS-Version ist die erste Auslieferung und die Referenzimplementierung der Oberfläche.
-
-Der Dateimanager braucht systemweiten Zugriff, den die App-Sandbox nicht hergibt — sie erlaubt nur Dateien, die der Nutzer ausgewählt hat [35]. Ein Sandboxed Dateimanager wäre ein Dateidialog, kein Dateimanager. Phocommander wird daher **ohne** App-Sandbox ausgeliefert, mit Notarisierung, Hardened Runtime und einer deutlichen Erststart-Seite, die die nötigen Berechtigungen erklärt. Der Nutzer entscheidet, ob er den Vollzugriff erteilt.
-
-Nutzung von „Full Disk Access" wird **nicht** erzwungen und nicht umgangen: Apple lässt sich den Zugriff nicht per Entitlement einräumen, der Nutzer muss ihn in den Systemeinstellungen erteilen, und die App muss mit der Ablehnung umgehen können [35].
-
-### iPadOS
-
-iPadOS ist eine eingeschränkte Plattform, und jede Zusage muss daran gemessen werden. Der Prozess ist sandboxed; Zugriff auf Dateien außerhalb des Containers gibt es nur über den Dokumenten-Picker, der security-scoped URLs mit Rückgaberechten liefert [13][14]. Verzeichnisse können ab iOS 13 aus jedem verfügbaren File-Provider ausgewählt werden, und die Berechtigung gilt rekursiv für den Inhalt [13].
-
-Daraus folgt der Zuschnitt: Die iPadOS-Version ist **kein** Dateisystem-Browser. Sie ist ein Betrachter und Organisator für Wurzelverzeichnisse, die der Nutzer ausdrücklich freigibt. Eine Linkstruktur zur dauerhaften Nutzung wird über security-scoped Bookmarks gespeichert; der Nutzer kann den Zugriff jederzeit in den Einstellungen entziehen, und die App muss den Fehler sauber behandeln [13].
-
-Die Zwei-Fenster-Oberfläche bleibt auf dem iPad sinnvoll, allerdings in geteilter Ansicht statt als Vollbild-Fensterpaar. Touch bedient die Auswahl, Tastatur bleibt die Hauptsteuerung.
-
-### Android
-
-Android unterstützt Scoped Storage seit API 30; Apps mit Ziel-SDK 30 oder höher müssen damit rechnen [17]. Das Storage Access Framework ist der empfohlene und datenschutzfreundlichere Weg [18]. Für einen Dateimanager ist `MANAGE_EXTERNAL_STORAGE` fachlich zulässig — Google nennt File-Management ausdrücklich als erlaubten Anwendungsfall —, erfordert aber eine Erklärung der Kernfunktionalität, eine Erklärung im Manifest, die Prüfung durch die Play-Zentrale und eine klare Aufforderung an den Nutzer, die Berechtigung zu aktivieren [16][18].
-
-Strategie: Die App funktioniert im SAF-Modus ohne die Spezialberechtigung und bietet die Vollzugriffsfunktion als klar gekennzeichnete, optionale Erweiterung an. Ohne Vollzugriff arbeitet sie im Dokumenten-Browser-Modus.
-
-Die FUSE-Schicht in Android 11 verlangsamt Massenoperationen, bei voller Berechtigung greifen die Optimierungen des MediaProvider [17]. Ein eigener Kopiervorgang mit direkten Dateizugriffen ist deshalb vorzuziehen.
-
-### Windows, Linux und BSD
-
-Windows bringt die Pfadlängenfrage mit: 260 Zeichen im Standard, 32.767 mit aktiviertem `LongPathsEnabled` und `longPathAware` im Anwendungsmanifest [30][31]. Das Manifest wird gesetzt. Da der Explorer die Langpfad-Unterstützung nicht nutzt [31], kann Phocommander einen Zustand erreichen, in dem der Explorer die Datei nicht anzeigt, Phocommander aber schon — dieser Fall wird abgefangen und verständlich gemeldet.
-
-Linux und BSD teilen sich den Codepfad. FreeBSD und NetBSD sind bei `winit` Tier 2: der Bau ist garantiert, tiefergehende Tests finden nicht statt [6]. Der CI prüft den Bau auf beiden, Funktionstests laufen manuell. Wayland wird bevorzugt, X11 als Rückfallebene.
+The configuration surface is deliberately small. It has four groups: appearance, panels, commands
+and input. Anything that would need a fifth group has to earn its place by being something a user
+actually asks for.
 
 ---
 
-## Test- und Qualitätsstrategie
+## 8. Internationalisation Plan
 
-### Testpyramide
+### 8.1 Languages and order
 
-**Unit-Tests** liegen bei jeder öffentlichen Funktion — eine verbindliche Regel aus dem Vocument-Vorbild. Sie decken die reine Logik ab: Pfadauflösung, Tastenauflösung, Umbenennungsregeln, Sortierung, Größenformatierung.
+English and German are the two languages of the first release. Both must be complete at the
+release of M2. Adding a third language is a matter of adding a catalogue directory; it requires no
+change to the source code (FR-125).
 
-**Integrationstests** decken die Kistengrenzen ab: Kopiervorgang über ein temporäres Verzeichnis, Extraktion eines Archivs mit Trail-Einträgen, Laden einer Konfigurationsdatei mit unbekanntem Feld.
+### 8.2 The catalogue format
 
-**Property-Tests** mit `proptest` [26] prüfen Invarianten, die man nicht aufzählen kann: dass die Pfadauflösung nie aus dem Zielverzeichnis herausführt, dass die Umbenennungsregel für beliebige Eingaben deterministisch ist, dass die Tastenauflösung bei Konflikten deterministisch entscheidet.
+The catalogue is Mozilla Fluent. The choice has three reasons that matter for this project:
+Fluent keeps the linguistic complexity in the translation files rather than in the code, it has
+native support for plurals, which a file manager needs for "1 file" versus "2 files", and it is
+the most widely adopted localisation system for Rust applications.
 
-**Fuzz-Tests** prüfen die Parser: Archivheader, Bildheader, Zeichensatz-Erkennung. Ein Fuzz-Lauf gehört in die nächtliche CI.
-
-**UI-Tests** über `egui_kittest` prüfen die Tastaturbedienung deterministisch, ohne pixelweise Screenshots.
-
-**Leistungsmessungen** mit `criterion` [26] sind Teil des Gates; die Werte aus der Leistungsanforderung sind die Schwellen.
-
-### Continuous Integration
-
-Die CI läuft als Matrix über Linux, Windows und macOS. Zusätzlich prüft sie Quer-Kompilierung nach `aarch64-linux-android` und `aarch64-apple-ios`, sowie den Bau für FreeBSD. Jeder Lauf umfasst: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --workspace`, `cargo-deny`, `cargo-audit` und `cargo build --release`.
-
-Die Werkzeugversionen werden gepinnt, weil sich dieselbe Konfiguration je nach Version unterschiedlich liest — `cargo-deny` interpretiert eine Allow-Liste je nach Version als `AGPL-3.0` oder `AGPL-3.0-or-later` und fällt sonst mit einer Konfigurationsfehlermeldung aus. Im Vocument-Projekt hat das dazu geführt, dass die Lizenzprüfung in der CI nie gelaufen ist und die Meldung stattdessen die Konfiguration beschuldigte [26].
-
-Der Gate darf nicht grün sein, wenn eine Regel verletzt ist. Für jede Härtung — Pfad-Traversal, Dekompressionsbombe, Header-Limit — existiert ein negativer Test, der den Angriff tatsächlich ausführt und die Abwehr belegt.
-
-### Abnahmekriterien
-
-Jede Meilensteinabnahme folgt dem Vocument-Muster: Funktionalität, Technik, Leistung, Benutzerführung, Sicherheit und Datenschutz, Interoperabilität, bekannte Einschränkungen, Entscheidung. Jede Aussage braucht eine konkrete Evidenz — ein Testname, eine Kommandoausgabe. Ein Meilenstein gilt nur als erreicht, wenn Evidenz existiert.
-
----
-
-## Repository- und Dokumentationsorganisation
-
-### Ablagestruktur
-
-Die oben dargestellte Crate-Struktur ist zugleich die Repository-Struktur. Der Workspace ist eine einzige Cargo-Workspace mit gemeinsamen Dependency-Versionen an einer Stelle, Versionierung über `rust-toolchain.toml` gepinnt.
-
-Das Muster ist bewusst identisch zu Photocraft [28]: flache `crates/*`-Kisten, `apps/*` für die Binärdateien, ein `xtask`-Crate für Build-Hilfen. Das senkt die Einstiegshürde für Mitwirkende, die bereits in den Schwesterprojekten arbeiten.
-
-### Dokumentationslandschaft
-
-```
-docs/
-├── REQUIREMENTS.md          # dieses Dokument
-├── ARCHITECTURE.md          # Crate-Grenzen, Datenflüsse, Erweiterungspunkte
-├── WHERE_TO_CHANGE.md       # "Wo ändere ich was?" für Mitwirkende
-├── adr/                     # Architecture Decision Records, nummeriert
-├── user-guide/              # DE + EN, nach Aufgaben gegliedert
-├── security/
-│   ├── THREAT_MODEL.md
-│   └── HARDENING.md
-├── glossary.md
-├── acceptance/              # Abnahmenachweise je Meilenstein (M<n>-ACCEPTANCE.md)
-├── reviews/                 # Reviews und Prüfprotokolle
-├── guides/                  # Anleitungen (Installation, Netzwerk, Bedienkontexte)
-└── templates/               # Vorlagen für Abnahmen und Reviews
-```
-
-ADR folgen dem Muster Status, Datum, Kontext, Entscheidung, Konsequenzen, Alternativen. Die erste Serie umfasst die Framework-Wahl, die Crate-Grenzen, die Fehlerhierarchie und die Sicherheitsstrategie für Archivextraktion.
-
-`AGENTS.md` beschreibt die Arbeitsregeln für KI-gestützte Beiträge: erst lesen, dann ändern; keine Behauptung ohne Messung; keine Stubs; Übergabe über Patch und `deliverable.md`.
-
-### Beitragsregeln und Governance
-
-`CONTRIBUTING.md` fasst die Regeln zusammen, die in den Schwesterprojekten bereits erprobt sind: keine Quelldatei über 400 Zeilen, Doc-Kommentar im WAS/WARUM/BEISPIEL-Muster, Unit-Test für jede öffentliche Funktion, kein Commit von Abhängigkeiten ohne Prüfung. `SECURITY.md` beschreibt das Bedrohungsmodell und den Meldeweg für Schwachstellen. `PRIVACY.md` hält fest, welche Daten gespeichert werden, wo, wie lange und wie sie entfernt werden — mit der ausdrücklichen Zusage null Telemetrie.
-
-`CODE_OF_CONDUCT.md` folgt dem Contributor Covenant.
-
-### Lizenzierung
-
-Das Repository steht unter der Doppellizenz `MIT OR Apache-2.0`. Das bedeutet: Jeder Nutzer wählt zwischen MIT und Apache-2.0. MIT ist kurz und permissiv, Apache-2.0 enthält zusätzlich eine ausdrückliche Patentklausel — für ein Projekt mit möglicher späterer Patentanmeldung ist Apache-2.0 die bessere Wahl. Beide Dateien liegen im Repository-Root, `LICENSE-MIT` und `LICENSE-APACHE`. In jeder Quelldatei steht ein kurzer SPDX-Header.
-
-Diese Doppellizenz entspricht der Konvention des Photocraft-Projekts [28] und der Rust-Community. Die `cargo-deny`-Konfiguration erlaubt ausschließlich permissive Lizenzen; Copyleft fällt durch.
-
----
-
-## Roadmap
-
-### Phasen M0 bis M9
-
-Die Reihenfolge folgt der Priorität des Nutzers (macOS, Android, iPadOS, Windows, Linux, BSD) mit einer technischen Korrektur: **Windows, Linux und BSD teilen sich den vollständigen Desktop-Codepfad mit macOS.** Sie sind nach macOS nahezu kostenlos, während Android und iPadOS jeweils eigene Verpackung, eigene Berechtigungsmodelle und eigene Store-Anforderungen mitbringen [16][13]. Die teuersten Ziele sind damit nicht die letzten, sondern die mobilen.
-
-| Phase | Inhalt | Ergebnis |
-|---|---|---|
-| **M0** | Workspace, CI, Konfigurationsdatei, Kerncrate, Tastenauflösung, Panel-Grundgerüst | Zwei Fenster, navigieren, auswählen. Bedienbar auf macOS |
-| **M1** | Dateioperationen mit Auftragswarteschlange, Mehrfach-Umbenennen, Betrachter Stufe 1, Archiv Stufe 1 (ZIP/TAR/7z), sichere Extraktion | Funktionaler Dateibrowser auf macOS |
-| **M2** | Panel-Härtung, Registerkarten, Filterfeld, Eingabezeile, Verzeichnisvergleich, Favoriten, Betrachter Stufe 2 (PDF, Syntaxhervorhebung), Finder-Integration | Reife macOS-Version |
-| **M3** | Windows- und Linux-/BSD-Ports, Paketierung, Long-Path-Behandlung, Wayland | Drei Desktop-Plattformen |
-| **M4** | Android: Gradle-Projekt, Rust-`cdylib`, SAF-Modus, optionaler Vollzugriff, Touch- und Tastatur-Bedienung | Android-Version |
-| **M5** | iPadOS: Xcode-Projekt, Dokumenten-Picker, security-scoped Bookmarks, geteilte Ansicht | iPadOS-Version |
-| **M6** | Netzwerkquellen: SFTP, FTP, SMB, WebDAV; Verbindungsverwaltung; Synchronisation; Verzeichnisvergleich produktiv; Suche mit Inhalt | Netzwerkfunktionen |
-| **M7** | Cloud über OAuth 2.0 und S3-kompatible Ziele; Bedienkontext `controller` auf der Android-Version | Cloud- und Controller-Zugriff |
-| **M8** | Fire TV und Google TV: Bedienkontext `dpad`, Aktionspalette, 10-Fuß-Layout, Leanback-Manifest, Store-Abnahme | Fernseher-Version |
-| **M9** | Betrachter Stufe 3, Editor, Tags, Makros | Erweiterungen |
-
-Meilenstein M0 und M1 sind der Kern. Ab M2 ist jede weitere Plattform eine Auslieferungsvariante desselben Kerns.
-
-Die Netzwerkmeilensteine folgen bewusst **nach** den Desktop- und Mobilplattformen: Eine Quelle, die nicht funktioniert, ist reparierbar und sichtbar. Eine halbfertige Netzwerkschicht, die in M1 dazwischenhängt, gefährdet den Kern. Umgekehrt ist die Aktionpalette in M8 die Voraussetzung dafür, dass Fire TV die Anforderungen von Google Play besteht [41] — sie kommt nicht als Nachlieferung, sondern als eigener Meilenstein.
-
-
----
-
-## Projektplan
-
-Der Projektplan übersetzt die Roadmap in eine Reihenfolge, in der gearbeitet wird. Er ist verbindlich: Ein Meilenstein gilt erst als erreicht, wenn seine Abnahmekriterien erfüllt sind **und** die zugehörige Abnahme unter `docs/acceptance/` dokumentiert ist.
-
-### Grundregeln des Ablaufs
-
-**Der Kern kommt vor der Oberfläche.** Jeder Meilenstein liefert zuerst eine funktionierende, testbare Schicht im Rust-Kern. Die Oberfläche bindet sie an. Eine Oberflächenfunktion ohne Kern-Unterstützung wird nicht begonnen.
-
-**Jeder Meilenstein endet mit einem gepushten Stand auf `main`.** Der Fortschritt ist damit jederzeit sichtbar und nachvollziehbar. Zwischenstände werden nicht gesammelt, sondern fortlaufend weitergegeben.
-
-**Kein Meilenstein gilt als erreicht ohne Beleg.** Ein Meilenstein ohne grünen Testlauf und ohne Abnahmedokument ist nicht erreicht, egal wie überzeugend die Beschreibung klingt.
-
-**Rückfragen werden gestellt, nicht geraten.** Wenn eine Entscheidung fehlt, wird sie beim Owner angefragt und die Antwort im jeweiligen Dokument festgehalten.
-
-### Meilensteine
-
-Die folgende Übersicht zeigt, welcher Meilenstein was liefert und worauf er aufbaut.
-
-| Meilenstein | Inhalt | Ergebnis | Abhängigkeit |
+| Component | Crate | Version | Licence |
 |---|---|---|---|
-| **M0** | Cargo-Workspace, Crate-Grundgerüst, CI-Grundlage, Konfigurationsdatei mit Vorgaben, Tastenbelegung, Bedrohungsmodell, Projektdokumentation, Lizenzprüfung | Das Repository baut, prüft und testet sich auf drei Betriebssystemen. Die Spezifikation ist die verbindliche Grundlage jedes weiteren Schritts | keine |
-| **M1** | Dateisystemmodell, Auftragswarteschlange, Panel-Zustand, Tastenauflösung, Dateioperationen, Mehrfach-Umbenennen mit Vorlagen, Betrachter Stufe 1, Archivadapter Stufe 1, gehärtete Extraktion | Ein funktionaler Zwei-Fenster-Dateibrowser auf macOS. Kopieren, verschieben, umbenennen, ansehen, Archive öffnen | M0 |
-| **M2** | Registerkarten, Filterfeld, Eingabezeile, Verzeichnisbaum, Verzeichnisvergleich, Favoriten, Betrachter Stufe 2, native Menüs, Kontextmenüs | Eine reife macOS-Version, die im Alltag einen Dateibrowser ersetzen kann | M1 |
-| **M3** | Windows-, Linux- und BSD-Ports, Paketierung, Long-Path-Behandlung, Wayland, X11-Fallback, NetBSD- und FreeBSD-Bau | Drei weitere Desktop-Plattformen aus derselben Codebasis | M2 |
-| **M4** | Android-Shell, Gradle-Projekt, Rust-`cdylib`, SAF-Modus, optionaler Vollzugriff, Touch-Kontext, adaptive Layouts | Eine Android-Version, die im Store veröffentlicht werden kann | M3 |
-| **M5** | iPadOS-Shell, Xcode-Projekt, Dokumenten-Picker, security-scoped Bookmarks, geteilte Ansicht, Apple-Tastatur-Unterstützung | Eine iPadOS-Version für den App Store | M4 |
-| **M6** | Netzwerkquellen: SFTP, FTP, SMB, WebDAV; Verbindungsverwaltung; Schlüsselbund-Integration; Angriffsflächen-Härtung; Synchronisation | Entfernte Quellen sind bedienbar wie lokale Verzeichnisse | M5 |
-| **M7** | Cloud über OAuth 2.0 und S3-kompatible Ziele, Bedienkontext `controller` auf der Android-Version, Controller-Anbindung auf Desktop | Cloud-Zugriff ohne eigenen Server, Controller-Bedienung | M6 |
-| **M8** | Bedienkontext `dpad`, Aktionspalette, 10-Fuß-Layout, Leanback-Manifest, Store-Abnahme, Prüfprotokoll der D-Pad-Erreichbarkeit | Eine Fire-TV- und Google-TV-Version, die die Google-Play-Prüfung besteht | M7 |
-| **M9** | Betrachter Stufe 3, Texteditor, Tags, Makros | Die Erweiterungen des Funktionsumfangs | M8 |
+| Fluent runtime | `fluent` | 0.17 | MIT OR Apache-2.0 |
+| Bundle handling | `fluent-bundle` | 0.16 | MIT OR Apache-2.0 |
+| Embedding | `rust-embed` | 8.13 | MIT OR Apache-2.0 |
+| Locale detection | `sys-locale` | 0.3 | MIT OR Apache-2.0 |
+| Unicode locale identifiers | `unic-langid` | 0.9 | MIT OR Apache-2.0 |
+| Plural rules, number and date formatting | `icu` | 2.4 | MIT OR Apache-2.0 |
 
-Die Reihenfolge ist linear, weil jede Stufe auf der vorherigen aufsetzt. Ausnahmen sind nur dort vorgesehen, wo ein Teilbereich unabhängig ist: Die Dokumentation, das Bedrohungsmodell und die Lizenzprüfung laufen ab M0 parallel mit dem Code und werden in jedem Meilenstein nachgeführt.
+The catalogue lives in `crates/phocommander-i18n/locales/<locale>/<domain>.ftl`, split by domain
+so that a translator can work on the file manager without touching the viewer or the settings.
 
-### Risikoregister
+### 8.3 The lookup chain
 
-Die acht folgenden Risiken sind die bekannten Unsicherheiten des Vorhabens. Jedes trägt eine Gegenmaßnahme und einen Verantwortlichen.
+A lookup walks a fixed chain and never returns an empty string:
 
-| Risiko | Eintritt | Auswirkung | Gegenmaßnahme | Owner |
+```
+requested locale → language fallback chain → English → the key itself
+```
+
+The last step matters. A missing translation must be *visible* as the key, never as an empty
+label, because an empty button in the interface cannot be diagnosed and a visible key can (FR-122).
+
+### 8.4 What is and is not translated
+
+| Translated | Not translated |
+|---|---|
+| All interface labels and messages | File and directory names |
+| All error messages | The contents of files |
+| All help texts | Protocol names such as SMB or WebDAV |
+| Date, time and number formats | The action identifiers |
+| Plural forms | The keymap, which is stable across languages |
+
+The action identifiers stay in English even in a German interface, because they are keys in the
+configuration file and in the documentation, and a configuration file that changes meaning with
+the interface language is a configuration file that cannot be shared between colleagues.
+
+### 8.5 Testing the localisation
+
+Three gates protect the localisation:
+
+| Gate | What it checks | When it fails |
+|---|---|---|
+| Key parity | Every locale has exactly the same key set | A translation is missing a key or has an extra one |
+| Fallback | A missing key resolves to English, then to the key | The lookup chain is broken |
+| Literal check | The user interface layer contains no literal strings | A string was hard-coded instead of externalised |
+
+The first two are unit tests over the catalogues. The third is a script that scans the user
+interface crate for string literals. Together they make the claim "English and German are complete"
+verifiable rather than asserted.
+
+---
+
+## 9. Security and Privacy Plan
+
+### 9.1 Trust boundary
+
+The trust boundary runs between the process and the file system. Everything that arrives from a
+file system, from an archive or from a network source is untrusted input. The attacker is
+someone who sends the user a file, who modifies a file the user opens, or who controls a server
+the user connects to.
+
+The full treatment lives in `docs/security/THREAT_MODEL.md`. This section states the rules that
+bind the implementation.
+
+### 9.2 The hardening rules
+
+| # | Rule | Enforcement point | Negative test |
+|---|---|---|---|
+| H-01 | `zip` at least 9.0.5 [22][23][24][25] | `Cargo.lock` | Version check in the build [22] |
+| H-02 | No `extract()` from any crate; entries are written by us | `phocommander-archive` | `tests/security/path_traversal.rs` |
+| H-03 | Every destination path is canonicalised and checked against the destination directory | `phocommander-archive` | `tests/security/path_traversal.rs` |
+| H-04 | Symlinks are never created from archive material | `phocommander-archive` | `tests/security/path_traversal.rs` |
+| H-05 | SUID and SGID bits are never carried over | `phocommander-archive` | `tests/security/path_traversal.rs` |
+| H-06 | Limits on total size, entry count and single entry size | `phocommander-config`, `phocommander-archive` | `tests/security/decompression_bomb.rs` |
+| H-07 | SMB 1 and NTLMv1 are not implemented | `phocommander-remote` | Integration test against a server offering only SMB 1 |
+| H-08 | SMB signing and SMB 3 encryption are required where the server supports them | `phocommander-remote` | Integration test with and without signing |
+| H-09 | TLS certificates are verified strictly; no opt-out | `phocommander-remote` | Integration test against a self-signed server |
+| H-10 | Every network operation has a timeout | `phocommander-remote` | Integration test against a stalling server |
+| H-11 | The response size is bounded independently of the announced content length | `phocommander-remote` | Integration test with an oversized answer |
+| H-12 | Credentials live in the system keyring, never in the configuration file | `phocommander-remote` | Code review plus configuration test |
+
+### 9.3 Accepted residual risks
+
+The Rust standard library offers no atomic file operation with path semantics. The time between
+a check and the use of a checked path therefore cannot be closed completely. The measure that
+reduces the window is a descriptor-based access with `openat` semantics via `rustix` or
+`cap-std`, or the repetition of the check immediately before the access. The remaining window is
+named in the threat model rather than hidden. The same applies to the recursive copy, which cannot
+be made race-free without a descriptor walk.
+
+### 9.4 Secure deletion
+
+The standard is NIST SP 800-88 Revision 2 with its levels *Clear*, *Purge* and *Destroy* [19]. The
+historical DoD 5220.22-M three-pass standard is not used: it was removed from NISPOM in 2006
+because multiple passes add no protection on modern media, and overwriting is not reliable on
+flash storage because wear levelling and over-provisioning redistribute the cells [19][20]. The
+trash is the default path for deletion. "Secure delete" is an explicit additional option whose
+effect cannot be guaranteed on flash media — and that limitation is stated in the interface, not
+only in the manual.
+
+### 9.5 Privacy
+
+No telemetry, no analytics, no advertising, no profiles, no crash reports, no third-party
+disclosure. The application stores only what the user configured: settings, key bindings,
+favourites, recently opened directories. Credentials for remote sources live in the system keyring.
+On platforms without a keyring, the application falls back to its own sandbox and says so.
+
+For a network connection, only the directory data the user requested leaves the machine. No
+identifier, no profile, no usage data is sent.
+
+### 9.6 Dependency policy
+
+Every dependency is checked for its licence by `cargo deny` and for known vulnerabilities by
+`cargo audit` on every build. The tool versions are pinned, because `cargo deny` reads the same
+configuration differently depending on its version — an unpinned version produced a false alarm in
+the Vocument project, where the message blamed the configuration instead of the problem [27].
+
+Copyleft dependencies are excluded. This is why the WebDAV client is written as part of the
+project instead of taken from `fast-dav-rs`, which is LGPL-3.0 [26]: a statically linked binary
+under LGPL creates obligations that conflict with the licence of the project.
+
+---
+
+## 10. Test and Quality Strategy
+
+### 10.1 The test layers
+
+| Layer | What it covers | Tool | Count rule |
+|---|---|---|---|
+| Unit | Pure logic: path resolution, key resolution, rename rules, sorting, size formatting | Built-in test harness | Every public function has at least one |
+| Integration | The boundaries between crates: a copy over a temporary directory, an extraction with malicious entries, a configuration file with an unknown field | Built-in test harness | One per crate boundary |
+| Property | Invariants that cannot be enumerated: the path resolution never leaves the destination, the rename rule is deterministic, the key resolution decides deterministically | `proptest` | One per invariant |
+| Fuzz | The parsers: archive headers, image headers, character set detection | `cargo-fuzz` | One target per parser family, nightly |
+| Interface | The keyboard operation of the interface | `egui_kittest` | One per interaction context |
+| Security | The hardening rules H-01 to H-12 | Built-in test harness | One negative test per rule |
+| Performance | The values of the non-functional requirements | `criterion` | One benchmark per target value |
+| Platform | The build on every target platform | `cargo` | Build check per target |
+
+### 10.2 The negative test rule
+
+A positive test proves that a defence is not triggered. It does not prove that the defence works.
+For every hardening rule there is a test that executes the actual attack and demonstrates that the
+defence holds. A rule without a negative test is not implemented, it is only intended.
+
+### 10.3 The build matrix
+
+| Job | What it does | When it blocks |
+|---|---|---|
+| `quality` | Format, clippy, tests, crate boundaries, file size, licence, advisory, telemetry | Every change |
+| `desktop` | The same six gates plus the release build on Linux, macOS and Windows | Every change |
+| `cross-compile` | Build for Android, iOS, FreeBSD, NetBSD and the iOS Simulator | Every change |
+| `performance` | The benchmarks of the non-functional requirements | Before a milestone is accepted |
+| `nightly` | Longer fuzzing and a test run without cache | Does not block; reported |
+
+### 10.4 The build cache rule
+
+Two cargo processes must never write to the same target directory. The failure mode is subtle: the
+compiler finds two versions of the same crate and reports a missing dependency that does not
+exist. The project therefore uses one lock file, one cargo home per build context, and one target
+directory per concurrent build.
+
+### 10.5 What "best in class" means here
+
+The quality bar is not a slogan but a list of gates that fail the build:
+
+1. The format check is not allowed to be skipped.
+2. Clippy runs with `-D warnings`, and a lint is never silenced with an `#[allow]` unless the reason is written down in an ADR.
+3. Every public function has a doc comment and a test.
+4. Every hardening rule has a negative test.
+5. The dependency direction is checked mechanically, with a negative test proving the check works.
+6. No file exceeds the length limit.
+7. No copyleft dependency enters the tree.
+8. No known vulnerability remains unreported.
+9. The performance targets are measured, not estimated.
+10. Every milestone ships with an acceptance document that contains the measured evidence.
+
+---
+
+## 11. Milestone Plan
+
+### 11.1 The rules of the sequence
+
+**The core comes before the surface.** Every milestone delivers a working, testable layer in the
+Rust core first. The presentation layer binds to it afterwards. A presentation feature without
+core support is not started.
+
+**Every milestone ends with a pushed state on `main`.** Progress is visible at all times, and no
+work accumulates on a side branch waiting for a merge window.
+
+**No milestone counts as reached without evidence.** A milestone without a green test run and
+without an acceptance document is not reached, however convincing the description sounds.
+
+**Questions are asked, not guessed.** Where a decision is missing, it is put to the owner and the
+answer is recorded in the document that needs it.
+
+### 11.2 The milestones
+
+#### M0 — Foundation
+
+**Goal.** A repository that builds, checks and tests itself on three operating systems, with the
+specification as the binding basis for everything after it.
+
+The work is divided into packages small enough to be finished in one session.
+
+| Package | Content | Module |
+|---|---|---|
+| M0.1 | Cargo workspace, twelve crates, pinned dependency catalogue, committed lock file | Model, all |
+| M0.2 | Workspace lints, `deny.toml`, the licence policy | All |
+| M0.3 | The five CI jobs, the seven check scripts | All |
+| M0.4 | The configuration schema, the key binding catalogue, the rename templates | Configuration, Binding |
+| M0.5 | The requirement catalogue and the acceptance criteria | All |
+| M0.6 | The threat model, `SECURITY.md`, `PRIVACY.md`, the governance documents | All |
+| M0.7 | The glossary, the user guide in both languages, the architecture overview | All |
+
+**Definition of done.** Build, test, format, clippy, licence, advisory, boundary, file-size and
+telemetry checks all pass; the acceptance document M0 exists with the measured evidence; the
+threat model names a negative test for every hardening rule.
+
+**Status at the time of writing.** Complete. The acceptance document records 129 tests passing with
+no failure and no skipped test, a green licence check, and a proven negative test of the boundary
+gate. The acceptance was granted with conditions, and the conditions were closed: the CI matrix
+now runs all six gates, the cross-compilation no longer tolerates failure, the iOS targets were
+added, and the performance gate became a job of its own.
+
+#### M1 — The working file browser
+
+**Goal.** A functional dual-pane file browser on macOS that copies, moves, renames, inspects and
+opens archives.
+
+The packages below build the working file browser in the order of their dependency.
+
+| Package | Content | Module |
+|---|---|---|
+| M1.1 | The directory listing model, the `Source` and `MutableSource` traits, the error hierarchy | Model |
+| M1.2 | The job queue with progress, cancellation and error collection | Operations |
+| M1.3 | The panel state model: two panels, tabs, cursor, selection, sorting | Presentation |
+| M1.4 | The action catalogue and the resolution of an event into an action | Binding |
+| M1.5 | Copy, move, delete with the conflict policies | Operations |
+| M1.6 | The rename engine with the placeholders, the rules and the conflict jump list | Operations |
+| M1.7 | The series episode template with detection, numbering and the preview | Operations |
+| M1.8 | The viewer stage 1: text, hex, images, archive contents, metadata | Viewer |
+| M1.9 | The archive adapters for ZIP, TAR and 7z, with the hardened extraction | Archive |
+| M1.10 | The negative security tests for H-02 to H-06 | Archive |
+
+**Definition of done.** A user can browse, select, copy, move, rename with a template, inspect a
+file and open an archive on macOS, all of it with the keyboard. The negative tests for the
+extraction hardening exist and pass.
+
+**Dependencies.** M0.
+
+#### M2 — Maturity on macOS
+
+**Goal.** An application that can replace a desktop file manager in daily use, in both languages.
+
+**Work packages.** Tabs and the directory tree, the filter field, the command line and its
+history, the directory comparison, the favourites and the file container, viewer stage 2 with PDF
+and syntax highlighting, the native menu bar, the context menus, the interface profiles with the
+clean and the full variant, the localisation framework with English and German, the performance
+gates.
+
+**Definition of done.** Every action is reachable with the keyboard, the interface exists in a
+clean and a full variant, English and German are complete, and the performance targets of NFR-01
+to NFR-06 are measured and met.
+
+**Dependencies.** M1.
+
+#### M3 — The other desktop platforms
+
+**Goal.** The same application on Windows, Linux and BSD, built from the same code.
+
+**Work packages.** The Windows port with the long path manifest and the path length messaging, the
+Linux port with the Wayland path and the X11 fallback, the FreeBSD and NetBSD builds, the
+packaging for the three platforms.
+
+**Definition of done.** The CI matrix builds and tests on all three, and the manual test protocol
+for the platform-specific behaviour has run.
+
+**Dependencies.** M2.
+
+#### M4 — Android
+
+**Goal.** An Android version in the store.
+
+**Work packages.** The Gradle project and the Rust `cdylib`, the Storage Access Framework mode
+with the optional full access as a declared extension, the touch interaction context, the
+adaptive layouts, the packaging and the store declaration.
+
+**Definition of done.** The application runs on an Android device, browses the roots the user
+released, and the store declaration for the full access is prepared.
+
+**Dependencies.** M3.
+
+#### M5 — iPadOS
+
+**Goal.** An iPadOS version in the App Store.
+
+**Work packages.** The Xcode project, the document picker, the security-scoped bookmarks, the
+split view, the Apple keyboard support, the packaging and the store submission.
+
+**Definition of done.** The application runs on an iPad, holds the released roots across restarts,
+and handles a revoked permission without failing.
+
+**Dependencies.** M4.
+
+#### M6 — Remote sources
+
+**Goal.** Remote sources behave exactly like local directories.
+
+**Work packages.** The connection manager, the SFTP, FTP, SMB and WebDAV adapters, the WebDAV
+client written for this project, the keyring integration, the hardening of the network attack
+surface with the negative tests H-07 to H-11, the synchronisation, the content search.
+
+**Definition of done.** A copy from an SFTP server to a local directory works with the same
+commands as a local copy, and the network hardening rules have their negative tests.
+
+**Dependencies.** M5.
+
+#### M7 — Cloud and controllers
+
+**Goal.** Cloud access without a server of our own, and operation with a controller.
+
+**Work packages.** The OAuth 2.0 flow against the providers, the S3 adapter, the `controller`
+interaction context on Android, the controller binding on the desktop, the connection manager
+extensions.
+
+**Definition of done.** A user signs in to a provider, browses the account and copies a file, and
+no request passes through a server of ours.
+
+**Dependencies.** M6.
+
+#### M8 — Television
+
+**Goal.** A Fire TV and Google TV version that passes the store review.
+
+**Work packages.** The `dpad` interaction context, the action palette in its D-pad operation, the
+10-foot layout, the Leanback manifest, the reachability protocol, the store submission.
+
+**Definition of done.** Every action that the keyboard can reach is reachable with the D-pad,
+proven by the reachability protocol, and the store review passes.
+
+**Dependencies.** M7.
+
+#### M9 — The remaining capabilities
+
+**Goal.** The extensions of the functional scope.
+
+**Work packages.** Viewer stage 3 with audio and video, the text editor, the tags, the macros.
+
+**Definition of done.** The features work, are documented in both languages, and the acceptance
+document carries their evidence.
+
+**Dependencies.** M8.
+
+### 11.3 The risk register
+
+| Risk | Likelihood | Impact | Countermeasure | Owner |
 |---|---|---|---|---|
-| Die Dateisystemabstraktion erweist sich als zu eng | mittel | hoch | ADR-0002 entscheidet die Schnittstelle vor M1; die Protokollquellen aus M6 werden bereits in M1 als Testimplementierung durchgespielt | Architekt |
-| Die Aktionspalette wird zu mächtig und unübersichtlich | mittel | mittel | Die Palette zeigt nur Kontext-Aktionen und filtert nach Verfügbarkeit; die Filterregel wird in M1 festgelegt und in M8 geprüft | UI-Engineer |
-| Der Fernbedienungs-Kontext scheitert an der Play-Prüfung | mittel | hoch | M8 ist ein eigener Meilenstein mit eigenem Prüfprotokoll, nicht eine Nachlieferung zu M4; die Erreichbarkeitsliste wird ab M1 mitgeführt | Produkt |
-| SMB-Bibliotheken tragen ein ungünstiges Lizenzmodell | niedrig | mittel | `pavao` ist nicht eingebunden; die `deny.toml` erzwingt die Lizenzprüfung, eine Copyleft-Abhängigkeit fällt im Gate durch | Sicherheit |
-| Die Quer-Kompilierung für Android und iOS scheitert an Systembibliotheken | hoch | hoch | `smb2` und `russh` sind reines Rust; Bibliotheken mit C-Anteilen (`pavao`, `ssh2`) sind ausgeschlossen | Architekt |
-| Die iPadOS-Sandbox begrenzt den Funktionsumfang stärker als erwartet | hoch | mittel | Die Einschränkung steht in der Spezifikation und wird im M5-Dokument ausgewiesen, nicht verschwiegen | Produkt |
-| Die Codelänge-Regel bremst die Entwicklung | mittel | niedrig | Die Grenze von 400 Zeilen zwingt zur sauberen Zerlegung; das ist der Zweck, kein Hindernis | Architekt |
-| Der Build bricht in der CI und nicht lokal | mittel | mittel | Der zentrale Build in der CI ist das Gate; lokal wird nur entwickelt | Qualität |
+| The file system abstraction turns out to be too narrow | medium | high | ADR-0002 decides the interface before M1; the network sources of M6 are played through in M1 as a test implementation | Architect |
+| The action palette becomes too powerful and unreadable | medium | medium | The palette shows only context-reachable actions; the filter rule is fixed in M1 and checked in M8 | UI Engineer |
+| The television context fails the store review | medium | high | M8 is a milestone with its own protocol, not a late addition to M4; the reachability list is kept from M1 | Product |
+| A dependency carries an unfavourable licence | low | medium | `deny.toml` enforces the licence check; a copyleft dependency fails the gate | Security |
+| The cross-compilation fails on system libraries | high | high | `smb2` and `russh` are pure Rust; libraries with a C component are excluded | Architect |
+| The iPadOS sandbox limits the scope more than expected | high | medium | The limitation is in the specification and is stated in the M5 document rather than discovered by users | Product |
+| The file length rule slows the work down | medium | low | The 400-line limit forces clean separation; that is its purpose, not an obstacle | Architect |
+| The build fails in the continuous integration and not locally | medium | medium | The continuous integration build is the gate; locally only development happens | Quality |
+| The localisation falls behind the feature work | medium | medium | The key parity gate fails the build, so an incomplete translation cannot merge | Product |
 
-Das höchste Risiko liegt bei der Dateisystemabstraktion, und es ist das einzige mit der Bewertung „hoch" bei beiden Achsen. Deshalb wird sie vor dem ersten Code in einem ADR entschieden und in M1 mit einer Testimplementierung einer entfernten Quelle geprüft, statt erst in M6 aufzutauchen. Die beiden Risiken mit der höchsten Eintrittswahrscheinlichkeit betreffen die Quer-Kompilierung und die iPadOS-Sandbox — beide sind unvermeidbar und werden deshalb früh verifiziert statt später umgangen.
+The highest risk is the file system abstraction, and it is the only one rated high on both axes.
+It is therefore decided in an ADR before the first line of code and tested in M1 against a test
+implementation of a remote source, rather than surfacing in M6.
 
-### Rücksprungregel
+### 11.4 The rule for going back
 
-Stellt sich in einem Meilenstein heraus, dass eine Grundannahme nicht trägt, wird **nicht** am Symptom herumgebaut. Der betroffene Meilenstein wird angehalten, die Annahme in einem ADR oder in der Spezifikation korrigiert, und die Arbeit am veränderten Teil wiederholt. Das kostet Tage, spart aber ein Feature, das auf einer falschen Annahme ruht.
-
----
-
-## Abnahmeregelungen
-
-Jede Meilensteinabnahme folgt demselben Muster. Die Datei liegt unter `docs/acceptance/M<n>-ACCEPTANCE.md` und trägt die Abschnitte in dieser Reihenfolge.
-
-### Aufbau einer Abnahme
-
-**Funktionalität.** Welche Funktionen des Meilenstands sind vorhanden und wie verhalten sie sich? Jede Zeile nennt die Anforderungs-ID und ein beobachtetes Verhalten, keine Behauptung.
-
-**Technik.** Welche Architekturentscheidungen sind umgesetzt, welche Crate-Grenzen wurden eingehalten, welche Werkzeuge liefen durch?
-
-**Leistung.** Welche Zielwerte wurden gemessen, mit welchem Werkzeug, mit welchem Ergebnis? Nicht gemessene Zielwerte werden als „nicht gemessen" ausgewiesen — nicht als „erfüllt".
-
-**Benutzerführung.** Wie sieht der Meilenstein aus und wie wird er bedient? Tastaturführung ist getrennt auszuweisen, weil sie der Hauptbedienweg ist.
-
-**Sicherheit und Datenschutz.** Welche Härtungen sind wirksam, und **welcher negative Test belegt das**? Ein positiver Test beweist nichts über die Abwehr.
-
-**Interoperabilität.** Welche fremden Systeme wurden geprüft — Archive mit fremden Werkzeugen, Netzlaufwerke mit Samba, WebDAV mit Nextcloud?
-
-**Bekannte Einschränkungen.** Was funktioniert nicht, und warum? Diese Liste ist Pflicht und darf nicht leer sein, solange es etwas gibt.
-
-**Entscheidung.** Abgenommen, mit Auflagen, oder abgelehnt. Die Entscheidung nennt die Person und das Datum.
-
-### Belegregeln
-
-Ein Beleg ist eine Kommandoausgabe, ein Testname mit grünem Ergebnis oder ein Abzug aus einer Abnahmedokumentation. „Funktioniert" ist kein Beleg. „Sollte passen" ist kein Beleg. Eine Coverage-Prozentzahl ohne Messung ist kein Beleg.
-
-Tests, die nicht ausgeführt werden konnten, werden als **NOT RUN mit exaktem Grund** ausgewiesen. Ein NOT RUN mit Begründung ist zulässig und ehrlich. Ein vorgetäuschter PASS ist unzulässig.
-
-### Die Abnahme-Gates
-
-Diese Gates bilden das Gerüst, an dem jede Änderung gemessen wird.
-
-| Gate | Wann | Was geprüft wird | Was bei Rot passiert |
-|---|---|---|---|
-| **Formatierung** | jede Änderung | `cargo fmt --check` | Der Build bricht ab |
-| **Statische Analyse** | jede Änderung | `cargo clippy --all-targets -- -D warnings` | Der Build bricht ab |
-| **Lizenzprüfung** | jede Änderung | `cargo deny check` | Der Build bricht ab |
-| **Schwachstellenprüfung** | jede Änderung | `cargo audit` | Der Build bricht ab |
-| **Crate-Grenzen** | jede Änderung | `scripts/check-crate-boundaries.sh` | Der Build bricht ab |
-| **Testlauf** | jede Änderung | `cargo test --workspace` | Der Build bricht ab |
-| **Plattformbau** | vor Meilensteinabschluss | Bau auf Linux, macOS, Windows, FreeBSD, Android, iOS | Der Meilenstein gilt nicht als erreicht |
-| **Leistung** | vor Meilensteinabschluss | Die Zielwerte der Spezifikation, gemessen mit `criterion` | Der Meilenstein gilt nicht als erreicht |
-| **Sicherheitsnachweis** | vor Meilensteinabschluss | Die negativen Tests für jede Härtung | Der Meilenstein gilt nicht als erreicht |
-| **Bedienerreichbarkeit** | vor M8 | Jede Aktion ist im `dpad`-Kontext erreichbar | M8 gilt nicht als erreicht |
-
-Kein Gate wird abgeschwächt, um grün zu werden. Ein Lint wird nicht mit `#[allow]` wegkommentiert, eine Prüfung wird nicht aus der CI entfernt, ein Test wird nicht deaktiviert.
-
-### Nachweisverzeichnis
-
-Unter `docs/acceptance/` liegen die Abnahmedokumente, unter `docs/reviews/` die Reviews und unter `docs/security/` das Bedrohungsmodell. Die Dateien sind nummeriert und datiert, damit der Verlauf des Projekts nachvollziehbar bleibt.
+When a milestone reveals that a fundamental assumption does not hold, the symptom is not patched.
+The affected milestone is stopped, the assumption is corrected in an ADR or in the specification,
+and the affected part is redone. This costs days and saves a feature that rests on a false
+assumption.
 
 ---
 
-## Teamorganisation
+## 12. Organisational Plan
 
-Die Arbeit wird mit einem Team von KI-Agenten organisiert, die klare Rollen und messbare Endbedingungen haben. Der Roster umfasst:
+### 12.1 The roles
 
-| Rolle | Verantwortung | Endbedingung |
+| Role | Owns | Definition of done |
 |---|---|---|
-| Product Manager | Anforderungs-IDs, Umfangsentscheidungen, Abnahmekriterien | Anforderungsdokument ohne Widersprüche, Abnahmekriterien messbar |
-| Rust Architect | Crate-Grenzen, öffentliche API, ADRs, Workspace-Integrität | Grenzprüfung grün, alle ADRs geschrieben, `clippy` und `fmt` sauber |
-| Core Engineer | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Archiv | Unit-Tests für jede öffentliche Funktion, keine Stubs |
-| UI Engineer | Panels, Tastaturbedienung, Theme, native Menüs | Tastaturführung ohne Maus, Kontrast geprüft |
-| Security & Privacy | Bedrohungsmodell, Extraktionshärtung, Berechtigungen | Negative Tests belegen jede Härtung, `SECURITY.md` und `PRIVACY.md` stehen |
-| QA Engineer | Testabdeckung, CI-Gate, Abnahmeevidenz | Gate wirksam nachgewiesen, Abnahmenachweise mit echter Ausgabe |
-| Documentation Lead | Nutzerdokumentation, Glossar, `AGENTS.md` | Doku ohne tote Links, Glossar vollständig |
+| **Product Manager** | Requirement identifiers, scope decisions, acceptance criteria, the configuration schema | The requirement catalogue has no gaps and no duplicates; the acceptance criteria are measurable |
+| **Rust Architect** | Module boundaries, the public API, the ADRs, the workspace integrity | The boundary check is green, the ADRs are written, clippy and format are clean |
+| **Core Engineer** | The model, the job queue, the rename engine, the archive adapters | Every public function has a test, no stubs remain |
+| **UI Engineer** | The panels, the keyboard operation, the theme, the native menus, the layouts per context | The application is operable without a pointer, the contrast is measured |
+| **Security and Privacy** | The threat model, the hardening of the extraction, the permissions, the privacy statements | The negative tests prove every hardening, `SECURITY.md` and `PRIVACY.md` exist |
+| **Quality Engineer** | The test coverage, the build gate, the acceptance evidence, the performance measurements | The gate is proven effective, the acceptance documents contain real output |
+| **Documentation Lead** | The user documentation, the glossary, `AGENTS.md`, the governance documents | No dead link, the glossary is complete, both languages are covered |
 
-Ein Team-Durchlauf arbeitet in Zyklen aus Erzeugung und unabhängiger Prüfung: Der Erzeuger liefert, der Prüfer verifiziert eigenständig durch erneutes Ausführen der Kommandos, nicht durch Lesen der Zusammenfassung. Erst bei bestandener Prüfung akzeptiert der Owner den Zyklus.
+### 12.2 The flow of work
+
+```
+Requirement      the catalogue states the identifiers and the acceptance criteria
+     │
+     ▼
+Decision         an ADR for every decision that is not obvious
+     │
+     ▼
+Implementation   the module owner writes the code and the colocated tests
+     │
+     ▼
+Verification     an independent verifier re-runs the commands and attacks the result
+     │
+     ▼
+Acceptance       the milestone owner writes the acceptance document with the evidence
+     │
+     ▼
+Release          the push to main, the tag, the release notes
+```
+
+The separation between implementation and verification is the point of the arrangement. The
+verifier does not read the implementer's summary and conclude from it; the verifier re-runs the
+commands, attacks the result, and returns the exact gap if something is missing.
+
+### 12.3 The rules that bind everyone
+
+1. Nothing is claimed that has not been measured. The evidence is the command output.
+2. No stubs, no dummy returns, no `todo!()` presented as a result.
+3. No test is skipped or commented out to make a build green.
+4. No commit, tag or release is produced by a worker. The team lead commits and merges.
+5. The repository content stays in English; the handover document to the owner is written in
+   German.
+6. The specification belongs to the owner. A worker proposes a change, the owner decides.
+7. A question without an answer is asked. It is never guessed.
+
+### 12.4 The work plan for a milestone
+
+Each milestone is planned as a table of work packages with an owner, a definition of done and a
+verification method. The plan is written before the work begins, and it is the same table that
+the acceptance document later refers to.
+
+A work package is small enough to be finished within one session. A package that cannot be
+finished is split, because an unfinished package cannot be reviewed.
+
+### 12.5 The agent operating model
+
+The work is carried out by AI agents with defined roles. Two findings from the practice of this
+project shaped the model:
+
+**Parallel build processes collide.** Several agents that build at the same time corrupt the
+shared cargo cache, and the resulting error names a crate that does exist. Every concurrent build
+therefore gets its own cargo home and its own target directory, and the lock file is committed so
+that all of them resolve the same versions.
+
+**The plan engine and the workers have different reliability.** The plan engine worked well for
+the planning and the review matrix, but its workers stalled for hours in this environment without
+writing a file. Long writing tasks are therefore handed to subordinate agents that receive a
+complete brief, and the team lead builds and tests centrally afterwards.
+
+The general rule that follows: **the central build is the truth.** A worker that cannot build
+must not report success, and the team lead always builds and tests the integrated result
+before pushing.
+
+### 12.6 The documentation landscape
+
+| Document | Purpose | Owner |
+|---|---|---|
+| `docs/REQUIREMENTS.md` | This document. The binding specification | Product Manager |
+| `docs/ARCHITECTURE.md` | The module boundaries, the data flows, the extension points | Architect |
+| `docs/adr/` | One document per decision that is not obvious | Architect |
+| `docs/WHERE_TO_CHANGE.md` | "Where do I change this?" for contributors | Documentation Lead |
+| `docs/KEYMAP.md` | Every action, its binding, its context | Documentation Lead |
+| `docs/glossary.md` | The terms with a specific meaning in this project | Documentation Lead |
+| `docs/security/THREAT_MODEL.md` | The trust boundary, the hardening, the residual risks | Security |
+| `docs/acceptance/` | One acceptance document per milestone | Quality Engineer |
+| `docs/reviews/` | The reviews and the protocols | Quality Engineer |
+| `docs/user-guide/` | The user documentation, German and English | Documentation Lead |
+| `AGENTS.md` | The working rules for the agents | Documentation Lead |
+
+Every document in this table has a named owner, and the owner is responsible for keeping it
+current. A document that is not maintained is worse than a missing document, because it is
+trusted.
+
 
 ---
 
-## Getroffene Entscheidungen
+## 13. Acceptance Rules and Gates
 
-Die folgenden Entscheidungen sind vom Owner am 24.10.2026 getroffen. Sie sind verbindlich. Jede Abweichung braucht eine neue Entscheidung, die hier mit Datum und Begründung nachgetragen wird.
+### 13.1 The structure of an acceptance document
 
-**E1 — Strenge der Plattformanpassung: Option A.** egui als gemeinsame Oberfläche, ergänzt um native Menüleiste über `muda`, native Dialoge über `rfd`, Plattform-Shortcuts und Plattform-Metriken. Ein Codepfad, sechs Plattformen.
+Every milestone acceptance follows the same structure, in this order:
 
-**E2 — Reichweite der Archivunterstützung: ZIP, TAR mit fünf Kompressionen, 7z.** RAR und die exotischen Formate bleiben außen vor. RAR erfordert eine Lizenz der WinRAR-Eigentümer, die nicht eingeholt wird.
+**Functionality.** Which functions of the milestone state exist, and how do they behave? Each line
+names the requirement identifier and an observed behaviour, not a claim.
 
-**E3 — Strenge der Sicherheitshärtung: streng.** Kein `extract()` aus den Crates, eigene kanonisierte Pfadauflösung, Symlinks aus Archivmaterial werden nicht erzeugt, Größenlimits gegen Dekompressionsbomben, `cargo-deny` und `cargo-audit` als harte CI-Gates.
+**Technique.** Which architectural decisions are implemented, which module boundaries were
+respected, which tools ran through?
 
-**E4 — App-Sandbox auf macOS: nein.** Auslieferung ohne App-Sandbox, mit Notarisierung, Hardened Runtime und einer Erststart-Seite, die „Full Disk Access" erklärt. Die App erzwingt die Berechtigung nicht und umgeht sie nicht.
+**Performance.** Which target values were measured, with which tool, with which result? A target
+value that was not measured is reported as "not measured", never as "met".
 
-**E5 — Viewer-Umfang zum Start: Stufe 1 vollständig.** Text, Hex, Bilder, Archivinhalt und Metadaten ab M1, PDF und Syntaxhervorhebung ab M2, Audio und Video ab M9. Eine ehrliche Liste mit zehn funktionierenden Formaten ist die Positionierung.
+**Guidance.** How does the milestone look, and how is it operated? The keyboard operation is
+reported separately, because it is the primary path.
 
-**E6 — Reihenfolge der Netzwerkmeilensteine: SMB und WebDAV zuerst.** Beide werden im eigenen Heimnetz genutzt, WebDAV deckt zugleich Nextcloud, ownCloud und die meisten NAS-Systeme ab. SFTP und FTP folgen in M6 gemeinsam mit dem Verbindungsmanagement.
+**Security and privacy.** Which hardenings are effective, and **which negative test proves it**? A
+positive test proves nothing about a defence.
 
-**E7 — SMB-Härtung: streng.** SMB1 und NTLMv1 werden nicht implementiert. Signatur und Transportverschlüsselung werden nach Möglichkeit verlangt. Ein Server ohne Unterstützung für Signatur oder Verschlüsselung wird abgelehnt statt stillschweigend akzeptiert.
+**Interoperability.** Which foreign systems were tested: archives written by other tools, network
+shares from Samba, WebDAV from Nextcloud?
 
-**E8 — Quest-Unterstützung: Bedienkontext `controller` auf der Android-Version.** Kein immersiver VR-Port. Die Einschränkung — im Panel-Modus gibt es keine Tastatur — wird in der Dokumentation ausgewiesen.
+**Known limitations.** What does not work, and why? This list is mandatory and must not be empty
+as long as there is anything to list.
 
-**E9 — Fernbedienungs-Bedienung: Vollversion, keine Zusatzfunktion.** Jede Aktion ist im `dpad`-Kontext erreichbar, weil Google Play die gesamte Funktionalität mit Fünf-Wege-D-Pad prüft. Eine Einschränkung auf eine Grundversion wäre auch eine kostenpflichtige Aufweichung der Devise „kostenlos".
+**Decision.** Accepted, accepted with conditions, or rejected. The decision names the person and
+the date.
 
-### Offene Punkte für die Umsetzung
+### 13.2 The evidence rule
 
-Die folgenden Punkte sind während der Umsetzung zu klären. Sie blockieren den Start nicht, brauchen aber eine Antwort, bevor die betroffene Zeile Code geschrieben wird.
+Evidence is a command output, a test name with a green result, or an extract from an acceptance
+document. "It works" is not evidence. "It should pass" is not evidence. A coverage percentage
+without a measurement is not evidence.
 
-**Bezugsgröße der Serienfolgen-Erkennung.** Ob der Serienname aus dem übergeordneten Verzeichnis übernommen oder bei jeder Serie neu eingegeben wird, ist eine Frage der Gewohnheit. Vorschlag: Der Verzeichnisname ist die Vorgabe, er wird aber immer angezeigt und ist überschreibbar. Die Entscheidung fällt bei der ersten Erprobung mit echten Serien.
+A test that could not be executed is reported as **NOT RUN with the exact reason**. A NOT RUN with
+a reason is legitimate and honest. A pretended PASS is not.
 
-**Umfang der Aktionpalette.** Ob die Palette nur Aktionen zeigt, die im aktuellen Kontext sinnvoll sind, oder alle Aktionen mit einem Hinweis auf nicht erreichbare. Vorschlag: nur erreichbare. Eine Palette, die ständig nicht funktionierende Einträge zeigt, ist genau das Clutter, das das Produkt vermeiden soll.
+### 13.3 The gates
 
-**Grenze der Ergebnisgröße bei Netzwerkquellen.** Der Vorschlag in der Spezifikation ist ein festes Lesebudget. Der genaue Wert richtet sich nach der kleinsten sinnvollen Zielplattform und wird bei M6 gemessen, nicht geraten.
+| Gate | When | What it checks | What happens when it is red |
+|---|---|---|---|
+| Formatting | Every change | `cargo fmt --check` | The build stops |
+| Static analysis | Every change | `cargo clippy --all-targets -- -D warnings` | The build stops |
+| Licence check | Every change | `cargo deny check` | The build stops |
+| Vulnerability check | Every change | `cargo audit` | The build stops |
+| Module boundaries | Every change | `scripts/check-crate-boundaries.sh` | The build stops |
+| File size | Every change | `scripts/check-file-size.sh` | The build stops |
+| Telemetry check | Every change | `scripts/check-no-telemetry.sh` | The build stops |
+| Link check | Every change | `scripts/check-docs-links.py` | The build stops |
+| Test run | Every change | `cargo test --workspace` | The build stops |
+| Platform build | Before a milestone is accepted | Linux, macOS, Windows, FreeBSD, NetBSD, Android, iOS | The milestone is not reached |
+| Performance | Before a milestone is accepted | The target values, measured with criterion | The milestone is not reached |
+| Security evidence | Before a milestone is accepted | The negative test for every hardening in scope | The milestone is not reached |
+| Localisation parity | Before M2 and every later release | The key sets of the catalogues are identical | The milestone is not reached |
+| Reachability | Before M8 | Every action is reachable in the D-pad context | The milestone is not reached |
 
-## Quellenverzeichnis
+No gate is weakened to make the build green. A lint is not silenced with an `#[allow]` without a
+reason in an ADR. A check is not removed from the continuous integration. A test is not
+deactivated.
 
-[1] SpeedCommander — Produktseite, Funktionsübersicht: https://www.speedproject.de/
-[2] SpeedCommander — Funktionen im Detail: https://www.speedproject.de/sc/funktionen/
-[3] SpeedCommander (englisch) — Feature-Beschreibung: https://www.speedproject.com/sc/
+### 13.4 The evidence index
+
+Under `docs/acceptance/` lie the acceptance documents, and under `docs/acceptance/logs/` the
+command output they refer to. The documents are numbered and dated, so that the history of the
+project remains traceable. A requirement that has no acceptance criterion and no test is not
+finished, however clearly it is described.
+
+### 13.5 The requirement trace
+
+Every requirement in section 4 carries a milestone and a verification method. The requirement
+catalogue in `docs/REQUIREMENTS-IDS.md` expands this into the full matrix with the source
+section, so that a requirement can be traced forwards to its acceptance criterion and backwards
+to the sentence in this document that asked for it.
+
+---
+
+## 14. Decisions and Open Questions
+
+### 14.1 Decisions taken
+
+The following decisions were taken by the owner on 24 October 2026. They are binding. A departure
+requires a new decision, recorded here with the date and the reason.
+
+| ID | Question | Decision | Rationale |
+|---|---|---|---|
+| E1 | How strict is the platform adaptation? | egui as the shared interface, with a native menu bar, native dialogs, platform shortcuts and platform metrics | One code path, six platforms, and the pattern is already proven in the Photocraft project |
+| E2 | How broad is the archive support? | ZIP, TAR with five compressions, 7z. RAR and the exotic formats are excluded | RAR requires a licence from the WinRAR owners, which is not obtained |
+| E3 | How strict is the security hardening? | Strict. No `extract()`, own canonicalised path resolution, no symlinks from archive material, size limits, `cargo deny` and `cargo audit` as hard gates | The cost is paid once and it protects against the most severe error class in file managers |
+| E4 | Is the macOS app sandbox used? [43][47] | No. Distribution without a sandbox, with notarisation, hardened runtime and a first-start page that explains Full Disk Access | A sandboxed file manager loses its basic function. The price is that the user grants the permission, which the application neither forces nor circumvents |
+| E5 | How many viewer formats at the start? | Stage 1 complete. Text, hex, images, archive contents and metadata from M1, PDF and syntax highlighting from M2, audio and video from M9 | An honest list of ten formats that work is a better position than the claim of eighty |
+| E6 | What is the order of the network milestones? [13] | SMB and WebDAV first. SFTP and FTP follow in M6 together with the connection manager | Both are used in the home network, and WebDAV covers Nextcloud, ownCloud and most NAS systems |
+| E7 | How strict is the SMB hardening? [16][17][21] | Strict. SMB 1 and NTLMv1 are not implemented; signing and transport encryption are required; a server without them is refused | The alternative is a comfortable but insecure behaviour |
+| E8 | How far does the Quest support go? | A `controller` interaction context on the Android version. No immersive VR port | Horizon OS is Android, so the controller operation comes without an OpenXR frontend. The limitation is stated in the documentation |
+| E9 | Is the remote control operation a full version or an add-on? | A full version | Google Play checks the entire functionality with a five-way D-pad. A reduced version would also be a paid compromise of the principle "free" |
+| E10 | Which interface framework? [7][8][9][10][11][12][33][34][37] | egui and eframe 0.37 | MIT OR Apache-2.0, all six targets, and the same generation is already in use in the sister project. Slint was rejected because its licence is `GPL-3.0-only OR LicenseRef-Slint-Royalty-free` and the royalty-free variant demands a visible attribution and excludes embedded use [8][9][10]; iced was rejected because mobile support is still open since April 2020 [12] |
+| E11 | Which localisation system? [29][30][31] | Mozilla Fluent with `fluent`, `rust-embed` and `icu` | Native plural support, complexity in the catalogue rather than in the code, and a widely adopted system for Rust |
+| E12 | How is the interface adapted to the user's taste? | Two profiles, `clean` and `full`, with per-command overrides, exportable and importable | The user chooses how much furniture they see, without a feature gate |
+| E13 | Which placeholders does the rename engine use? | Both dialects. Square brackets in the dialog, curly braces in the named templates | The dialog stays simple, the templates get the expressive power, and the separation is documented |
+
+### 14.2 Open questions for the implementation
+
+These points do not block the start of the work, but they need an answer before the affected code
+is written.
+
+**The reference for the series name.** Whether the series name is taken from the parent
+directory or entered for every series is a question of habit. The proposal: the directory name is
+the default, it is always visible and can be overridden. The decision is made when real series
+are processed the first time.
+
+**The scope of the action palette.** Whether the palette shows only the actions that work in the
+current context, or all actions with a note on the unreachable ones. The proposal: only the
+working ones. A palette that constantly shows entries which do nothing is exactly the clutter the
+product principles forbid.
+
+**The size limit for a network answer.** The proposal is a fixed reading budget. The exact value
+follows from the smallest sensible target platform and is measured in M6 rather than guessed.
+
+**The placeholder dialect in the rename dialog.** Square brackets or curly braces in the dialog
+itself. The proposal is square brackets for the generic dialog, because they are what the
+documentation already uses and they read clearly in a compact field.
+
+---
+
+## 15. Source Register
+
+[1] SpeedCommander — product page and feature overview: https://www.speedproject.de/
+[2] SpeedCommander — features in detail: https://www.speedproject.de/sc/funktionen/
+[3] SpeedCommander (English) — feature description: https://www.speedproject.com/sc/
 [4] SpeedCommander — Wikipedia: https://de.wikipedia.org/wiki/SpeedCommander
-[5] Forklift 3 Review: https://smartwebsetup.com/forklift-3-review/
-[6] winit — Plattformunterstützung: https://rust-windowing.github.io/winit/winit/index.html
-[7] egui auf crates.io: https://crates.io/crates/egui
-[8] slint auf crates.io: https://crates.io/crates/slint
-[9] Slint — FAQ zur Lizenzierung: https://github.com/slint-ui/slint/blob/master/FAQ.md
-[10] Slint — Lizenzdatei: https://github.com/slint-ui/slint/blob/master/LICENSE.md
-[11] Rust-GUI-Ökosystem — Entscheidungsgrundlage: https://github.com/GoldStrikeArch/rust-gui-desktop-ecosystem-state/blob/main/report/20-how-to-build.md
-[12] iced — Mobilticket #302, Status 2026: https://github.com/GoldStrikeArch/rust-gui-desktop-ecosystem-state/blob/main/report/01-iced.md
-[13] Apple — Zugriff auf Verzeichnisse (UIDocumentPickerViewController): https://developer.apple.com/documentation/uikit/providing-access-to-directories
-[14] Apple — UIDocumentPickerViewController: https://developer.apple.com/documentation/uikit/uidocumentpickerviewcontroller
-[15] Apple — Sicherheitsmodell der Laufzeitumgebung: https://support.apple.com/en-gb/guide/security/sec15bfe098e/web
-[16] Android — Manage all files: https://developer.android.com/training/data-storage/manage-all-files
-[17] Android — Scoped Storage: https://source.android.com/docs/core/storage/scoped
-[18] Google Play — Richtlinie zu `MANAGE_EXTERNAL_STORAGE`: https://support.google.com/googleplay/android-developer/answer/10467955?hl=en
-[19] NIST SP 800-88 Rev. 2 — Guidelines for Media Sanitization: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-88r2.pdf
-[20] Berkeley — Secure Deletion Guideline: https://security.berkeley.edu/secure-deletion-guideline
-[21] RUSTSEC-2026-0369 — zip: Unix-Berechtigungen durch Symlinks: https://rustsec.org/advisories/RUSTSEC-2026-0369.html
-[22] RUSTSEC-2026-0367 — zip: Erhalt von SUID/SGID-Bits: https://rustsec.org/advisories/RUSTSEC-2026-0367.html
-[23] RUSTSEC-2026-0368 — zip: Symlinks außerhalb des Zielverzeichnisses: https://rustsec.org/advisories/RUSTSEC-2026-0368.html
-[24] RUSTSEC-2025-0168 — zip: fehlerhafte Pfadkanonisierung: https://rustsec.org/advisories/RUSTSEC-2025-0168.html
-[25] `zip`-Crate — `ZipFile::enclosed_name`: https://docs.rs/zip/latest/zip/read/struct.ZipFile.html
-[26] crates.io — Paketregister (Versionen und Lizenzen der genannten Crates): https://crates.io/
-[27] muda — native Menüs für Windows, macOS, Linux/BSD: https://crates.io/crates/muda
-[28] Photocraft — Workspace-Manifest: https://github.com/storytold/photocraft/blob/main/Cargo.toml
-[29] Photocraft — Abstraktion des nativen Menüs: https://github.com/storytold/photocraft/blob/v0.12.0/crates/ui-egui/src/native_menu.rs
-[30] Microsoft — Maximum Path Length Limitation: https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
-[31] Microsoft — Dateipfadlängen je Plattform: https://support.microsoft.com/en-us/onedrive/what-are-file-path-length-limits
-[32] egui — plattformspezifische Details: https://deepwiki.com/emilk/egui/6.3-platform-specific-considerations
-[33] egui — Übersicht und Plattformtabelle: https://deepwiki.com/emilk/egui
-[34] Tauri — Release-Notizen 2.x: https://v2.tauri.app/release/tauri/
-[35] Apple — Dateizugriff aus der macOS-App-Sandbox: https://developer.apple.com/tutorials/data/documentation/security/accessing-files-from-the-macos-app-sandbox.md
-[36] Double Commander — Tastenbelegung als Quasi-Standard-Referenz: https://github.com/networm/doublecmd/blob/main/shortcuts.scf
-[37] Rust-GUI-Ökosystem — Tauri im Detail: https://github.com/GoldStrikeArch/rust-gui-desktop-ecosystem-state/blob/main/report/04-tauri.md
-[38] Die besten macOS-Dateimanager 2026: https://www.compsmag.com/best/mac-file-managers/
-[39] Nextcloud — WebDAV-Basic-APIs (PROPFIND, PUT, MKCOL): https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/basic.html
-[40] Android TV — Navigation mit D-Pad: https://developer.android.com/training/tv/get-started/navigation
-[41] Android TV — TV-App-Qualitätsvorgaben (TV-DP, TV-DM, TV-DB, TV-ML, TV-MT): https://developer.android.com/develop/adaptive-apps/quality-guidelines/tv-app-quality
-[42] TrueNAS — SMB-Dienst, NTLMv1-Abschaltung durch Microsoft: https://www.truenas.com/docs/scale/26/systemsettings/services/smbservice/
-[43] Microsoft — SMB-Abfangschutz, SMB1-Abschaltung, Signaturpflicht: https://learn.microsoft.com/en-us/windows-server/storage/file-server/smb-interception-defense
-[44] Meta — Horizon OS, Grundlagen (Android-basiert): https://developers.meta.com/vr/essentials/quick-start/
-[45] Meta — Plattformen und Werkzeuge (Flat Panels, Gestenabbildung): https://developers.meta.com/vr/discover/platforms/
-[46] openxr — Rust-Bindings für OpenXR: https://crates.io/crates/openxr
-[47] crates.io — Paketregister (Versionen und Lizenzen der genannten Crates): https://crates.io/
-[48] winit — Plattform- und Eingabeunterstützung: https://docs.rs/crate/winit/latest/source/FEATURES.md
+[5] Forklift 3 review: https://smartwebsetup.com/forklift-3-review/
+[6] winit — platform support: https://rust-windowing.github.io/winit/winit/index.html
+[7] egui on crates.io: https://crates.io/crates/egui
+[8] slint on crates.io: https://crates.io/crates/slint
+[9] Slint — licensing FAQ: https://github.com/slint-ui/slint/blob/master/FAQ.md
+[10] Slint — licence file: https://github.com/slint-ui/slint/blob/master/LICENSE.md
+[11] Rust GUI ecosystem — decision basis: https://github.com/GoldStrikeArch/rust-gui-desktop-ecosystem-state/blob/main/report/20-how-to-build.md
+[12] iced — mobile ticket #302, status 2026: https://github.com/GoldStrikeArch/rust-gui-desktop-ecosystem-state/blob/main/report/01-iced.md
+[13] Nextcloud — WebDAV basic APIs (PROPFIND, PUT, MKCOL): https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/basic.html
+[14] Android TV — navigation with the D-pad: https://developer.android.com/training/tv/get-started/navigation
+[15] Android TV — TV application quality requirements (TV-DP, TV-DM, TV-DB, TV-ML, TV-MT): https://developer.android.com/develop/adaptive-apps/quality-guidelines/tv-app-quality
+[16] TrueNAS — SMB service, NTLMv1 removal by Microsoft: https://www.truenas.com/docs/scale/26/systemsettings/services/smbservice/
+[17] Microsoft — SMB interception defence, SMB 1 removal, signing requirement: https://learn.microsoft.com/en-us/windows-server/storage/file-server/smb-interception-defense
+[18] Meta — Horizon OS basics (Android based): https://developers.meta.com/vr/essentials/quick-start/
+[19] Meta — platforms and tools (flat panels, gesture mapping): https://developers.meta.com/vr/discover/platforms/
+[20] NIST SP 800-88 Rev. 2 — Guidelines for Media Sanitization: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-88r2.pdf
+[21] Berkeley — secure deletion guideline: https://security.berkeley.edu/secure-deletion-guideline
+[22] RUSTSEC-2026-0369 — zip: Unix permissions through symlinks: https://rustsec.org/advisories/RUSTSEC-2026-0369.html
+[23] RUSTSEC-2026-0367 — zip: preservation of SUID/SGID bits: https://rustsec.org/advisories/RUSTSEC-2026-0367.html
+[24] RUSTSEC-2026-0368 — zip: symlinks outside the destination directory: https://rustsec.org/advisories/RUSTSEC-2026-0368.html
+[25] RUSTSEC-2025-0168 — zip: incorrect path canonicalisation: https://rustsec.org/advisories/RUSTSEC-2025-0168.html
+[26] crates.io — package register (versions and licences of the named crates): https://crates.io/
+[27] `zip` crate — `ZipFile::enclosed_name`: https://docs.rs/zip/latest/zip/read/struct.ZipFile.html
+[28] openxr — Rust bindings for OpenXR: https://crates.io/crates/openxr
+[29] fluent — Rust localisation runtime: https://crates.io/crates/fluent
+[30] icu — Unicode locale data, number and date formatting: https://crates.io/crates/icu
+[31] rust-i18n — comparison of the localisation approaches: https://better-i18n.com/en/blog/rust-i18n-guide/
+[32] muda — native menus for Windows, macOS, Linux and BSD: https://crates.io/crates/muda
+[33] Photocraft — workspace manifest: https://github.com/storytold/photocraft/blob/main/Cargo.toml
+[34] Photocraft — abstraction of the native menu: https://github.com/storytold/photocraft/blob/v0.12.0/crates/ui-egui/src/native_menu.rs
+[35] Microsoft — maximum path length limitation: https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+[36] Double Commander — key binding as the quasi-standard reference: https://github.com/networm/doublecmd/blob/main/shortcuts.scf
+[37] Rust GUI ecosystem — Tauri in detail: https://github.com/GoldStrikeArch/rust-gui-desktop-ecosystem-state/blob/main/report/04-tauri.md
+[38] The best macOS file managers of 2026: https://www.compsmag.com/best/mac-file-managers/
+[39] winit — platform and input support matrix: https://docs.rs/crate/winit/latest/source/FEATURES.md
+[40] Android — manage all files: https://developer.android.com/training/data-storage/manage-all-files
+[41] Android — scoped storage: https://source.android.com/docs/core/storage/scoped
+[42] Google Play — policy on `MANAGE_EXTERNAL_STORAGE`: https://support.google.com/googleplay/android-developer/answer/10467955?hl=en
+[43] Apple — access to directories (UIDocumentPickerViewController): https://developer.apple.com/documentation/uikit/providing-access-to-directories
+[44] Meta — Horizon OS quick start: https://developers.meta.com/vr/essentials/quick-start/
+[45] Meta — platforms and tools: https://developers.meta.com/vr/discover/platforms/
+[46] openxr — Rust bindings, licence: https://crates.io/crates/openxr
+[47] Apple — file access from the macOS app sandbox: https://developer.apple.com/tutorials/data/documentation/security/accessing-files-from-the-macos-app-sandbox.md
+[48] RustSec advisory database: https://rustsec.org/advisories/
