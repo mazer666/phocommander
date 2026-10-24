@@ -70,6 +70,10 @@ pub struct Config {
     #[serde(default)]
     pub advanced: Advanced,
 
+/// The {[security]} section.
+    #[serde(default)]
+    pub security: Security,
+
 /// The input contexts and their key bindings.
     #[serde(default)]
     pub input: Input,
@@ -195,6 +199,79 @@ pub struct Advanced {
 /// has cores.
     #[serde(default)]
     pub worker_threads: u32,
+}
+
+/// The {[security]} section of the configuration file.
+///
+/// WHY: the security rules of the specification (sections 9.7 and 9.8) are
+/// not carved in stone. They are the default, and the user may adjust them
+/// to the machine and to the policy in force. Three guarantees are not part
+/// of this structure, because they cannot be switched off.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Security {
+/// The profile that decides which rules apply.
+    #[serde(default)]
+    pub profile: SecurityProfile,
+
+/// Read the content of a directory again before it is shown.
+    ///
+    /// WHY: a change that was made elsewhere is noticed. On a network
+    /// drive this costs round trips, which is why it is a switch.
+    #[serde(default = "default_true")]
+    pub verify_directory_before_refresh: bool,
+
+/// Keep no index.
+    ///
+    /// WHY: the application never reads a file that the user has not
+    /// opened. The field exists so that the value is visible; the
+    /// guarantee itself does not depend on it.
+    #[serde(default)]
+    pub background_index: bool,
+
+/// Write the last directories at the end of a session.
+    ///
+    /// WHY: switching this off leaves nothing behind on a machine that
+    /// is not the user's own.
+    #[serde(default = "default_true")]
+    pub remember_session: bool,
+
+/// The viewer reads a file only when the user opens it.
+    #[serde(default = "default_true")]
+    pub read_only_on_demand: bool,
+
+/// Compare the checksums of source and destination in the verified copy.
+    #[serde(default = "default_true")]
+    pub checksum_on_copy: bool,
+
+/// Copy a symbolic link as a symbolic link and never follow it.
+    #[serde(default)]
+    pub follow_symlinks: bool,
+}
+
+/// The profile that decides which security rules apply.
+///
+/// WHY: three profiles cover the practical cases without asking the user to
+/// understand every switch. "standard" is for a private machine,
+/// "corporate" for a managed one, and "custom" for a user who knows the
+/// machine.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SecurityProfile {
+/// The rules of section 9.7 with the convenience switches.
+    #[default]
+    Standard,
+
+/// Every rule of section 9.7, for a managed machine.
+    Corporate,
+
+/// Exactly what the switches of the section say.
+    Custom,
+}
+
+/// Returns the value of a switch that is on by default.
+fn default_true() -> bool {
+    true
 }
 
 /// The {[input]} section of the configuration file.

@@ -136,6 +136,37 @@ context = "auto"
 "selection.toggle" = "Grip"
 
 # Behaviour of remote sources (SFTP, FTP, SMB, WebDAV, S3).
+# The security rules of the specification, section 9.7 and 9.8.
+[security]
+# The profile that decides which rules apply:
+#   "standard"  the rules of section 9.7 with the convenience switches
+#   "corporate" every rule of section 9.7, for a managed machine
+#   "custom"    exactly what the switches below say
+profile = "standard"
+
+# Read the content of a directory again before it is shown, so that a change
+# made elsewhere is noticed. On a network drive this costs round trips, which
+# is why it is a switch.
+verify_directory_before_refresh = true
+
+# Keep no index. The application never reads a file that the user has not
+# opened. This is one of the three guarantees that cannot be switched off,
+# and the switch exists only so that the value is visible.
+background_index = false
+
+# Write the last directories at the end of a session. Switching this off
+# leaves nothing behind on a machine that is not the user's own.
+remember_session = true
+
+# The viewer reads a file only when the user opens it in the viewer.
+read_only_on_demand = true
+
+# Compare the checksums of source and destination in the verified copy mode.
+checksum_on_copy = true
+
+# Copy a symbolic link as a symbolic link and never follow it.
+follow_symlinks = false
+
 [remote]
 # Behaviour on connection problems: "retry" tries again, "fail" aborts.
 # The timeouts apply per connection establishment.
