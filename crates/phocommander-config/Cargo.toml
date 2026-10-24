@@ -1,0 +1,27 @@
+# The configuration file of Phocommander.
+#
+# WHAT: reads and validates the single TOML file that holds the settings of
+#       the application.
+# WHY: the file is the first place a user and a contributor look at, so it has
+#       to fail loudly on a typo instead of silently ignoring a setting. The
+#       canonical defaults live in `phocommander-core`, which this crate may
+#       not depend on (the workspace is flat) — therefore every optional value
+#       is `Option` here and the composition root fills the gaps.
+# EXAMPLE: `let config = phocommander_config::parse_toml(source)?;`
+
+[package]
+name = "phocommander-config"
+description = "Reader and schema of the configuration file of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

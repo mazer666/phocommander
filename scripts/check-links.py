@@ -3,7 +3,9 @@
 
 WHAT: this script collects every Markdown link (inline links, reference
       definitions and images) from every ``*.md`` file in the repository and
-      checks whether the target exists on disk.
+      checks whether the target exists on disk. A link that carries an anchor
+      (``file.md#section``) is additionally checked against the headings of
+      the target file.
 WHY: documentation that links to files which are not there is worse than no
       documentation at all — a reader follows the link, lands on nothing, and
       loses trust in the whole project. The specification makes "no dead links"
@@ -11,10 +13,14 @@ WHY: documentation that links to files which are not there is worse than no
       (``docs/REQUIREMENTS.md``, section "Teamorganisation").
 EXAMPLE:
       python3 scripts/check-links.py
+      python3 scripts/check-links.py --summary-only
       python3 scripts/check-links.py --verbose
 
 Exit code 0 means "every link resolves". Exit code 1 means "at least one link
 is broken" — with the single documented exception listed in ALLOWED_MISSING.
+
+The sibling script ``scripts/check-docs-links.py`` is an alias for this one; both
+names are in use, the alias only forwards the call.
 """
 
 from __future__ import annotations
@@ -44,6 +50,8 @@ INLINE_LINK = re.compile(r"(?<!\!)\[(?:[^\]\\]|\\.)*\]\(\s*<?([^)\s]+)>?(?:\s+\"
 IMAGE_LINK = re.compile(r"!\[[^\]]*\]\(\s*<?([^)\s]+)>?(?:\s+\"[^\"]*\")?\s*\)")
 # Reference definition: [label]: target
 REFERENCE_DEF = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?([^\s>]+)>?", re.MULTILINE)
+# ATX heading inside a Markdown file: "## Some heading"
+HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$", re.MULTILINE)
 
 EXTERNAL_PREFIXES = ("http://", "https://", "mailto:", "ftp://", "tel:", "#")
 
@@ -77,9 +85,65 @@ def resolve(source: Path, target: str) -> Path | None:
     return (source.parent / candidate).resolve()
 
 
+def slugify(heading: str) -> str:
+    """Return the GitHub style anchor of a heading.
+
+    The rule is the one GitHub applies: lower case, spaces become dashes, and
+    every character that is not a letter, a digit, a dash or an underscore is
+    removed.
+    """
+    text = heading.strip().lower()
+    text = re.sub(r"[^\w\s-]", "", text)
+    return re.sub(r"\s+", "-", text)
+
+
+def anchors_of(path: Path) -> set[str]:
+    """Return every anchor a Markdown file offers."""
+    text = path.read_text(encoding="utf-8")
+    anchors: set[str] = set()
+    for match in HEADING.finditer(text):
+        anchors.add(slugify(match.group(1)))
+    # Explicit anchors: <a id="name"></a>
+    for match in re.finditer(r"<a\s+(?:id|name)=\"([^\"]+)\"", text):
+        anchors.add(match.group(1))
+    return anchors
+
+
+def fragment_of(target: str) -> str:
+    """Return the anchor part of a link target, empty if there is none."""
+    if "#" not in target:
+        return ""
+    return target.split("#", 1)[1].split("?", 1)[0]
+
+
+def check_anchor(resolved: Path, fragment: str) -> bool:
+    """Return True when the anchor exists in the target file.
+
+    Only Markdown files are checked for anchors. A fragment in a file of another
+    type cannot be verified and is therefore accepted.
+    """
+    if not fragment:
+        return True
+    if resolved.suffix.lower() not in {".md", ".markdown"}:
+        return True
+    if not resolved.is_file():
+        return True
+    return fragment.lower() in anchors_of(resolved)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--verbose", "-v", action="store_true", help="print every link, not only failures")
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="print external links and the progress note as well (default: every repository link)",
+    )
+    parser.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="print only the summary, not the list of links",
+    )
     args = parser.parse_args()
 
     markdown_files = sorted(
@@ -101,7 +165,19 @@ def main() -> int:
                 continue
             checked += 1
             if resolved.exists():
-                rows.append((f"{relative_source}:{line}", target, "ok", "resolves"))
+                fragment = fragment_of(target)
+                if check_anchor(resolved, fragment):
+                    rows.append((f"{relative_source}:{line}", target, "ok", "resolves"))
+                else:
+                    broken += 1
+                    rows.append(
+                        (
+                            f"{relative_source}:{line}",
+                            target,
+                            "BROKEN",
+                            f"the anchor '#{fragment}' does not exist in the target file",
+                        )
+                    )
                 continue
             try:
                 relative_target = str(resolved.relative_to(REPO_ROOT))
@@ -119,10 +195,11 @@ def main() -> int:
     width_target = max((len(row[1]) for row in rows), default=10)
     print(f"{'SOURCE'.ljust(width_source)}  {'TARGET'.ljust(width_target)}  STATUS")
     print(f"{'-' * width_source}  {'-' * width_target}  {'-' * 16}")
-    for source, target, status, action in rows:
-        if status == "ok" and not args.verbose:
-            continue
-        print(f"{source.ljust(width_source)}  {target.ljust(width_target)}  {status}  ({action})")
+    if not args.summary_only:
+        for source, target, status, action in rows:
+            if status == "external" and not args.verbose:
+                continue
+            print(f"{source.ljust(width_source)}  {target.ljust(width_target)}  {status}  ({action})")
 
     print()
     print(f"Markdown files scanned : {len(markdown_files)}")

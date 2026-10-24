@@ -1,0 +1,25 @@
+# The core vocabulary of Phocommander.
+#
+# WHAT: the canonical configuration defaults and the error type of the core
+#       layer.
+# WHY: the workspace is flat, so no crate below `crates/` may depend on a
+#       sibling. Everything that two crates have to agree on is therefore
+#       either a plain `std` type or a value the composition root injects.
+#       The limits live here so that exactly one place decides how large a
+#       file may become before the viewer refuses it.
+# EXAMPLE: `use phocommander_core::config::MAX_VIEWER_FILE_SIZE;`
+
+[package]
+name = "phocommander-core"
+description = "Canonical configuration defaults and error types of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
