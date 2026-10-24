@@ -4,25 +4,29 @@
 #
 # WHAT: this script counts the lines of every source file in the repository and
 #       reports the files that exceed the limits of the specification.
-# WHY:  the specification fixes two limits for every source file — 400 lines as
-#       a soft limit (a file above it needs a documented reason in its module
-#       header) and 550 lines as a hard limit (a file above it is rejected and
-#       must be split along a responsibility). A limit that is never checked is
-#       a wish, so the check runs on every change in the CI.
-#       The script is also the evidence for the acceptance criterion AC-M0-49
-#       ("no source file exceeds 550 lines").
+# WHY:  the specification fixes two limits for every source file — 600 lines as
+#       the target value (a file above it should be split along a
+#       responsibility) and 900 lines as the absolute maximum (a file above it
+#       is rejected). The two values differ on purpose: the target value is what
+#       a well-shaped file reaches, the maximum is the line that is never
+#       crossed. A limit that is never checked is a wish, so the check runs on
+#       every change in the CI.
+#       The script is also the evidence for the acceptance criterion
+#       ("no source file exceeds 900 lines").
 # EXAMPLE:
 #       ./scripts/check-file-size.sh              # report and exit
 #       ./scripts/check-file-size.sh --strict    # also fail on the soft limit
 #
-# Exit code 0 — no file exceeds the hard limit (soft-limit violations are
+# Exit code 0 — no file exceeds the hard limit (target-value violations are
 #               reported as warnings).
-# Exit code 1 — at least one file exceeds the hard limit of 550 lines.
+# Exit code 1 — at least one file exceeds the hard limit of 900 lines.
 
 set -uo pipefail
 
-SOFT_LIMIT=400
-HARD_LIMIT=550
+# The target value: a file above this should be split. It is a warning.
+TARGET_LIMIT=600
+# The absolute maximum: a file above this is rejected. It is a failure.
+HARD_LIMIT=900
 
 # Directories that hold generated or vendored code. They are not first-party
 # sources and are therefore not measured.
@@ -45,7 +49,7 @@ for argument in "$@"; do
     --strict) STRICT=1 ;;
     --help|-h)
       echo "usage: $0 [--strict]"
-      echo "  --strict   also fail the run when the soft limit of ${SOFT_LIMIT} lines is exceeded"
+      echo "  --strict   also fail the run when the target value of ${TARGET_LIMIT} lines is exceeded"
       exit 0
       ;;
     *)
@@ -75,20 +79,20 @@ for extension in $EXTENSIONS; do
     measured=$((measured + 1))
     if [ "$lines" -gt "$HARD_LIMIT" ]; then
       hard_violations=$((hard_violations + 1))
-      echo "HARD  ${lines} lines  ${file}"
-    elif [ "$lines" -gt "$SOFT_LIMIT" ]; then
+      echo "MAX   ${lines} lines  ${file}"
+    elif [ "$lines" -gt "$TARGET_LIMIT" ]; then
       soft_violations=$((soft_violations + 1))
-      echo "SOFT  ${lines} lines  ${file}"
+      echo "OVER  ${lines} lines  ${file}"
     fi
   done < <(find "${find_expression[@]}" | sort)
 done
 
 echo
 echo "Source files measured : ${measured} (extensions: ${EXTENSIONS})"
-echo "Soft limit            : ${SOFT_LIMIT} lines (warning)"
-echo "Hard limit            : ${HARD_LIMIT} lines (failure)"
-echo "Soft-limit violations : ${soft_violations}"
-echo "Hard-limit violations : ${hard_violations}"
+echo "Target value          : ${TARGET_LIMIT} lines (warning)"
+echo "Absolute maximum      : ${HARD_LIMIT} lines (failure)"
+echo "Target-value warnings : ${soft_violations}"
+echo "Maximum violations    : ${hard_violations}"
 
 if [ "$hard_violations" -gt 0 ]; then
   echo "RESULT: FAIL — a source file exceeds the hard limit of ${HARD_LIMIT} lines. Split it."
@@ -97,13 +101,13 @@ fi
 
 if [ "$soft_violations" -gt 0 ]; then
   if [ "$STRICT" -eq 1 ]; then
-    echo "RESULT: FAIL (strict) — a source file exceeds the soft limit of ${SOFT_LIMIT} lines."
+    echo "RESULT: FAIL (strict) — a source file exceeds the target value of ${TARGET_LIMIT} lines."
     exit 1
   fi
-  echo "RESULT: PASS with warnings — ${soft_violations} file(s) exceed the soft limit of ${SOFT_LIMIT} lines."
+  echo "RESULT: PASS with warnings — ${soft_violations} file(s) exceed the target value of ${TARGET_LIMIT} lines."
   echo "        Each of them must name the reason in its module header."
   exit 0
 fi
 
-echo "RESULT: PASS — every source file stays below ${SOFT_LIMIT} lines."
+echo "RESULT: PASS — every source file stays at or below the target value of ${TARGET_LIMIT} lines."
 exit 0

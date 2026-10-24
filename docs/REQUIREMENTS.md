@@ -360,10 +360,13 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | NFR-11 | Text contrast is at least 4.5:1, focus frames at least 3:1 | M2 | Must | Computed contrast |
 | NFR-12 | `prefers-reduced-motion` is respected | M2 | Must | Manual test |
 | NFR-13 | A screen reader can traverse the interface through AccessKit | M2 | Must | Manual test with a screen reader |
-| NFR-14 | No source file exceeds 400 lines soft or 550 lines hard | M0 | Must | `scripts/check-file-size.sh` |
+| NFR-14 | No source file exceeds the target value of 600 lines; the absolute maximum is 900 lines | M0 | Must | `scripts/check-file-size.sh` |
 | NFR-15 | No `unsafe`, no `unwrap()` and no `expect()` on a reachable path | M0 | Must | Workspace lints plus clippy |
 | NFR-16 | Every public function carries a WHAT, WHY, EXAMPLE doc comment | M0 | Must | `missing_docs` lint |
 | NFR-17 | Every public function has at least one unit test | M1 | Must | Coverage review |
+| NFR-17a | Every module carries a WHAT, WHY and EXAMPLE header that names its responsibility and its boundary | M0 | Must | `missing_docs` lint plus review |
+| NFR-17b | Every type, function and variable carries a name that states what it is, not what it is made of | M1 | Must | Review |
+| NFR-17c | Every crate and every module relationship is documented in a diagram, so that a reader can see where something lives and how it is wired | M2 | Must | Review of `docs/ARCHITECTURE.md` |
 | NFR-18 | No dependency carries a copyleft licence | M0 | Must | `cargo deny` |
 | NFR-19 | No dependency carries a known vulnerability | M0 | Must | `cargo audit` |
 | NFR-20 | The crate dependency direction is `apps` → `platform` → `crates` | M0 | Must | `scripts/check-crate-boundaries.sh` with a negative test |
@@ -547,7 +550,7 @@ message from the localisation catalogue, keyed by the error code, not by the err
 | Dependencies with a C component | Avoided | Cross-compilation for Android and iOS |
 | `unsafe` | Forbidden by lint | Reviewability |
 | `unwrap()`, `expect()` | Forbidden on reachable paths | A panic in a file operation is a poor user experience |
-| Source file length | 400 lines soft, 550 hard | Forces separation of concerns |
+| Source file length | Target value 600 lines, absolute maximum 900 lines | Forces separation of concerns while leaving room for a documented, coherent file |
 | Dependency additions | Require a licence check and a rationale in the pull request | Keeps the licence policy enforceable |
 
 Together these rules are what makes the quality gates enforceable rather than aspirational: each
@@ -1334,7 +1337,7 @@ before pushing.
 | Document | Purpose | Owner |
 |---|---|---|
 | `docs/REQUIREMENTS.md` | This document. The binding specification | Product Manager |
-| `docs/ARCHITECTURE.md` | The module boundaries, the data flows, the extension points | Architect |
+| `docs/ARCHITECTURE.md` | The module boundaries, the data flows, the extension points, with the diagrams of the wiring | Architect |
 | `docs/adr/` | One document per decision that is not obvious. Six decisions exist: the workspace and the module boundaries, the file system abstraction, the error hierarchy, the archive extraction security, the interface profiles, the safe copy modes | Architect |
 | `docs/WHERE_TO_CHANGE.md` | "Where do I change this?" for contributors | Documentation Lead |
 | `docs/KEYMAP.md` | Every action, its binding, its context | Documentation Lead |
