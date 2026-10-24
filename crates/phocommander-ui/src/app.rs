@@ -72,11 +72,7 @@ pub struct WorkSurfaceApp {
 
 impl WorkSurfaceApp {
     /// The shell with a work surface, a binding table and a catalogue.
-    pub fn new(
-        surface: WorkSurface,
-        keymap: KeymapView,
-        catalogue: Box<dyn Catalogue>,
-    ) -> Self {
+    pub fn new(surface: WorkSurface, keymap: KeymapView, catalogue: Box<dyn Catalogue>) -> Self {
         Self {
             surface,
             keymap,
@@ -180,9 +176,7 @@ impl WorkSurfaceApp {
                 continue;
             };
 
-            let action = self
-                .keymap
-                .resolve(self.context, &InputEvent::Key(stroke));
+            let action = self.keymap.resolve(self.context, &InputEvent::Key(stroke));
             if let Some(action) = action {
                 self.dispatch(action);
                 continue;
@@ -227,7 +221,8 @@ impl WorkSurfaceApp {
                 let side = self.surface.active_side();
                 if let Some(entry) = self.surface.active().cursor_entry() {
                     let path = self.surface.active().path().join(&entry.name);
-                    self.commands.push(Command::OpenViewer { side, entry: path });
+                    self.commands
+                        .push(Command::OpenViewer { side, entry: path });
                 }
             }
             "panel.open_in_other" => {
@@ -275,7 +270,9 @@ impl WorkSurfaceApp {
                     .strip_prefix("panel.tab.")
                     .and_then(|number| number.parse::<usize>().ok())
                 {
-                    self.surface.active_mut().switch_tab(number.saturating_sub(1));
+                    self.surface
+                        .active_mut()
+                        .switch_tab(number.saturating_sub(1));
                 } else {
                     self.defer(action);
                 }
@@ -384,7 +381,8 @@ impl WorkSurfaceApp {
         } = self;
         let texts = Texts::new(catalogue.as_ref());
 
-        ui.painter().rect_filled(ui.max_rect(), 0.0, palette.background);
+        ui.painter()
+            .rect_filled(ui.max_rect(), 0.0, palette.background);
 
         let rows = draw::draw_surface(
             ui,
@@ -464,12 +462,16 @@ fn stroke_of(
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::Argument;
     use crate::keymap_view::KeymapView;
     use crate::listing::{Entry, EntryKind};
     use crate::panel::PanelSide;
-    use crate::Argument;
     use std::collections::BTreeMap;
 
     /// A catalogue that answers every key with the key itself.

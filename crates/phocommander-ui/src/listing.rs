@@ -28,26 +28,26 @@ use crate::i18n::TextKey;
 /// The kind of an entry of a directory listing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EntryKind {
-/// A regular file.
+    /// A regular file.
     File,
 
-/// A directory.
+    /// A directory.
     Directory,
 
-/// A symbolic link.
+    /// A symbolic link.
     Symlink,
 
-/// Anything else — a socket, a device node or a named pipe.
+    /// Anything else — a socket, a device node or a named pipe.
     Other,
 }
 
 impl EntryKind {
-/// Whether the entry is a regular file.
+    /// Whether the entry is a regular file.
     pub const fn is_file(&self) -> bool {
         matches!(self, EntryKind::File)
     }
 
-/// Whether the entry is a directory.
+    /// Whether the entry is a directory.
     pub const fn is_directory(&self) -> bool {
         matches!(self, EntryKind::Directory)
     }
@@ -61,29 +61,29 @@ impl EntryKind {
 /// shell converts the entries of the model into these.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
-/// The name of the entry, without the path of its directory.
+    /// The name of the entry, without the path of its directory.
     pub name: String,
 
-/// The kind of the entry.
+    /// The kind of the entry.
     pub kind: EntryKind,
 
-/// The size of the entry in bytes, if the source knows it.
+    /// The size of the entry in bytes, if the source knows it.
     pub size: Option<u64>,
 
-/// The time of the last change of the entry, if the source knows it.
+    /// The time of the last change of the entry, if the source knows it.
     pub modified: Option<SystemTime>,
 }
 
 impl Entry {
-/// Builds an entry with a name and a kind.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::listing::{Entry, EntryKind};
-///
-/// let entry = Entry::new("notes.txt", EntryKind::File);
-/// assert_eq!(entry.name, "notes.txt");
-/// ```
+    /// Builds an entry with a name and a kind.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::listing::{Entry, EntryKind};
+    ///
+    /// let entry = Entry::new("notes.txt", EntryKind::File);
+    /// assert_eq!(entry.name, "notes.txt");
+    /// ```
     pub fn new(name: impl Into<String>, kind: EntryKind) -> Self {
         Self {
             name: name.into(),
@@ -93,13 +93,13 @@ impl Entry {
         }
     }
 
-/// The entry with the given size.
+    /// The entry with the given size.
     pub fn with_size(mut self, size: u64) -> Self {
         self.size = Some(size);
         self
     }
 
-/// The entry with the given time of the last change.
+    /// The entry with the given time of the last change.
     pub fn with_modified(mut self, modified: SystemTime) -> Self {
         self.modified = Some(modified);
         self
@@ -109,28 +109,28 @@ impl Entry {
 /// The property the entries are ordered by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum SortKey {
-/// The name of the entry.
+    /// The name of the entry.
     #[default]
     Name,
 
-/// The extension of the name.
+    /// The extension of the name.
     Extension,
 
-/// The size of the entry.
+    /// The size of the entry.
     Size,
 
-/// The time of the last change.
+    /// The time of the last change.
     Modified,
 }
 
 /// The direction of an order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum SortDirection {
-/// From small to large.
+    /// From small to large.
     #[default]
     Ascending,
 
-/// From large to small.
+    /// From large to small.
     Descending,
 }
 
@@ -140,15 +140,15 @@ pub enum SortDirection {
 /// of the same panel can be ordered differently (FR-18).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Sort {
-/// The property the entries are ordered by.
+    /// The property the entries are ordered by.
     pub key: SortKey,
 
-/// The direction of the order.
+    /// The direction of the order.
     pub direction: SortDirection,
 }
 
 impl Sort {
-/// The order by a property, from small to large.
+    /// The order by a property, from small to large.
     pub const fn by(key: SortKey) -> Self {
         Self {
             key,
@@ -156,7 +156,7 @@ impl Sort {
         }
     }
 
-/// The order by a property, in the given direction.
+    /// The order by a property, in the given direction.
     pub const fn with_direction(key: SortKey, direction: SortDirection) -> Self {
         Self { key, direction }
     }
@@ -180,7 +180,7 @@ pub struct ListingState {
 }
 
 impl ListingState {
-/// The empty listing of a path.
+    /// The empty listing of a path.
     pub fn new(path: PathBuf) -> Self {
         Self {
             path,
@@ -192,7 +192,7 @@ impl ListingState {
         }
     }
 
-/// The path this listing belongs to.
+    /// The path this listing belongs to.
     pub fn path(&self) -> &Path {
         &self.path
     }
@@ -206,76 +206,76 @@ impl ListingState {
         self.path = path;
     }
 
-/// The order in which the entries are shown.
+    /// The order in which the entries are shown.
     pub fn sort(&self) -> Sort {
         self.sort
     }
 
-/// The number of entries.
+    /// The number of entries.
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
-/// Whether the listing is empty.
+    /// Whether the listing is empty.
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 
-/// Replaces the entries and applies the order.
-///
-/// WHY: the order is applied once, when the entries arrive, and not in
-/// every frame. The shell therefore fills the listing from the worker
-/// that read the directory — the interface thread never sorts.
+    /// Replaces the entries and applies the order.
+    ///
+    /// WHY: the order is applied once, when the entries arrive, and not in
+    /// every frame. The shell therefore fills the listing from the worker
+    /// that read the directory — the interface thread never sorts.
     pub fn set_entries(&mut self, entries: Vec<Entry>) {
         self.entries = entries;
         self.apply_sort();
     }
 
-/// Changes the order and applies it.
+    /// Changes the order and applies it.
     pub fn set_sort(&mut self, sort: Sort) {
         self.sort = sort;
         self.apply_sort();
     }
 
-/// The position of the entry in the row of the screen.
-///
-/// WHY: the position is the index in the order in which the source
-/// delivered the entries. It does not change when the order of the
-/// screen changes, and a selection that holds positions therefore keeps
-/// its meaning.
+    /// The position of the entry in the row of the screen.
+    ///
+    /// WHY: the position is the index in the order in which the source
+    /// delivered the entries. It does not change when the order of the
+    /// screen changes, and a selection that holds positions therefore keeps
+    /// its meaning.
     pub fn position_of_view_row(&self, view_row: usize) -> Option<usize> {
         self.order.get(view_row).copied()
     }
 
-/// The row of the screen in which the entry with the position is shown.
+    /// The row of the screen in which the entry with the position is shown.
     pub fn view_row_of_position(&self, position: usize) -> Option<usize> {
         self.inverse.get(position).copied()
     }
 
-/// The entry with the given position.
+    /// The entry with the given position.
     pub fn entry_at(&self, position: usize) -> Option<&Entry> {
         self.entries.get(position)
     }
 
-/// The rows of the screen that are visible.
-///
-/// WHY: only the visible slice of the listing is handed to the widgets.
-/// A directory with a hundred thousand entries therefore costs the same
-/// in every frame as a directory with thirty entries (FR-106).
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::listing::{Entry, EntryKind, ListingState};
-/// use std::path::PathBuf;
-///
-/// let mut listing = ListingState::new(PathBuf::from("/tmp"));
-/// listing.set_entries(
-///     (0..1000).map(|index| Entry::new(format!("file-{index}"), EntryKind::File)).collect(),
-/// );
-///
-/// let rows: Vec<_> = listing.visible_rows(0, 10).collect();
-/// assert_eq!(rows.len(), 10);
-/// ```
+    /// The rows of the screen that are visible.
+    ///
+    /// WHY: only the visible slice of the listing is handed to the widgets.
+    /// A directory with a hundred thousand entries therefore costs the same
+    /// in every frame as a directory with thirty entries (FR-106).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::listing::{Entry, EntryKind, ListingState};
+    /// use std::path::PathBuf;
+    ///
+    /// let mut listing = ListingState::new(PathBuf::from("/tmp"));
+    /// listing.set_entries(
+    ///     (0..1000).map(|index| Entry::new(format!("file-{index}"), EntryKind::File)).collect(),
+    /// );
+    ///
+    /// let rows: Vec<_> = listing.visible_rows(0, 10).collect();
+    /// assert_eq!(rows.len(), 10);
+    /// ```
     pub fn visible_rows(&self, first: usize, count: usize) -> impl Iterator<Item = Row<'_>> {
         let last = first.saturating_add(count).min(self.order.len());
         let order = &self.order[first.min(self.order.len())..last];
@@ -292,15 +292,15 @@ impl ListingState {
         })
     }
 
-/// The number of rows that were handed to the widgets.
-///
-/// WHY: the counter is the evidence for the claim that only the visible
-/// slice is drawn. The test of the workspace reads it after a frame.
+    /// The number of rows that were handed to the widgets.
+    ///
+    /// WHY: the counter is the evidence for the claim that only the visible
+    /// slice is drawn. The test of the workspace reads it after a frame.
     pub fn rows_materialised(&self) -> u64 {
         self.materialised.get()
     }
 
-/// Rebuilds the order of the screen.
+    /// Rebuilds the order of the screen.
     fn apply_sort(&mut self) {
         let mut order: Vec<usize> = (0..self.entries.len()).collect();
         let entries = &self.entries;
@@ -362,32 +362,32 @@ pub struct Row<'a> {
 }
 
 impl<'a> Row<'a> {
-/// The entry of the row.
+    /// The entry of the row.
     pub fn entry(&self) -> &'a Entry {
         self.entry
     }
 
-/// The position of the entry in the listing.
+    /// The position of the entry in the listing.
     pub fn position(&self) -> usize {
         self.position
     }
 
-/// The number of the row on the screen.
+    /// The number of the row on the screen.
     pub fn offset(&self) -> usize {
         self.offset
     }
 
-/// The name of the entry.
+    /// The name of the entry.
     pub fn name(&self) -> &str {
         &self.entry.name
     }
 
-/// The kind of the entry.
+    /// The kind of the entry.
     pub fn kind(&self) -> EntryKind {
         self.entry.kind
     }
 
-/// The size of the entry, written the way a file manager writes it.
+    /// The size of the entry, written the way a file manager writes it.
     pub fn size_text(&self) -> String {
         match self.entry.size {
             Some(size) => format_size(size),
@@ -395,12 +395,12 @@ impl<'a> Row<'a> {
         }
     }
 
-/// The time of the last change, written the way a file manager writes
-/// it.
-///
-/// WHY: the format is fixed and unambiguous in this milestone. The
-/// format that follows the locale of the system belongs to the
-/// localisation module and arrives with it (FR-123).
+    /// The time of the last change, written the way a file manager writes
+    /// it.
+    ///
+    /// WHY: the format is fixed and unambiguous in this milestone. The
+    /// format that follows the locale of the system belongs to the
+    /// localisation module and arrives with it (FR-123).
     pub fn date_text(&self) -> String {
         match self.entry.modified {
             Some(modified) => format_time(modified),
@@ -408,11 +408,11 @@ impl<'a> Row<'a> {
         }
     }
 
-/// The translation key of the type of the entry.
-///
-/// WHY: the name of a type is a visible text, and a visible text goes
-/// through a translation key (FR-05). The listing therefore answers with
-/// the key and lets the surface ask the catalogue for the text.
+    /// The translation key of the type of the entry.
+    ///
+    /// WHY: the name of a type is a visible text, and a visible text goes
+    /// through a translation key (FR-05). The listing therefore answers with
+    /// the key and lets the surface ask the catalogue for the text.
     pub fn type_key(&self) -> TextKey {
         match self.entry.kind {
             EntryKind::File => TextKey::PanelTypeFile,
@@ -478,10 +478,14 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
-/// Builds a listing with the given number of entries.
+    /// Builds a listing with the given number of entries.
     fn listing(count: usize) -> ListingState {
         let mut listing = ListingState::new(PathBuf::from("/tmp"));
         listing.set_entries(

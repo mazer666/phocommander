@@ -17,29 +17,29 @@
 /// The context in which the user operates the program.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum Context {
-/// A physical keyboard.
+    /// A physical keyboard.
     #[default]
     Keyboard,
 
-/// A mouse or a trackpad.
+    /// A mouse or a trackpad.
     Pointer,
 
-/// A finger on a touch screen.
+    /// A finger on a touch screen.
     Touch,
 
-/// The directional pad of a television remote control.
+    /// The directional pad of a television remote control.
     Dpad,
 
-/// A gamepad or a VR controller.
+    /// A gamepad or a VR controller.
     Controller,
 }
 
 impl Context {
-/// Every context, in a stable order.
-///
-/// WHY: the order is fixed so that a list of contexts — in the
-/// configuration file, in the documentation or in a test — always reads
-/// the same way.
+    /// Every context, in a stable order.
+    ///
+    /// WHY: the order is fixed so that a list of contexts — in the
+    /// configuration file, in the documentation or in a test — always reads
+    /// the same way.
     pub const fn all() -> [Context; 5] {
         [
             Context::Keyboard,
@@ -50,7 +50,7 @@ impl Context {
         ]
     }
 
-/// The spelling of the context in the configuration file.
+    /// The spelling of the context in the configuration file.
     pub const fn config_name(&self) -> &'static str {
         match self {
             Context::Keyboard => "keyboard",
@@ -61,26 +61,26 @@ impl Context {
         }
     }
 
-/// The context with the given spelling in the configuration file.
+    /// The context with the given spelling in the configuration file.
     pub fn from_config_name(name: &str) -> Option<Self> {
         Context::all()
             .into_iter()
             .find(|context| context.config_name() == name)
     }
 
-/// Whether the context shows one panel at a time.
-///
-/// WHY: two panels side by side are unreadable on a television, and a
-/// finger on a tablet reaches one list at a time (section 6.5 of the
-/// specification). The layout of the work surface follows this answer.
+    /// Whether the context shows one panel at a time.
+    ///
+    /// WHY: two panels side by side are unreadable on a television, and a
+    /// finger on a tablet reaches one list at a time (section 6.5 of the
+    /// specification). The layout of the work surface follows this answer.
     pub const fn shows_one_panel(&self) -> bool {
         matches!(self, Context::Touch | Context::Dpad)
     }
 
-/// Whether the context has a pointer.
-///
-/// WHY: without a pointer there is no hover, and the focus therefore has
-/// to be a visible, permanent state (section 6.4).
+    /// Whether the context has a pointer.
+    ///
+    /// WHY: without a pointer there is no hover, and the focus therefore has
+    /// to be a visible, permanent state (section 6.4).
     pub const fn has_pointer(&self) -> bool {
         matches!(self, Context::Pointer | Context::Touch)
     }
@@ -93,6 +93,10 @@ impl std::fmt::Display for Context {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

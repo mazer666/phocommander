@@ -291,17 +291,13 @@ impl PanelState {
     /// The tab that is shown.
     pub fn active_tab(&self) -> &Tab {
         let index = self.active_tab.min(self.tabs.len().saturating_sub(1));
-        self.tabs
-            .get(index)
-            .unwrap_or(&self.fallback_tab)
+        self.tabs.get(index).unwrap_or(&self.fallback_tab)
     }
 
     /// The tab that is shown.
     pub fn active_tab_mut(&mut self) -> &mut Tab {
         let index = self.active_tab.min(self.tabs.len().saturating_sub(1));
-        self.tabs
-            .get_mut(index)
-            .unwrap_or(&mut self.fallback_tab)
+        self.tabs.get_mut(index).unwrap_or(&mut self.fallback_tab)
     }
 
     /// The number of tabs.
@@ -408,7 +404,10 @@ impl PanelState {
 
     /// Moves the cursor by a number of rows.
     pub fn move_cursor(&mut self, rows: isize) {
-        let current = self.listing().view_row_of_position(self.cursor).unwrap_or(0);
+        let current = self
+            .listing()
+            .view_row_of_position(self.cursor)
+            .unwrap_or(0);
         let last = self.row_count().saturating_sub(1) as isize;
         let target = (current as isize + rows).clamp(0, last);
         if let Some(position) = self.listing().position_of_view_row(target as usize) {
@@ -509,6 +508,10 @@ impl PanelState {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::listing::EntryKind;

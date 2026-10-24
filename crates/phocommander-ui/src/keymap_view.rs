@@ -35,111 +35,111 @@ const PALETTE_PREFIX: &str = "palette:";
 /// of its own that both sides can produce.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Key {
-/// A function key, `F1` to `F12`.
+    /// A function key, `F1` to `F12`.
     Function(u8),
 
-/// A letter of the keyboard.
+    /// A letter of the keyboard.
     Letter(char),
 
-/// A digit of the main block.
+    /// A digit of the main block.
     Digit(u8),
 
-/// A digit of the numeric keypad.
+    /// A digit of the numeric keypad.
     NumpadDigit(u8),
 
-/// The plus key of the numeric keypad.
+    /// The plus key of the numeric keypad.
     NumpadAdd,
 
-/// The minus key of the numeric keypad.
+    /// The minus key of the numeric keypad.
     NumpadSubtract,
 
-/// The star key of the numeric keypad.
+    /// The star key of the numeric keypad.
     NumpadMultiply,
 
-/// The slash key of the numeric keypad.
+    /// The slash key of the numeric keypad.
     NumpadDivide,
 
-/// The point key of the numeric keypad.
+    /// The point key of the numeric keypad.
     NumpadDecimal,
 
-/// The tab key.
+    /// The tab key.
     Tab,
 
-/// The enter key.
+    /// The enter key.
     Enter,
 
-/// The space bar.
+    /// The space bar.
     Space,
 
-/// The insert key.
+    /// The insert key.
     Insert,
 
-/// The delete key.
+    /// The delete key.
     Delete,
 
-/// The backspace key.
+    /// The backspace key.
     Backspace,
 
-/// The escape key.
+    /// The escape key.
     Escape,
 
-/// The home key.
+    /// The home key.
     Home,
 
-/// The end key.
+    /// The end key.
     End,
 
-/// The page up key.
+    /// The page up key.
     PageUp,
 
-/// The page down key.
+    /// The page down key.
     PageDown,
 
-/// The arrow key up.
+    /// The arrow key up.
     ArrowUp,
 
-/// The arrow key down.
+    /// The arrow key down.
     ArrowDown,
 
-/// The arrow key left.
+    /// The arrow key left.
     ArrowLeft,
 
-/// The arrow key right.
+    /// The arrow key right.
     ArrowRight,
 
-/// The menu key of the keyboard.
+    /// The menu key of the keyboard.
     Menu,
 
-/// The play and pause key of a remote control.
+    /// The play and pause key of a remote control.
     MediaPlayPause,
 }
 
 impl Default for Key {
-/// The key that a key stroke without a key carries.
-///
-/// WHY: the escape key is on every keyboard and triggers no action of the
-/// catalogue on its own.
-fn default() -> Self {
-Key::Escape
-}
+    /// The key that a key stroke without a key carries.
+    ///
+    /// WHY: the escape key is on every keyboard and triggers no action of the
+    /// catalogue on its own.
+    fn default() -> Self {
+        Key::Escape
+    }
 }
 
 impl Key {
-/// The key with the name the configuration file uses.
-///
-/// WHY: the names in the catalogue are the names of the keys as the
-/// documentation writes them ("Ins", "PgUp", "Num-"). A name that the
-/// surface does not know is refused with its name, so that the mistake
-/// can be found in the file that caused it.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::Key;
-///
-/// assert_eq!(Key::from_name("F5"), Some(Key::Function(5)));
-/// assert_eq!(Key::from_name("Ins"), Some(Key::Insert));
-/// assert_eq!(Key::from_name("Num-"), Some(Key::NumpadSubtract));
-/// ```
+    /// The key with the name the configuration file uses.
+    ///
+    /// WHY: the names in the catalogue are the names of the keys as the
+    /// documentation writes them ("Ins", "PgUp", "Num-"). A name that the
+    /// surface does not know is refused with its name, so that the mistake
+    /// can be found in the file that caused it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Key;
+    ///
+    /// assert_eq!(Key::from_name("F5"), Some(Key::Function(5)));
+    /// assert_eq!(Key::from_name("Ins"), Some(Key::Insert));
+    /// assert_eq!(Key::from_name("Num-"), Some(Key::NumpadSubtract));
+    /// ```
     pub fn from_name(name: &str) -> Option<Key> {
         if let Some(number) = name.strip_prefix('F')
             && let Ok(number) = number.parse::<u8>()
@@ -196,7 +196,7 @@ impl Key {
         }
     }
 
-/// The name of the key as the configuration file writes it.
+    /// The name of the key as the configuration file writes it.
     pub fn name(&self) -> String {
         match self {
             Key::Function(number) => format!("F{number}"),
@@ -237,25 +237,25 @@ impl Key {
 /// works on every platform.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Modifiers {
-/// The primary modifier — `Cmd` on macOS, `Ctrl` everywhere else.
+    /// The primary modifier — `Cmd` on macOS, `Ctrl` everywhere else.
     pub primary: bool,
 
-/// The shift key.
+    /// The shift key.
     pub shift: bool,
 
-/// The alt key.
+    /// The alt key.
     pub alt: bool,
 }
 
 impl Modifiers {
-/// The modifiers of a key without any modifier key.
+    /// The modifiers of a key without any modifier key.
     pub const NONE: Modifiers = Modifiers {
         primary: false,
         shift: false,
         alt: false,
     };
 
-/// Whether no modifier key is pressed.
+    /// Whether no modifier key is pressed.
     pub const fn is_empty(&self) -> bool {
         !self.primary && !self.shift && !self.alt
     }
@@ -264,23 +264,23 @@ impl Modifiers {
 /// A key with its modifier keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct KeyStroke {
-/// The key that was pressed.
+    /// The key that was pressed.
     pub key: Key,
 
-/// The modifier keys that were held down.
+    /// The modifier keys that were held down.
     pub modifiers: Modifiers,
 }
 
 impl KeyStroke {
-/// A key stroke without any modifier key.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::{Key, KeyStroke};
-///
-/// let stroke = KeyStroke::new(Key::Function(5));
-/// assert!(stroke.modifiers.is_empty());
-/// ```
+    /// A key stroke without any modifier key.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::{Key, KeyStroke};
+    ///
+    /// let stroke = KeyStroke::new(Key::Function(5));
+    /// assert!(stroke.modifiers.is_empty());
+    /// ```
     pub const fn new(key: Key) -> Self {
         Self {
             key,
@@ -288,29 +288,29 @@ impl KeyStroke {
         }
     }
 
-/// The key stroke of the escape key.
+    /// The key stroke of the escape key.
     pub const fn escape() -> Self {
         Self::new(Key::Escape)
     }
 
-/// Reads a key stroke from the notation of the configuration file.
-///
-/// WHY: the notation of the catalogue is "Ctrl+Shift+Tab". The stroke is
-/// parsed into its parts, so that a written binding and a pressed key can
-/// be compared without going through the text again.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::{Key, KeyStroke};
-///
-/// # fn main() -> Result<(), phocommander_ui::BindingError> {
-/// let stroke = KeyStroke::parse("Ctrl+Shift+Tab")?;
-/// assert_eq!(stroke.key, Key::Tab);
-/// assert!(stroke.modifiers.primary);
-/// assert!(stroke.modifiers.shift);
-/// # Ok(())
-/// # }
-/// ```
+    /// Reads a key stroke from the notation of the configuration file.
+    ///
+    /// WHY: the notation of the catalogue is "Ctrl+Shift+Tab". The stroke is
+    /// parsed into its parts, so that a written binding and a pressed key can
+    /// be compared without going through the text again.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::{Key, KeyStroke};
+    ///
+    /// # fn main() -> Result<(), phocommander_ui::BindingError> {
+    /// let stroke = KeyStroke::parse("Ctrl+Shift+Tab")?;
+    /// assert_eq!(stroke.key, Key::Tab);
+    /// assert!(stroke.modifiers.primary);
+    /// assert!(stroke.modifiers.shift);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn parse(text: &str) -> Result<Self, BindingError> {
         let parts = split_parts(text);
         if parts.is_empty() {
@@ -352,10 +352,10 @@ impl KeyStroke {
         Ok(Self { key, modifiers })
     }
 
-/// The spelling of the stroke as the configuration file writes it.
-///
-/// WHY: the status line of the interface shows the binding of a command,
-/// and it has to show it the way the configuration file writes it.
+    /// The spelling of the stroke as the configuration file writes it.
+    ///
+    /// WHY: the status line of the interface shows the binding of a command,
+    /// and it has to show it the way the configuration file writes it.
     pub fn to_binding(&self) -> String {
         let mut parts = Vec::new();
         if self.modifiers.primary {
@@ -385,26 +385,26 @@ impl fmt::Display for KeyStroke {
 /// decides how the action is reached.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Binding {
-/// A key with its modifier keys.
+    /// A key with its modifier keys.
     Key(KeyStroke),
 
-/// An entry of the action palette.
+    /// An entry of the action palette.
     Palette(String),
 }
 
 impl Binding {
-/// Reads a binding from the notation of the configuration file.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::Binding;
-///
-/// # fn main() -> Result<(), phocommander_ui::BindingError> {
-/// assert!(matches!(Binding::parse("palette:file.copy")?, Binding::Palette(_)));
-/// assert!(matches!(Binding::parse("F5")?, Binding::Key(_)));
-/// # Ok(())
-/// # }
-/// ```
+    /// Reads a binding from the notation of the configuration file.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Binding;
+    ///
+    /// # fn main() -> Result<(), phocommander_ui::BindingError> {
+    /// assert!(matches!(Binding::parse("palette:file.copy")?, Binding::Palette(_)));
+    /// assert!(matches!(Binding::parse("F5")?, Binding::Key(_)));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn parse(text: &str) -> Result<Self, BindingError> {
         if let Some(entry) = text.strip_prefix(PALETTE_PREFIX) {
             if entry.is_empty() {
@@ -419,7 +419,7 @@ impl Binding {
         Ok(Binding::Key(KeyStroke::parse(text)?))
     }
 
-/// The spelling of the binding as the configuration file writes it.
+    /// The spelling of the binding as the configuration file writes it.
     pub fn to_binding(&self) -> String {
         match self {
             Binding::Key(stroke) => stroke.to_binding(),
@@ -435,10 +435,10 @@ impl Binding {
 /// command: a key and an entry of the action palette.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InputEvent {
-/// A key was pressed.
+    /// A key was pressed.
     Key(KeyStroke),
 
-/// An entry of the action palette was chosen.
+    /// An entry of the action palette was chosen.
     Palette(String),
 }
 
@@ -452,22 +452,22 @@ pub struct BindingConflict {
 }
 
 impl BindingConflict {
-/// The context the conflict happened in.
+    /// The context the conflict happened in.
     pub fn context(&self) -> Context {
         self.context
     }
 
-/// The binding that is bound twice.
+    /// The binding that is bound twice.
     pub fn binding(&self) -> &Binding {
         &self.binding
     }
 
-/// The action that wins the binding.
+    /// The action that wins the binding.
     pub fn kept(&self) -> Action {
         self.kept
     }
 
-/// The action that loses the binding.
+    /// The action that loses the binding.
     pub fn dropped(&self) -> Action {
         self.dropped
     }
@@ -484,28 +484,28 @@ pub struct KeymapView {
 }
 
 impl KeymapView {
-/// Reads the binding table of every context.
-///
-/// WHY: the tables come from the configuration file, and the surface
-/// must not read the file itself. The tables are therefore the input of
-/// this function, and the catalogue order decides every conflict.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use std::collections::BTreeMap;
-/// use phocommander_ui::{Context, KeymapView};
-///
-/// # fn main() -> Result<(), phocommander_ui::BindingError> {
-/// let mut keyboard = BTreeMap::new();
-/// keyboard.insert("panel.copy".to_string(), "F5".to_string());
-/// let mut tables = BTreeMap::new();
-/// tables.insert(Context::Keyboard, keyboard);
-///
-/// let view = KeymapView::from_context_tables(&tables)?;
-/// assert!(view.conflicts().is_empty());
-/// # Ok(())
-/// # }
-/// ```
+    /// Reads the binding table of every context.
+    ///
+    /// WHY: the tables come from the configuration file, and the surface
+    /// must not read the file itself. The tables are therefore the input of
+    /// this function, and the catalogue order decides every conflict.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use std::collections::BTreeMap;
+    /// use phocommander_ui::{Context, KeymapView};
+    ///
+    /// # fn main() -> Result<(), phocommander_ui::BindingError> {
+    /// let mut keyboard = BTreeMap::new();
+    /// keyboard.insert("panel.copy".to_string(), "F5".to_string());
+    /// let mut tables = BTreeMap::new();
+    /// tables.insert(Context::Keyboard, keyboard);
+    ///
+    /// let view = KeymapView::from_context_tables(&tables)?;
+    /// assert!(view.conflicts().is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_context_tables(
         tables: &BTreeMap<Context, BTreeMap<String, String>>,
     ) -> Result<Self, BindingError> {
@@ -525,7 +525,7 @@ impl KeymapView {
                 bindings.insert(*action, binding);
             }
 
-            for (identifier, _) in table {
+            for identifier in table.keys() {
                 if Action::from_id(identifier).is_none() {
                     return Err(BindingError::UnknownAction {
                         identifier: identifier.clone(),
@@ -539,40 +539,40 @@ impl KeymapView {
         Ok(Self { contexts })
     }
 
-/// The action that an event triggers in a context.
-///
-/// WHY: the resolution is deterministic. When two actions of one context
-/// are bound to the same key, the action that comes first in the
-/// catalogue wins, and the loser is reported as a conflict.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use std::collections::BTreeMap;
-/// use phocommander_ui::{Context, InputEvent, KeyStroke, KeymapView};
-///
-/// # fn main() -> Result<(), phocommander_ui::BindingError> {
-/// let mut keyboard = BTreeMap::new();
-/// keyboard.insert("panel.copy".to_string(), "F5".to_string());
-/// let mut tables = BTreeMap::new();
-/// tables.insert(Context::Keyboard, keyboard);
-/// let view = KeymapView::from_context_tables(&tables)?;
-///
-/// let event = InputEvent::Key(KeyStroke::parse("F5")?);
-/// assert!(view.resolve(Context::Keyboard, &event).is_some());
-/// # Ok(())
-/// # }
-/// ```
+    /// The action that an event triggers in a context.
+    ///
+    /// WHY: the resolution is deterministic. When two actions of one context
+    /// are bound to the same key, the action that comes first in the
+    /// catalogue wins, and the loser is reported as a conflict.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use std::collections::BTreeMap;
+    /// use phocommander_ui::{Context, InputEvent, KeyStroke, KeymapView};
+    ///
+    /// # fn main() -> Result<(), phocommander_ui::BindingError> {
+    /// let mut keyboard = BTreeMap::new();
+    /// keyboard.insert("panel.copy".to_string(), "F5".to_string());
+    /// let mut tables = BTreeMap::new();
+    /// tables.insert(Context::Keyboard, keyboard);
+    /// let view = KeymapView::from_context_tables(&tables)?;
+    ///
+    /// let event = InputEvent::Key(KeyStroke::parse("F5")?);
+    /// assert!(view.resolve(Context::Keyboard, &event).is_some());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn resolve(&self, context: Context, event: &InputEvent) -> Option<Action> {
         let bindings = self.contexts.get(&context)?;
         bindings.resolve(event)
     }
 
-/// The binding of an action in a context.
+    /// The binding of an action in a context.
     pub fn binding_for(&self, context: Context, action: Action) -> Option<&Binding> {
         self.contexts.get(&context)?.binding_for(action)
     }
 
-/// The conflicts of the binding table.
+    /// The conflicts of the binding table.
     pub fn conflicts(&self) -> Vec<BindingConflict> {
         self.contexts
             .values()
@@ -580,7 +580,7 @@ impl KeymapView {
             .collect()
     }
 
-/// Whether a context has a binding table.
+    /// Whether a context has a binding table.
     pub fn has_context(&self, context: Context) -> bool {
         self.contexts.contains_key(&context)
     }
@@ -596,7 +596,7 @@ struct ContextBindings {
 }
 
 impl ContextBindings {
-/// The empty binding table of a context.
+    /// The empty binding table of a context.
     fn new(context: Context) -> Self {
         Self {
             context,
@@ -606,7 +606,7 @@ impl ContextBindings {
         }
     }
 
-/// Adds a binding for an action.
+    /// Adds a binding for an action.
     fn insert(&mut self, action: Action, binding: Binding) {
         if let Some(kept) = self.lookup.get(&binding).copied() {
             self.conflicts.push(BindingConflict {
@@ -622,20 +622,22 @@ impl ContextBindings {
         self.bindings.entry(action).or_default().push(binding);
     }
 
-/// The action that an event triggers.
+    /// The action that an event triggers.
     fn resolve(&self, event: &InputEvent) -> Option<Action> {
         match event {
             InputEvent::Key(stroke) => self.lookup.get(&Binding::Key(*stroke)).copied(),
-            InputEvent::Palette(entry) => self.lookup.get(&Binding::Palette(entry.clone())).copied(),
+            InputEvent::Palette(entry) => {
+                self.lookup.get(&Binding::Palette(entry.clone())).copied()
+            }
         }
     }
 
-/// The first binding of an action.
+    /// The first binding of an action.
     fn binding_for(&self, action: Action) -> Option<&Binding> {
         self.bindings.get(&action)?.first()
     }
 
-/// The conflicts of this context.
+    /// The conflicts of this context.
     fn conflicts(&self) -> Vec<BindingConflict> {
         self.conflicts.clone()
     }
@@ -648,11 +650,11 @@ impl ContextBindings {
 fn split_parts(text: &str) -> Vec<String> {
     let mut parts: Vec<String> = Vec::new();
     for part in text.split('+') {
-        if part.is_empty() {
-            if let Some(last) = parts.last_mut() {
-                last.push('+');
-                continue;
-            }
+        if part.is_empty()
+            && let Some(last) = parts.last_mut()
+        {
+            last.push('+');
+            continue;
         }
         parts.push(part.to_string());
     }
@@ -662,39 +664,43 @@ fn split_parts(text: &str) -> Vec<String> {
 /// The reasons why a binding could not be read.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum BindingError {
-/// The action identifier is not part of the catalogue.
+    /// The action identifier is not part of the catalogue.
     #[error("the action {identifier} is not part of the catalogue")]
     UnknownAction {
-/// The identifier that was refused.
+        /// The identifier that was refused.
         identifier: String,
     },
 
-/// The binding names a key that does not exist.
+    /// The binding names a key that does not exist.
     #[error("the binding {binding} names the unknown key {key}")]
     UnknownKey {
-/// The binding that was refused.
+        /// The binding that was refused.
         binding: String,
 
-/// The key that is not known.
+        /// The key that is not known.
         key: String,
     },
 
-/// The binding could not be read.
+    /// The binding could not be read.
     #[error("the binding {binding} is malformed: {reason}")]
     Malformed {
-/// The binding that was refused.
+        /// The binding that was refused.
         binding: String,
 
-/// The reason why it was refused.
+        /// The reason why it was refused.
         reason: String,
     },
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
-/// Reads the binding table of the contexts of a test.
+    /// Reads the binding table of the contexts of a test.
     fn view(tables: &BTreeMap<Context, BTreeMap<String, String>>) -> KeymapView {
         match KeymapView::from_context_tables(tables) {
             Ok(view) => view,
@@ -702,7 +708,7 @@ mod tests {
         }
     }
 
-/// The stroke of a binding, or the escape key when it is not a key.
+    /// The stroke of a binding, or the escape key when it is not a key.
     fn stroke(text: &str) -> KeyStroke {
         match KeyStroke::parse(text) {
             Ok(stroke) => stroke,
@@ -854,16 +860,16 @@ mod tests {
         let view = view(&tables);
 
         // act
-        let resolved = view.resolve(
-            Context::Dpad,
-            &InputEvent::Palette("file.copy".to_string()),
-        );
+        let resolved = view.resolve(Context::Dpad, &InputEvent::Palette("file.copy".to_string()));
 
         // assert
         assert_eq!(resolved.map(|action| action.id()), Some("panel.copy"));
         assert!(
-            view.resolve(Context::Keyboard, &InputEvent::Palette("file.copy".to_string()))
-                .is_none()
+            view.resolve(
+                Context::Keyboard,
+                &InputEvent::Palette("file.copy".to_string())
+            )
+            .is_none()
         );
     }
 }

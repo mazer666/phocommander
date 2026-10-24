@@ -32,10 +32,10 @@
 /// text, so that the plural rule stays in the catalogue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Argument<'a> {
-/// A number.
+    /// A number.
     Number(u64),
 
-/// A text.
+    /// A text.
     Text(&'a str),
 }
 
@@ -45,11 +45,11 @@ pub enum Argument<'a> {
 /// business of the localisation module. The trait is the seam between the
 /// two, and it is implemented by the shell that owns the catalogue.
 pub trait Catalogue {
-/// The text of a key with the given arguments, or `None` when the
-/// catalogue does not know the key.
+    /// The text of a key with the given arguments, or `None` when the
+    /// catalogue does not know the key.
     fn lookup_with(&self, key: &str, arguments: &[Argument<'_>]) -> Option<String>;
 
-/// The text of a key without arguments.
+    /// The text of a key without arguments.
     fn lookup(&self, key: &str) -> Option<String> {
         self.lookup_with(key, &[])
     }
@@ -62,149 +62,149 @@ pub trait Catalogue {
 /// gate of the workspace compares the list with the catalogues.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TextKey {
-/// The label of the action `action-app-menu`.
+    /// The label of the action `action-app-menu`.
     ActionAppMenu,
-/// The label of the action `action-app-quit`.
+    /// The label of the action `action-app-quit`.
     ActionAppQuit,
-/// The label of the action `action-palette-open`.
+    /// The label of the action `action-palette-open`.
     ActionPaletteOpen,
-/// The label of the action `action-panel-copy`.
+    /// The label of the action `action-panel-copy`.
     ActionPanelCopy,
-/// The label of the action `action-panel-delete`.
+    /// The label of the action `action-panel-delete`.
     ActionPanelDelete,
-/// The label of the action `action-panel-drives`.
+    /// The label of the action `action-panel-drives`.
     ActionPanelDrives,
-/// The label of the action `action-panel-edit`.
+    /// The label of the action `action-panel-edit`.
     ActionPanelEdit,
-/// The label of the action `action-panel-mkdir`.
+    /// The label of the action `action-panel-mkdir`.
     ActionPanelMkdir,
-/// The label of the action `action-panel-move`.
+    /// The label of the action `action-panel-move`.
     ActionPanelMove,
-/// The label of the action `action-panel-next-tab`.
+    /// The label of the action `action-panel-next-tab`.
     ActionPanelNextTab,
-/// The label of the action `action-panel-open-in-other`.
+    /// The label of the action `action-panel-open-in-other`.
     ActionPanelOpenInOther,
-/// The label of the action `action-panel-parent`.
+    /// The label of the action `action-panel-parent`.
     ActionPanelParent,
-/// The label of the action `action-panel-prev-tab`.
+    /// The label of the action `action-panel-prev-tab`.
     ActionPanelPrevTab,
-/// The label of the action `action-panel-rename`.
+    /// The label of the action `action-panel-rename`.
     ActionPanelRename,
-/// The label of the action `action-panel-reload`.
+    /// The label of the action `action-panel-reload`.
     ActionPanelReload,
-/// The label of the action `action-panel-swap`.
+    /// The label of the action `action-panel-swap`.
     ActionPanelSwap,
-/// The label of the action `action-panel-switch`.
+    /// The label of the action `action-panel-switch`.
     ActionPanelSwitch,
-/// The label of the action `action-panel-tab-1`.
+    /// The label of the action `action-panel-tab-1`.
     ActionPanelTab1,
-/// The label of the action `action-panel-tab-2`.
+    /// The label of the action `action-panel-tab-2`.
     ActionPanelTab2,
-/// The label of the action `action-panel-tab-3`.
+    /// The label of the action `action-panel-tab-3`.
     ActionPanelTab3,
-/// The label of the action `action-panel-tab-4`.
+    /// The label of the action `action-panel-tab-4`.
     ActionPanelTab4,
-/// The label of the action `action-panel-tab-5`.
+    /// The label of the action `action-panel-tab-5`.
     ActionPanelTab5,
-/// The label of the action `action-panel-tab-6`.
+    /// The label of the action `action-panel-tab-6`.
     ActionPanelTab6,
-/// The label of the action `action-panel-tab-7`.
+    /// The label of the action `action-panel-tab-7`.
     ActionPanelTab7,
-/// The label of the action `action-panel-tab-8`.
+    /// The label of the action `action-panel-tab-8`.
     ActionPanelTab8,
-/// The label of the action `action-panel-tab-9`.
+    /// The label of the action `action-panel-tab-9`.
     ActionPanelTab9,
-/// The label of the action `action-panel-view`.
+    /// The label of the action `action-panel-view`.
     ActionPanelView,
-/// The label of the action `action-rename-conflict-next`.
+    /// The label of the action `action-rename-conflict-next`.
     ActionRenameConflictNext,
-/// The label of the action `action-rename-conflict-previous`.
+    /// The label of the action `action-rename-conflict-previous`.
     ActionRenameConflictPrevious,
-/// The label of the action `action-selection-all`.
+    /// The label of the action `action-selection-all`.
     ActionSelectionAll,
-/// The label of the action `action-selection-by-pattern`.
+    /// The label of the action `action-selection-by-pattern`.
     ActionSelectionByPattern,
-/// The label of the action `action-selection-invert`.
+    /// The label of the action `action-selection-invert`.
     ActionSelectionInvert,
-/// The label of the action `action-selection-none`.
+    /// The label of the action `action-selection-none`.
     ActionSelectionNone,
-/// The label of the action `action-selection-toggle`.
+    /// The label of the action `action-selection-toggle`.
     ActionSelectionToggle,
-/// The label of the action `action-viewer-find-next`.
+    /// The label of the action `action-viewer-find-next`.
     ActionViewerFindNext,
-/// The label of the action `action-viewer-find-previous`.
+    /// The label of the action `action-viewer-find-previous`.
     ActionViewerFindPrevious,
-/// The word "OK".
+    /// The word "OK".
     CommonOk,
-/// The word "Cancel".
+    /// The word "Cancel".
     CommonCancel,
-/// The word "Yes".
+    /// The word "Yes".
     CommonYes,
-/// The word "No".
+    /// The word "No".
     CommonNo,
-/// The word "Close".
+    /// The word "Close".
     CommonClose,
-/// The title of the left panel.
+    /// The title of the left panel.
     PanelTitleLeft,
-/// The title of the right panel.
+    /// The title of the right panel.
     PanelTitleRight,
-/// The header of the column with the names.
+    /// The header of the column with the names.
     PanelColumnName,
-/// The header of the column with the sizes.
+    /// The header of the column with the sizes.
     PanelColumnSize,
-/// The header of the column with the dates.
+    /// The header of the column with the dates.
     PanelColumnDate,
-/// The header of the column with the types.
+    /// The header of the column with the types.
     PanelColumnType,
-/// The name of the type of a regular file.
+    /// The name of the type of a regular file.
     PanelTypeFile,
-/// The name of the type of a directory.
+    /// The name of the type of a directory.
     PanelTypeDirectory,
-/// The name of the type of a symbolic link.
+    /// The name of the type of a symbolic link.
     PanelTypeLink,
-/// The name of the type of everything else.
+    /// The name of the type of everything else.
     PanelTypeOther,
-/// The text of a panel without entries.
+    /// The text of a panel without entries.
     PanelEmpty,
-/// The state of a panel that waits for the next command.
+    /// The state of a panel that waits for the next command.
     PanelStatusReady,
-/// The number of entries of a panel.
+    /// The number of entries of a panel.
     PanelStatusEntries,
-/// The number of marked entries of a panel.
+    /// The number of marked entries of a panel.
     PanelStatusSelected,
-/// The label of a tab.
+    /// The label of a tab.
     PanelTab,
-/// The name of the detailed view.
+    /// The name of the detailed view.
     PanelViewDetails,
-/// The name of the compact view.
+    /// The name of the compact view.
     PanelViewCompact,
-/// The label of the panel that has the focus.
+    /// The label of the panel that has the focus.
     PanelFocus,
-/// The title of the viewer.
+    /// The title of the viewer.
     ViewerTitle,
-/// The label of the search forward in the viewer.
+    /// The label of the search forward in the viewer.
     ViewerFindNext,
-/// The label of the search backward in the viewer.
+    /// The label of the search backward in the viewer.
     ViewerFindPrevious,
-/// The text of a viewer without a file.
+    /// The text of a viewer without a file.
     ViewerNoFile,
-/// The title of the action palette.
+    /// The title of the action palette.
     PaletteTitle,
-/// The placeholder of the search field of the action palette.
+    /// The placeholder of the search field of the action palette.
     PaletteSearch,
-/// The text of an action palette without a match.
+    /// The text of an action palette without a match.
     PaletteEmpty,
 }
 
 impl TextKey {
-/// The name of the message in the catalogue.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::TextKey;
-///
-/// assert_eq!(TextKey::CommonCancel.as_str(), "common-cancel");
-/// ```
+    /// The name of the message in the catalogue.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::TextKey;
+    ///
+    /// assert_eq!(TextKey::CommonCancel.as_str(), "common-cancel");
+    /// ```
     pub const fn as_str(&self) -> &'static str {
         match self {
             TextKey::ActionAppMenu => "action-app-menu",
@@ -276,7 +276,7 @@ impl TextKey {
         }
     }
 
-/// Every key of the work surface, in a stable order.
+    /// Every key of the work surface, in a stable order.
     pub fn all() -> &'static [TextKey] {
         &KEYS
     }
@@ -367,33 +367,33 @@ pub struct Texts<'a> {
 }
 
 impl<'a> Texts<'a> {
-/// Reads the texts from a catalogue.
+    /// Reads the texts from a catalogue.
     pub fn new(catalogue: &'a dyn Catalogue) -> Self {
         Self { catalogue }
     }
 
-/// The text of a key, or the key itself when no catalogue knows it.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::{Catalogue, TextKey, Texts};
-/// use phocommander_ui::Argument;
-///
-/// # struct Empty;
-/// # impl Catalogue for Empty {
-/// #     fn lookup_with(&self, _key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
-/// #         None
-/// #     }
-/// # }
-///
-/// let texts = Texts::new(&Empty);
-/// assert_eq!(texts.get(TextKey::CommonOk), "common-ok");
-/// ```
+    /// The text of a key, or the key itself when no catalogue knows it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::{Catalogue, TextKey, Texts};
+    /// use phocommander_ui::Argument;
+    ///
+    /// # struct Empty;
+    /// # impl Catalogue for Empty {
+    /// #     fn lookup_with(&self, _key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
+    /// #         None
+    /// #     }
+    /// # }
+    ///
+    /// let texts = Texts::new(&Empty);
+    /// assert_eq!(texts.get(TextKey::CommonOk), "common-ok");
+    /// ```
     pub fn get(&self, key: TextKey) -> String {
         self.get_with(key, &[])
     }
 
-/// The text of a key with the given arguments, or the key itself.
+    /// The text of a key with the given arguments, or the key itself.
     pub fn get_with(&self, key: TextKey, arguments: &[Argument<'_>]) -> String {
         match self.catalogue.lookup_with(key.as_str(), arguments) {
             Some(text) if !text.is_empty() => text,
@@ -403,11 +403,15 @@ impl<'a> Texts<'a> {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::collections::BTreeSet;
 
-/// A catalogue that knows nothing — the worst case of the fallback.
+    /// A catalogue that knows nothing — the worst case of the fallback.
     struct Empty;
 
     impl Catalogue for Empty {
@@ -416,7 +420,7 @@ mod tests {
         }
     }
 
-/// A catalogue that answers every key with the key itself.
+    /// A catalogue that answers every key with the key itself.
     struct Echo;
 
     impl Catalogue for Echo {

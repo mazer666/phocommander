@@ -161,7 +161,11 @@ impl WorkSurface {
     pub fn transfer_to_other(&self) -> Result<TransferRequest, PanelError> {
         let source = self.active;
         let destination = source.other();
-        let entries = self.marked_entries().into_iter().map(|entry| entry.path).collect();
+        let entries = self
+            .marked_entries()
+            .into_iter()
+            .map(|entry| entry.path)
+            .collect();
         TransferRequest::new(source, destination, entries)
     }
 }
@@ -239,7 +243,9 @@ impl TransferRequest {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum PanelError {
     /// The source and the destination of a transfer are the same panel.
-    #[error("the {side} panel cannot be the source and the destination of a transfer at the same time")]
+    #[error(
+        "the {side} panel cannot be the source and the destination of a transfer at the same time"
+    )]
     SamePanel {
         /// The side that was named twice.
         side: PanelSide,
@@ -252,6 +258,10 @@ pub fn panel_path(panel: &PanelState) -> &Path {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::listing::{Entry, EntryKind};

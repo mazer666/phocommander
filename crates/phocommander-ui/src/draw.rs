@@ -103,11 +103,12 @@ fn draw_panel(
         .stroke(stroke)
         .inner_margin(6.0);
 
-    frame.show(ui, |ui| {
-        draw_panel_header(ui, panel, side, metrics, palette, texts);
-        draw_list(ui, panel, metrics, palette, texts)
-    })
-    .inner
+    frame
+        .show(ui, |ui| {
+            draw_panel_header(ui, panel, side, metrics, palette, texts);
+            draw_list(ui, panel, metrics, palette, texts)
+        })
+        .inner
 }
 
 /// Draws the title, the path and the tabs of a panel.
@@ -132,10 +133,8 @@ fn draw_panel_header(
         ui.horizontal(|ui| {
             for index in 0..panel.tab_count() {
                 let selected = index == panel.active_tab_index();
-                let label = texts.get_with(
-                    TextKey::PanelTab,
-                    &[Argument::Number((index + 1) as u64)],
-                );
+                let label =
+                    texts.get_with(TextKey::PanelTab, &[Argument::Number((index + 1) as u64)]);
                 let _ = ui.selectable_label(selected, label);
             }
         });
@@ -240,22 +239,20 @@ fn draw_list(
                 Column::Type => (type_width, texts.get(row.type_key()), dimmed, false),
             };
 
-            let cell = Rect::from_min_size(egui::pos2(x, rect.top()), egui::vec2(width, row_height));
+            let cell =
+                Rect::from_min_size(egui::pos2(x, rect.top()), egui::vec2(width, row_height));
             let layout = if right_aligned {
                 egui::Layout::right_to_left(Align::Center)
             } else {
                 egui::Layout::left_to_right(Align::Center)
             };
 
-            ui.scope_builder(
-                egui::UiBuilder::new().max_rect(cell).layout(layout),
-                |ui| {
-                    ui.add_sized(
-                        [width, row_height],
-                        egui::Label::new(RichText::new(text).color(color)).truncate(),
-                    );
-                },
-            );
+            ui.scope_builder(egui::UiBuilder::new().max_rect(cell).layout(layout), |ui| {
+                ui.add_sized(
+                    [width, row_height],
+                    egui::Label::new(RichText::new(text).color(color)).truncate(),
+                );
+            });
 
             x += width;
         }

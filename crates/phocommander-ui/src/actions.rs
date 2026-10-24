@@ -25,30 +25,30 @@ use crate::i18n::TextKey;
 /// action palette. The groups are the ones the specification names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ActionCategory {
-/// The operations on the files: rename, copy, move, delete.
+    /// The operations on the files: rename, copy, move, delete.
     File,
 
-/// The commands that open or show something.
+    /// The commands that open or show something.
     View,
 
-/// The commands that move the focus and change the place.
+    /// The commands that move the focus and change the place.
     Navigate,
 
-/// The commands that mark and unmark entries.
+    /// The commands that mark and unmark entries.
     Selection,
 
-/// The commands of the application itself.
+    /// The commands of the application itself.
     Application,
 
-/// The commands of the multiple rename dialog.
+    /// The commands of the multiple rename dialog.
     Rename,
 
-/// The commands of the action palette.
+    /// The commands of the action palette.
     Palette,
 }
 
 impl ActionCategory {
-/// Every category, in a stable order.
+    /// Every category, in a stable order.
     pub const fn all() -> [ActionCategory; 7] {
         [
             ActionCategory::File,
@@ -76,50 +76,50 @@ pub struct Action {
 }
 
 impl Action {
-/// The identifier of the action, as it is written in the configuration
-/// file and in the documentation.
+    /// The identifier of the action, as it is written in the configuration
+    /// file and in the documentation.
     pub const fn id(&self) -> &'static str {
         self.id
     }
 
-/// The group the action belongs to.
+    /// The group the action belongs to.
     pub const fn category(&self) -> ActionCategory {
         self.category
     }
 
-/// The translation key of the label of the action.
-///
-/// WHY: the label of an action is a visible text, and a visible text
-/// goes through a translation key (FR-05). The key is part of the action
-/// so that no caller can invent a label of its own.
+    /// The translation key of the label of the action.
+    ///
+    /// WHY: the label of an action is a visible text, and a visible text
+    /// goes through a translation key (FR-05). The key is part of the action
+    /// so that no caller can invent a label of its own.
     pub const fn label(&self) -> TextKey {
         self.label
     }
 
-/// The action with the given identifier.
-///
-/// WHY: the identifier comes from the configuration file and from the
-/// input layer. An identifier that the surface does not know is {None},
-/// so that a binding to an unknown action is reported instead of
-/// silently doing nothing.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::Action;
-///
-/// assert!(Action::from_id("panel.copy").is_some());
-/// assert!(Action::from_id("panel.nonsense").is_none());
-/// ```
+    /// The action with the given identifier.
+    ///
+    /// WHY: the identifier comes from the configuration file and from the
+    /// input layer. An identifier that the surface does not know is {None},
+    /// so that a binding to an unknown action is reported instead of
+    /// silently doing nothing.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Action;
+    ///
+    /// assert!(Action::from_id("panel.copy").is_some());
+    /// assert!(Action::from_id("panel.nonsense").is_none());
+    /// ```
     pub fn from_id(id: &str) -> Option<Action> {
         Action::all().iter().copied().find(|action| action.id == id)
     }
 
-/// Every action of the catalogue, in the order of the configuration file.
+    /// Every action of the catalogue, in the order of the configuration file.
     pub fn all() -> &'static [Action] {
         &ACTIONS
     }
 
-/// The actions of one category, in the order of the catalogue.
+    /// The actions of one category, in the order of the catalogue.
     pub fn in_category(category: ActionCategory) -> impl Iterator<Item = Action> {
         Action::all()
             .iter()
@@ -318,6 +318,10 @@ const ACTIONS: [Action; 36] = [
 ];
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::collections::BTreeSet;
