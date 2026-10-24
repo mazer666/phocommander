@@ -1,0 +1,16 @@
+$ ./scripts/check-crate-boundaries.sh
+Phocommander - crate boundary gate
+rule: apps/* -> platform/* -> crates/*, no crate below crates/ may depend
+      on another crate below crates/, registry dependencies are not checked
+
+OK    apps/phocommander-desktop -> crates/phocommander-config (apps -> crates)
+OK    apps/phocommander-desktop -> platform/phocommander-platform (apps -> platform)
+OK    apps/phocommander-desktop -> crates/phocommander-core (apps -> crates)
+OK    platform/phocommander-platform -> crates/phocommander-core (platform -> crates)
+OK    tests -> crates/phocommander-archive (tests -> crates)
+OK    tests -> crates/phocommander-config (tests -> crates)
+OK    tests -> crates/phocommander-core (tests -> crates)
+OK    tests -> crates/phocommander-keymap (tests -> crates)
+
+8 path dependencies checked, 0 violations
+EXIT=0

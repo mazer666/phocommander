@@ -90,6 +90,29 @@ TABLE_PATTERN = re.compile(r"^\s*\[[^\]]+\]\s*$")
 # A key assignment line in a TOML file.
 KEY_PATTERN = re.compile(r"^\s*(?:\"[^\"]+\"|[A-Za-z0-9_.-]+)\s*=")
 
+# A Rust struct declaration.
+STRUCT_PATTERN = re.compile(r"^pub struct (\w+)\s*\{", re.MULTILINE)
+
+# A public field of a Rust struct.
+FIELD_PATTERN = re.compile(r"^\s*pub (\w+):\s*([\w:<>, ]+?),", re.MULTILINE)
+
+# The struct of the Rust schema behind each section of the configuration file.
+SCHEMA_SECTIONS = {
+    "general": "General",
+    "appearance": "Appearance",
+    "panels": "Panels",
+    "viewer": "Viewer",
+    "archives": "Archives",
+    "privacy": "Privacy",
+    "advanced": "Advanced",
+    "input": "Input",
+    "remote": "Remote",
+}
+
+# The structs that hold a free-form table of action identifiers. Their keys
+# are checked by the keymap crate, not by this script.
+FREE_FORM_STRUCTS = {"KeymapOverrides", "InputBindings"}
+
 
 def repository_root() -> Path:
     """Return the repository root, derived from the location of this script."""
@@ -230,17 +253,87 @@ def check_keymap_defaults(defaults: dict, keymap: dict) -> list[str]:
     return failures
 
 
+def read_rust_schema(schema_path: Path) -> dict[str, dict[str, str]]:
+    """Return the public fields of every struct of a Rust schema file.
+
+    WHAT: collects the name and the type of every `pub` field of every
+    `pub struct` of the file.
+    """
+    if not schema_path.exists():
+        return {}
+    text = schema_path.read_text(encoding="utf-8")
+    structs: dict[str, dict[str, str]] = {}
+    for match in STRUCT_PATTERN.finditer(text):
+        name = match.group(1)
+        body = text[match.end() :]
+        end = body.find("\n}")
+        if end == -1:
+            continue
+        fields = {
+            field.group(1): field.group(2).strip()
+            for field in FIELD_PATTERN.finditer(body[:end])
+        }
+        structs[name] = fields
+    return structs
+
+
+def check_schema_drift(schema_path: Path, defaults: dict) -> list[str]:
+    """Return the failure messages for a drift between the file and the schema.
+
+    WHAT: a key of the configuration file that the Rust schema does not know
+    would be rejected by the loader, because the schema denies unknown fields.
+    A field of the schema that the template does not provide would leave the
+    value to be taken from somewhere else, and the template is the place where
+    the defaults of the specification are written down.
+    """
+    structs = read_rust_schema(schema_path)
+    if not structs:
+        return []
+    failures: list[str] = []
+    for section, struct_name in SCHEMA_SECTIONS.items():
+        fields = structs.get(struct_name)
+        if fields is None:
+            failures.append(f"the Rust schema has no struct {struct_name} for the section {section}")
+            continue
+        table = defaults.get(section)
+        if not isinstance(table, dict):
+            failures.append(f"the section {section} is missing in the configuration file")
+            continue
+        for key in sorted(table):
+            if key in fields:
+                continue
+            if any(field_type in FREE_FORM_STRUCTS for field_type in fields.values()):
+                continue
+            failures.append(
+                f"{section}.{key} is in the file, but the Rust schema does not know this field"
+            )
+        for key, field_type in sorted(fields.items()):
+            if field_type in FREE_FORM_STRUCTS:
+                continue
+            if key not in table:
+                failures.append(
+                    f"{section}.{key} is in the Rust schema, but the template does not provide it"
+                )
+    return failures
+
+
 def main() -> int:
     """Run every check and report the result."""
     parser = argparse.ArgumentParser(description=__doc__)
     root = repository_root()
     parser.add_argument("--config", type=Path, default=root / "config")
+    parser.add_argument(
+        "--schema",
+        type=Path,
+        default=root / "crates" / "phocommander-config" / "src" / "schema.rs",
+    )
     arguments = parser.parse_args()
 
     config_dir = arguments.config
     template_dir = config_dir / "templates"
     defaults_path = config_dir / "defaults.toml"
     keymap_path = config_dir / "keymap.toml"
+    schema_path = arguments.schema
 
     files = sorted(config_dir.rglob("*.toml"))
     parse_failures, parsed = check_parses(files)
@@ -261,6 +354,10 @@ def main() -> int:
         ("every key and every section carries a comment", comment_failures),
         ("the shipped rename templates are complete", check_templates(template_dir, parsed)),
         ("the overrides match the action catalogue", check_keymap_defaults(defaults, keymap)),
+        (
+            "the configuration file and the Rust schema agree",
+            check_schema_drift(schema_path, defaults),
+        ),
     ]
 
     print(f"config    : {config_dir}")

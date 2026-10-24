@@ -1,0 +1,24 @@
+# The archive adapter of Phocommander.
+#
+# WHAT: the hardened resolution of the untrusted names an archive contains.
+# WHY: an archive is untrusted input. A name like `../../etc/passwd` must
+#       never reach the file system, and a name that is a reserved device on
+#       Windows must never be written either. The container readers arrive in
+#       milestone M1; the name resolution is here from the start, because
+#       every reader has to use it.
+# EXAMPLE: `let path = phocommander_archive::resolve_entry_name("docs/readme.md")?;`
+
+[package]
+name = "phocommander-archive"
+description = "Archive adapters and the hardened resolution of archive entry names."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

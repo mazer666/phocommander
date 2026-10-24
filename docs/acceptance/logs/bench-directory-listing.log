@@ -1,0 +1,32 @@
+$ cargo bench -p phocommander-integration-tests --bench directory_listing -- --warm-up-time 1 --measurement-time 5
+   Compiling syn v3.0.9
+   Compiling serde_derive v1.0.229
+   Compiling thiserror v2.0.21
+   Compiling serde v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling toml v1.1.8+spec-1.1.0
+   Compiling ciborium v0.2.2
+   Compiling tinytemplate v1.2.1
+   Compiling criterion v0.8.2
+   Compiling zip v9.1.0
+   Compiling proptest v1.12.0
+   Compiling phocommander-config v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-config)
+   Compiling phocommander-keymap v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-keymap)
+   Compiling phocommander-core v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-core)
+   Compiling phocommander-archive v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-archive)
+   Compiling phocommander-integration-tests v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/tests)
+    Finished `bench` profile [optimized] target(s) in 2m 02s
+     Running ../benches/directory_listing.rs (/tmp/qa-target/release/deps/directory_listing-1d77502974fc6096)
+Gnuplot not found, using plotters backend
+Benchmarking directory_listing/list_10_000_entries
+Benchmarking directory_listing/list_10_000_entries: Warming up for 1.0000 s
+Benchmarking directory_listing/list_10_000_entries: Collecting 20 samples in estimated 5.5909 s (60 iterations)
+Benchmarking directory_listing/list_10_000_entries: Analyzing
+directory_listing/list_10_000_entries
+                        time:   [58.887 ms 64.391 ms 70.880 ms]
+Found 3 outliers among 20 measurements (15.00%)
+  2 (10.00%) high mild
+  1 (5.00%) high severe
+
+directory listing of 10000 entries: median 53.287992ms (threshold 100ms)
+EXIT=0

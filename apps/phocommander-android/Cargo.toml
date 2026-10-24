@@ -1,0 +1,28 @@
+# The Android application of Phocommander.
+#
+# WHAT: the Rust library that the Gradle project of the Android application
+#       loads.
+# WHY: the Android version has the most divergent access rules of the six
+#       target systems. The library is created in milestone M0 so that the
+#       boundary exists before the first Gradle file is written.
+# EXAMPLE: the Gradle project arrives in milestone M4.
+
+[package]
+name = "phocommander-android"
+description = "The Android library of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+# `cdylib` is the library that the Gradle project loads into the Android
+# application, `rlib` is the library that the tests and the other crates of
+# the workspace link against.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[lints]
+workspace = true

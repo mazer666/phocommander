@@ -1,0 +1,22 @@
+# The network sources of Phocommander.
+#
+# WHAT: the crate that will offer directories that live on another machine.
+# WHY: a remote source is not a second kind of file manager, it is another
+#       source of the same "content of a directory". The crate therefore
+#       implements the same interface as the local file system, and the core
+#       stays free of protocol details.
+# EXAMPLE: the public API arrives in milestone M6.
+
+[package]
+name = "phocommander-remote"
+description = "Network sources — SFTP, FTP, SMB, WebDAV and S3 — of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

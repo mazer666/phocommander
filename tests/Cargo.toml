@@ -1,0 +1,87 @@
+# The integration tests of Phocommander.
+#
+# WHAT: the package that carries the integration tests, the negative security
+#       tests and the criterion benchmark of the project.
+# WHY:  the tests of a crate live inside that crate, but the tests that cross
+#       a crate boundary need a package of their own — the workspace is flat,
+#       so `phocommander-core` may not depend on `phocommander-config`, and a
+#       test that holds both against each other has to live outside of them.
+#       The package is the only place where the shipped files of the
+#       repository (`config/defaults.toml`, `config/keymap.toml`) are read
+#       together with the crates that read them in the application.
+# EXAMPLE: `cargo test -p phocommander-integration-tests`
+
+[package]
+name = "phocommander-integration-tests"
+description = "Integration tests, negative security tests and benchmarks of Phocommander."
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+# The test targets are listed explicitly below. The automatic discovery is
+# switched off, because the helpers live in `common/` and the tests live in
+# `integration/` and `security/` — a layout that the automatic discovery does
+# not know.
+autotests = false
+autobenches = false
+
+# The shared helpers of the integration tests. The library is the test kit of
+# the project: a temporary directory that removes itself, the creation of
+# files and trees, and the inspection of a directory.
+[lib]
+name = "phocommander_testkit"
+path = "common/mod.rs"
+
+[dev-dependencies]
+phocommander-archive = { path = "../crates/phocommander-archive" }
+phocommander-config = { path = "../crates/phocommander-config" }
+phocommander-core = { path = "../crates/phocommander-core" }
+phocommander-keymap = { path = "../crates/phocommander-keymap" }
+criterion = { workspace = true }
+proptest = { workspace = true }
+toml = { workspace = true }
+zip = { workspace = true }
+
+# ---------------------------------------------------------------------------
+# The integration tests.
+# ---------------------------------------------------------------------------
+
+[[test]]
+name = "config_defaults"
+path = "integration/config_defaults.rs"
+
+[[test]]
+name = "core_limits"
+path = "integration/core_limits.rs"
+
+[[test]]
+name = "keymap_bindings"
+path = "integration/keymap_bindings.rs"
+
+# ---------------------------------------------------------------------------
+# The negative tests. They perform the attack and prove that the defence
+# holds — a positive test proves nothing about a hardening.
+# ---------------------------------------------------------------------------
+
+[[test]]
+name = "security_path_traversal"
+path = "security/path_traversal.rs"
+
+[[test]]
+name = "security_decompression_bomb"
+path = "security/decompression_bomb.rs"
+
+# ---------------------------------------------------------------------------
+# The benchmark. The file lives in `benches/` at the root of the repository,
+# where the performance gate expects it.
+# ---------------------------------------------------------------------------
+
+[[bench]]
+name = "directory_listing"
+path = "../benches/directory_listing.rs"
+harness = false
+
+[lints]
+workspace = true

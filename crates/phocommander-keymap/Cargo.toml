@@ -1,0 +1,26 @@
+# The action catalogue and the key bindings of Phocommander.
+#
+# WHAT: the stable identifiers of the commands of the application, the input
+#       contexts they belong to and the key combinations that trigger them.
+# WHY: the user interface must know *what* a command is, never *how* it was
+#       triggered. A keyboard, a mouse, a finger, a television remote control
+#       and a gamepad all deliver the same action identifier, so the same
+#       command works on every platform without a second implementation.
+# EXAMPLE: `let action = phocommander_keymap::ActionId::new("panel.copy")?;`
+
+[package]
+name = "phocommander-keymap"
+description = "Action catalogue, input contexts and key bindings of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

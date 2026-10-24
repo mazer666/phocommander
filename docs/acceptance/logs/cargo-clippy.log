@@ -1,0 +1,14 @@
+$ cargo clippy --workspace --all-targets --all-features -- -D warnings
+    Checking phocommander-integration-tests v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/tests)
+    Checking phocommander-config v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-config)
+    Checking phocommander-keymap v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-keymap)
+    Checking phocommander-archive v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-archive)
+    Checking phocommander-core v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-core)
+    Checking phocommander-viewer v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-viewer)
+    Checking phocommander-android v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/apps/phocommander-android)
+    Checking xtask v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/xtask)
+    Checking phocommander-ops v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-ops)
+    Checking phocommander-ios v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/apps/phocommander-ios)
+    Checking phocommander-remote v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-remote)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.10s
+EXIT=0

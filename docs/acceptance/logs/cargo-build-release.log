@@ -1,0 +1,62 @@
+$ cargo build --workspace --release
+   Compiling bytemuck_derive v1.12.1
+   Compiling bytemuck v1.25.2
+   Compiling smallvec v1.16.4
+   Compiling num-traits v0.2.19
+   Compiling arrayvec v0.7.8
+   Compiling polycool v0.4.0
+   Compiling once_cell v1.21.4
+   Compiling euclid v0.22.14
+   Compiling kurbo v0.13.1
+   Compiling font-types v0.12.7
+   Compiling color v0.3.3
+   Compiling version_check v0.9.5
+   Compiling linebender_resource_handle v0.1.1
+   Compiling parking_lot_core v0.9.12
+   Compiling zerocopy v0.8.63
+   Compiling peniko v0.6.1
+   Compiling ahash v0.8.12
+   Compiling read-fonts v0.41.0
+   Compiling guillotiere v0.7.0
+   Compiling fearless_simd v0.4.1
+   Compiling foldhash v0.2.0
+   Compiling scopeguard v1.2.0
+   Compiling unicode-general-category v1.1.0
+   Compiling serde v1.0.229
+   Compiling log v0.4.34
+   Compiling vello_common v0.2.0
+   Compiling lock_api v0.4.14
+   Compiling hashbrown v0.17.1
+   Compiling option-ext v0.2.0
+   Compiling emath v0.37.0
+   Compiling bitflags v2.13.2
+   Compiling harfrust v0.12.0
+   Compiling ecolor v0.37.0
+   Compiling dirs-sys v0.5.0
+   Compiling parking_lot v0.12.5
+   Compiling vello_cpu v0.2.0
+   Compiling skrifa v0.44.0
+   Compiling self_cell v1.3.0
+   Compiling profiling v1.0.18
+   Compiling unicode-segmentation v1.13.3
+   Compiling unicode-properties v0.1.4
+   Compiling uuid v1.29.0
+   Compiling nohash-hasher v0.2.0
+   Compiling epaint v0.37.0
+   Compiling accesskit v0.25.1
+   Compiling itertools v0.15.0
+   Compiling dirs v7.0.0
+   Compiling phocommander-platform v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/platform/phocommander-platform)
+   Compiling egui v0.37.0
+   Compiling phocommander-config v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-config)
+   Compiling phocommander-desktop v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/apps/phocommander-desktop)
+   Compiling phocommander-ui v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-ui)
+   Compiling phocommander-keymap v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-keymap)
+   Compiling phocommander-viewer v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-viewer)
+   Compiling phocommander-remote v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-remote)
+   Compiling phocommander-ops v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-ops)
+   Compiling phocommander-ios v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/apps/phocommander-ios)
+   Compiling xtask v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/xtask)
+   Compiling phocommander-android v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/apps/phocommander-android)
+    Finished `release` profile [optimized] target(s) in 5m 31s
+EXIT=0

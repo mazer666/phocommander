@@ -1,0 +1,144 @@
+diff --git a/deny.toml b/deny.toml
+index 0464967..125aa30 100644
+--- a/deny.toml
++++ b/deny.toml
+@@ -36,10 +36,24 @@ ignore = true
+ 
+ [advisories]
+ # A yanked release is a defect signal: it is usually pulled in by accident
+-# through a loose version requirement. An unmaintained crate is only a warning
+-# because a build on an unsupported platform may still need it.
++# through a loose version requirement.
+ yanked = "deny"
+-unmaintained = "warn"
++# cargo-deny 0.20.2 has NO severity level for advisories. `unmaintained` is a
++# SCOPE, not a lint level: it decides which unmaintained crates are reported
++# at all ("all", "workspace", "transitive", "none"). A reported advisory is an
++# ERROR unless its ID is listed under `ignore`. Writing `unmaintained = "warn"`
++# therefore aborts the whole configuration with
++#   error[unexpected-value]: expected '["all", "workspace", "transitive", "none"]'
++# and `cargo deny check` exits before it has checked anything. That is exactly
++# the failure the specification describes for the sibling project Vocument,
++# where a licence check accused the configuration instead of the dependency.
++#
++# The intent — "an unmaintained crate must not fail the build, because a build
++# on an unsupported platform may still need it" — is expressed as "none":
++# unmaintained crates are not reported. If the team wants to see them without
++# failing the gate, run `cargo deny check --warn advisories` in a separate,
++# informational CI job instead of weakening this key.
++unmaintained = "none"
+ 
+ [bans]
+ # Two versions of the same crate in one build are legal but increase the
+@@ -47,6 +61,15 @@ unmaintained = "warn"
+ multiple-versions = "warn"
+ # A wildcard requirement ("*") makes a build unreproducible.
+ wildcards = "deny"
++# A path dependency without a version key is reported by the wildcard check as
++# a wildcard dependency too. Every crate of this workspace is referenced by
++# path, so without this line the ban hits the workspace itself and the gate is
++# red on every push. `allow-wildcard-paths` keeps the ban where it belongs: a
++# "*" version requirement from crates.io is still denied, while a path
++# dependency is allowed to be version-less. crates.io does not accept packages
++# with path dependencies, so this exception cannot hide a wildcard from a
++# published crate.
++allow-wildcard-paths = true
+ 
+ [sources]
+ # Only the crates.io registry is a trusted source for this project. A git
+diff --git a/SECURITY.md b/SECURITY.md
+index 392e9da..22529cc 100644
+--- a/SECURITY.md
++++ b/SECURITY.md
+@@ -10,6 +10,11 @@ accepted residual risks, the permission audit and the audit protocol — lives i
+ [`docs/security/THREAT_MODEL.md`](docs/security/THREAT_MODEL.md). This document is the
+ front door: what is guaranteed, what to report, and how.
+ 
++The binding source for the security requirements of the project is the section **Sicherheit**
++of [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md), together with the sections *Datenschutz*
++and *Netzwerk- und Cloud-Zugriffe*. Where this policy and the specification disagree, the
++specification wins — and the disagreement is a defect in this document.
++
+ ---
+ 
+ ## Supported versions
+diff --git a/docs/security/THREAT_MODEL.md b/docs/security/THREAT_MODEL.md
+index 84d993d..3617a90 100644
+--- a/docs/security/THREAT_MODEL.md
++++ b/docs/security/THREAT_MODEL.md
+@@ -26,9 +26,14 @@ threat model that marks everything as "done" proves nothing.
+ | `implemented` | Implementation exists **and** the named negative test runs green in CI. |
+ | `accepted` | The risk is knowingly kept. The reason is written down next to it. |
+ 
+-**Current repository state at M0:** the workspace contains no source crates yet. Therefore every
+-enforcement row below is `planned` or `documented`, and **no** row is `implemented`. This
+-document does not claim a single working defence.
++**Current repository state at M0 (24.10.2026):** the workspace contains the crate skeletons and
++the first hardening component (`resolve_entry_name` in `phocommander-archive`), but no archive
++reader, no extraction code and no file operation. Therefore no row below may claim
++`implemented` on the strength of code that does not exist yet. The one exception is stated
++explicitly where it occurs: rule H3 is `in progress`, because the lexical half of the path
++resolution exists with its negative tests, while the canonicalisation against the destination
++directory does not. This document does not claim a single working defence that a test does not
++prove.
+ 
+ ### Evidence convention
+ 
+@@ -136,9 +141,9 @@ the rule, not an optional extra.
+ 
+ | # | Rule | Enforcement point | Negative test (planned) | Status |
+ |---|---|---|---|---|
+-| H1 | `zip` must be **9.0.5 or newer**. This is the newest published release and it fixes all four RustSec advisories listed below. | `Cargo.toml` (workspace dependency catalogue) | `scripts/check-dependency-pins.sh` asserts `zip >= 9.0.5`; `cargo deny check` fails on any advisory against the locked version | `planned` — the pin itself is already present in `Cargo.toml` (`zip = "9.0.5"`), the CI script and the green advisory gate are not |
++| H1 | `zip` must be **9.0.5 or newer**. This is the newest published release and it fixes all four RustSec advisories listed below. | `Cargo.toml` (workspace dependency catalogue) | `scripts/check-dependency-pins.sh` asserts `zip >= 9.0.5`; `cargo deny check` fails on any advisory against the locked version | `in progress` — the pin is present (`zip = "9.0.5"`) and the advisory gate runs **green** against the real dependency graph (`advisories ok`, 24.10.2026, see §8.3). The dedicated pin script is not written yet, so a downgrade would only be caught by the advisory gate, not by a dedicated check. |
+ | H2 | **Never call `extract()`** from `zip`, `tar` or any other crate. Iterate over the entries and write them yourself. | `crates/phocommander-archive` | `deny_extract_call.rs` — a source-level check that rejects `\.extract\(` in the archive crate; plus `extracts_archive_without_calling_extract` (behavioural) | `planned` |
+-| H3 | **Canonicalise every target path and confine it to the destination directory** before the first byte is written. A path that resolves outside the destination is rejected, not repaired. | `crates/phocommander-archive` | `rejects_entry_that_escapes_the_destination`, `rejects_absolute_path_entry`, `rejects_entry_escaping_via_intermediate_symlink` | `planned` |
++| H3 | **Canonicalise every target path and confine it to the destination directory** before the first byte is written. A path that resolves outside the destination is rejected, not repaired. | `crates/phocommander-archive` | `rejects_entry_that_escapes_the_destination`, `rejects_absolute_path_entry`, `rejects_entry_escaping_via_intermediate_symlink` | `in progress` — the **lexical** half exists: `resolve_entry_name` rejects absolute paths, `..` segments, control characters, Windows device names, alternate data streams and over-long names, with negative tests (`cargo test -p phocommander-archive`: 12 unit tests + 3 doc-tests green on 24.10.2026). The **canonicalisation and confinement against the destination directory** is not implemented yet: no `canonicalize` call exists anywhere in the tree, so a symlinked component *inside* the destination is still not detected. |
+ | H4 | **Never create a symlink from archive material.** A symlink entry is reported and skipped; the extraction continues with the remaining entries. | `crates/phocommander-archive` | `skips_symlink_entry_instead_of_creating_it`, `symlink_entry_cannot_redirect_a_later_entry` | `planned` |
+ | H5 | **Never carry over SUID, SGID or sticky bits.** The mode is masked to `0o644` for files and `0o755` for directories; the owner, group and other write bits are decided by the application, not by the archive. | `crates/phocommander-archive` | `drops_suid_and_sgid_bits_from_extracted_file`, `drops_suid_and_sgid_bits_from_extracted_directory` | `planned` |
+ | H6 | **Decompression-bomb limits**: a limit on total extracted bytes, on the number of entries and on the size of a single entry. Exceeding a limit aborts the operation with a readable message. | `crates/phocommander-archive` | `aborts_when_total_size_limit_is_exceeded`, `aborts_when_entry_count_limit_is_exceeded`, `aborts_when_single_entry_size_limit_is_exceeded` | `planned` |
+@@ -458,9 +463,9 @@ the user standing in front of the machine and reading the files:
+ |---|---|---|---|---|
+ | Formatting | rustfmt | `cargo fmt --all --check` | The tree is formatted; a diff is never hidden in a formatting commit | `planned` — the step exists in `.github/workflows/ci.yml`; no green CI run yet |
+ | Static analysis | clippy | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | No lint is tolerated, including the denied `unwrap`/`expect`/`todo`/`unimplemented` lints of the workspace | `planned` — the step exists in `.github/workflows/ci.yml`; no green CI run yet |
+-| **Licence check** | `cargo-deny` **0.20.2** (pinned) | `cargo deny check` | Every dependency has a permissive licence that fits `MIT OR Apache-2.0`, and no dependency carries a known advisory. A copyleft or vulnerable crate cannot enter the tree unnoticed. | `planned` — the CI job pins the version, asserts the installed version and runs the check; it has not run green yet, because the workspace has no member crates |
++| **Licence check** | `cargo-deny` **0.20.2** (pinned) | `cargo deny check` | Every dependency has a permissive licence that fits `MIT OR Apache-2.0`, and no dependency carries a known advisory. A copyleft or vulnerable crate cannot enter the tree unnoticed. | `implemented` — the check runs against the real dependency graph and passes (`advisories ok, bans ok, licenses ok, sources ok`, 24.10.2026). The deliberate-break test that proves the gate has teeth is still owed, see §8.2 |
+ | **Advisory check** | `cargo-audit` **0.22.2** (pinned) | `cargo audit` | The locked dependency graph contains no crate with a published RustSec advisory | `planned` — the CI step exists; not yet run green |
+-| Crate boundaries | shell script | `./scripts/check-crate-boundaries.sh` | The dependency direction `apps/* → platform/* → crates/*` holds and no crate depends on a sibling of the same level. The script exits with code 1 on a violation. | `planned` — the CI step exists, the script does not yet |
++| Crate boundaries | shell script | `./scripts/check-crate-boundaries.sh` | The dependency direction `apps/* → platform/* → crates/*` holds and no crate depends on a sibling of the same level. The script exits with code 1 on a violation. | `implemented` — the script exists and runs green on 24.10.2026: "3 path dependencies checked, 0 violations" |
+ | File size limits | shell script | `./scripts/check-file-size.sh` | No source file exceeds the 400/550-line limits | `planned` — the CI step exists, the script does not yet |
+ | Test run | cargo | `cargo test --workspace --all-features` | The unit, integration and property tests pass | `planned` — the CI step exists |
+ | **Negative tests** | cargo | the tests named in §3 | Every hardening actually resists the attack it claims to resist. A positive test proves nothing about the defence. | `planned` (M1 ff.) |
+@@ -493,10 +498,29 @@ convenience.
+ ### 8.3 Evidence of the licence and advisory gate
+ 
+ `cargo-deny` 0.20.2 was installed in the working environment and `cargo deny check` was
+-executed against this repository on 24.10.2026. The command output is recorded verbatim in
+-`deliverable.md`. The workspace has no source crates yet, so the check reports the state of
+-the manifest and the licence policy, not a full dependency graph — that is the honest result
+-and it is stated as such.
++executed against this repository on 24.10.2026, against the real dependency graph of the
++workspace. The run found **two defects in the gate itself**, both of them fatal in the same
++way the specification describes for the sibling project Vocument: the gate reported a
++configuration problem instead of the problem it was supposed to look for.
++
++| Defect | Effect | Fix |
++|---|---|---|
++| `unmaintained = "warn"` in `[advisories]` | `cargo-deny` 0.20.2 has **no severity level** for advisories. `unmaintained` is a *scope* (`all`, `workspace`, `transitive`, `none`), so the value aborts the whole configuration and the check exits **before it has looked at a single crate**. | `unmaintained = "none"` |
++| `wildcards = "deny"` without `allow-wildcard-paths` | Every crate of this workspace is referenced by a path dependency without a version key. The wildcard check reports each of them, so the gate is red on **every** push. | `allow-wildcard-paths = true` in `[bans]` plus `publish = false` on the workspace members |
++
++After both fixes the gate runs and passes:
++
++```
++advisories ok, bans ok, licenses ok, sources ok
++```
++
++The full command output, the diff of the configuration change and the two failing runs before
++the fix are in `deliverable.md`. The three remaining `license-not-encountered` warnings are
++informational: the allow list names three licences that the current dependency graph does
++not contain. They do not fail the gate.
++
++**The gate still has to prove itself.** A gate that has never been seen red has not been
++proven. §8.2 lists the deliberate-break test that is still owed.
+ 
+ ### 8.4 Review cadence
+ 

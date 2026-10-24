@@ -1,0 +1,124 @@
+$ cargo deny check   (CARGO_HOME=/tmp/cargo-home: the NFS mount of the workspace does not support the lock file of the advisory database)
+warning[duplicate]: found 2 duplicate entries for crate 'syn'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:160:1
+    │  
+160 │ ╭ syn 2.0.119 registry+https://github.com/rust-lang/crates.io-index
+161 │ │ syn 3.0.9 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ syn v2.0.119
+      └── zerocopy-derive v0.8.63
+          └── zerocopy v0.8.63
+              ├── ahash v0.8.12
+              │   ├── egui v0.37.0
+              │   │   └── phocommander-ui v0.1.0
+              │   └── epaint v0.37.0
+              │       └── egui v0.37.0 (*)
+              └── half v2.7.1
+                  └── ciborium-ll v0.2.2
+                      └── ciborium v0.2.2
+                          └── criterion v0.8.2
+                              └── (dev) phocommander-integration-tests v0.1.0
+    ├ syn v3.0.9
+      ├── bytemuck_derive v1.12.1
+      │   └── bytemuck v1.25.2
+      │       ├── color v0.3.3
+      │       │   └── peniko v0.6.1
+      │       │       └── vello_common v0.2.0
+      │       │           └── vello_cpu v0.2.0
+      │       │               └── epaint v0.37.0
+      │       │                   └── egui v0.37.0
+      │       │                       └── phocommander-ui v0.1.0
+      │       ├── font-types v0.12.7
+      │       │   ├── epaint v0.37.0 (*)
+      │       │   └── read-fonts v0.41.0
+      │       │       ├── harfrust v0.12.0
+      │       │       │   └── epaint v0.37.0 (*)
+      │       │       └── skrifa v0.44.0
+      │       │           └── epaint v0.37.0 (*)
+      │       ├── harfrust v0.12.0 (*)
+      │       ├── peniko v0.6.1 (*)
+      │       ├── read-fonts v0.41.0 (*)
+      │       ├── skrifa v0.44.0 (*)
+      │       ├── vello_common v0.2.0 (*)
+      │       └── vello_cpu v0.2.0 (*)
+      ├── serde_derive v1.0.229
+      │   └── serde v1.0.229
+      │       ├── ciborium v0.2.2
+      │       │   └── criterion v0.8.2
+      │       │       └── (dev) phocommander-integration-tests v0.1.0
+      │       ├── criterion v0.8.2 (*)
+      │       ├── phocommander-config v0.1.0
+      │       │   ├── phocommander-desktop v0.1.0
+      │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       ├── phocommander-keymap v0.1.0
+      │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       └── tinytemplate v1.2.1
+      │           └── criterion v0.8.2 (*)
+      ├── thiserror-impl v2.0.21
+      │   └── thiserror v2.0.21
+      │       ├── phocommander-archive v0.1.0
+      │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       ├── phocommander-config v0.1.0 (*)
+      │       ├── phocommander-core v0.1.0
+      │       │   ├── (dev) phocommander-desktop v0.1.0 (*)
+      │       │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       │   └── phocommander-platform v0.1.0
+      │       │       └── phocommander-desktop v0.1.0 (*)
+      │       ├── phocommander-keymap v0.1.0 (*)
+      │       ├── redox_users v0.5.3
+      │       │   └── dirs-sys v0.5.0
+      │       │       └── dirs v7.0.0
+      │       │           └── phocommander-platform v0.1.0 (*)
+      │       └── vello_common v0.2.0 (*)
+      └── wasm-bindgen-macro-support v0.2.129
+          └── wasm-bindgen-macro v0.2.129
+              └── wasm-bindgen v0.2.129
+                  ├── getrandom v0.4.3
+                  │   ├── jobserver v0.1.35
+                  │   │   └── cc v1.10.0
+                  │   │       ├── (build) alloca v0.4.0
+                  │   │       │   └── criterion v0.8.2 (*)
+                  │   │       └── (build) zstd-sys v2.1.2+zstd.1.5.7
+                  │   │           └── zstd-safe v8.2.0
+                  │   │               └── zstd v0.14.3
+                  │   │                   └── zip v9.1.0
+                  │   │                       └── (dev) phocommander-integration-tests v0.1.0 (*)
+                  │   ├── rand v0.10.3
+                  │   │   └── proptest v1.12.0
+                  │   │       └── (dev) phocommander-integration-tests v0.1.0 (*)
+                  │   ├── tempfile v3.27.0
+                  │   │   ├── proptest v1.12.0 (*)
+                  │   │   └── rusty-fork v0.3.1
+                  │   │       └── proptest v1.12.0 (*)
+                  │   └── zip v9.1.0 (*)
+                  ├── js-sys v0.3.106
+                  │   ├── getrandom v0.4.3 (*)
+                  │   ├── time v0.3.55
+                  │   │   └── zip v9.1.0 (*)
+                  │   └── web-sys v0.3.106
+                  │       └── plotters v0.3.7
+                  │           └── criterion v0.8.2 (*)
+                  ├── plotters v0.3.7 (*)
+                  └── web-sys v0.3.106 (*)
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/deny.toml:23:6
+   │
+23 │     "Apache-2.0 WITH LLVM-exception",
+   │      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/deny.toml:25:6
+   │
+25 │     "BSD-3-Clause",
+   │      ━━━━━━━━━━━━ unmatched license allowance
+
+warning[license-not-encountered]: license was not encountered
+   ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/deny.toml:26:6
+   │
+26 │     "ISC",
+   │      ━━━ unmatched license allowance
+
+advisories ok, bans ok, licenses ok, sources ok
+EXIT=0

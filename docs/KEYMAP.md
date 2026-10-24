@@ -227,20 +227,25 @@ left at any time.
 
 ## Consistency with the specification
 
-The table above was checked against the section **Tastatursteuerung** of
-[`docs/REQUIREMENTS.md`](REQUIREMENTS.md) and against
-[`config/keymap.toml`](../config/keymap.toml). The result of that check — including
-the two deviations that were found — is documented in the handover file
-`deliverable.md` in the repository root.
+The table above is checked mechanically against the specification and the catalogue:
 
-The deviations, in short:
+```bash
+python3 scripts/check-keymap-consistency.py
+```
 
-1. `Ctrl+Shift+Tab` for the previous tab exists in the catalogue and in this
-   document, but not in the specification's table. The specification names only the
-   forward direction.
-2. The viewer search (`F3` / `Shift+F3`) and the conflict jump (`F3` / `Shift+F3`)
-   are rows of this table, but rows of the prose in the specification, not of its
-   table.
+The script compares three sources — the keyboard table of the specification, the
+`[input.keyboard]` section of `config/keymap.toml` and the table of this document —
+and exits with code 1 on a deviation that is not documented in the repository.
+
+The result at the time of writing: **no undocumented deviation**. Two documented
+deviations and two notation differences remain:
+
+| # | Finding | Where it is documented |
+|---|---|---|
+| 1 | `Ctrl+Shift+Tab` for the previous tab exists in the catalogue and in this document, but not in the specification's table — the specification names only the forward direction `Ctrl+Tab`. | `config/keymap.toml` marks it as "the symmetric completion and the first point to adjust if it turns out to be wrong"; this document repeats the note. |
+| 2 | `Alt+F2` opens the drive list of the *other* pane. The catalogue binds the action `panel.drives` to `Alt+F1` and describes `Alt+F2` in the comment; the specification names both keys for one action. | `config/keymap.toml`, the comment above `panel.drives`. |
+| 3 | The viewer search (`F3` / `Shift+F3`) and the conflict jump (`F3` / `Shift+F3`) are rows of this table, but rows of the *prose* in the specification, not of its table. | The paragraph below the keyboard table in the specification. |
+| 4 | The specification writes the space bar as `Leertaste`, the catalogue and this document as `Space`. | The notation table in this document. |
 
 Everything else — the F-key row, the modifier combinations, the selection keys, the
 drive list and the parent directory — matches the specification and the catalogue

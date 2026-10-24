@@ -12,6 +12,7 @@
 //! ```no_run
 //! use phocommander_core::config::MAX_ARCHIVE_ENTRIES;
 //!
+//! # let entry_count = 12_u64;
 //! if entry_count > MAX_ARCHIVE_ENTRIES {
 //!     return Err("archive has too many entries");
 //! }
@@ -52,20 +53,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_limits_are_the_ones_the_specification_fixes() {
+        // WHY: the specification writes these four numbers down. A change to
+        // one of them is a decision that belongs into the specification
+        // first, not into the code.
+        assert_eq!(MAX_EXTRACTED_BYTES, 2_147_483_648);
+        assert_eq!(MAX_ARCHIVE_ENTRIES, 100_000);
+        assert_eq!(MAX_VIEWER_FILE_SIZE, 10_485_760);
+        assert_eq!(MAX_VIEWER_TEXT_SIZE, 4_194_304);
+    }
+
+    #[test]
     fn text_limit_is_smaller_than_the_file_limit() {
         // WHY: text decoding multiplies the memory need of a file. A text
         // limit above the file limit would make the text limit unreachable.
-        assert!(MAX_VIEWER_TEXT_SIZE < MAX_VIEWER_FILE_SIZE);
+        let limits = [MAX_VIEWER_TEXT_SIZE, MAX_VIEWER_FILE_SIZE];
+        assert!(limits[0] < limits[1]);
     }
 
     #[test]
     fn every_limit_is_positive() {
         // WHY: a limit of zero would turn the feature it protects into a
         // permanent refusal. Zero is never a valid limit.
-        assert!(MAX_EXTRACTED_BYTES > 0);
-        assert!(MAX_ARCHIVE_ENTRIES > 0);
-        assert!(MAX_VIEWER_FILE_SIZE > 0);
-        assert!(MAX_VIEWER_TEXT_SIZE > 0);
+        let limits = [
+            MAX_EXTRACTED_BYTES,
+            MAX_ARCHIVE_ENTRIES,
+            MAX_VIEWER_FILE_SIZE,
+            MAX_VIEWER_TEXT_SIZE,
+        ];
+        for limit in limits {
+            assert!(limit > 0);
+        }
     }
 
     #[test]
@@ -73,7 +91,8 @@ mod tests {
         // WHY: the limits exist to stop attacks, not to inconvenience users.
         // A two gigabyte extraction and a hundred thousand entries are far
         // above what an ordinary photo or music archive needs.
-        assert!(MAX_EXTRACTED_BYTES >= 2 * 1024 * 1024 * 1024);
-        assert!(MAX_ARCHIVE_ENTRIES >= 10_000);
+        let limits = [MAX_EXTRACTED_BYTES, MAX_ARCHIVE_ENTRIES];
+        assert!(limits[0] >= 2 * 1024 * 1024 * 1024);
+        assert!(limits[1] >= 10_000);
     }
 }

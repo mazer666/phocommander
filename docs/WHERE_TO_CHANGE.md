@@ -4,12 +4,12 @@ The question every new contributor asks first: *which file do I touch for which
 feature?*
 
 This table is the answer. It is derived from the crate structure in
-[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) — that specification is the binding
-source, this file is the convenient index into it.
+[`docs/REQUIREMENTS.md`](REQUIREMENTS.md) — that specification is the binding source,
+this file is the convenient index into it.
 
 Paths are written as code, not as links, because the crates are created milestone by
 milestone. A link would be dead until the file exists; a code span stays readable in
-the meantime.
+the meantime. Files that already exist are linked.
 
 ---
 
@@ -21,14 +21,16 @@ the meantime.
 | Toolchain pin | `rust-toolchain.toml` | workspace | The pinned Rust version and the components (`clippy`, `rustfmt`). Bump it in one place; never with a local `rustup override`. |
 | Dependency licence and advisory policy | `deny.toml` | workspace | Licence allow-list and advisory policy for `cargo-deny`, advisory database for `cargo-audit`. The tool versions are pinned because the same config is read differently by different versions. |
 | Build helper tasks | `xtask/` | `xtask` | Repository-local commands: workspace checks, crate-boundary check, release helpers. Keep it a thin wrapper around `cargo` — no product logic. |
-| Default configuration template | `config/defaults.toml` | — | The commented template of the single central configuration file. Every key that a user can set must appear here with an explanation. |
-| Key binding template | `config/keymap.toml` | — | The default binding per platform. Action identifiers follow the `panel.*` scheme (for example `panel.copy`). |
+| Central configuration template | [`config/defaults.toml`](../config/defaults.toml) | — | The commented template of the single central configuration file. Every key that a user can set must appear here with an explanation. |
+| Action catalogue and key bindings | [`config/keymap.toml`](../config/keymap.toml) | — | The default binding per context. Action identifiers follow the `panel.*` / `selection.*` / `app.*` scheme (for example `panel.copy`). |
+| Multiple rename templates | `config/templates/` | — | One TOML file per template: `series.toml`, `camera.toml`, `podcast.toml`, `invoice.toml`, `music.toml`. A template stores the target format, the detection rule and the question of where the series name comes from. |
 | Filesystem model, path types, symbols, error types | `crates/phocommander-core/src/` | `phocommander-core` | The foundation everything else builds on. Must stay free of UI dependencies — no egui, no window types, no platform APIs. New error variants belong in the crate's error type. |
 | Configuration parser, schema versioning, migration | `crates/phocommander-config/src/` | `phocommander-config` | Parsing, validation and migration of the TOML file. A breaking change needs a new `schema_version` and a migration that keeps the original file as `.bak`. |
 | Key resolution, platform-specific binding | `crates/phocommander-keymap/src/` | `phocommander-keymap` | Turning a key press into an action and back. The "primary" modifier is `Cmd` on macOS/iPadOS and `Ctrl` on Windows/Linux/BSD — that mapping lives here, nowhere else. |
 | Copy, move, delete, job queue | `crates/phocommander-ops/src/` | `phocommander-ops` | The long-running operations. Every operation runs asynchronously, reports progress with a rate and is cancellable. Symlinks are copied as symlinks and unlinked, never dereferenced or recursively deleted. |
 | Archive adapters, hardened extraction | `crates/phocommander-archive/src/` | `phocommander-archive` | Format support and the extraction hardening: iterate over entries yourself, canonicalise every target path, check it against the destination, never create symlinks from archive material, enforce the size and entry limits. |
 | Viewer registry, format adapters | `crates/phocommander-viewer/src/` | `phocommander-viewer` | A new viewer format is a new implementation of the viewer trait plus one registration line — no change in the core. The viewer is read-only. |
+| Network sources | `crates/phocommander-remote/src/` | `phocommander-remote` | SFTP, FTP, SMB, WebDAV, S3. Each protocol is a *source* behind the filesystem abstraction, not a separate feature area. Credentials go to the system keychain, never into the configuration file. |
 | egui user interface, panels, theme | `crates/phocommander-ui/src/` | `phocommander-ui` | Widgets, the two-panel layout, the tab bar, the theme. The directory content lives in a state object outside the egui context; only the visible slice is drawn. |
 | UI strings and translation keys | `crates/phocommander-ui/src/i18n/` | `phocommander-ui` | Every visible string goes through a translation key. German and English are both fully covered; dates, numbers and sizes follow the system language. |
 | Native menu, file dialogs, trash, permissions | `platform/phocommander-platform/src/` | `phocommander-platform` | The OS boundary: native menu via `muda`, native dialogs via `rfd`, trash integration, permission handling per platform. Everything OS-specific that is not a window lives here. |
@@ -40,14 +42,20 @@ the meantime.
 | Fuzz targets | `crates/<crate>/fuzz/` | per crate | Archive headers, image headers, charset detection. A fuzz run belongs to the nightly CI. |
 | Performance gates | `crates/<crate>/benches/` | per crate | `criterion` benchmarks. The thresholds are the values from the performance table in the specification — the benchmark asserts them. |
 | UI tests | `crates/phocommander-ui/tests/` | `phocommander-ui` | `egui_kittest` tests for deterministic keyboard operation — no pixel comparisons. |
-| Specification | `docs/REQUIREMENTS.md` | — | Scope, architecture, security, performance gates, roadmap. If the code and the specification disagree, the specification is corrected first, then the code. |
+| Continuous integration | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | — | The gates of the specification: format, clippy, tests, crate boundaries, file sizes, licence check, advisory check, desktop build, cross-compilation, nightly fuzzing. No gate is weakened to make it green. |
+| Repository scripts | `scripts/` | — | The check scripts the CI calls: crate boundaries, file sizes, link check. Keep them small and honest — a script that always passes is worse than no script. |
+| Specification | [`docs/REQUIREMENTS.md`](REQUIREMENTS.md) | — | Scope, architecture, security, performance gates, roadmap. If the code and the specification disagree, the specification is corrected first, then the code — by the owner, not silently. |
+| Requirement identifiers | [`docs/REQUIREMENTS-IDS.md`](REQUIREMENTS-IDS.md) | — | The catalogue that acceptance evidence refers to. A new requirement gets an identifier; an identifier is never reused. |
 | Architecture decision records | `docs/adr/` | — | Status, date, context, decision, consequences, alternatives. One ADR per decision that would be expensive to reverse. |
-| User guide | `docs/user-guide/` | — | Task-oriented, German and English, one document per task area. |
-| Key binding reference | `docs/KEYMAP.md` | — | The complete binding table. Change it in the same commit as the binding itself. |
-| Glossary | `docs/glossary.md` | — | Terms with a specific meaning in this project, German and English. |
-| Security policy | `SECURITY.md` | — | Reporting path, supported versions, what a report should contain. The threat model lives in `docs/security/THREAT_MODEL.md`. |
-| Privacy policy | `PRIVACY.md` | — | Which data is stored, where, how long, how to remove it. The zero-telemetry promise lives here. |
-| Contribution rules | `CONTRIBUTING.md`, `AGENTS.md` | — | The path from issue to merged pull request, and the rules that apply to automated contributions. |
+| Architecture overview | [`docs/architecture/README.md`](architecture/README.md) | — | The layers, the crate boundaries and the extension points. A structural change starts here. |
+| User guide | [`docs/user-guide/`](user-guide/) | — | Task-oriented, German and English, one document per task area. A new screen needs a German and an English page. |
+| Key binding reference | [`docs/KEYMAP.md`](KEYMAP.md) | — | The complete binding table. Change it in the same commit as the binding itself. |
+| Glossary | [`docs/glossary.md`](glossary.md) | — | Terms with a specific meaning in this project, German and English. |
+| Security policy | [`SECURITY.md`](../SECURITY.md) | — | Reporting path, supported versions, what a report should contain. The threat model lives in `docs/security/THREAT_MODEL.md`. |
+| Privacy policy | [`PRIVACY.md`](../PRIVACY.md) | — | Which data is stored, where, how long, how to remove it. The zero-telemetry promise lives here. |
+| Contribution rules | [`CONTRIBUTING.md`](../CONTRIBUTING.md), [`AGENTS.md`](../AGENTS.md) | — | The path from issue to merged pull request, and the rules that apply to automated contributions. |
+| Code of conduct | [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md) | — | Contributor Covenant 2.1. Unchanged except for the contact method. |
+| Changelog | [`CHANGELOG.md`](../CHANGELOG.md) | — | Keep a Changelog format. Every user-visible change gets an entry. |
 
 ---
 
@@ -60,8 +68,8 @@ apps/*  →  platform/*  →  crates/*
 ```
 
 Inside `crates/*` no crate may depend on a sibling crate of the same level. This is
-checked mechanically — a script reads the `Cargo.toml` files and exits with code 1 on
-a violation — so "it was only a small dependency" is not an argument.
+checked mechanically — a script reads the `Cargo.toml` files and exits with code 1 on a
+violation — so "it was only a small dependency" is not an argument.
 
 Three questions decide where a change belongs:
 

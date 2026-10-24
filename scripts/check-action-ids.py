@@ -204,6 +204,37 @@ def check_palette_references(contexts: dict[str, dict[str, str]]) -> list[str]:
     return failures
 
 
+def check_surface_conflicts(contexts: dict[str, dict[str, str]]) -> list[str]:
+    """Return the failure messages for two actions of one surface on one key.
+
+    WHAT: the specification assigns the same key to several functions of
+    different surfaces and calls it consistent: "F3 im Betrachter sucht
+    weiter, Shift+F3 sucht rueckwaerts - durchgaengig, auch in den
+    Einzelfenstern des Mehrfach-Umbenennungsdialogs, wo F3 und Shift+F3 den
+    Konfliktsprung steuern". A key is therefore only a conflict when two
+    actions of the SAME surface share it. The surface is the first segment of
+    the action identifier, for example "panel" or "viewer".
+    """
+    failures: list[str] = []
+    for context in CONTEXTS:
+        by_key: dict[str, list[str]] = {}
+        for action, binding in sorted(contexts.get(context, {}).items()):
+            if action in SURFACE_ACTIONS:
+                continue
+            by_key.setdefault(binding, []).append(action)
+        for binding, actions in sorted(by_key.items()):
+            surfaces: dict[str, list[str]] = {}
+            for action in actions:
+                surfaces.setdefault(action.split(".")[0], []).append(action)
+            for surface, group in sorted(surfaces.items()):
+                if len(group) > 1:
+                    failures.append(
+                        f"{context}: the key '{binding}' is bound to {len(group)} actions of the "
+                        f"surface '{surface}': {', '.join(group)}"
+                    )
+    return failures
+
+
 def check_identifier_shape(contexts: dict[str, dict[str, str]]) -> list[str]:
     """Return the failure messages for action IDs that are not dotted."""
     failures: list[str] = []
@@ -271,6 +302,10 @@ def main() -> int:
         ("every action occurs exactly once per context", check_single_occurrence(contexts)),
         ("the keyboard bindings match the key table of the specification", check_keyboard_bindings(contexts)),
         ("dpad and controller refer to the action palette", check_palette_references(contexts)),
+        (
+            "no key is bound to two actions of the same surface",
+            check_surface_conflicts(contexts),
+        ),
         ("every action ID is in dotted notation", check_identifier_shape(contexts)),
         (
             "every action is referenced in the acceptance criteria or the specification",

@@ -26,10 +26,10 @@ pub mod loader;
 pub mod schema;
 pub mod values;
 
-pub use loader::{load_file, parse_toml, ConfigError, SUPPORTED_SCHEMA_VERSION};
+pub use loader::{ConfigError, SUPPORTED_SCHEMA_VERSION, load_file, parse_toml};
 pub use schema::{
-    Advanced, Appearance, Archives, Config, General, Input, InputBindings, KeymapOverrides,
-    Panels, Privacy, Remote, Viewer,
+    Advanced, Appearance, Archives, Config, General, Input, InputBindings, KeymapOverrides, Panels,
+    Privacy, Remote, Viewer,
 };
 pub use values::{
     FileSizeFormat, InputContext, Language, LogLevel, OverwritePolicy, PanelLayout,

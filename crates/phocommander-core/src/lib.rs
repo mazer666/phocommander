@@ -15,7 +15,7 @@
 //!
 //! # fn main() -> Result<(), Error> {
 //! let path = Path::new("holiday.mkv");
-//! let metadata = std::fs::metadata(path)?;
+//! let metadata = std::fs::metadata(path).map_err(|source| Error::io(path, source))?;
 //! if metadata.len() > MAX_VIEWER_FILE_SIZE {
 //!     return Err(Error::too_large(path, metadata.len(), MAX_VIEWER_FILE_SIZE));
 //! }

@@ -1,0 +1,9 @@
+$ ./scripts/check-file-size.sh
+
+Source files measured : 34 (extensions: rs)
+Soft limit            : 400 lines (warning)
+Hard limit            : 550 lines (failure)
+Soft-limit violations : 0
+Hard-limit violations : 0
+RESULT: PASS — every source file stays below 400 lines.
+EXIT=0

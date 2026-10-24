@@ -1,0 +1,33 @@
+# The desktop application of Phocommander.
+#
+# WHAT: the entry point of the macOS, the Windows, the Linux and the BSD
+#       build.
+# WHY: milestone M0 builds the workspace, the crate boundaries and the gates.
+#       The window arrives in milestone M1, so the program reports what
+#       exists today instead of pretending to be a file manager.
+# EXAMPLE: `cargo run -p phocommander-desktop`
+
+[package]
+name = "phocommander-desktop"
+description = "The desktop application of Phocommander for macOS, Windows, Linux and BSD."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+phocommander-config = { path = "../../crates/phocommander-config" }
+phocommander-platform = { path = "../../platform/phocommander-platform" }
+
+[dev-dependencies]
+# The application is the composition root of the workspace: it is the only
+# crate that may see the core crate and the configuration crate at the same
+# time, because no crate below `crates/` may depend on a sibling. The
+# integration test that holds the canonical limits and the shipped
+# configuration file against each other therefore lives here.
+phocommander-core = { path = "../../crates/phocommander-core" }
+
+[lints]
+workspace = true

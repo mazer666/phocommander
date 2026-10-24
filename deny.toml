@@ -36,10 +36,24 @@ ignore = true
 
 [advisories]
 # A yanked release is a defect signal: it is usually pulled in by accident
-# through a loose version requirement. An unmaintained crate is only a warning
-# because a build on an unsupported platform may still need it.
+# through a loose version requirement.
 yanked = "deny"
-unmaintained = "warn"
+# cargo-deny 0.20.2 has NO severity level for advisories. `unmaintained` is a
+# SCOPE, not a lint level: it decides which unmaintained crates are reported
+# at all ("all", "workspace", "transitive", "none"). A reported advisory is an
+# ERROR unless its ID is listed under `ignore`. Writing `unmaintained = "warn"`
+# therefore aborts the whole configuration with
+#   error[unexpected-value]: expected '["all", "workspace", "transitive", "none"]'
+# and `cargo deny check` exits before it has checked anything. That is exactly
+# the failure the specification describes for the sibling project Vocument,
+# where a licence check accused the configuration instead of the dependency.
+#
+# The intent — "an unmaintained crate must not fail the build, because a build
+# on an unsupported platform may still need it" — is expressed as "none":
+# unmaintained crates are not reported. If the team wants to see them without
+# failing the gate, run `cargo deny check --warn advisories` in a separate,
+# informational CI job instead of weakening this key.
+unmaintained = "none"
 
 [bans]
 # Two versions of the same crate in one build are legal but increase the
@@ -47,6 +61,15 @@ unmaintained = "warn"
 multiple-versions = "warn"
 # A wildcard requirement ("*") makes a build unreproducible.
 wildcards = "deny"
+# A path dependency without a version key is reported by the wildcard check as
+# a wildcard dependency too. Every crate of this workspace is referenced by
+# path, so without this line the ban hits the workspace itself and the gate is
+# red on every push. `allow-wildcard-paths` keeps the ban where it belongs: a
+# "*" version requirement from crates.io is still denied, while a path
+# dependency is allowed to be version-less. crates.io does not accept packages
+# with path dependencies, so this exception cannot hide a wildcard from a
+# published crate.
+allow-wildcard-paths = true
 
 [sources]
 # Only the crates.io registry is a trusted source for this project. A git

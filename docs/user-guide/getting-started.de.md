@@ -26,6 +26,11 @@ Konto.
 | Windows, Linux, BSD | `cargo run -p phocommander-desktop` aus dem Repository, oder das Paket der Distribution |
 | Android, iPadOS | Noch nicht verfügbar — geplant für M4 (Android) und M5 (iPadOS) |
 
+> **Stand M0:** Das Programm startet, nennt Hostplattform, primäre Modifikatortaste,
+> Konfigurationsverzeichnis und Schema-Version der Konfiguration und beendet sich
+> wieder. Es öffnet noch kein Fenster — eine leere Oberfläche wäre schlechter als
+> ein Programm, das sagt, was es ist. Die Arbeitsfläche erscheint mit M1.
+
 Beim ersten Start öffnet sich links ein Panel mit dem Benutzerverzeichnis, rechts ein
 Panel mit demselben Verzeichnis. Beide Panels sind gleichwertig: Welches Panel die
 aktive Aktion trifft, entscheidet der Fokus.

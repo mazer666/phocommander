@@ -223,9 +223,9 @@ A behaviour that is not documented does not exist for the next contributor.
   python3 scripts/check-links.py
   ```
 
-  It exits with code 1 on a dead link. The single documented exception is
-  `docs/security/THREAT_MODEL.md`, which the security worker writes in parallel;
-  the checker knows about it and reports it as *in progress*.
+  It exits with code 1 on a dead link. The checker knows one documented exception,
+  `docs/security/THREAT_MODEL.md`, which was written in parallel: while that file is
+  absent, the checker reports it as *in progress* instead of *broken*.
 
 ---
 
@@ -271,9 +271,9 @@ a handover that mentions only the "interesting" files hides the rest.
 ## 9. Checks before you hand over
 
 ```bash
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-cargo test --workspace
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-features
 cargo deny check
 cargo audit
 python3 scripts/check-links.py

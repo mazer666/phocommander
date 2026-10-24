@@ -17,7 +17,7 @@ It exists because the file managers people keep open all day either cost money, 
 >
 > - **M0 — Foundation** (workspace, CI, configuration file, key resolution, panel skeleton, threat model, project documentation, licence check): *in progress*.
 > - **M1 — First usable release** (file operations with a job queue, multiple rename, viewer tier 1, ZIP/TAR/7z archives, hardened extraction): *the first release you can actually work with*.
-> - Everything in this repository today is specification, documentation and workspace scaffolding.
+> - Everything in this repository today is specification, documentation, the workspace and the crate skeletons — not a finished file manager.
 >
 > The binding specification is **[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)**. When this page and the specification disagree, the specification wins — and the disagreement is a bug in this page, not in the specification.
 
@@ -72,16 +72,11 @@ What happens:
 | Step | What you get |
 |---|---|
 | `cargo build --workspace` | Every crate under `crates/`, the platform adapter under `platform/` and the binaries under `apps/` are compiled into `target/debug/`. A cold dependency tree means a long first build; later builds are incremental. |
-| `cargo run -p phocommander-desktop` | The desktop binary starts and opens the two-pane workspace. In the current milestone the panes are a skeleton — the file operations that make it useful arrive with M1. |
+| `cargo run -p phocommander-desktop` | The desktop binary starts. In M0 it reports the host platform, the primary modifier, the configuration directory and the configuration schema version, then exits — the two-panel window arrives with M1. |
 
-**The current state of the repository, honestly:** the workspace manifest, the pinned toolchain (`rust-toolchain.toml`) and the dependency catalogue are in place; the crate skeletons themselves are created in the M0 and M1 milestones. Until the first member crate exists, Cargo stops before compiling anything:
+**The current state of the repository, honestly:** the workspace manifest, the pinned toolchain (`rust-toolchain.toml`) and the dependency catalogue are in place, and every member that `Cargo.toml` declares exists — `cargo metadata --no-deps` resolves the workspace without an error. The first build downloads the dependency tree from crates.io (egui/eframe, winit, muda, rfd, image, …), which is why it takes noticeably longer than every later build.
 
-```
-error: failed to load manifest for workspace member `crates/*`
-referenced by workspace at `Cargo.toml`
-```
-
-That is the expected state of a repository that is still being built — not a broken build. The command above is the workflow, and it starts compiling as soon as the crate skeletons are on disk.
+What the build does **not** yet give you is a usable file manager: the program reports what exists today and stops, because a file manager that shows an empty window is worse than one that says what it is. The two panes and the operations that make it worthwhile — copy, move, rename, delete, view, archives — arrive with M1. The specification says exactly what belongs to which milestone.
 
 The layout you are building is documented in [`docs/WHERE_TO_CHANGE.md`](docs/WHERE_TO_CHANGE.md): it answers "which file do I touch for which feature?".
 

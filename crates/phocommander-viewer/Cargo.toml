@@ -1,0 +1,21 @@
+# The file viewer of Phocommander.
+#
+# WHAT: the crate that will show the content of a file inside the application.
+# WHY: the viewer is what makes the application a tool and not only a file
+#       browser. Its formats are registered through a trait, so that a new
+#       format is a new implementation and not a change in the core.
+# EXAMPLE: the public API arrives in milestone M1.
+
+[package]
+name = "phocommander-viewer"
+description = "Viewer registry and format adapters of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

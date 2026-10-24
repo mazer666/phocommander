@@ -1,0 +1,9 @@
+# Cargo configuration of the Phocommander workspace.
+#
+# WHAT: the alias that makes the build helpers reachable as `cargo xtask`.
+# WHY: the checks of the project are collected in one place, so that the
+#       local run and the run in the CI call the same commands.
+# EXAMPLE: `cargo xtask check`
+
+[alias]
+xtask = "run --package xtask --"

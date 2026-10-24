@@ -133,20 +133,25 @@ is acceptable; a faked PASS is not.
 Before you open the pull request, run the gates locally:
 
 ```bash
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-cargo test --workspace
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-features
 cargo deny check
 cargo audit
 python3 scripts/check-links.py
 ```
 
+These are the same commands the CI runs, in the same form — the gates in
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) add the crate-boundary check
+and the file-size check, which the CI calls as repository scripts.
+
 Then tick the boxes in the pull request description:
 
 - [ ] The issue this pull request closes is linked.
-- [ ] `cargo fmt --check` is clean.
-- [ ] `cargo clippy --all-targets -- -D warnings` is clean.
-- [ ] `cargo test --workspace` passes; the output is pasted into the description.
+- [ ] `cargo fmt --all --check` is clean.
+- [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings` is clean.
+- [ ] `cargo test --workspace --all-features` passes; the output is pasted into the
+      description.
 - [ ] `cargo deny check` and `cargo audit` pass — a new dependency is checked for
       licence and advisories **before** it is added, never afterwards.
 - [ ] New or changed public functions have a unit test.

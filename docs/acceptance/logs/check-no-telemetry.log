@@ -1,0 +1,8 @@
+$ ./scripts/check-no-telemetry.sh
+
+Manifests scanned     : 15
+Dependency names read : 51
+Forbidden crate names : 48
+Violations            : 0
+RESULT: PASS — no dependency of the telemetry or analytics category is referenced.
+EXIT=0

@@ -24,6 +24,11 @@ see the work surface directly — no landing page, no sign-in, no account.
 | Windows, Linux, BSD | `cargo run -p phocommander-desktop` from the repository, or the package of your distribution |
 | Android, iPadOS | Not available yet — planned for M4 (Android) and M5 (iPadOS) |
 
+> **State in M0:** the program starts, names the host platform, the primary modifier
+> key, the configuration directory and the configuration schema version, and exits
+> again. It does not open a window yet — an empty surface would be worse than a
+> program that says what it is. The work surface arrives with M1.
+
 On the first start, one pane opens with your home directory and the other with the same
 directory. Both panes are equal: which one the active action applies to is decided by
 the focus.

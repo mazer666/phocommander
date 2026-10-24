@@ -1,0 +1,22 @@
+# The file operations of Phocommander.
+#
+# WHAT: the crate that will copy, move, rename and delete files.
+# WHY: the operations run in the background, in a job queue, so that the
+#       interface stays usable while they work. The crate is created in
+#       milestone M0 so that the boundary between the operations and the
+#       interface exists from the first day.
+# EXAMPLE: the public API arrives in milestone M1.
+
+[package]
+name = "phocommander-ops"
+description = "File operations and the job queue of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

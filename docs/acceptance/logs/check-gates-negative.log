@@ -1,0 +1,66 @@
+$ ./scripts/check-gates-negative.sh
+==============================================================
+Gate 1 — scripts/check-no-telemetry.sh
+==============================================================
+
+1.1 positive run (the repository as it is):
+Dependency names read : 51
+Forbidden crate names : 48
+Violations            : 0
+RESULT: PASS — no dependency of the telemetry or analytics category is referenced.
+  expected exit code 0, got 0 — the gate is green on the repository
+  RESULT: PASS — the gate is effective
+
+1.2 negative run (a dependency of the forbidden category is simulated
+    by pointing the list of the script at a crate that IS in the tree):
+VIOLATION  ./Cargo.toml  references the forbidden crate 'egui'
+VIOLATION  ./Cargo.toml  references the forbidden crate 'zip'
+VIOLATION  ./crates/phocommander-ui/Cargo.toml  references the forbidden crate 'egui'
+Violations            : 3
+RESULT: FAIL — a dependency of the telemetry category is referenced.
+  expected exit code 1, got 1 — the gate is red on a violating dependency
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 2 — scripts/check-file-size.sh
+==============================================================
+2.1 negative run (a source file with 600 lines, above the hard limit of 550):
+  expected exit code 1, got 1 — the gate is red above the hard limit
+  RESULT: PASS — the gate is effective
+
+2.2 positive run (the same file with 100 lines, below the soft limit of 400):
+  expected exit code 0, got 0 — the gate is green below the soft limit
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 3 — scripts/check-docs-links.py
+==============================================================
+3.1 negative run (a document with a link to a file that does not exist):
+docs/broken.md:3  does-not-exist.md  BROKEN  (create the file or fix the link)
+Broken links           : 1
+RESULT: FAIL — a dead link is a documentation defect.
+  expected exit code 1, got 1 — the gate is red on a dead link
+  RESULT: PASS — the gate is effective
+
+3.2 positive run (the same document with a link to a file that exists):
+Broken links           : 0
+RESULT: PASS — every repository link resolves.
+  expected exit code 0, got 0 — the gate is green on a live link
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 4 — scripts/check-crate-boundaries.sh
+==============================================================
+4.1 negative run (a crate below crates/ gets a dependency on a sibling):
+8 path dependencies checked, 1 violations
+  expected exit code 1, got 1 — the gate is red on a dependency between two crates of the same level
+  RESULT: PASS — the gate is effective
+
+4.2 positive run (the dependency is removed again):
+8 path dependencies checked, 0 violations
+  expected exit code 0, got 0 — the gate is green again
+  RESULT: PASS — the gate is effective
+
+==============================================================
+RESULT: PASS — every gate turned red on a broken state and green again.
+EXIT=0

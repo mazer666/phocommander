@@ -15,6 +15,7 @@ members = [
     "crates/*",
     "platform/phocommander-platform",
     "apps/*",
+    "tests",
     "xtask",
 ]
 

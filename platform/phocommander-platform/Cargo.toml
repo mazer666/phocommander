@@ -1,0 +1,25 @@
+# The platform adapters of Phocommander.
+#
+# WHAT: the adapters between Phocommander and the operating system — the
+#       host platform, the configuration directory, the primary modifier key.
+# WHY: the six target systems spell the same things differently. The
+#       differences are collected here, so that the crates above stay free of
+#       `cfg(target_os)` and can be tested on every platform.
+# EXAMPLE: `let platform = phocommander_platform::host_platform();`
+
+[package]
+name = "phocommander-platform"
+description = "Operating system adapters of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+phocommander-core = { path = "../../crates/phocommander-core" }
+dirs = { workspace = true }
+
+[lints]
+workspace = true

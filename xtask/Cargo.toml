@@ -1,0 +1,22 @@
+# The build helpers of Phocommander.
+#
+# WHAT: a small task runner that is called through `cargo xtask <command>`.
+# WHY: the workspace has checks that do not belong into cargo itself — the
+#       crate boundary gate, the file size gate, the licence check. Putting
+#       them behind one command keeps the local run and the CI run identical.
+# EXAMPLE: `cargo xtask check`
+
+[package]
+name = "xtask"
+description = "Build helpers of the Phocommander workspace."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

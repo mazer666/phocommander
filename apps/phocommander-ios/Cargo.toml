@@ -1,0 +1,28 @@
+# The iPadOS application of Phocommander.
+#
+# WHAT: the Rust library that the Xcode project of the iPadOS application
+#       loads.
+# WHY: iPadOS is fully sandboxed and the access model decides what the
+#       application can offer. The library is created in milestone M0 so that
+#       the boundary exists before the first Xcode project is written.
+# EXAMPLE: the Xcode project arrives in milestone M5.
+
+[package]
+name = "phocommander-ios"
+description = "The iPadOS library of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+# `cdylib` is the library that the Xcode project links into the iPadOS
+# application, `rlib` is the library that the tests and the other crates of
+# the workspace link against.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[lints]
+workspace = true

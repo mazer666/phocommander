@@ -142,9 +142,10 @@ mod tests {
         let error = Error::io(Path::new("/root"), source);
 
         // assert
-        assert_eq!(
-            std::error::Error::source(&error).map(io::Error::kind),
-            Some(io::ErrorKind::PermissionDenied)
-        );
+        let source = std::error::Error::source(&error);
+        let kind = source
+            .and_then(|source| source.downcast_ref::<io::Error>())
+            .map(io::Error::kind);
+        assert_eq!(kind, Some(io::ErrorKind::PermissionDenied));
     }
 }

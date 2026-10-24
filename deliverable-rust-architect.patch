@@ -1,0 +1,4257 @@
+diff --git a/.cargo/config.toml b/.cargo/config.toml
+new file mode 100644
+index 0000000..ffdc5d3
+--- /dev/null
++++ b/.cargo/config.toml
+@@ -0,0 +1,9 @@
++# Cargo configuration of the Phocommander workspace.
++#
++# WHAT: the alias that makes the build helpers reachable as `cargo xtask`.
++# WHY: the checks of the project are collected in one place, so that the
++#       local run and the run in the CI call the same commands.
++# EXAMPLE: `cargo xtask check`
++
++[alias]
++xtask = "run --package xtask --"
+diff --git a/apps/phocommander-android/Cargo.toml b/apps/phocommander-android/Cargo.toml
+new file mode 100644
+index 0000000..386fa87
+--- /dev/null
++++ b/apps/phocommander-android/Cargo.toml
+@@ -0,0 +1,28 @@
++# The Android application of Phocommander.
++#
++# WHAT: the Rust library that the Gradle project of the Android application
++#       loads.
++# WHY: the Android version has the most divergent access rules of the six
++#       target systems. The library is created in milestone M0 so that the
++#       boundary exists before the first Gradle file is written.
++# EXAMPLE: the Gradle project arrives in milestone M4.
++
++[package]
++name = "phocommander-android"
++description = "The Android library of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[lib]
++# `cdylib` is the library that the Gradle project loads into the Android
++# application, `rlib` is the library that the tests and the other crates of
++# the workspace link against.
++crate-type = ["cdylib", "rlib"]
++
++[dependencies]
++
++[lints]
++workspace = true
+diff --git a/apps/phocommander-android/src/lib.rs b/apps/phocommander-android/src/lib.rs
+new file mode 100644
+index 0000000..eb44c14
+--- /dev/null
++++ b/apps/phocommander-android/src/lib.rs
+@@ -0,0 +1,35 @@
++//! The Android library of Phocommander.
++//!
++//! WHAT: the Rust library that the Gradle project of the Android application
++//!       loads. Milestone M0 contains the crate and this architecture note;
++//!       the Gradle project arrives in M4.
++//! WHY: Android is the target system with the most divergent access rules,
++//!       and they decide what the application can offer at all:
++//!
++//! * **SAF mode (the default).** The Storage Access Framework grants access
++//!   to the directories the user selects, without any special permission.
++//!   The application works as a document browser in this mode: it shows the
++//!   content of the granted roots, copies, moves and opens files there.
++//! * **Optional full access.** `MANAGE_EXTERNAL_STORAGE` gives the
++//!   application access to the whole storage of the device. Google allows this
++//!   for file managers, but it requires a declaration in the manifest, an
++//!   explanation in the store entry, a review by the Play Console and an
++//!   explicit request to the user. The application therefore works without
++//!   the permission and asks for it only when the user wants a directory that
++//!   SAF does not offer.
++//!
++//! The two modes are a property of the *source*, not of the user interface:
++//! the same panel code lists a SAF root and a full-access directory.
++//!
++//! BOUNDARY: this library is the bridge between the Rust core and the Java
++//!       or Kotlin shell. It owns the JNI entry points and nothing else; the
++//!       file access itself lives in the platform adapter.
++//!
++//! MILESTONE: M4 — Gradle project, SAF mode, optional full access, the touch
++//! and the keyboard context, the adaptive layouts.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! // Milestone M4 will look like this:
++//! // phocommander_android::list_saf_root(&tree_uri)?;
++//! ```
+diff --git a/apps/phocommander-desktop/Cargo.toml b/apps/phocommander-desktop/Cargo.toml
+new file mode 100644
+index 0000000..5f1d082
+--- /dev/null
++++ b/apps/phocommander-desktop/Cargo.toml
+@@ -0,0 +1,33 @@
++# The desktop application of Phocommander.
++#
++# WHAT: the entry point of the macOS, the Windows, the Linux and the BSD
++#       build.
++# WHY: milestone M0 builds the workspace, the crate boundaries and the gates.
++#       The window arrives in milestone M1, so the program reports what
++#       exists today instead of pretending to be a file manager.
++# EXAMPLE: `cargo run -p phocommander-desktop`
++
++[package]
++name = "phocommander-desktop"
++description = "The desktop application of Phocommander for macOS, Windows, Linux and BSD."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++publish = false
++
++[dependencies]
++phocommander-config = { path = "../../crates/phocommander-config" }
++phocommander-platform = { path = "../../platform/phocommander-platform" }
++
++[dev-dependencies]
++# The application is the composition root of the workspace: it is the only
++# crate that may see the core crate and the configuration crate at the same
++# time, because no crate below `crates/` may depend on a sibling. The
++# integration test that holds the canonical limits and the shipped
++# configuration file against each other therefore lives here.
++phocommander-core = { path = "../../crates/phocommander-core" }
++
++[lints]
++workspace = true
+diff --git a/apps/phocommander-desktop/src/main.rs b/apps/phocommander-desktop/src/main.rs
+new file mode 100644
+index 0000000..f62e933
+--- /dev/null
++++ b/apps/phocommander-desktop/src/main.rs
+@@ -0,0 +1,34 @@
++//! The desktop application of Phocommander.
++//!
++//! WHAT: the entry point of the macOS, the Windows, the Linux and the BSD
++//!       build. Milestone M0 builds the workspace, the crate boundaries and
++//!       the gates; the two-panel window, the keyboard operation and the
++//!       file operations arrive in milestone M1.
++//! WHY: the program reports what exists today — the host platform, the
++//!       directory of the configuration file and the version of the
++//!       configuration schema — and stops. It does not open a window it
++//!       cannot fill, because a file manager that shows nothing is worse
++//!       than a program that says what it is.
++//! EXAMPLE: `cargo run -p phocommander-desktop`
++
++fn main() {
++    println!("Phocommander - milestone M0: the workspace foundation.");
++    println!(
++        "host platform: {} (primary key: {})",
++        phocommander_platform::host_platform().name(),
++        phocommander_platform::primary_modifier(),
++    );
++
++    match phocommander_platform::config_directory() {
++        Ok(path) => println!("configuration directory: {}", path.display()),
++        Err(error) => println!("configuration directory: not available ({error})"),
++    }
++
++    println!(
++        "configuration schema version: {}",
++        phocommander_config::SUPPORTED_SCHEMA_VERSION,
++    );
++    println!("The two-panel window arrives in milestone M1.");
++
++    std::process::exit(0);
++}
+diff --git a/apps/phocommander-desktop/tests/core_limits.rs b/apps/phocommander-desktop/tests/core_limits.rs
+new file mode 100644
+index 0000000..e26d015
+--- /dev/null
++++ b/apps/phocommander-desktop/tests/core_limits.rs
+@@ -0,0 +1,113 @@
++//! Integration test: the canonical limits of the core crate and the shipped
++//! configuration file.
++//!
++//! WHAT: the limits that `phocommander_core` publishes as constants are
++//!       compared with the values that the shipped configuration file carries
++//!       for the same limits.
++//! WHY: the specification demands that every limit is written down exactly
++//!       once. The core crate owns the canonical value, the configuration
++//!       file lets the user change it — and the file that ships with the
++//!       repository must carry exactly the canonical value. If the two drift
++//!       apart, the user gets a limit that the code never uses.
++//!
++//!       This test crosses the crate boundary on purpose: the core crate
++//!       cannot see the configuration crate — the workspace is flat, no
++//!       crate below `crates/` may depend on a sibling — so only the
++//!       composition root, the application, can hold both sides against each
++//!       other. That is the role the application has in this workspace.
++//! EXAMPLE:
++//! ```text
++//! cargo test -p phocommander-desktop --test core_limits
++//! ```
++
++use std::path::{Path, PathBuf};
++
++use phocommander_config::load_file;
++use phocommander_core::{
++    MAX_ARCHIVE_ENTRIES, MAX_EXTRACTED_BYTES, MAX_VIEWER_FILE_SIZE, MAX_VIEWER_TEXT_SIZE,
++};
++
++/// The directory of the repository.
++///
++/// WHY: a test binary is started with the directory of its package as the
++/// working directory, not with the root of the repository. The path of the
++/// repository is therefore taken from the compile time constant of cargo, so
++/// that the test does not depend on the working directory.
++fn repository_root() -> PathBuf {
++    let package_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
++    match package_directory.parent().and_then(Path::parent) {
++        Some(root) => root.to_path_buf(),
++        None => package_directory,
++    }
++}
++
++/// The path of the configuration file that ships with the repository.
++fn shipped_defaults() -> PathBuf {
++    repository_root().join("config").join("defaults.toml")
++}
++
++#[test]
++fn the_shipped_configuration_file_carries_the_canonical_archive_limits() {
++    // arrange
++    let path = shipped_defaults();
++
++    // act
++    let config = match load_file(&path) {
++        Ok(config) => config,
++        Err(error) => panic!("the shipped configuration file {path:?} was refused: {error}"),
++    };
++
++    // assert
++    assert_eq!(
++        config.archives.max_extracted_bytes,
++        Some(MAX_EXTRACTED_BYTES),
++        "the archive byte limit of the configuration file differs from the canonical limit"
++    );
++    assert_eq!(
++        config.archives.max_entries,
++        Some(MAX_ARCHIVE_ENTRIES),
++        "the entry limit of the configuration file differs from the canonical limit"
++    );
++}
++
++#[test]
++fn the_shipped_configuration_file_carries_the_canonical_viewer_limits() {
++    // arrange
++    let path = shipped_defaults();
++
++    // act
++    let config = match load_file(&path) {
++        Ok(config) => config,
++        Err(error) => panic!("the shipped configuration file {path:?} was refused: {error}"),
++    };
++
++    // assert
++    assert_eq!(
++        config.viewer.max_file_size,
++        Some(MAX_VIEWER_FILE_SIZE),
++        "the viewer file limit of the configuration file differs from the canonical limit"
++    );
++    assert_eq!(
++        config.viewer.max_text_size,
++        Some(MAX_VIEWER_TEXT_SIZE),
++        "the viewer text limit of the configuration file differs from the canonical limit"
++    );
++}
++
++#[test]
++fn the_shipped_configuration_file_is_read_by_the_reader_of_the_crate() {
++    // WHY: the reader of the configuration crate has to accept the file that
++    // ships with the repository. A file that is refused breaks every start of
++    // the application before it shows anything.
++    // arrange
++    let path = shipped_defaults();
++
++    // act
++    let result = load_file(&path);
++
++    // assert
++    match result {
++        Ok(config) => assert_eq!(config.schema_version, 1),
++        Err(error) => panic!("the shipped configuration file {path:?} was refused: {error}"),
++    }
++}
+diff --git a/apps/phocommander-ios/Cargo.toml b/apps/phocommander-ios/Cargo.toml
+new file mode 100644
+index 0000000..00e2062
+--- /dev/null
++++ b/apps/phocommander-ios/Cargo.toml
+@@ -0,0 +1,28 @@
++# The iPadOS application of Phocommander.
++#
++# WHAT: the Rust library that the Xcode project of the iPadOS application
++#       loads.
++# WHY: iPadOS is fully sandboxed and the access model decides what the
++#       application can offer. The library is created in milestone M0 so that
++#       the boundary exists before the first Xcode project is written.
++# EXAMPLE: the Xcode project arrives in milestone M5.
++
++[package]
++name = "phocommander-ios"
++description = "The iPadOS library of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[lib]
++# `cdylib` is the library that the Xcode project links into the iPadOS
++# application, `rlib` is the library that the tests and the other crates of
++# the workspace link against.
++crate-type = ["cdylib", "rlib"]
++
++[dependencies]
++
++[lints]
++workspace = true
+diff --git a/apps/phocommander-ios/src/lib.rs b/apps/phocommander-ios/src/lib.rs
+new file mode 100644
+index 0000000..d3a6957
+--- /dev/null
++++ b/apps/phocommander-ios/src/lib.rs
+@@ -0,0 +1,34 @@
++//! The iPadOS library of Phocommander.
++//!
++//! WHAT: the Rust library that the Xcode project of the iPadOS application
++//!       loads. Milestone M0 contains the crate and this architecture note;
++//!       the Xcode project arrives in M5.
++//! WHY: iPadOS is fully sandboxed, and the access model decides what the
++//!       application can offer at all:
++//!
++//! * **Document picker.** `UIDocumentPickerViewController` returns the
++//!   directories the user selects, together with security-scoped URLs. The
++//!   permission covers the content of the selected directory recursively.
++//! * **Security-scoped bookmarks.** A lasting permission is stored as a
++//!   bookmark. The user can revoke it at any time in the settings, and the
++//!   application has to handle that error cleanly instead of pretending that
++//!   the directory is still there.
++//!
++//! The consequence is written down here and must not be forgotten later: the
++//! iPadOS version is **not** a file system browser. It is a viewer and an
++//! organiser for the root directories the user has explicitly released. The
++//! two-panel surface stays useful in the split view, with touch for the
++//! selection and the keyboard as the main way of operating.
++//!
++//! BOUNDARY: this library is the bridge between the Rust core and the
++//!       Objective-C or Swift shell. It owns the FFI entry points and
++//!       nothing else; the file access itself lives in the platform adapter.
++//!
++//! MILESTONE: M5 — Xcode project, document picker, security-scoped bookmarks,
++//!       split view, support for the Apple keyboard.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! // Milestone M5 will look like this:
++//! // phocommander_ios::resolve_bookmark(&data)?;
++//! ```
+diff --git a/crates/phocommander-archive/Cargo.toml b/crates/phocommander-archive/Cargo.toml
+new file mode 100644
+index 0000000..3637855
+--- /dev/null
++++ b/crates/phocommander-archive/Cargo.toml
+@@ -0,0 +1,24 @@
++# The archive adapter of Phocommander.
++#
++# WHAT: the hardened resolution of the untrusted names an archive contains.
++# WHY: an archive is untrusted input. A name like `../../etc/passwd` must
++#       never reach the file system, and a name that is a reserved device on
++#       Windows must never be written either. The container readers arrive in
++#       milestone M1; the name resolution is here from the start, because
++#       every reader has to use it.
++# EXAMPLE: `let path = phocommander_archive::resolve_entry_name("docs/readme.md")?;`
++
++[package]
++name = "phocommander-archive"
++description = "Archive adapters and the hardened resolution of archive entry names."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[dependencies]
++thiserror = { workspace = true }
++
++[lints]
++workspace = true
+diff --git a/crates/phocommander-archive/src/entry_name.rs b/crates/phocommander-archive/src/entry_name.rs
+new file mode 100644
+index 0000000..cb28871
+--- /dev/null
++++ b/crates/phocommander-archive/src/entry_name.rs
+@@ -0,0 +1,365 @@
++//! The hardened resolution of the names an archive contains.
++//!
++//! WHAT: turns the untrusted name of an archive entry into a relative path
++//!       that is guaranteed to stay inside the destination directory.
++//! WHY: the name of an entry decides where the entry is written. The historic
++//!       attacks — the "zip slip" and its successors, the advisories
++//!       RUSTSEC-2025-0168, RUSTSEC-2026-0367, RUSTSEC-2026-0368 and
++//!       RUSTSEC-2026-0369 — all use the name of an entry to write outside of
++//!       the directory the user chose. The rules below therefore refuse
++//!       everything that could leave the destination: absolute paths, drive
++//!       letters, `..` segments, control characters, alternate data streams
++//!       and the reserved device names of Windows.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_archive::resolve_entry_name;
++//!
++//! # fn main() -> Result<(), phocommander_archive::EntryNameError> {
++//! // a normal name is kept as it is
++//! let path = resolve_entry_name("photos/2026/sunset.jpg")?;
++//! assert_eq!(path.components().count(), 3);
++//!
++//! // a name that would leave the destination is refused
++//! assert!(resolve_entry_name("../../etc/passwd").is_err());
++//! # Ok(())
++//! # }
++//! ```
++
++use std::path::PathBuf;
++
++/// The longest name of an archive entry that is accepted, in bytes.
++///
++/// WHY: a name that is far longer than any file system accepts is either an
++/// attack or a mistake. Refusing it early keeps the error message clear.
++pub const MAX_ENTRY_NAME_BYTES: usize = 4096;
++
++/// The reasons why the name of an archive entry was refused.
++#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
++pub enum EntryNameError {
++    /// The name was empty.
++    #[error("the archive entry has an empty name")]
++    Empty,
++
++    /// The name was an absolute path or carried a drive letter.
++    #[error("the archive entry name {name:?} is an absolute path")]
++    Absolute {
++        /// The name that was refused.
++        name: String,
++    },
++
++    /// The name tried to leave the destination directory.
++    #[error("the archive entry name {name:?} leaves the destination directory")]
++    Traversal {
++        /// The name that was refused.
++        name: String,
++    },
++
++    /// The name contained a control character.
++    #[error("the archive entry name {name:?} contains a control character")]
++    ControlCharacter {
++        /// The name that was refused.
++        name: String,
++    },
++
++    /// The name was a reserved device name or an alternate data stream.
++    #[error("the archive entry name {name:?} is not a valid file name on every platform")]
++    ReservedName {
++        /// The name that was refused.
++        name: String,
++    },
++
++    /// The name was longer than [`MAX_ENTRY_NAME_BYTES`].
++    #[error("the archive entry name is {length} bytes long, the limit is {limit} bytes")]
++    TooLong {
++        /// The length of the name in bytes.
++        length: usize,
++        /// The limit that was exceeded.
++        limit: usize,
++    },
++}
++
++/// Resolves the name of an archive entry to a relative path.
++///
++/// WHY: the result is always relative and never contains a `..` segment, so
++/// that joining it with the destination directory cannot leave the
++/// destination. The function is the only place where an entry name is turned
++/// into a path, so a reader cannot resolve a name in a laxer way.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_archive::resolve_entry_name;
++///
++/// # fn main() -> Result<(), phocommander_archive::EntryNameError> {
++/// let path = resolve_entry_name("docs/readme.md")?;
++/// assert!(path.is_relative());
++/// assert_eq!(path.file_name().map(|name| name.to_string_lossy().to_string()), Some("readme.md".to_string()));
++/// # Ok(())
++/// # }
++/// ```
++pub fn resolve_entry_name(name: &str) -> Result<PathBuf, EntryNameError> {
++    if name.is_empty() {
++        return Err(EntryNameError::Empty);
++    }
++
++    if name.len() > MAX_ENTRY_NAME_BYTES {
++        return Err(EntryNameError::TooLong {
++            length: name.len(),
++            limit: MAX_ENTRY_NAME_BYTES,
++        });
++    }
++
++    if name.chars().any(char::is_control) {
++        return Err(EntryNameError::ControlCharacter {
++            name: name.to_string(),
++        });
++    }
++
++    if name.starts_with('/') || name.starts_with('\\') || has_drive_letter(name) {
++        return Err(EntryNameError::Absolute {
++            name: name.to_string(),
++        });
++    }
++
++    let mut path = PathBuf::new();
++    for segment in name.split(['/', '\\']) {
++        // An empty segment comes from a trailing or a doubled separator, a
++        // single dot from a path that points at itself. Both carry no
++        // information and are dropped.
++        if segment.is_empty() || segment == "." {
++            continue;
++        }
++
++        if segment == ".." {
++            return Err(EntryNameError::Traversal {
++                name: name.to_string(),
++            });
++        }
++
++        if segment.contains(':') {
++            return Err(EntryNameError::ReservedName {
++                name: name.to_string(),
++            });
++        }
++
++        if is_reserved_device_name(segment) {
++            return Err(EntryNameError::ReservedName {
++                name: name.to_string(),
++            });
++        }
++
++        path.push(segment);
++    }
++
++    if path.as_os_str().is_empty() {
++        return Err(EntryNameError::Empty);
++    }
++
++    Ok(path)
++}
++
++/// Whether the name starts with a drive letter such as `C:`.
++fn has_drive_letter(name: &str) -> bool {
++    let mut characters = name.chars();
++    match (characters.next(), characters.next()) {
++        (Some(letter), Some(':')) => letter.is_ascii_alphabetic(),
++        _ => false,
++    }
++}
++
++/// Whether the segment is a reserved device name of Windows.
++///
++/// WHY: Windows refuses to create a file called `CON` or `NUL`, and it does
++/// so in a way that silently redirects the write. An archive that contains
++/// such a name would therefore write somewhere the user did not choose.
++fn is_reserved_device_name(segment: &str) -> bool {
++    let stem = segment
++        .split('.')
++        .next()
++        .unwrap_or(segment)
++        .to_ascii_uppercase();
++    if matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL") {
++        return true;
++    }
++
++    match stem.as_bytes() {
++        [b'C', b'O', b'M', digit] | [b'L', b'P', b'T', digit] => {
++            matches!(digit, b'1'..=b'9')
++        }
++        _ => false,
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn keeps_a_normal_name() {
++        // act
++        let path = match resolve_entry_name("readme.md") {
++            Ok(path) => path,
++            Err(error) => panic!("the name should be accepted: {error}"),
++        };
++
++        // assert
++        assert_eq!(path.to_string_lossy(), "readme.md");
++        assert!(path.is_relative());
++    }
++
++    #[test]
++    fn keeps_the_directories_of_a_name() {
++        // act
++        let path = match resolve_entry_name("photos/2026/sunset.jpg") {
++            Ok(path) => path,
++            Err(error) => panic!("the name should be accepted: {error}"),
++        };
++
++        // assert
++        assert_eq!(path.components().count(), 3);
++        assert_eq!(path.to_string_lossy(), "photos/2026/sunset.jpg");
++    }
++
++    #[test]
++    fn keeps_a_name_with_non_latin_characters() {
++        // act
++        let path = match resolve_entry_name("übung/Übersicht.md") {
++            Ok(path) => path,
++            Err(error) => panic!("the name should be accepted: {error}"),
++        };
++
++        // assert
++        assert_eq!(path.to_string_lossy(), "übung/Übersicht.md");
++    }
++
++    #[test]
++    fn drops_a_trailing_separator_and_a_current_directory() {
++        // act
++        let path = match resolve_entry_name("docs/./readme.md/") {
++            Ok(path) => path,
++            Err(error) => panic!("the name should be accepted: {error}"),
++        };
++
++        // assert
++        assert_eq!(path.to_string_lossy(), "docs/readme.md");
++    }
++
++    #[test]
++    fn refuses_an_empty_name() {
++        // act
++        let result = resolve_entry_name("");
++
++        // assert
++        assert_eq!(result.err(), Some(EntryNameError::Empty));
++    }
++
++    #[test]
++    fn refuses_a_name_that_leaves_the_destination() {
++        // WHY: this is the attack the hardening exists for.
++        // act
++        let names = [
++            "../escape.txt",
++            "..",
++            "docs/../../escape.txt",
++            "..\\escape.txt",
++            "docs\\..\\..\\escape.txt",
++        ];
++
++        // assert
++        for name in names {
++            let result = resolve_entry_name(name);
++            assert!(
++                matches!(result, Err(EntryNameError::Traversal { .. })),
++                "{name} was accepted"
++            );
++        }
++    }
++
++    #[test]
++    fn refuses_an_absolute_name() {
++        // act
++        let names = [
++            "/etc/passwd",
++            "\\windows\\system32",
++            "C:\\Windows\\evil.dll",
++            "d:evil.txt",
++        ];
++
++        // assert
++        for name in names {
++            let result = resolve_entry_name(name);
++            assert!(
++                matches!(result, Err(EntryNameError::Absolute { .. })),
++                "{name} was accepted"
++            );
++        }
++    }
++
++    #[test]
++    fn refuses_a_name_with_a_control_character() {
++        // act
++        let result = resolve_entry_name("evil\u{0}.txt");
++
++        // assert
++        assert!(
++            matches!(result, Err(EntryNameError::ControlCharacter { .. })),
++            "{result:?}"
++        );
++    }
++
++    #[test]
++    fn refuses_a_reserved_device_name() {
++        // act
++        let names = ["CON", "nul.txt", "docs/PRN", "COM1", "LPT9.log"];
++
++        // assert
++        for name in names {
++            let result = resolve_entry_name(name);
++            assert!(
++                matches!(result, Err(EntryNameError::ReservedName { .. })),
++                "{name} was accepted"
++            );
++        }
++    }
++
++    #[test]
++    fn refuses_an_alternate_data_stream() {
++        // act
++        let result = resolve_entry_name("readme.txt:hidden");
++
++        // assert
++        assert!(
++            matches!(result, Err(EntryNameError::ReservedName { .. })),
++            "{result:?}"
++        );
++    }
++
++    #[test]
++    fn refuses_a_name_that_is_too_long() {
++        // arrange
++        let name = "a".repeat(MAX_ENTRY_NAME_BYTES + 1);
++
++        // act
++        let result = resolve_entry_name(&name);
++
++        // assert
++        assert_eq!(
++            result.err(),
++            Some(EntryNameError::TooLong {
++                length: MAX_ENTRY_NAME_BYTES + 1,
++                limit: MAX_ENTRY_NAME_BYTES,
++            })
++        );
++    }
++
++    #[test]
++    fn accepts_a_name_of_the_maximum_length() {
++        // arrange
++        let name = "a".repeat(MAX_ENTRY_NAME_BYTES);
++
++        // act
++        let result = resolve_entry_name(&name);
++
++        // assert
++        assert!(result.is_ok());
++    }
++}
+diff --git a/crates/phocommander-archive/src/lib.rs b/crates/phocommander-archive/src/lib.rs
+new file mode 100644
+index 0000000..32e59dd
+--- /dev/null
++++ b/crates/phocommander-archive/src/lib.rs
+@@ -0,0 +1,27 @@
++//! The archive adapters of Phocommander.
++//!
++//! WHAT: the hardened resolution of the names an archive contains
++//!       ([`entry_name`]). The container readers — ZIP, TAR and 7z — arrive in
++//!       milestone M1.
++//! WHY: an archive is untrusted input, exactly like a file that comes from a
++//!       network source. The name of an entry decides where the entry is
++//!       written. A name that leaves the destination directory, that is an
++//!       absolute path or that is a reserved device name on Windows must
++//!       therefore never reach the file system. The resolution lives in one
++//!       place, so that every reader has to use it and no reader can forget
++//!       it.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_archive::resolve_entry_name;
++//!
++//! # fn main() -> Result<(), phocommander_archive::EntryNameError> {
++//! let path = resolve_entry_name("docs/readme.md")?;
++//! assert_eq!(path.to_string_lossy(), "docs/readme.md");
++//! assert!(resolve_entry_name("../escape.txt").is_err());
++//! # Ok(())
++//! # }
++//! ```
++
++pub mod entry_name;
++
++pub use entry_name::{EntryNameError, MAX_ENTRY_NAME_BYTES, resolve_entry_name};
+diff --git a/crates/phocommander-config/src/loader.rs b/crates/phocommander-config/src/loader.rs
+new file mode 100644
+index 0000000..5cc2001
+--- /dev/null
++++ b/crates/phocommander-config/src/loader.rs
+@@ -0,0 +1,379 @@
++//! Reading the configuration file of Phocommander.
++//!
++//! WHAT: the functions that turn a TOML document into a [`Config`] and the
++//!       errors they report.
++//! WHY: a configuration file is written by hand. Every mistake in it has to
++//!       be reported with the name of the field and the reason, because the
++//!       user sees nothing else. The file is read completely before it is
++//!       used, so a broken file can never lead to a half-configured program.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_config::{load_file, ConfigError};
++//!
++//! # fn main() -> Result<(), ConfigError> {
++//! let config = load_file("config/defaults.toml")?;
++//! println!("schema version {}", config.schema_version);
++//! # Ok(())
++//! # }
++//! ```
++
++use std::fs;
++use std::io;
++use std::path::{Path, PathBuf};
++
++use crate::schema::Config;
++
++/// The newest version of the configuration schema this build understands.
++///
++/// WHY: a file that declares a higher version was written by a newer program.
++/// Reading it could give the settings a wrong meaning, so the file is
++/// refused and the user is told which version is needed.
++pub const SUPPORTED_SCHEMA_VERSION: u32 = 1;
++
++/// The reasons why a configuration file cannot be used.
++#[derive(Debug, thiserror::Error)]
++pub enum ConfigError {
++    /// The file could not be read.
++    #[error("the configuration file {path} could not be read: {source}")]
++    Io {
++        /// The path of the configuration file.
++        path: PathBuf,
++        /// The error the operating system reported.
++        #[source]
++        source: io::Error,
++    },
++
++    /// The file is not valid TOML or contains a field that does not exist.
++    #[error("the configuration file is not valid: {source}")]
++    Syntax {
++        /// The error the TOML parser reported.
++        #[source]
++        source: toml::de::Error,
++    },
++
++    /// The file was written for a newer version of the schema.
++    #[error(
++        "the configuration file uses schema version {found}, \
++         this build understands version {supported}"
++    )]
++    UnsupportedSchemaVersion {
++        /// The version the file declares.
++        found: u32,
++        /// The newest version this build understands.
++        supported: u32,
++    },
++
++    /// A value in the file cannot be used.
++    #[error("the value of {field} cannot be used: {reason}")]
++    InvalidValue {
++        /// The name of the field, written as it is in the file.
++        field: &'static str,
++        /// The reason why the value was refused.
++        reason: &'static str,
++    },
++}
++
++/// Reads the configuration from a document in TOML.
++///
++/// WHY: the document is parsed into the typed schema first and checked
++/// afterwards. A file with a valid but unusable value — a limit of zero, for
++/// example — is refused with the name of the field instead of causing a
++/// strange behaviour later.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_config::parse_toml;
++///
++/// # fn main() -> Result<(), phocommander_config::ConfigError> {
++/// let config = parse_toml("schema_version = 1\n[panels]\noverwrite_policy = \"never\"\n")?;
++/// assert_eq!(config.panels.overwrite_policy, phocommander_config::OverwritePolicy::Never);
++/// # Ok(())
++/// # }
++/// ```
++pub fn parse_toml(source: &str) -> Result<Config, ConfigError> {
++    let config: Config = toml::from_str(source).map_err(|source| ConfigError::Syntax { source })?;
++    validate(&config)?;
++    Ok(config)
++}
++
++/// Reads the configuration from a file.
++///
++/// WHY: the file is read completely and parsed completely before any part of
++/// it is used. A file that cannot be read therefore never leads to a program
++/// that runs with half of the old and half of the new settings.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_config::load_file;
++///
++/// # fn main() -> Result<(), phocommander_config::ConfigError> {
++/// let config = load_file("config/defaults.toml")?;
++/// println!("schema version {}", config.schema_version);
++/// # Ok(())
++/// # }
++/// ```
++pub fn load_file(path: impl AsRef<Path>) -> Result<Config, ConfigError> {
++    let path = path.as_ref();
++    let source = fs::read_to_string(path).map_err(|source| ConfigError::Io {
++        path: path.to_path_buf(),
++        source,
++    })?;
++    parse_toml(&source)
++}
++
++/// Checks the values that the parser cannot check itself.
++///
++/// WHY: a syntactically correct file can still contain a value that makes the
++/// program useless — a limit of zero would refuse every file, a timeout of
++/// zero would abort every connection. Those values are refused here, with the
++/// name of the field.
++fn validate(config: &Config) -> Result<(), ConfigError> {
++    if config.schema_version > SUPPORTED_SCHEMA_VERSION {
++        return Err(ConfigError::UnsupportedSchemaVersion {
++            found: config.schema_version,
++            supported: SUPPORTED_SCHEMA_VERSION,
++        });
++    }
++
++    if config.archives.max_entries == Some(0) {
++        return Err(ConfigError::InvalidValue {
++            field: "archives.max_entries",
++            reason: "the limit must be greater than zero",
++        });
++    }
++
++    if config.archives.max_extracted_bytes == Some(0) {
++        return Err(ConfigError::InvalidValue {
++            field: "archives.max_extracted_bytes",
++            reason: "the limit must be greater than zero",
++        });
++    }
++
++    if config.remote.connect_timeout_seconds == Some(0) {
++        return Err(ConfigError::InvalidValue {
++            field: "remote.connect_timeout_seconds",
++            reason: "the time limit must be greater than zero",
++        });
++    }
++
++    Ok(())
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::values::{InputContext, Language, OverwritePolicy, Theme};
++
++    /// Returns the configuration of a document that has to be valid.
++    ///
++    /// WHY: the workspace forbids `expect` and `unwrap`, also in tests. A
++    /// panic with the reason of the failure says more than the exit code of a
++    /// test.
++    fn valid(result: Result<Config, ConfigError>) -> Config {
++        match result {
++            Ok(config) => config,
++            Err(error) => panic!("the document should be valid: {error}"),
++        }
++    }
++
++    #[test]
++    fn reads_an_empty_document_with_the_default_values() {
++        // arrange
++        let source = "schema_version = 1\n";
++
++        // act
++        let config = valid(parse_toml(source));
++
++        // assert
++        assert_eq!(config.schema_version, 1);
++        assert_eq!(config.general.language, Language::System);
++        assert_eq!(config.appearance.theme, Theme::System);
++        assert_eq!(config.panels.overwrite_policy, OverwritePolicy::Ask);
++        assert_eq!(config.input.context, InputContext::Auto);
++    }
++
++    #[test]
++    fn reads_every_section_of_the_shipped_file() {
++        // arrange
++        let source = r#"
++            schema_version = 1
++
++            [general]
++            language = "de"
++            restore_session = false
++
++            [appearance]
++            theme = "dark"
++            row_height = 24
++            show_hidden_files = true
++            show_system_files = false
++            file_size_format = "iec"
++
++            [panels]
++            layout = "vertical"
++            right_click_action = "toggle_selection"
++            overwrite_policy = "never"
++
++            [keymap]
++            "panel.copy" = "F5"
++
++            [viewer]
++            max_file_size = 10485760
++            max_text_size = 4194304
++
++            [archives]
++            max_extracted_bytes = 2147483648
++            max_entries = 100000
++
++            [privacy]
++            log_level = "info"
++
++            [advanced]
++            worker_threads = 4
++
++            [input]
++            context = "dpad"
++
++            [input.keyboard]
++            "panel.copy" = "F5"
++
++            [input.dpad]
++            "panel.copy" = "palette:file.copy"
++
++            [remote]
++            connect_timeout_seconds = 15
++            smb_signing = "require"
++            smb_encryption = "require"
++            max_remote_download_bytes = 0
++        "#;
++
++        // act
++        let config = valid(parse_toml(source));
++
++        // assert
++        assert_eq!(config.general.language, Language::De);
++        assert!(!config.general.restore_session);
++        assert_eq!(config.appearance.theme, Theme::Dark);
++        assert_eq!(config.appearance.row_height, 24);
++        assert!(config.appearance.show_hidden_files);
++        assert_eq!(
++            config.appearance.file_size_format,
++            crate::FileSizeFormat::Iec
++        );
++        assert_eq!(config.panels.layout, crate::PanelLayout::Vertical);
++        assert_eq!(
++            config.panels.right_click_action,
++            crate::RightClickAction::ToggleSelection
++        );
++        assert_eq!(config.panels.overwrite_policy, OverwritePolicy::Never);
++        assert_eq!(
++            config.keymap.bindings.get("panel.copy"),
++            Some(&"F5".to_string())
++        );
++        assert_eq!(config.viewer.max_file_size, Some(10_485_760));
++        assert_eq!(config.viewer.max_text_size, Some(4_194_304));
++        assert_eq!(config.archives.max_extracted_bytes, Some(2_147_483_648));
++        assert_eq!(config.archives.max_entries, Some(100_000));
++        assert_eq!(config.privacy.log_level, crate::LogLevel::Info);
++        assert_eq!(config.advanced.worker_threads, 4);
++        assert_eq!(config.input.context, InputContext::Dpad);
++        assert_eq!(
++            config.input.dpad.bindings.get("panel.copy"),
++            Some(&"palette:file.copy".to_string())
++        );
++        assert_eq!(config.remote.connect_timeout_seconds, Some(15));
++        assert_eq!(config.remote.smb_signing, crate::SmbSigning::Require);
++        assert_eq!(config.remote.smb_encryption, crate::SmbEncryption::Require);
++        assert_eq!(config.remote.max_remote_download_bytes, 0);
++    }
++
++    #[test]
++    fn refuses_an_unknown_field() {
++        // arrange
++        let source = "schema_version = 1\n[general]\nlangauge = \"de\"\n";
++
++        // act
++        let result = parse_toml(source);
++
++        // assert
++        let error = match result {
++            Ok(_) => panic!("the misspelled field was accepted"),
++            Err(error) => error,
++        };
++        let message = error.to_string();
++        assert!(message.contains("langauge"), "{message}");
++    }
++
++    #[test]
++    fn refuses_an_unknown_section() {
++        // arrange
++        let source = "schema_version = 1\n[generl]\nlanguage = \"de\"\n";
++
++        // act
++        let result = parse_toml(source);
++
++        // assert
++        assert!(result.is_err(), "the unknown section was accepted");
++    }
++
++    #[test]
++    fn refuses_a_schema_version_from_the_future() {
++        // arrange
++        let source = "schema_version = 2\n";
++
++        // act
++        let result = parse_toml(source);
++
++        // assert
++        let error = match result {
++            Ok(_) => panic!("the newer schema version was accepted"),
++            Err(error) => error,
++        };
++        assert!(
++            matches!(
++                error,
++                ConfigError::UnsupportedSchemaVersion {
++                    found: 2,
++                    supported: 1
++                }
++            ),
++            "{error:?}"
++        );
++    }
++
++    #[test]
++    fn refuses_a_limit_of_zero() {
++        // arrange
++        let source = "schema_version = 1\n[archives]\nmax_entries = 0\n";
++
++        // act
++        let result = parse_toml(source);
++
++        // assert
++        let error = match result {
++            Ok(_) => panic!("the limit of zero was accepted"),
++            Err(error) => error,
++        };
++        let message = error.to_string();
++        assert!(message.contains("archives.max_entries"), "{message}");
++    }
++
++    #[test]
++    fn refuses_a_connection_timeout_of_zero() {
++        // arrange
++        let source = "schema_version = 1\n[remote]\nconnect_timeout_seconds = 0\n";
++
++        // act
++        let result = parse_toml(source);
++
++        // assert
++        let error = match result {
++            Ok(_) => panic!("the timeout of zero was accepted"),
++            Err(error) => error,
++        };
++        assert!(
++            error.to_string().contains("remote.connect_timeout_seconds"),
++            "{error}"
++        );
++    }
++}
+diff --git a/crates/phocommander-config/src/values.rs b/crates/phocommander-config/src/values.rs
+new file mode 100644
+index 0000000..81ef401
+--- /dev/null
++++ b/crates/phocommander-config/src/values.rs
+@@ -0,0 +1,386 @@
++//! The values a setting can take.
++//!
++//! WHAT: one enum per value that the configuration file restricts to a fixed
++//!       set of spellings, each with the default the specification names.
++//! WHY: an enum turns a typo into a message at the moment the file is read
++//!       instead of into a setting that silently does nothing. The default of
++//!       every value is the one the specification fixes, so a file that leaves
++//!       the value out behaves like the shipped default file.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_config::Theme;
++//!
++//! assert_eq!(Theme::default().as_str(), "system");
++//! ```
++
++use serde::{Deserialize, Serialize};
++
++/// The language of the user interface.
++///
++/// WHY: the default is `system`, the value the shipped default file carries.
++/// The German translation is the fallback of the translation catalogue, not a
++/// fixed choice of the interface: a user on an English system expects an
++/// English interface.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum Language {
++    /// German.
++    De,
++
++    /// English.
++    En,
++
++    /// The language of the operating system.
++    #[default]
++    System,
++}
++
++impl Language {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::De => "de",
++            Self::En => "en",
++            Self::System => "system",
++        }
++    }
++}
++
++/// The colour scheme of the user interface.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum Theme {
++    /// The colour scheme of the operating system.
++    #[default]
++    System,
++
++    /// The light colour scheme.
++    Light,
++
++    /// The dark colour scheme.
++    Dark,
++}
++
++impl Theme {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::System => "system",
++            Self::Light => "light",
++            Self::Dark => "dark",
++        }
++    }
++}
++
++/// The format in which file sizes are shown.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum FileSizeFormat {
++    /// Kilobyte, megabyte, gigabyte — powers of 1024.
++    #[default]
++    Binary,
++
++    /// Kilobyte, megabyte, gigabyte — powers of 1000.
++    Decimal,
++
++    /// Kilobyte, mebibyte, gibibyte — powers of 1024 with IEC names.
++    Iec,
++}
++
++impl FileSizeFormat {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::Binary => "binary",
++            Self::Decimal => "decimal",
++            Self::Iec => "iec",
++        }
++    }
++}
++
++/// Whether the two panels stand next to each other or below each other.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum PanelLayout {
++    /// Both panels are visible side by side.
++    #[default]
++    Horizontal,
++
++    /// Both panels are visible one above the other.
++    Vertical,
++}
++
++impl PanelLayout {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::Horizontal => "horizontal",
++            Self::Vertical => "vertical",
++        }
++    }
++}
++
++/// What a right click does in the file list.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "snake_case")]
++pub enum RightClickAction {
++    /// A context menu opens.
++    #[default]
++    ContextMenu,
++
++    /// The selection of the clicked file is toggled.
++    ToggleSelection,
++}
++
++impl RightClickAction {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::ContextMenu => "context_menu",
++            Self::ToggleSelection => "toggle_selection",
++        }
++    }
++}
++
++/// What happens when a file that is to be written already exists.
++///
++/// WHY: overwriting is never the default. A file that is silently replaced is
++/// a file the user cannot get back.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "snake_case")]
++pub enum OverwritePolicy {
++    /// The user is asked.
++    #[default]
++    Ask,
++
++    /// The existing file is kept, the operation continues with the next file.
++    Never,
++
++    /// The existing file is replaced.
++    Always,
++
++    /// The existing file is kept and the new file is written under a new name.
++    KeepBoth,
++}
++
++impl OverwritePolicy {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::Ask => "ask",
++            Self::Never => "never",
++            Self::Always => "always",
++            Self::KeepBoth => "keep_both",
++        }
++    }
++}
++
++/// How much the application writes into its log.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum LogLevel {
++    /// Only failures are written.
++    Error,
++
++    /// Failures and warnings are written.
++    #[default]
++    Warn,
++
++    /// Additional information about the operation is written.
++    Info,
++
++    /// Detailed information for the developer is written.
++    Debug,
++
++    /// Everything is written.
++    Trace,
++}
++
++impl LogLevel {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::Error => "error",
++            Self::Warn => "warn",
++            Self::Info => "info",
++            Self::Debug => "debug",
++            Self::Trace => "trace",
++        }
++    }
++}
++
++/// The input context that is active.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum InputContext {
++    /// The context is recognised from the input device at run time.
++    #[default]
++    Auto,
++
++    /// A physical keyboard.
++    Keyboard,
++
++    /// A mouse or a trackpad.
++    Pointer,
++
++    /// A finger on a touch screen.
++    Touch,
++
++    /// The directional pad of a television remote control.
++    Dpad,
++
++    /// A gamepad or a VR controller.
++    Controller,
++}
++
++impl InputContext {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::Auto => "auto",
++            Self::Keyboard => "keyboard",
++            Self::Pointer => "pointer",
++            Self::Touch => "touch",
++            Self::Dpad => "dpad",
++            Self::Controller => "controller",
++        }
++    }
++}
++
++/// Whether the signature of an SMB server is required.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum SmbSigning {
++    /// A server without signature support is refused.
++    Require,
++
++    /// The signature is used when the server supports it.
++    #[default]
++    Prefer,
++}
++
++impl SmbSigning {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::Require => "require",
++            Self::Prefer => "prefer",
++        }
++    }
++}
++
++/// Whether the transport encryption of an SMB server is required.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
++#[serde(rename_all = "lowercase")]
++pub enum SmbEncryption {
++    /// A server without transport encryption is refused.
++    Require,
++
++    /// The transport encryption is used when the server supports it.
++    #[default]
++    Prefer,
++}
++
++impl SmbEncryption {
++    /// The spelling of this value in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Self::Require => "require",
++            Self::Prefer => "prefer",
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn defaults_match_the_shipped_default_file() {
++        // WHY: a file that leaves a value out has to behave like the shipped
++        // default file. The defaults are therefore part of the contract.
++        assert_eq!(Language::default(), Language::System);
++        assert_eq!(Theme::default(), Theme::System);
++        assert_eq!(FileSizeFormat::default(), FileSizeFormat::Binary);
++        assert_eq!(PanelLayout::default(), PanelLayout::Horizontal);
++        assert_eq!(RightClickAction::default(), RightClickAction::ContextMenu);
++        assert_eq!(OverwritePolicy::default(), OverwritePolicy::Ask);
++        assert_eq!(LogLevel::default(), LogLevel::Warn);
++        assert_eq!(InputContext::default(), InputContext::Auto);
++        assert_eq!(SmbSigning::default(), SmbSigning::Prefer);
++        assert_eq!(SmbEncryption::default(), SmbEncryption::Prefer);
++    }
++
++    #[test]
++    fn every_value_has_a_unique_spelling() {
++        // WHY: the spelling is the key of the value in the configuration file.
++        // Two values of the same setting with the same spelling would make
++        // one of them unreachable. The spellings of two different settings
++        // may be equal — they live in different sections of the file.
++        let groups: [&[&str]; 10] = [
++            &[
++                Language::De.as_str(),
++                Language::En.as_str(),
++                Language::System.as_str(),
++            ],
++            &[
++                Theme::System.as_str(),
++                Theme::Light.as_str(),
++                Theme::Dark.as_str(),
++            ],
++            &[
++                FileSizeFormat::Binary.as_str(),
++                FileSizeFormat::Decimal.as_str(),
++                FileSizeFormat::Iec.as_str(),
++            ],
++            &[
++                PanelLayout::Horizontal.as_str(),
++                PanelLayout::Vertical.as_str(),
++            ],
++            &[
++                RightClickAction::ContextMenu.as_str(),
++                RightClickAction::ToggleSelection.as_str(),
++            ],
++            &[
++                OverwritePolicy::Ask.as_str(),
++                OverwritePolicy::Never.as_str(),
++                OverwritePolicy::Always.as_str(),
++                OverwritePolicy::KeepBoth.as_str(),
++            ],
++            &[
++                LogLevel::Error.as_str(),
++                LogLevel::Warn.as_str(),
++                LogLevel::Info.as_str(),
++                LogLevel::Debug.as_str(),
++                LogLevel::Trace.as_str(),
++            ],
++            &[
++                InputContext::Auto.as_str(),
++                InputContext::Keyboard.as_str(),
++                InputContext::Pointer.as_str(),
++                InputContext::Touch.as_str(),
++                InputContext::Dpad.as_str(),
++                InputContext::Controller.as_str(),
++            ],
++            &[SmbSigning::Require.as_str(), SmbSigning::Prefer.as_str()],
++            &[
++                SmbEncryption::Require.as_str(),
++                SmbEncryption::Prefer.as_str(),
++            ],
++        ];
++
++        for group in groups {
++            let mut sorted = group.to_vec();
++            sorted.sort_unstable();
++            sorted.dedup();
++            assert_eq!(sorted.len(), group.len(), "{group:?}");
++        }
++    }
++
++    #[test]
++    fn overwrite_is_never_the_default() {
++        // WHY: a file that is silently replaced cannot be recovered. The
++        // specification demands that overwriting is not the default.
++        assert_ne!(OverwritePolicy::default(), OverwritePolicy::Always);
++    }
++}
+diff --git a/crates/phocommander-config/tests/shipped_defaults.rs b/crates/phocommander-config/tests/shipped_defaults.rs
+new file mode 100644
+index 0000000..f81da5a
+--- /dev/null
++++ b/crates/phocommander-config/tests/shipped_defaults.rs
+@@ -0,0 +1,68 @@
++//! Integration test: the configuration file that ships with the repository and
++//! the schema of the configuration crate.
++//!
++//! WHAT: the file `config/defaults.toml` is read with the reader of the
++//!       crate and compared with the schema.
++//! WHY: the shipped file is the first file a user copies and the first file
++//!       a contributor reads. If the reader refuses it — because it knows a
++//!       field that the schema does not have, or because a value is not one
++//!       of the allowed ones — every start of the application breaks before
++//!       it shows anything. The file and the schema are written by different
++//!       people, so the agreement between them has to be checked by a
++//!       machine.
++//! EXAMPLE:
++//! ```text
++//! cargo test -p phocommander-config --test shipped_defaults
++//! ```
++
++use phocommander_config::{Config, parse_toml};
++
++/// The configuration file that ships with the repository.
++///
++/// WHY: the file is read at compile time, so that the test cannot be
++/// skipped by accident because the working directory was different.
++const SHIPPED_DEFAULTS: &str = include_str!("../../../config/defaults.toml");
++
++#[test]
++fn the_shipped_configuration_file_is_accepted() {
++    // act
++    let result = parse_toml(SHIPPED_DEFAULTS);
++
++    // assert
++    match result {
++        Ok(config) => assert_eq!(config.schema_version, 1),
++        Err(error) => panic!("the shipped configuration file was refused: {error}"),
++    }
++}
++
++#[test]
++fn the_shipped_configuration_file_holds_the_specified_values() {
++    // arrange
++    let config = match parse_toml(SHIPPED_DEFAULTS) {
++        Ok(config) => config,
++        Err(error) => panic!("the shipped configuration file was refused: {error}"),
++    };
++
++    // assert
++    assert!(config.general.restore_session);
++    assert_eq!(config.panels.layout.as_str(), "horizontal");
++    assert_eq!(config.panels.overwrite_policy.as_str(), "ask");
++    assert_eq!(config.appearance.file_size_format.as_str(), "binary");
++    assert_eq!(config.privacy.log_level.as_str(), "warn");
++    assert_eq!(config.input.context.as_str(), "auto");
++}
++
++#[test]
++fn the_shipped_configuration_file_carries_the_viewer_and_archive_limits() {
++    // arrange
++    let config: Config = match parse_toml(SHIPPED_DEFAULTS) {
++        Ok(config) => config,
++        Err(error) => panic!("the shipped configuration file was refused: {error}"),
++    };
++
++    // assert
++    assert_eq!(config.viewer.max_file_size, Some(10_485_760));
++    assert_eq!(config.viewer.max_text_size, Some(4_194_304));
++    assert_eq!(config.archives.max_extracted_bytes, Some(2_147_483_648));
++    assert_eq!(config.archives.max_entries, Some(100_000));
++}
+diff --git a/crates/phocommander-keymap/Cargo.toml b/crates/phocommander-keymap/Cargo.toml
+new file mode 100644
+index 0000000..f7e70c5
+--- /dev/null
++++ b/crates/phocommander-keymap/Cargo.toml
+@@ -0,0 +1,26 @@
++# The action catalogue and the key bindings of Phocommander.
++#
++# WHAT: the stable identifiers of the commands of the application, the input
++#       contexts they belong to and the key combinations that trigger them.
++# WHY: the user interface must know *what* a command is, never *how* it was
++#       triggered. A keyboard, a mouse, a finger, a television remote control
++#       and a gamepad all deliver the same action identifier, so the same
++#       command works on every platform without a second implementation.
++# EXAMPLE: `let action = phocommander_keymap::ActionId::new("panel.copy")?;`
++
++[package]
++name = "phocommander-keymap"
++description = "Action catalogue, input contexts and key bindings of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[dependencies]
++serde = { workspace = true }
++toml = { workspace = true }
++thiserror = { workspace = true }
++
++[lints]
++workspace = true
+diff --git a/crates/phocommander-keymap/src/bindings.rs b/crates/phocommander-keymap/src/bindings.rs
+new file mode 100644
+index 0000000..e593778
+--- /dev/null
++++ b/crates/phocommander-keymap/src/bindings.rs
+@@ -0,0 +1,334 @@
++//! The key bindings of one input context.
++//!
++//! WHAT: the bindings of one input context ([`Bindings`]), the conflict
++//!       between two of them ([`BindingConflict`]) and the reasons why a
++//!       binding could not be read ([`BindingError`]).
++//! WHY: a binding is a relation between a key combination and an action, and
++//!       two actions on the same key cannot both be reachable. The conflict
++//!       check therefore lives next to the bindings, so that no caller can
++//!       forget it, and it reports every conflict of a context in a stable
++//!       order.
++//! EXAMPLE:
++//! ```no_run
++//! use std::collections::BTreeMap;
++//! use phocommander_keymap::{Bindings, Context};
++//!
++//! # fn main() -> Result<(), phocommander_keymap::BindingError> {
++//! let mut table = BTreeMap::new();
++//! table.insert("panel.copy".to_string(), "F5".to_string());
++//!
++//! let bindings = Bindings::from_table(Context::Keyboard, &table)?;
++//! assert!(bindings.conflicts().is_empty());
++//! # Ok(())
++//! # }
++//! ```
++
++use std::collections::BTreeMap;
++
++use crate::catalog::{ActionId, ActionIdError, Context};
++
++/// The key bindings of one input context.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct Bindings {
++    context: Context,
++    entries: BTreeMap<ActionId, Vec<String>>,
++}
++
++impl Bindings {
++    /// Creates the empty bindings of a context.
++    pub fn new(context: Context) -> Self {
++        Self {
++            context,
++            entries: BTreeMap::new(),
++        }
++    }
++
++    /// Reads the bindings of a context from a table of the configuration file.
++    ///
++    /// WHY: the table is the shape the configuration file uses — an action
++    /// identifier and the key combination that triggers it. Reading it here
++    /// means that a malformed action identifier is reported with its name,
++    /// at the moment the file is read.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use std::collections::BTreeMap;
++    /// use phocommander_keymap::{Bindings, Context};
++    ///
++    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
++    /// let mut table = BTreeMap::new();
++    /// table.insert("panel.copy".to_string(), "F5".to_string());
++    /// let bindings = Bindings::from_table(Context::Keyboard, &table)?;
++    /// assert_eq!(bindings.len(), 1);
++    /// # Ok(())
++    /// # }
++    /// ```
++    pub fn from_table(
++        context: Context,
++        table: &BTreeMap<String, String>,
++    ) -> Result<Self, BindingError> {
++        let mut bindings = Bindings::new(context);
++        for (action, key) in table {
++            let action = ActionId::new(action)?;
++            bindings.bind(action, key.clone())?;
++        }
++        Ok(bindings)
++    }
++
++    /// Adds a key combination for an action.
++    ///
++    /// WHY: an empty key combination would be bound to an action that can
++    /// never be triggered, and would hide a mistake in the configuration
++    /// file. It is therefore refused.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_keymap::{ActionId, Bindings, Context};
++    ///
++    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
++    /// let mut bindings = Bindings::new(Context::Keyboard);
++    /// bindings.bind(ActionId::new("panel.copy")?, "F5")?;
++    /// assert!(bindings.bind(ActionId::new("panel.view")?, "").is_err());
++    /// # Ok(())
++    /// # }
++    /// ```
++    pub fn bind(&mut self, action: ActionId, key: impl Into<String>) -> Result<(), BindingError> {
++        let key = key.into();
++        if key.trim().is_empty() {
++            return Err(BindingError::EmptyKey { action });
++        }
++        let keys = self.entries.entry(action).or_default();
++        if !keys.contains(&key) {
++            keys.push(key);
++        }
++        Ok(())
++    }
++
++    /// The key combinations that are bound to an action.
++    pub fn keys_for(&self, action: &ActionId) -> Option<&[String]> {
++        self.entries.get(action).map(Vec::as_slice)
++    }
++
++    /// The actions that are bound to a key combination.
++    pub fn actions_for(&self, key: &str) -> Vec<&ActionId> {
++        self.entries
++            .iter()
++            .filter(|(_, keys)| keys.iter().any(|bound| bound == key))
++            .map(|(action, _)| action)
++            .collect()
++    }
++
++    /// The number of actions that are bound in this context.
++    pub fn len(&self) -> usize {
++        self.entries.len()
++    }
++
++    /// Whether no action is bound in this context.
++    pub fn is_empty(&self) -> bool {
++        self.entries.is_empty()
++    }
++
++    /// The conflicts inside these bindings.
++    ///
++    /// WHY: two actions on the same key combination cannot both be triggered
++    /// — the second one would never be reached. The conflicts are reported
++    /// with every action that is affected, sorted by the action identifier,
++    /// so that the same file always produces the same report.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_keymap::{ActionId, Bindings, Context};
++    ///
++    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
++    /// let mut bindings = Bindings::new(Context::Keyboard);
++    /// bindings.bind(ActionId::new("panel.copy")?, "F5")?;
++    /// bindings.bind(ActionId::new("file.copy")?, "F5")?;
++    ///
++    /// let conflicts = bindings.conflicts();
++    /// assert_eq!(conflicts.len(), 1);
++    /// assert_eq!(conflicts[0].actions().len(), 2);
++    /// # Ok(())
++    /// # }
++    /// ```
++    pub fn conflicts(&self) -> Vec<BindingConflict> {
++        // WHY: the conflicts are collected per key combination and not per
++        // action. Two actions on one key produce one conflict that names
++        // both of them — a report that lists the same collision twice is
++        // harder to read, not easier.
++        let mut actions_per_key: BTreeMap<&str, Vec<ActionId>> = BTreeMap::new();
++        for (action, keys) in &self.entries {
++            for key in keys {
++                let actions = actions_per_key.entry(key.as_str()).or_default();
++                actions.push(action.clone());
++            }
++        }
++
++        actions_per_key
++            .into_iter()
++            .filter(|(_, actions)| actions.len() > 1)
++            .map(|(key, actions)| BindingConflict {
++                context: self.context,
++                key: key.to_string(),
++                actions,
++            })
++            .collect()
++    }
++}
++
++/// Two actions that are bound to the same key combination.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct BindingConflict {
++    context: Context,
++    key: String,
++    actions: Vec<ActionId>,
++}
++
++impl BindingConflict {
++    /// The context the conflict happened in.
++    pub fn context(&self) -> Context {
++        self.context
++    }
++
++    /// The key combination that is bound twice.
++    pub fn key(&self) -> &str {
++        &self.key
++    }
++
++    /// The actions that are bound to the key combination.
++    pub fn actions(&self) -> &[ActionId] {
++        &self.actions
++    }
++}
++
++/// The reasons why a binding could not be read.
++#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
++pub enum BindingError {
++    /// An action identifier was malformed.
++    #[error("the action identifier is not valid: {0}")]
++    InvalidAction(#[from] ActionIdError),
++
++    /// A key combination was empty.
++    #[error("the key combination of the action {action} is empty")]
++    EmptyKey {
++        /// The action the empty key combination was meant for.
++        action: ActionId,
++    },
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    /// Returns the bindings of a table that has to be valid.
++    fn valid(result: Result<Bindings, BindingError>) -> Bindings {
++        match result {
++            Ok(bindings) => bindings,
++            Err(error) => panic!("the table should be valid: {error}"),
++        }
++    }
++
++    /// Returns an action identifier that has to be valid.
++    fn action(identifier: &str) -> ActionId {
++        match ActionId::new(identifier) {
++            Ok(action) => action,
++            Err(error) => panic!("the identifier should be valid: {error}"),
++        }
++    }
++
++    #[test]
++    fn reads_a_table_of_the_configuration_file() {
++        // arrange
++        let mut table = BTreeMap::new();
++        table.insert("panel.copy".to_string(), "F5".to_string());
++        table.insert("panel.move".to_string(), "F6".to_string());
++
++        // act
++        let bindings = valid(Bindings::from_table(Context::Keyboard, &table));
++
++        // assert
++        assert_eq!(bindings.len(), 2);
++        assert_eq!(
++            bindings.keys_for(&action("panel.copy")),
++            Some(&["F5".to_string()][..])
++        );
++    }
++
++    #[test]
++    fn refuses_a_malformed_action_identifier() {
++        // arrange
++        let mut table = BTreeMap::new();
++        table.insert("panelcopy".to_string(), "F5".to_string());
++
++        // act
++        let result = Bindings::from_table(Context::Keyboard, &table);
++
++        // assert
++        assert!(matches!(
++            result,
++            Err(BindingError::InvalidAction(
++                ActionIdError::MissingSeparator { .. }
++            ))
++        ));
++    }
++
++    #[test]
++    fn refuses_an_empty_key_combination() {
++        // arrange
++        let mut bindings = Bindings::new(Context::Keyboard);
++        let action = action("panel.copy");
++
++        // act
++        let result = bindings.bind(action.clone(), "   ");
++
++        // assert
++        assert_eq!(result, Err(BindingError::EmptyKey { action }));
++    }
++
++    #[test]
++    fn reports_a_conflict_between_two_actions() {
++        // arrange
++        let mut bindings = Bindings::new(Context::Keyboard);
++        for identifier in ["panel.copy", "file.copy"] {
++            match bindings.bind(action(identifier), "F5") {
++                Ok(()) => {}
++                Err(error) => panic!("the binding should be accepted: {error}"),
++            }
++        }
++
++        // act
++        let conflicts = bindings.conflicts();
++
++        // assert
++        assert_eq!(conflicts.len(), 1);
++        assert_eq!(conflicts[0].key(), "F5");
++        assert_eq!(conflicts[0].context(), Context::Keyboard);
++        assert_eq!(conflicts[0].actions().len(), 2);
++    }
++
++    #[test]
++    fn finds_the_key_combinations_of_an_action() {
++        // arrange
++        let mut table = BTreeMap::new();
++        table.insert("panel.copy".to_string(), "F5".to_string());
++        let bindings = valid(Bindings::from_table(Context::Keyboard, &table));
++        let action = action("panel.copy");
++
++        // act
++        let keys = bindings.keys_for(&action);
++        let actions = bindings.actions_for("F5");
++
++        // assert
++        assert_eq!(keys, Some(&["F5".to_string()][..]));
++        assert_eq!(actions, vec![&action]);
++    }
++
++    #[test]
++    fn an_empty_context_has_no_bindings() {
++        // act
++        let bindings = Bindings::new(Context::Touch);
++
++        // assert
++        assert!(bindings.is_empty());
++        assert_eq!(bindings.len(), 0);
++    }
++}
+diff --git a/crates/phocommander-keymap/src/catalog.rs b/crates/phocommander-keymap/src/catalog.rs
+new file mode 100644
+index 0000000..d74db29
+--- /dev/null
++++ b/crates/phocommander-keymap/src/catalog.rs
+@@ -0,0 +1,318 @@
++//! The action catalogue of Phocommander.
++//!
++//! WHAT: the stable identifier of a command ([`ActionId`]) and the input
++//!       contexts ([`Context`]) in which a command can be triggered.
++//! WHY: the user interface never asks *which key* was pressed, it asks *which
++//!       command* was requested. The identifier is therefore the contract
++//!       between the input layer, the configuration file and the user
++//!       interface — and it has to stay stable, because a user writes it into
++//!       the configuration file and into the documentation.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_keymap::{ActionId, Context};
++//!
++//! # fn main() -> Result<(), phocommander_keymap::ActionIdError> {
++//! let action = ActionId::new("panel.copy")?;
++//! assert_eq!(action.as_str(), "panel.copy");
++//! assert_eq!(Context::Dpad.config_name(), "dpad");
++//! # Ok(())
++//! # }
++//! ```
++
++use std::fmt;
++use std::str::FromStr;
++
++/// The context in which an action can be triggered.
++///
++/// WHY: the same command needs a different binding in every context. A
++/// television remote control has no function keys, so the action palette
++/// takes their place there. The context is part of the binding, not of the
++/// action.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
++pub enum Context {
++    /// A physical keyboard.
++    Keyboard,
++
++    /// A mouse or a trackpad.
++    Pointer,
++
++    /// A finger on a touch screen.
++    Touch,
++
++    /// The directional pad of a television remote control.
++    Dpad,
++
++    /// A gamepad or a VR controller.
++    Controller,
++}
++
++impl Context {
++    /// Every context, in a stable order.
++    ///
++    /// WHY: the order is fixed so that a list of contexts — in the
++    /// configuration file, in the documentation or in the user interface —
++    /// always reads the same way.
++    pub const fn all() -> [Context; 5] {
++        [
++            Context::Keyboard,
++            Context::Pointer,
++            Context::Touch,
++            Context::Dpad,
++            Context::Controller,
++        ]
++    }
++
++    /// The spelling of this context in the configuration file.
++    pub const fn config_name(&self) -> &'static str {
++        match self {
++            Context::Keyboard => "keyboard",
++            Context::Pointer => "pointer",
++            Context::Touch => "touch",
++            Context::Dpad => "dpad",
++            Context::Controller => "controller",
++        }
++    }
++
++    /// The context with the given spelling in the configuration file.
++    pub fn from_config_name(name: &str) -> Option<Self> {
++        Context::all()
++            .into_iter()
++            .find(|context| context.config_name() == name)
++    }
++}
++
++impl fmt::Display for Context {
++    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
++        formatter.write_str(self.config_name())
++    }
++}
++
++/// The stable identifier of a command, for example `panel.copy`.
++///
++/// WHY: the identifier is written into the configuration file and into the
++/// documentation. It therefore has one shape everywhere: lower case letters,
++/// digits, `-` and `_`, separated into segments by `.`, with no empty segment.
++#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
++pub struct ActionId(String);
++
++impl ActionId {
++    /// Creates an action identifier from its spelling.
++    ///
++    /// WHY: the identifier travels through the configuration file and through
++    /// the documentation. A malformed identifier is therefore refused at the
++    /// moment it is read, with the reason named, instead of silently doing
++    /// nothing later.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_keymap::ActionId;
++    ///
++    /// # fn main() -> Result<(), phocommander_keymap::ActionIdError> {
++    /// assert!(ActionId::new("panel.copy").is_ok());
++    /// assert!(ActionId::new("panel..copy").is_err());
++    /// # Ok(())
++    /// # }
++    /// ```
++    pub fn new(raw: &str) -> Result<Self, ActionIdError> {
++        if raw.is_empty() {
++            return Err(ActionIdError::Empty);
++        }
++
++        if !raw.contains('.') {
++            return Err(ActionIdError::MissingSeparator {
++                name: raw.to_string(),
++            });
++        }
++
++        if raw.split('.').any(str::is_empty) {
++            return Err(ActionIdError::EmptySegment {
++                name: raw.to_string(),
++            });
++        }
++
++        if let Some(character) = raw.chars().find(|character| {
++            !(character.is_ascii_lowercase()
++                || character.is_ascii_digit()
++                || matches!(character, '-' | '_' | '.'))
++        }) {
++            return Err(ActionIdError::ForbiddenCharacter {
++                name: raw.to_string(),
++                character,
++            });
++        }
++
++        Ok(Self(raw.to_string()))
++    }
++
++    /// The identifier as it is written in the configuration file.
++    pub fn as_str(&self) -> &str {
++        &self.0
++    }
++}
++
++impl fmt::Display for ActionId {
++    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
++        formatter.write_str(&self.0)
++    }
++}
++
++impl FromStr for ActionId {
++    type Err = ActionIdError;
++
++    fn from_str(raw: &str) -> Result<Self, Self::Err> {
++        ActionId::new(raw)
++    }
++}
++
++/// The reasons why an action identifier was refused.
++#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
++pub enum ActionIdError {
++    /// The identifier was empty.
++    #[error("an action identifier must not be empty")]
++    Empty,
++
++    /// The identifier contained an empty segment, for example `panel..copy`.
++    #[error("the action identifier {name:?} contains an empty segment")]
++    EmptySegment {
++        /// The identifier that was refused.
++        name: String,
++    },
++
++    /// The identifier contained a character that is not allowed.
++    #[error("the action identifier {name:?} contains the forbidden character {character:?}")]
++    ForbiddenCharacter {
++        /// The identifier that was refused.
++        name: String,
++        /// The character that is not allowed.
++        character: char,
++    },
++
++    /// The identifier did not separate the group from the action.
++    #[error("the action identifier {name:?} must contain a '.' between the group and the action")]
++    MissingSeparator {
++        /// The identifier that was refused.
++        name: String,
++    },
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn accepts_the_identifiers_the_specification_uses() {
++        // arrange
++        let identifiers = [
++            "panel.copy",
++            "panel.view",
++            "selection.toggle",
++            "palette.open",
++        ];
++
++        // act
++        let results: Vec<bool> = identifiers
++            .iter()
++            .map(|identifier| ActionId::new(identifier).is_ok())
++            .collect();
++
++        // assert
++        assert_eq!(results, vec![true, true, true, true]);
++    }
++
++    #[test]
++    fn refuses_an_empty_identifier() {
++        // act
++        let result = ActionId::new("");
++
++        // assert
++        assert_eq!(result.err(), Some(ActionIdError::Empty));
++    }
++
++    #[test]
++    fn refuses_an_empty_segment() {
++        // act
++        let results = [
++            ActionId::new("panel..copy"),
++            ActionId::new(".copy"),
++            ActionId::new("copy."),
++        ];
++
++        // assert
++        for result in results {
++            assert!(
++                matches!(result, Err(ActionIdError::EmptySegment { .. })),
++                "{result:?}"
++            );
++        }
++    }
++
++    #[test]
++    fn refuses_an_identifier_without_a_group() {
++        // WHY: a forgotten dot is the most likely typo in a hand-written
++        // configuration file, and it would silently disable the binding.
++        // act
++        let result = ActionId::new("panelcopy");
++
++        // assert
++        assert!(
++            matches!(result, Err(ActionIdError::MissingSeparator { .. })),
++            "{result:?}"
++        );
++    }
++
++    #[test]
++    fn refuses_a_forbidden_character() {
++        // act
++        let results = [
++            ActionId::new("panel.copy "),
++            ActionId::new("Panel.Copy"),
++            ActionId::new("panel.copy!"),
++        ];
++
++        // assert
++        for result in results {
++            assert!(
++                matches!(result, Err(ActionIdError::ForbiddenCharacter { .. })),
++                "{result:?}"
++            );
++        }
++    }
++
++    #[test]
++    fn reads_itself_from_a_string() {
++        // act
++        let action: ActionId = match "panel.copy".parse() {
++            Ok(action) => action,
++            Err(error) => panic!("the identifier should be valid: {error}"),
++        };
++
++        // assert
++        assert_eq!(action.as_str(), "panel.copy");
++        assert_eq!(action.to_string(), "panel.copy");
++    }
++
++    #[test]
++    fn every_context_has_a_unique_configuration_name() {
++        // act
++        let names: Vec<&str> = Context::all()
++            .iter()
++            .map(|context| context.config_name())
++            .collect();
++
++        // assert
++        let mut sorted = names.clone();
++        sorted.sort_unstable();
++        sorted.dedup();
++        assert_eq!(sorted.len(), names.len());
++    }
++
++    #[test]
++    fn finds_a_context_by_its_configuration_name() {
++        // act
++        let found = Context::from_config_name("dpad");
++
++        // assert
++        assert_eq!(found, Some(Context::Dpad));
++        assert_eq!(Context::from_config_name("gamepad"), None);
++    }
++}
+diff --git a/crates/phocommander-keymap/src/keymap.rs b/crates/phocommander-keymap/src/keymap.rs
+new file mode 100644
+index 0000000..a2db0ce
+--- /dev/null
++++ b/crates/phocommander-keymap/src/keymap.rs
+@@ -0,0 +1,187 @@
++//! The complete keymap of Phocommander.
++//!
++//! WHAT: the bindings of every input context ([`Keymap`]).
++//! WHY: the same key combination may be used in different contexts — `F5`
++//!       on the keyboard and a palette entry on the television remote
++//!       control do not collide. Only the bindings inside one context can
++//!       conflict, so the keymap keeps the contexts apart and reports the
++//!       conflicts of each of them separately.
++//! EXAMPLE:
++//! ```no_run
++//! use std::collections::BTreeMap;
++//! use phocommander_keymap::{Context, Keymap};
++//!
++//! # fn main() -> Result<(), phocommander_keymap::BindingError> {
++//! let mut keyboard = BTreeMap::new();
++//! keyboard.insert("panel.copy".to_string(), "F5".to_string());
++//!
++//! let mut tables = BTreeMap::new();
++//! tables.insert(Context::Keyboard, keyboard);
++//!
++//! let keymap = Keymap::from_context_tables(&tables)?;
++//! assert!(keymap.conflicts().is_empty());
++//! # Ok(())
++//! # }
++//! ```
++
++use std::collections::BTreeMap;
++
++use crate::bindings::{BindingConflict, BindingError, Bindings};
++use crate::catalog::{ActionId, Context};
++
++/// The complete keymap of Phocommander.
++#[derive(Debug, Clone, PartialEq, Eq, Default)]
++pub struct Keymap {
++    contexts: BTreeMap<Context, Bindings>,
++}
++
++impl Keymap {
++    /// Creates a keymap without any binding.
++    pub fn new() -> Self {
++        Self::default()
++    }
++
++    /// Reads the bindings of every context from the tables of the
++    /// configuration file.
++    ///
++    /// WHY: the keymap is built from the tables of the configuration file, so
++    /// that the file stays the only place a binding is written down. A
++    /// malformed action identifier is refused here, with its name.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use std::collections::BTreeMap;
++    /// use phocommander_keymap::{Context, Keymap};
++    ///
++    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
++    /// let mut keyboard = BTreeMap::new();
++    /// keyboard.insert("panel.copy".to_string(), "F5".to_string());
++    ///
++    /// let mut tables = BTreeMap::new();
++    /// tables.insert(Context::Keyboard, keyboard);
++    ///
++    /// let keymap = Keymap::from_context_tables(&tables)?;
++    /// assert!(keymap.conflicts().is_empty());
++    /// # Ok(())
++    /// # }
++    /// ```
++    pub fn from_context_tables(
++        tables: &BTreeMap<Context, BTreeMap<String, String>>,
++    ) -> Result<Self, BindingError> {
++        let mut contexts = BTreeMap::new();
++        for (context, table) in tables {
++            contexts.insert(*context, Bindings::from_table(*context, table)?);
++        }
++        Ok(Self { contexts })
++    }
++
++    /// The bindings of a context.
++    pub fn bindings(&self, context: Context) -> Option<&Bindings> {
++        self.contexts.get(&context)
++    }
++
++    /// The key combinations that are bound to an action in a context.
++    pub fn keys_for(&self, context: Context, action: &ActionId) -> Option<&[String]> {
++        self.contexts.get(&context)?.keys_for(action)
++    }
++
++    /// Every conflict of the keymap.
++    ///
++    /// WHY: the same key combination may be used in different contexts — `F5`
++    /// on the keyboard and a palette entry on the television remote control
++    /// do not collide. Only the bindings inside one context can conflict.
++    pub fn conflicts(&self) -> Vec<BindingConflict> {
++        let mut conflicts = Vec::new();
++        for bindings in self.contexts.values() {
++            conflicts.extend(bindings.conflicts());
++        }
++        conflicts
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn does_not_report_a_conflict_between_two_contexts() {
++        // arrange
++        let mut keyboard = BTreeMap::new();
++        keyboard.insert("panel.copy".to_string(), "F5".to_string());
++        let mut dpad = BTreeMap::new();
++        dpad.insert("file.copy".to_string(), "F5".to_string());
++
++        let mut tables = BTreeMap::new();
++        tables.insert(Context::Keyboard, keyboard);
++        tables.insert(Context::Dpad, dpad);
++
++        // act
++        let keymap = match Keymap::from_context_tables(&tables) {
++            Ok(keymap) => keymap,
++            Err(error) => panic!("the tables should be valid: {error}"),
++        };
++
++        // assert
++        assert!(keymap.conflicts().is_empty());
++    }
++
++    #[test]
++    fn reports_a_conflict_inside_one_context() {
++        // arrange
++        let mut keyboard = BTreeMap::new();
++        keyboard.insert("panel.copy".to_string(), "F5".to_string());
++        keyboard.insert("file.copy".to_string(), "F5".to_string());
++
++        let mut tables = BTreeMap::new();
++        tables.insert(Context::Keyboard, keyboard);
++
++        // act
++        let keymap = match Keymap::from_context_tables(&tables) {
++            Ok(keymap) => keymap,
++            Err(error) => panic!("the tables should be valid: {error}"),
++        };
++
++        // assert
++        let conflicts = keymap.conflicts();
++        assert_eq!(conflicts.len(), 1);
++        assert_eq!(conflicts[0].context(), Context::Keyboard);
++    }
++
++    #[test]
++    fn finds_the_bindings_of_a_context() {
++        // arrange
++        let mut keyboard = BTreeMap::new();
++        keyboard.insert("panel.copy".to_string(), "F5".to_string());
++
++        let mut tables = BTreeMap::new();
++        tables.insert(Context::Keyboard, keyboard);
++
++        let keymap = match Keymap::from_context_tables(&tables) {
++            Ok(keymap) => keymap,
++            Err(error) => panic!("the tables should be valid: {error}"),
++        };
++
++        // act
++        let bindings = keymap.bindings(Context::Keyboard);
++        let missing = keymap.bindings(Context::Touch);
++        let action = match ActionId::new("panel.copy") {
++            Ok(action) => action,
++            Err(error) => panic!("the identifier should be valid: {error}"),
++        };
++        let keys = keymap.keys_for(Context::Keyboard, &action);
++
++        // assert
++        assert!(bindings.is_some());
++        assert!(missing.is_none());
++        assert_eq!(keys, Some(&["F5".to_string()][..]));
++    }
++
++    #[test]
++    fn an_empty_keymap_has_no_conflicts() {
++        // act
++        let keymap = Keymap::new();
++
++        // assert
++        assert!(keymap.conflicts().is_empty());
++    }
++}
+diff --git a/crates/phocommander-keymap/src/lib.rs b/crates/phocommander-keymap/src/lib.rs
+new file mode 100644
+index 0000000..7f01251
+--- /dev/null
++++ b/crates/phocommander-keymap/src/lib.rs
+@@ -0,0 +1,30 @@
++//! The action catalogue and the key bindings of Phocommander.
++//!
++//! WHAT: the stable identifiers of the commands of the application
++//!       ([`catalog`]), the key bindings of one context ([`bindings`]) and the
++//!       complete keymap ([`keymap`]).
++//! WHY: the user interface must know *what* a command is, never *how* it was
++//!       triggered. The keyboard, the mouse, the finger, the television remote
++//!       control and the gamepad all deliver the same action identifier, so
++//!       the same command works on every platform without a second
++//!       implementation. A binding that is bound twice is a mistake that is
++//!       reported here, where it can be found.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_keymap::{ActionId, Context};
++//!
++//! # fn main() -> Result<(), phocommander_keymap::ActionIdError> {
++//! let action = ActionId::new("panel.copy")?;
++//! assert_eq!(action.as_str(), "panel.copy");
++//! assert_eq!(Context::Dpad.config_name(), "dpad");
++//! # Ok(())
++//! # }
++//! ```
++
++pub mod bindings;
++pub mod catalog;
++pub mod keymap;
++
++pub use bindings::{BindingConflict, BindingError, Bindings};
++pub use catalog::{ActionId, ActionIdError, Context};
++pub use keymap::Keymap;
+diff --git a/crates/phocommander-ops/Cargo.toml b/crates/phocommander-ops/Cargo.toml
+new file mode 100644
+index 0000000..8865530
+--- /dev/null
++++ b/crates/phocommander-ops/Cargo.toml
+@@ -0,0 +1,22 @@
++# The file operations of Phocommander.
++#
++# WHAT: the crate that will copy, move, rename and delete files.
++# WHY: the operations run in the background, in a job queue, so that the
++#       interface stays usable while they work. The crate is created in
++#       milestone M0 so that the boundary between the operations and the
++#       interface exists from the first day.
++# EXAMPLE: the public API arrives in milestone M1.
++
++[package]
++name = "phocommander-ops"
++description = "File operations and the job queue of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[dependencies]
++
++[lints]
++workspace = true
+diff --git a/crates/phocommander-ops/src/lib.rs b/crates/phocommander-ops/src/lib.rs
+new file mode 100644
+index 0000000..757a9b6
+--- /dev/null
++++ b/crates/phocommander-ops/src/lib.rs
+@@ -0,0 +1,22 @@
++//! The file operations of Phocommander.
++//!
++//! WHAT: the crate that owns copying, moving, renaming and deleting files
++//!       and the job queue that runs them in the background.
++//! WHY: every operation that can take longer than a frame belongs into the
++//!       job queue, so that the user interface stays usable while a copy is
++//!       running. The conflict behaviour — overwrite, skip, keep both, ask —
++//!       belongs here as well, because the rule is part of the operation and
++//!       not of the dialog that asks the user.
++//! BOUNDARY: this crate knows the file system and nothing else. It draws
++//!       nothing, asks no question and knows no platform.
++//!
++//! MILESTONE: the crate is created in M0 so that the boundary exists from the
++//! first day. The job queue, the operations and the conflict behaviour arrive
++//! in M1, together with their unit tests.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! // Milestone M1 will look like this:
++//! // let job = phocommander_ops::Job::copy(source, destination);
++//! // queue.enqueue(job)?;
++//! ```
+diff --git a/crates/phocommander-remote/Cargo.toml b/crates/phocommander-remote/Cargo.toml
+new file mode 100644
+index 0000000..4b68a26
+--- /dev/null
++++ b/crates/phocommander-remote/Cargo.toml
+@@ -0,0 +1,22 @@
++# The network sources of Phocommander.
++#
++# WHAT: the crate that will offer directories that live on another machine.
++# WHY: a remote source is not a second kind of file manager, it is another
++#       source of the same "content of a directory". The crate therefore
++#       implements the same interface as the local file system, and the core
++#       stays free of protocol details.
++# EXAMPLE: the public API arrives in milestone M6.
++
++[package]
++name = "phocommander-remote"
++description = "Network sources — SFTP, FTP, SMB, WebDAV and S3 — of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[dependencies]
++
++[lints]
++workspace = true
+diff --git a/crates/phocommander-remote/src/lib.rs b/crates/phocommander-remote/src/lib.rs
+new file mode 100644
+index 0000000..8af1e29
+--- /dev/null
++++ b/crates/phocommander-remote/src/lib.rs
+@@ -0,0 +1,24 @@
++//! The network sources of Phocommander.
++//!
++//! WHAT: the crate that offers directories which live on another machine —
++//!       SFTP, FTP, SMB, WebDAV and S3-compatible object storage.
++//! WHY: a remote source is not a second kind of file manager. It is another
++//!       source of the same "content of a directory", so copying, moving,
++//!       renaming, deleting, viewing and searching work exactly as they do
++//!       locally. The core stays free of protocol details, and the trust
++//!       boundary stays in one place: everything a server sends is untrusted
++//!       input, from the entry names to the sizes.
++//! BOUNDARY: this crate speaks the protocols. It draws nothing, it writes no
++//!       local configuration and it stores no credential of its own — the
++//!       credential belongs into the keyring of the operating system.
++//!
++//! MILESTONE: the crate is created in M0 so that the boundary exists from the
++//! first day. SMB and WebDAV arrive in M6, SFTP and FTP together with the
++//! connection management, the keyring integration and the hardening of the
++//! network attack surface. S3 and OAuth arrive in M7.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! // Milestone M6 will look like this:
++//! // let entries = phocommander_remote::list(&connection)?;
++//! ```
+diff --git a/crates/phocommander-ui/Cargo.toml b/crates/phocommander-ui/Cargo.toml
+new file mode 100644
+index 0000000..ac9910b
+--- /dev/null
++++ b/crates/phocommander-ui/Cargo.toml
+@@ -0,0 +1,23 @@
++# The user interface of Phocommander.
++#
++# WHAT: the crate that draws the two panels, the theme and the dialogs.
++# WHY: the user interface is the only crate that knows about egui. It keeps
++#       the state of a directory list outside of the immediate mode context,
++#       so that a list with a hundred thousand entries does not have to be
++#       rebuilt in every frame.
++# EXAMPLE: `let visuals = phocommander_ui::visuals(Theme::Dark, false);`
++
++[package]
++name = "phocommander-ui"
++description = "The egui user interface of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[dependencies]
++egui = { workspace = true }
++
++[lints]
++workspace = true
+diff --git a/crates/phocommander-ui/src/lib.rs b/crates/phocommander-ui/src/lib.rs
+new file mode 100644
+index 0000000..66a3c90
+--- /dev/null
++++ b/crates/phocommander-ui/src/lib.rs
+@@ -0,0 +1,27 @@
++//! The user interface of Phocommander.
++//!
++//! WHAT: the crate that draws the two panels, the theme and the dialogs with
++//!       egui.
++//! WHY: egui draws its widgets itself, so the application can use one code
++//!       path on all six platforms. The state of a directory list is kept
++//!       outside of the immediate mode context, so that a list with a
++//!       hundred thousand entries is not rebuilt in every frame.
++//! BOUNDARY: this crate draws and it holds the state of the interface. It
++//!       performs no file operation itself, it opens no network connection
++//!       and it does not know how the platform spells a menu.
++//!
++//! MILESTONE: the crate is created in M0, the theme in M0 as well. The two
++//! panels, the keyboard operation and the action palette arrive in M1 and
++//! M2.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::{visuals, Theme};
++//!
++//! let visuals = visuals(Theme::Dark, false);
++//! assert!(visuals.dark_mode);
++//! ```
++
++pub mod theme;
++
++pub use theme::{Theme, visuals};
+diff --git a/crates/phocommander-ui/src/theme.rs b/crates/phocommander-ui/src/theme.rs
+new file mode 100644
+index 0000000..87ac4a6
+--- /dev/null
++++ b/crates/phocommander-ui/src/theme.rs
+@@ -0,0 +1,134 @@
++//! The theme of Phocommander.
++//!
++//! WHAT: the colour scheme the user chose and the egui visuals that belong
++//!       to it.
++//! WHY: the theme is a setting of the user, but the colours that egui draws
++//!       with are not. The translation from one to the other happens here, in
++//!       the only crate that knows about egui, so that the rest of the
++//!       application can talk about "dark" instead of about colour values.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::{visuals, Theme};
++//!
++//! assert!(visuals(Theme::Dark, false).dark_mode);
++//! assert!(!visuals(Theme::Light, true).dark_mode);
++//! ```
++
++/// The colour scheme the user chose.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
++pub enum Theme {
++    /// The colour scheme of the operating system.
++    #[default]
++    System,
++
++    /// The light colour scheme.
++    Light,
++
++    /// The dark colour scheme.
++    Dark,
++}
++
++impl Theme {
++    /// The spelling of this theme in the configuration file.
++    pub fn as_str(&self) -> &'static str {
++        match self {
++            Theme::System => "system",
++            Theme::Light => "light",
++            Theme::Dark => "dark",
++        }
++    }
++
++    /// The theme with the given spelling in the configuration file.
++    ///
++    /// WHY: the theme of the operating system is decided by the platform
++    /// adapter, which knows the preference of the user. It arrives here as a
++    /// name, so that this crate does not have to know the platform.
++    pub fn from_config_name(name: &str) -> Option<Self> {
++        match name {
++            "system" => Some(Theme::System),
++            "light" => Some(Theme::Light),
++            "dark" => Some(Theme::Dark),
++            _ => None,
++        }
++    }
++}
++
++/// The egui visuals that belong to a theme.
++///
++/// WHY: the theme `system` follows the preference of the operating system,
++/// which the caller reads. Every other theme ignores that preference, so
++/// that a user who wants a light interface on a dark system gets one.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_ui::{visuals, Theme};
++///
++/// assert!(visuals(Theme::System, true).dark_mode);
++/// assert!(!visuals(Theme::System, false).dark_mode);
++/// ```
++pub fn visuals(theme: Theme, system_prefers_dark: bool) -> egui::Visuals {
++    match theme {
++        Theme::System => {
++            if system_prefers_dark {
++                egui::Visuals::dark()
++            } else {
++                egui::Visuals::light()
++            }
++        }
++        Theme::Light => egui::Visuals::light(),
++        Theme::Dark => egui::Visuals::dark(),
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn reads_a_theme_by_its_configuration_name() {
++        // act
++        let found = Theme::from_config_name("dark");
++
++        // assert
++        assert_eq!(found, Some(Theme::Dark));
++        assert_eq!(Theme::from_config_name("sepia"), None);
++    }
++
++    #[test]
++    fn the_system_theme_follows_the_platform() {
++        // act
++        let dark = visuals(Theme::System, true);
++        let light = visuals(Theme::System, false);
++
++        // assert
++        assert!(dark.dark_mode);
++        assert!(!light.dark_mode);
++    }
++
++    #[test]
++    fn an_explicit_theme_ignores_the_platform() {
++        // act
++        let dark = visuals(Theme::Dark, false);
++        let light = visuals(Theme::Light, true);
++
++        // assert
++        assert!(dark.dark_mode);
++        assert!(!light.dark_mode);
++    }
++
++    #[test]
++    fn every_theme_has_a_unique_spelling() {
++        // act
++        let spellings = [
++            Theme::System.as_str(),
++            Theme::Light.as_str(),
++            Theme::Dark.as_str(),
++        ];
++
++        // assert
++        let mut sorted = spellings.to_vec();
++        sorted.sort_unstable();
++        sorted.dedup();
++        assert_eq!(sorted.len(), spellings.len());
++    }
++}
+diff --git a/crates/phocommander-viewer/Cargo.toml b/crates/phocommander-viewer/Cargo.toml
+new file mode 100644
+index 0000000..b6e33fb
+--- /dev/null
++++ b/crates/phocommander-viewer/Cargo.toml
+@@ -0,0 +1,21 @@
++# The file viewer of Phocommander.
++#
++# WHAT: the crate that will show the content of a file inside the application.
++# WHY: the viewer is what makes the application a tool and not only a file
++#       browser. Its formats are registered through a trait, so that a new
++#       format is a new implementation and not a change in the core.
++# EXAMPLE: the public API arrives in milestone M1.
++
++[package]
++name = "phocommander-viewer"
++description = "Viewer registry and format adapters of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++
++[dependencies]
++
++[lints]
++workspace = true
+diff --git a/crates/phocommander-viewer/src/lib.rs b/crates/phocommander-viewer/src/lib.rs
+new file mode 100644
+index 0000000..3419010
+--- /dev/null
++++ b/crates/phocommander-viewer/src/lib.rs
+@@ -0,0 +1,22 @@
++//! The file viewer of Phocommander.
++//!
++//! WHAT: the crate that shows the content of a file inside the application —
++//!       text, hexadecimal dump, images, the content of an archive and the
++//!       metadata of a file.
++//! WHY: the viewer keeps the user inside the application instead of sending
++//!       them to another program. The formats are registered through a trait:
++//!       a new format is a new implementation plus one registration line, and
++//!       no change in the core.
++//! BOUNDARY: this crate reads files and produces something that can be drawn.
++//!       It does not draw, it does not write files and it knows no platform.
++//!
++//! MILESTONE: the crate is created in M0 so that the boundary exists from the
++//! first day. The registry and the formats of stage 1 — text, hexadecimal
++//! dump, images, archive content and metadata — arrive in M1, PDF and syntax
++//! highlighting in M2, audio and video in M3.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! // Milestone M1 will look like this:
++//! // let content = phocommander_viewer::show(&path)?;
++//! ```
+diff --git a/docs/adr/ADR-0001-cargo-workspace-and-module-boundaries.md b/docs/adr/ADR-0001-cargo-workspace-and-module-boundaries.md
+new file mode 100644
+index 0000000..54def17
+--- /dev/null
++++ b/docs/adr/ADR-0001-cargo-workspace-and-module-boundaries.md
+@@ -0,0 +1,132 @@
++# ADR-0001 — Cargo workspace and crate boundaries
++**Status:** accepted
++**Date:** 2026-10-24
++**Owner role:** Rust Architect
++**Related requirement IDs:** FR-115, FR-116, FR-117, FR-118, FR-121, NFR-32, NFR-33, NFR-41
++
++## Context
++
++The specification fixes the shape of the repository: one Cargo workspace, flat `crates/*`
++boxes, `apps/*` for the binaries, `platform/*` for the operating system adapters and `xtask`
++for the build helpers. It also fixes the dependency direction — `apps/*` → `platform/*` →
++`crates/*` — and states that inside `crates/*` no box may derive from another box of the same
++level. It demands that this rule is checked by a script that exits with code 1 on a violation,
++and that a negative test proves that the gate has teeth.
++
++Two facts make the rule less obvious than it looks.
++
++First, the rule as written forbids every dependency between two crates of the same level,
++including a dependency on `phocommander-core`. The sibling project Photocraft, whose pattern
++the specification cites as the model, does the opposite: `crates/algo` depends on
++`crates/geom` and `crates/color`, and 24 of its 27 crates depend on at least one sibling. The
++requirement catalogue of this project reproduces the strict wording in FR-116.
++
++Second, a strict rule of that kind has consequences that are easy to overlook. If no crate may
++depend on a sibling, then no two crates may share a type, a helper function or a constant.
++Everything shared has to travel as data through the composition root — the application — or it
++has to exist twice. The architecture page of this repository states in rule 2 that "the shared
++part belongs in `phocommander-core`", which is exactly the dependency the strict rule forbids.
++The rule and the guidance contradict each other, and the contradiction has to be resolved
++before M1 writes the first line of real code.
++
++The risk register of the specification names the flat structure as a decision that was taken
++with the project, so the structure is not in question. What is in question is the exact
++reading of one sentence.
++
++## Decision
++
++**1. The workspace is one Cargo workspace with `resolver = "3"`, edition 2024, and one
++catalogue of pinned dependency versions in the root manifest.** Every crate inherits its
++metadata with `version.workspace = true` and its lint set with `[lints] workspace = true`.
++A version is written exactly once.
++
++**2. The dependency direction is enforced mechanically by `scripts/check-crate-boundaries.sh`.**
++The script reads the `Cargo.toml` of every member, resolves every path dependency — including
++the ones that are inherited from the root catalogue with `workspace = true` — and checks them
++against this matrix:
++
++| Level | May depend on | May not depend on |
++|---|---|---|
++| `crates/*` | — | every other crate of the workspace |
++| `platform/*` | `crates/*` | `platform/*`, `apps/*`, `xtask` |
++| `apps/*` | `platform/*`, `crates/*` | `apps/*`, `xtask` |
++| `tests` | `crates/*` | `apps/*`, `platform/*`, `xtask` |
++| `xtask` | `crates/*` | `apps/*`, `platform/*` |
++
++The script exits with code 1 and names the crate, the target and the reason when a
++dependency violates the matrix. A dependency that is written as an inline table outside a
++dependency section is reported as well, so that the catalogue cannot be used to smuggle a path
++dependency past the gate.
++
++**3. The strict reading is implemented as written: no crate below `crates/` depends on a
++sibling.** Everything that two crates would have to share travels as data through the
++composition root, and the composition root is the application:
++
++- a limit that more than one crate has to agree on is written down exactly once, in
++  `phocommander-core::config`, and reaches the other crates as a value that the application
++  passes to them;
++- a type that crosses a crate boundary is a plain `std` type (`Path`, `PathBuf`, `String`,
++  `u64`) or a value that the application maps between the crates that own it;
++- the tests that hold two crates against each other live in the package `tests`, which is
++  outside `crates/` for exactly this reason.
++
++**4. The contradiction between the strict rule and the architecture page is recorded here
++and not resolved by the architect.** Two ways out exist, and the choice belongs to the owner:
++
++- **Option A — one named exception.** `phocommander-core` becomes the vocabulary crate: every
++  other crate may depend on it, and no crate may depend on any other sibling. The gate gets
++  one additional allowed edge, the specification keeps its wording, and the architecture page
++  becomes correct.
++- **Option B — the strict rule, shared code in the composition root.** The gate stays as it
++  is, the architecture page is corrected, and every shared type or constant has to be mapped
++  in `apps/*`. This is what M0 implements.
++
++## Consequences
++
++### Positive
++-
++The rule is a machine rule. `scripts/check-crate-boundaries.sh` proves it: the negative test
++builds a dependency of `phocommander-core` on `phocommander-ui`, the gate reports the
++violation and exits with code 1, the dependency is removed and the gate exits with code 0.
++-
++The core stays testable on every platform, because it depends on nothing but `thiserror`.
++-
++The strict rule makes the ownership of every type explicit. The question "where does this
++type live?" has exactly one answer, because there is only one place where a type can be
++shared.
++-
++The composition root is visible. The application is the only crate that knows all the others,
++which is what makes the wiring of M1 testable.
++-
++The catalogue of pinned versions is written once and inherited, so a version cannot drift
++between two crates.
++
++### Negative / Trade-offs
++-
++The strict rule makes the flat structure expensive: a type that is needed in two crates must
++either be a `std` type, or be mapped in the application. For a value such as the conflict
++policy this means that `phocommander-config` and `phocommander-ops` will each define their
++own enum for the same file format until the owner decides about Option A.
++-
++Until the decision is taken, the architecture page of this repository contradicts the gate.
++A contributor who follows rule 2 of that page writes a dependency that the gate rejects.
++-
++A shared test kit cannot be a crate below `crates/`, because that would be a sibling
++dependency. The test kit therefore lives in the package `tests`, outside the level.
++-
++The rule as written also forbids a cycle-free but harmless dependency such as
++`phocommander-ops` → `phocommander-core`, which Photocraft uses in 24 of its 27 crates.
++
++## Alternatives Considered
++-
++**Keep the structure of Photocraft (crates may depend on siblings, the graph stays acyclic).**
++Rejected for M0 because the specification and the requirement catalogue state the strict rule
++in FR-116, and because the specification is the binding source. The option is recorded as
++Option A above and needs a decision from the owner.
++-
++**A single crate instead of a flat workspace.** Rejected: the specification demands the flat
++structure, and the crates of the six target systems have very different build requirements.
++-
++**One crate per feature area with a shared `common` crate.** Rejected: a `common` crate is a
++sibling dependency under the strict rule, and a crate without a responsibility is a crate
++without a boundary.
+diff --git a/docs/adr/ADR-0002-filesystem-abstraction.md b/docs/adr/ADR-0002-filesystem-abstraction.md
+new file mode 100644
+index 0000000..9c334f4
+--- /dev/null
++++ b/docs/adr/ADR-0002-filesystem-abstraction.md
+@@ -0,0 +1,132 @@
++# ADR-0002 — The filesystem abstraction
++**Status:** accepted
++**Date:** 2026-10-24
++**Owner role:** Rust Architect
++**Related requirement IDs:** FR-14, FR-60, FR-96, FR-118, FR-120, NFR-32, NFR-33
++
++## Context
++
++The platform matrix of the specification is the reason the architecture exists. On macOS the
++application runs without a sandbox and needs a permission the user grants by hand. On iPadOS
++the process is fully sandboxed and can only reach the directories that the user released with
++the document picker, through security-scoped URLs. On Android the Storage Access Framework
++grants access to the roots the user selects, and full access to the storage is a special
++permission that has to be declared, explained and requested. On Windows, Linux and BSD there
++is no sandbox at all, but the path length rules differ and the trash behaves differently.
++
++Without an abstraction, every one of these platforms grows its own special case: a different
++directory listing here, a different copy operation there, a different error message for a
++file that the user may not read. The core would grow six code paths for one concept, and the
++test coverage would be measured on one of them.
++
++The risk register of the specification names this as the highest risk of the project, with
++the impact "high" and the likelihood "medium", and names the mitigation: the interface is
++decided in an ADR before M1, and the network sources of M6 are played through in M1 as a
++test implementation. This ADR is that decision.
++
++## Decision
++
++**1. One abstraction, one method that matters.** The core asks a source for the content of a
++directory, and a source answers with a list of entries. The interface lives in
++`phocommander-core`, because the core is the only level that every other level may use.
++
++```rust
++/// One entry of a directory, as the core sees it.
++pub struct Entry {
++    pub name: String,
++    pub kind: EntryKind,
++    pub size: Option<u64>,
++    pub modified: Option<SystemTime>,
++}
++
++/// A source of directory content: a local directory, an archive, a remote
++/// server, a root the user released on iPadOS.
++pub trait Source {
++    type Error;
++    fn list(&self, path: &Path) -> Result<Vec<Entry>, Self::Error>;
++}
++```
++
++The trait is deliberately small. Everything that distinguishes the sources — the protocol, the
++permissions, the timeouts, the format of the answer — belongs behind it, not in the core.
++
++**2. A source is identified by an opaque handle, not by a path.** The iPadOS root is not a
++path but a security-scoped bookmark, and the archive entry is not a path but an index into
++the archive. The core therefore never builds a path to a remote entry and never assumes that
++a path can be reopened later. A path is what a *local* source understands.
++
++**3. The errors of the sources are their own.** The trait is generic over its error type, so
++that the SFTP source reports an authentication failure and the SAF source reports a revoked
++permission, and the core does not have to know either of them. The core turns them into its
++own error type at the boundary — the rule is described in ADR-0003.
++
++**4. The write side is a separate, narrower interface.** Reading a directory is the operation
++that every source supports. Writing is not: an archive can be read but not modified, and a
++released iPadOS root is read-only. The operations of M1 therefore work on a
++`MutableSource`, and a source that cannot be written to simply does not implement it. The
++conflict policy and the job queue belong to the operations, not to the source.
++
++**5. The core never learns a protocol, and the protocol never learns the core.** The remote
++crate of M6 implements the same interface for SFTP, FTP, SMB, WebDAV and S3; the archive
++crate of M1 implements it for the archive formats; the platform adapter of M4 implements it
++for the Android SAF roots and the iPadOS document picker.
++
++## Consequences
++
++### Positive
++-
++One concept, one code path in the core. A copy operation works the same on a local directory,
++in an archive and on an SFTP server, because the operation only knows the interface.
++-
++The core stays testable everywhere: it depends on `thiserror` and on the standard library,
++and the test implementation of the interface needs neither a network nor a permission.
++-
++The network sources of M6 become an addition instead of a special case. The specification
++says it: "Netzwerkzugriff ist kein eigener Funktionsbereich, sondern eine weitere Quelle in
++derselben Abstraktion."
++-
++The trust boundary stays in one place. Everything a server or an archive delivers — names,
++sizes, timestamps — is untrusted input, and the interface is the place where that is
++declared.
++-
++The iPadOS limitation becomes visible in the type system: a released root is a handle, not a
++path, and the code cannot silently treat it like a directory on disk.
++
++### Negative / Trade-offs
++-
++A generic trait with an associated error type is more code to write than a trait with one
++error enum. The price is paid once per source, and it buys a core that stays free of
++protocol details.
++-
++The source has to answer questions the local file system answers for free — how large is the
++entry, when was it changed. A remote source that cannot answer has to say so, and the
++interface needs a way to express "unknown". The optional fields of `Entry` are that way.
++-
++The write side being a separate interface means that the operations of M1 have to be written
++twice for the two shapes. The alternative — one interface with a capability flag — moves the
++distinction into a runtime check instead of into the type.
++-
++ADR-0001 makes this expensive: the trait and the `Entry` type live in
++`phocommander-core`, and no other crate may depend on `phocommander-core` under the strict
++reading of the boundary rule. The interface is therefore, for the moment, a decision on
++paper. It becomes code as soon as the owner has decided about Option A of ADR-0001 — or the
++composition root has to pass the trait object around, which is possible but clumsy.
++
++## Alternatives Considered
++-
++**One type per source with a match statement in the core.** Rejected: the core would grow
++one arm per source, and every new source would touch the core. The specification demands
++that a new format is "a new implementation plus one registration line — without a change in
++the core".
++-
++**A path-based abstraction with a prefix for the remote sources** (`sftp://host/path`).
++Rejected: it invites the code to treat a remote entry like a local file, to open it with
++`std::fs`, and to build a path from a string the server delivered. The trust boundary of
++the specification forbids exactly that.
++-
++**An enum of the sources in the core.** Rejected for the same reason as the match statement:
++the core would have to know every source.
++-
++**Using an existing library for the abstraction.** Rejected: no library covers a local
++directory, an archive, an SFTP server and an iPadOS bookmark with the same interface, and a
++library would decide the error handling of the project.
+diff --git a/docs/adr/ADR-0003-error-hierarchy-and-error-codes.md b/docs/adr/ADR-0003-error-hierarchy-and-error-codes.md
+new file mode 100644
+index 0000000..1e4ae83
+--- /dev/null
++++ b/docs/adr/ADR-0003-error-hierarchy-and-error-codes.md
+@@ -0,0 +1,142 @@
++# ADR-0003 — The error hierarchy and the error codes
++**Status:** accepted
++**Date:** 2026-10-24
++**Owner role:** Rust Architect
++**Related requirement IDs:** FR-25, FR-28, FR-118, NFR-32, NFR-37, NFR-38
++
++## Context
++
++Every fallible operation in this workspace returns a `Result`. The rules of the project
++forbid `unwrap()` and `expect()` on every path that a user can reach, and they forbid
++`panic!` as an error handling strategy. That means every failure has to travel as a value,
++and the value has to be good enough for three different readers:
++
++- the user interface, which has to show a message that says what happened and what the user
++  can do about it;
++- the log, which has to be written without personal data — no user name, no server name, no
++  IP address;
++- the caller of the function, which has to decide whether to retry, to skip or to abort.
++
++A flat error enum with a hundred variants does not serve any of the three. A string error
++serves none. And a project with six crates has to decide where the errors of the crates are
++composed: the crates of `crates/*` may not depend on each other (ADR-0001), so a shared
++error enum for the whole project cannot live in one of them.
++
++## Decision
++
++**1. Every crate owns its own error type, and the types are composed at the edge.**
++A crate returns the error type that describes its own failures. The composition root — the
++application — turns them into what the user sees.
++
++```rust
++// in phocommander-core
++#[derive(Debug, thiserror::Error)]
++pub enum Error {
++    NoConfigDirectory,
++    TooLarge { path: PathBuf, size: u64, limit: u64 },
++    Io { path: PathBuf, #[source] source: io::Error },
++}
++```
++
++The crate that owns the failure knows most about it: the archive crate knows that an entry
++name was refused and why, the configuration crate knows that a field is unknown, the
++platform adapter knows that the operating system reported no configuration directory.
++
++**2. The error of a crate is a closed set, not a string.** Every variant carries the data
++that the reader needs: the path, the size, the limit, the name of the field. An error that
++cannot name the thing that failed is a bug in the error, not in the caller.
++
++**3. The cause is kept, never flattened.** `thiserror` with `#[source]` keeps the original
++error reachable. The rule from the specification applies: the path is usually lost when an
++`io::Error` travels upwards, and the path is what the user needs.
++
++**4. The user message and the log message are two different things.** The error type carries
++the facts; the user interface decides the wording, and the wording is a translation key. The
++log never receives the facts that are personal — the specification is explicit about that.
++An error therefore never formats itself into a sentence that is shown to the user.
++
++**5. The error codes are stable, and they are the contract with the user interface.**
++Every failure that the user can trigger gets a code. The code is what the interface maps to
++a message, what the log records, and what the acceptance documentation cites.
++
++| Code | Meaning | First crate |
++|---|---|---|
++| `io.read` | A file or directory could not be read | core |
++| `io.write` | A file could not be written | core |
++| `io.permission` | The operating system refused the access | core |
++| `path.absolute` | A path was absolute where a relative one was required | core |
++| `path.traversal` | A path tried to leave the destination directory | archive |
++| `path.reserved` | A name is not valid on every target platform | archive |
++| `limit.too_large` | A file or an archive exceeded a limit | core |
++| `limit.entries` | An archive has too many entries | core |
++| `config.unknown_field` | The configuration file has a field that does not exist | config |
++| `config.schema_version` | The configuration file was written by a newer version | config |
++| `config.invalid_value` | A value in the configuration file cannot be used | config |
++| `keymap.invalid_action` | An action identifier is malformed | keymap |
++| `keymap.conflict` | Two actions are bound to the same key combination | keymap |
++| `platform.no_config_directory` | The operating system reported no configuration directory | platform |
++| `remote.unreachable` | A remote source did not answer | remote |
++| `remote.auth` | A remote source refused the credentials | remote |
++| `remote.protocol` | A remote source offered a protocol that is not accepted | remote |
++
++The codes are part of the public surface of the project. A new error gets a new code; an
++existing code never changes its meaning.
++
++**6. The prohibition on `unwrap()` and `expect()` is a lint, not a convention.**
++`[workspace.lints.clippy]` denies `unwrap_used` and `expect_used`, and
++`[workspace.lints.rust]` denies `unsafe_code`. The denial covers the test code as well,
++because `cargo clippy --workspace --all-targets` is part of the gate. A test that needs to
++fail loudly panics with a message that names the cause.
++
++## Consequences
++
++### Positive
++-
++The user interface never has to parse a string. It matches on a code and shows the message
++of its translation catalogue.
++-
++The log stays free of personal data by construction, because the error carries facts about
++paths and sizes, and the log writer decides what it writes.
++-
++The cause of a failure survives the trip upwards, so that a bug report can name the actual
++failing call.
++-
++Every crate can be tested on its own: the error type of a crate is a closed set that the
++crate tests can match on exhaustively.
++-
++The codes make the acceptance documentation precise: a test can cite `path.traversal`
++instead of "the error message looked right".
++
++### Negative / Trade-offs
++-
++A closed set per crate means that the number of error types grows with the number of crates.
++The application has to know how to present each of them, and a new crate means a new
++presentation rule.
++-
++The composition at the edge has to be written: the application needs a function that turns
++the error of a crate into the code and the message of the interface. That function is
++written once per crate and tested once per crate.
++-
++The code table has to be maintained. A code that is added but never used is harmless; a
++code that is used but never documented makes the acceptance documentation incomplete.
++-
++The errors of the remote sources of M6 will need a code of their own for every failure mode
++the protocols produce. The table above names three; the real number will be larger.
++
++## Alternatives Considered
++-
++**One error enum for the whole project in `phocommander-core`.** Rejected: under the
++strict boundary rule of ADR-0001 the core would have to name the failures of crates that may
++not depend on it, and every crate would have to depend on the core to use the enum — the
++forbidden sibling dependency.
++-
++**A single error enum in the application.** Rejected: the crates would have to return
++`Box<dyn Error>` or a string, and the caller would lose the structured information that the
++interface needs to decide between "retry" and "abort".
++-
++**Error strings only.** Rejected: the user interface would have to match on text, the log
++would carry text that cannot be counted, and a translated message would break the match.
++-
++**The `anyhow` crate for the application.** Rejected for the same reason: `anyhow` keeps
++the cause but throws away the structure that the interface needs to choose a message and the
++log needs to record a code.
+diff --git a/docs/adr/ADR-0004-archive-extraction-security.md b/docs/adr/ADR-0004-archive-extraction-security.md
+new file mode 100644
+index 0000000..7d9fc05
+--- /dev/null
++++ b/docs/adr/ADR-0004-archive-extraction-security.md
+@@ -0,0 +1,159 @@
++# ADR-0004 — The security strategy for the extraction of archives
++**Status:** accepted
++**Date:** 2026-10-24
++**Owner role:** Rust Architect
++**Related requirement IDs:** FR-59, FR-60, FR-61, FR-63, NFR-07, NFR-09, NFR-33, NFR-37
++
++## Context
++
++An archive is untrusted input. It arrives from a download, from a message, from a network
++share. Everything in it — the names of the entries, the sizes they claim, the permissions
++they carry, the links they point to — is chosen by whoever built the archive.
++
++The specification names the attacks and the decisions:
++
++- **Path traversal (zip slip).** The `zip` crate offers `enclosed_name()`, which rejects
++  absolute paths and `..` components. The specification states that this alone is not
++  enough: RUSTSEC-2025-0168 broke the path canonicalisation of the crate, and three further
++  advisories — RUSTSEC-2026-0367 (SUID/SGID bits survive the extraction),
++  RUSTSEC-2026-0368 (symlinks pointing outside the target directory) and RUSTSEC-2026-0369
++  (Unix permissions set through symlinks) — use the names of the entries and the links
++  inside the archive to write outside the directory the user chose.
++- **Decompression bombs.** A small archive can claim or expand into gigabytes.
++- **The window between the check and the use.** The standard library offers no atomic file
++  operation with path semantics; a path can be replaced between the check and the write.
++- **Symlinks during copy and delete.** Copying a symlink as a symlink and unlinking it
++  instead of deleting its target.
++
++Decision E3 of the owner fixes the strictness: no `extract()` of the archive crates, our own
++canonicalised path resolution, no symlinks created from archive material, size limits against
++decompression bombs, `cargo-deny` and `cargo-audit` as hard gates in the CI.
++
++The strategy therefore has to be decided before the first reader is written, because it
++decides the shape of the adapter.
++
++## Decision
++
++**1. The extraction never calls `extract()`.** The adapter iterates over the entries of the
++container and writes every entry itself. Only the parsing of the container format comes from
++the library; the decision about *where* something is written comes from this project.
++
++**2. Every target path is resolved by one function, and only by that function.**
++`phocommander_archive::resolve_entry_name` turns the untrusted name of an entry into a
++relative path. It refuses:
++
++| Refused | Because |
++|---|---|
++| an empty name | there is nothing to write |
++| a name longer than 4096 bytes | no file system accepts it; the name is an attack or a mistake |
++| a name with a control character | the name would not be shown, but would be used |
++| a name that starts with `/` or `\` | the path would be absolute |
++| a name with a drive letter (`C:`, `d:`) | the path would leave the destination on Windows |
++| a `..` segment, with `/` or `\` as separator | the path would leave the destination |
++| a segment with a colon | alternate data stream on NTFS |
++| a reserved device name (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`) | Windows silently redirects such a write |
++
++Both separators are honoured, because an archive written on Windows may use `\` and a name
++that contains `\` must not become a single file name on Unix. The result is always relative
++and never contains a `..` segment, so that joining it with the destination cannot leave the
++destination.
++
++**3. The destination is canonicalised, and the resolved path is checked against it.**
++The destination is canonicalised once per extraction. Every resolved path is joined with the
++canonical destination and canonicalised again — with the symbolic links of the destination
++resolved — and the result has to be inside the destination. A path that is not inside is
++refused, not clamped and not repaired.
++
++**4. Symlinks are never created from archive material.** An entry that is a link is either
++skipped with a message or written as a regular file that contains the target of the link as
++text. The second choice is the safer one, because it keeps the content visible without
++creating a link that points somewhere the user did not choose. The decision is applied by
++the adapter of M1 and is recorded here so that every adapter makes the same choice.
++
++**5. Three limits, and they are read from one place.** The canonical values live in
++`phocommander-core::config` and reach the adapter as values:
++
++| Limit | Value | What it stops |
++|---|---|---|
++| `MAX_EXTRACTED_BYTES` | 2 147 483 648 | the total size of an extraction |
++| `MAX_ARCHIVE_ENTRIES` | 100 000 | an archive that declares millions of entries |
++| `MAX_VIEWER_FILE_SIZE` | 10 485 760 | the viewer loading a file completely |
++
++A limit is checked *before* the write, and the total is accumulated during the extraction,
++so that an archive cannot exceed the limit by spreading it over many entries.
++
++**6. The window between the check and the write is closed with descriptor-based access.**
++Where the check of a target and the access to it can come apart, the access is made through a
++descriptor relative to the already opened directory (`openat` semantics, through `rustix` or
++`cap-std`), not through a path that is resolved a second time. Where that is not possible, the
++check is repeated immediately before the access. The remaining race is named in the threat
++model rather than hidden.
++
++**7. The version of the `zip` crate is pinned from below at 9.0.5.** The four advisories
++above are fixed in that release. The catalogue in the root manifest carries the pin, and
++`cargo deny check` is a gate that fails the build when a version below the pin is resolved.
++
++**8. Every hardening has a negative test that performs the attack.** A positive test proves
++nothing about a defence. The tests in `tests/security/` build the hostile archives at run
++time — no attack sample is stored in the repository — and assert that the defence holds.
++
++## Consequences
++
++### Positive
++-
++The trust boundary of the extraction is one function with one table of rules. A reader that
++forgets a rule cannot be written, because there is only one place that resolves a name.
++-
++The negative tests are real: they build a ZIP with `../escape.txt`, `/etc/passwd`,
++`C:\Windows\evil.dll` and the hidden variant `docs/../../escape.txt`, hand every name to the
++resolution, and assert that each one is refused and that nothing was written outside of the
++destination.
++-
++The limits are read from the canonical constants, and the integration test of the package
++`tests` holds the constants and the shipped configuration file against each other, so the
++two cannot drift apart unnoticed.
++-
++The strategy is independent of the container format. The same rules apply to ZIP, TAR and
++7z, because the rules live in the project and not in the library.
++-
++`cargo deny check` is green with the pin, and the advisories check reports no known
++advisory for the resolved versions.
++
++### Negative / Trade-offs
++-
++The adapter writes more code than `extract()` would need: it has to create the directories,
++set the permissions itself, decide about the links and count the bytes. That is the price of
++the decision E3, and it is the intended price.
++-
++Descriptor-based access is more verbose and needs `rustix` or `cap-std`, which are not yet
++dependencies of the workspace. They are in the catalogue; the adapter of M1 adds them.
++-
++Not every archive can be extracted: an archive with links, with reserved device names or
++with absolute paths is refused as a whole or entry by entry. The specification demands this
++strictness, and a user who misses such an archive is told why.
++-
++Windows has to be taken into account even when the application runs on Linux, because an
++archive written on Windows may carry names that are dangerous on Windows. The rules are
++therefore stricter than the file system of the machine that extracts.
++
++## Alternatives Considered
++-
++**Using `extract()` of the archive crates with `enclosed_name()`.** Rejected: the
++specification forbids it explicitly, and the advisories show that the protection of the
++library was not sufficient on its own.
++-
++**Canonicalising the destination only and trusting the name.** Rejected: the name decides
++the target, and a name that leaves the destination is exactly the attack.
++-
++**Repairing a hostile name instead of refusing it** — replacing `..` with `_` and writing
++the file anyway. Rejected: the user would get a file that the archive did not contain, and
++the extraction would look successful. A refusal with a clear message is honest; a silent
++repair is not.
++-
++**Extracting into a temporary directory and moving the result afterwards.** Rejected as the
++primary defence: it doubles the space that is needed and it does not remove the need to
++resolve the names. It remains a reasonable addition for the decompression bomb, because it
++makes the cleanup of a partial extraction easy.
++-
++**A different `zip` version with a newer fix.** The pin is `9.0.5`; the resolved version is
++`9.1.0`. A newer version is acceptable — the pin is a minimum, not an exact version.
+diff --git a/platform/phocommander-platform/Cargo.toml b/platform/phocommander-platform/Cargo.toml
+new file mode 100644
+index 0000000..05dbe39
+--- /dev/null
++++ b/platform/phocommander-platform/Cargo.toml
+@@ -0,0 +1,25 @@
++# The platform adapters of Phocommander.
++#
++# WHAT: the adapters between Phocommander and the operating system — the
++#       host platform, the configuration directory, the primary modifier key.
++# WHY: the six target systems spell the same things differently. The
++#       differences are collected here, so that the crates above stay free of
++#       `cfg(target_os)` and can be tested on every platform.
++# EXAMPLE: `let platform = phocommander_platform::host_platform();`
++
++[package]
++name = "phocommander-platform"
++description = "Operating system adapters of Phocommander."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++publish = false
++
++[dependencies]
++phocommander-core = { path = "../../crates/phocommander-core" }
++dirs = { workspace = true }
++
++[lints]
++workspace = true
+diff --git a/platform/phocommander-platform/src/host.rs b/platform/phocommander-platform/src/host.rs
+new file mode 100644
+index 0000000..b27b142
+--- /dev/null
++++ b/platform/phocommander-platform/src/host.rs
+@@ -0,0 +1,180 @@
++//! The host platform and the places it uses.
++//!
++//! WHAT: the operating system the program runs on, the directory of the
++//!       configuration file and the key that carries the "primary" meaning.
++//! WHY: the six target systems differ in three ways that the rest of the
++//!       application must not repeat: the modifier key, the name of the
++//!       configuration directory and the answer to the question "is the system
++//!       dark?". The differences are written down here once.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_platform::{host_platform, primary_modifier};
++//!
++//! println!("{} uses {}", host_platform().name(), primary_modifier());
++//! ```
++
++use std::path::PathBuf;
++
++use phocommander_core::Error;
++
++/// The operating system Phocommander runs on.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
++pub enum Platform {
++    /// macOS — the first platform to be delivered.
++    MacOs,
++
++    /// Windows.
++    Windows,
++
++    /// Linux.
++    Linux,
++
++    /// FreeBSD, NetBSD or OpenBSD.
++    Bsd,
++
++    /// Android, including the television and the headset variants.
++    Android,
++
++    /// iPadOS.
++    Ios,
++}
++
++impl Platform {
++    /// The name of the platform in a message to the user.
++    pub fn name(&self) -> &'static str {
++        match self {
++            Platform::MacOs => "macOS",
++            Platform::Windows => "Windows",
++            Platform::Linux => "Linux",
++            Platform::Bsd => "BSD",
++            Platform::Android => "Android",
++            Platform::Ios => "iPadOS",
++        }
++    }
++
++    /// The key that carries the "primary" meaning on this platform.
++    ///
++    /// WHY: the actions are the same on every platform, only the key that
++    /// triggers them differs. `Cmd` is the primary key on macOS and on
++    /// iPadOS, `Ctrl` everywhere else.
++    pub fn primary_modifier(&self) -> &'static str {
++        match self {
++            Platform::MacOs | Platform::Ios => "Cmd",
++            Platform::Windows | Platform::Linux | Platform::Bsd | Platform::Android => "Ctrl",
++        }
++    }
++}
++
++/// The platform this program was compiled for.
++pub fn host_platform() -> Platform {
++    if cfg!(target_os = "macos") {
++        Platform::MacOs
++    } else if cfg!(target_os = "ios") {
++        Platform::Ios
++    } else if cfg!(target_os = "android") {
++        Platform::Android
++    } else if cfg!(target_os = "windows") {
++        Platform::Windows
++    } else if cfg!(target_os = "freebsd")
++        || cfg!(target_os = "netbsd")
++        || cfg!(target_os = "openbsd")
++        || cfg!(target_os = "dragonfly")
++    {
++        Platform::Bsd
++    } else {
++        Platform::Linux
++    }
++}
++
++/// The key that carries the "primary" meaning on this platform.
++pub fn primary_modifier() -> &'static str {
++    host_platform().primary_modifier()
++}
++
++/// The directory in which Phocommander stores its configuration file.
++///
++/// WHY: the location follows the conventions of the operating system:
++/// `~/Library/Application Support/Phocommander` on macOS,
++/// `%APPDATA%\Phocommander` on Windows and `$XDG_CONFIG_HOME/phocommander`
++/// on Linux and BSD. A platform that reports no such directory is an error
++/// the application has to report, not a reason to guess a path.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_platform::config_directory;
++///
++/// match config_directory() {
++///     Ok(path) => println!("configuration in {}", path.display()),
++///     Err(error) => println!("no configuration directory: {error}"),
++/// }
++/// ```
++pub fn config_directory() -> Result<PathBuf, Error> {
++    let base = dirs::config_dir().ok_or(Error::NoConfigDirectory)?;
++    let name = match host_platform() {
++        Platform::MacOs | Platform::Ios | Platform::Windows => "Phocommander",
++        Platform::Linux | Platform::Bsd | Platform::Android => "phocommander",
++    };
++    Ok(base.join(name))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn the_host_platform_is_one_of_the_six_targets() {
++        // act
++        let platform = host_platform();
++
++        // assert
++        // The test runs on the machine that builds the workspace, which is one
++        // of the target systems. The check therefore only verifies that the
++        // name and the modifier exist.
++        assert!(!platform.name().is_empty());
++        assert!(!platform.primary_modifier().is_empty());
++    }
++
++    #[test]
++    fn macos_and_ipados_use_the_command_key() {
++        // WHY: the specification fixes `Cmd` as the primary key on macOS and
++        // on iPadOS.
++        // act
++        let macos = Platform::MacOs.primary_modifier();
++        let ipados = Platform::Ios.primary_modifier();
++
++        // assert
++        assert_eq!(macos, "Cmd");
++        assert_eq!(ipados, "Cmd");
++    }
++
++    #[test]
++    fn every_other_platform_uses_the_control_key() {
++        // act
++        let windows = Platform::Windows.primary_modifier();
++        let linux = Platform::Linux.primary_modifier();
++        let bsd = Platform::Bsd.primary_modifier();
++        let android = Platform::Android.primary_modifier();
++
++        // assert
++        assert_eq!(windows, "Ctrl");
++        assert_eq!(linux, "Ctrl");
++        assert_eq!(bsd, "Ctrl");
++        assert_eq!(android, "Ctrl");
++    }
++
++    #[test]
++    fn the_configuration_directory_is_absolute_when_it_exists() {
++        // act
++        let directory = config_directory();
++
++        // assert
++        if let Ok(path) = directory {
++            assert!(path.is_absolute(), "{}", path.display());
++            let name = path
++                .file_name()
++                .map(|name| name.to_string_lossy().to_string())
++                .unwrap_or_default();
++            assert!(name == "Phocommander" || name == "phocommander", "{name}");
++        }
++    }
++}
+diff --git a/platform/phocommander-platform/src/lib.rs b/platform/phocommander-platform/src/lib.rs
+new file mode 100644
+index 0000000..4e1ed34
+--- /dev/null
++++ b/platform/phocommander-platform/src/lib.rs
+@@ -0,0 +1,23 @@
++//! The platform adapters of Phocommander.
++//!
++//! WHAT: the differences between the six target systems — the host platform,
++//!       the directory of the configuration file, the key that carries the
++//!       "primary" meaning.
++//! WHY: macOS uses `Cmd` where Windows, Linux and BSD use `Ctrl`, and the
++//!       configuration file lives in a different directory on every system.
++//!       Collecting the differences here keeps the crates above free of
++//!       `cfg(target_os)` and testable on every platform.
++//! BOUNDARY: this crate asks the operating system and answers the
++//!       application. It draws nothing, it reads no configuration file and it
++//!       performs no file operation.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_platform::host_platform;
++//!
++//! println!("{}", host_platform().name());
++//! ```
++
++pub mod host;
++
++pub use host::{Platform, config_directory, host_platform, primary_modifier};
+diff --git a/scripts/README.md b/scripts/README.md
+new file mode 100644
+index 0000000..ad24d04
+--- /dev/null
++++ b/scripts/README.md
+@@ -0,0 +1,75 @@
++# The check scripts of Phocommander
++
++Two gates that the CI runs and that a contributor can run locally. Both are
++plain shell scripts, they need no toolchain of their own and they change
++nothing in the repository.
++
++## `check-crate-boundaries.sh`
++
++Reads the `Cargo.toml` of every workspace member, evaluates every path
++dependency and checks it against the dependency rule of the project.
++
++The rule, in full:
++
++| Level | May depend on | May not depend on |
++|---|---|---|
++| `crates/*` | — (no sibling crate) | `crates/*`, `platform/*`, `apps/*`, `xtask` |
++| `platform/*` | `crates/*` | `platform/*`, `apps/*`, `xtask` |
++| `apps/*` | `platform/*`, `crates/*` | `apps/*`, `xtask` |
++| `xtask` | `crates/*` | `apps/*`, `platform/*` |
++| the root manifest | any member | a directory that is not a member |
++
++The script distinguishes a **path dependency** (a crate of this workspace)
++from a **registry dependency** (a crate from crates.io). Only the path
++dependencies are checked — a crate from crates.io is outside the boundary of
++the project. A dependency that is written as `{ workspace = true }` is
++resolved through the catalogue in the root manifest, so that the catalogue
++cannot be used to smuggle a path dependency past the gate.
++
++Exit code `0` means that every path dependency points in an allowed
++direction. Exit code `1` means that at least one dependency violates the
++rule; the script names the crate, the target and the reason.
++
++```console
++$ ./scripts/check-crate-boundaries.sh
++Phocommander - crate boundary gate
++rule: apps/* -> platform/* -> crates/*, no crate below crates/ may depend
++      on another crate below crates/, registry dependencies are not checked
++
++OK    apps/phocommander-desktop -> crates/phocommander-config (apps -> crates)
++OK    apps/phocommander-desktop -> platform/phocommander-platform (apps -> platform)
++OK    platform/phocommander-platform -> crates/phocommander-core (platform -> crates)
++
++3 path dependencies checked, 0 violations
++```
++
++## `check-file-size.sh`
++
++Counts the lines of every Rust source file of the repository.
++
++* more than **400 lines** — a warning in the output, exit code `0`
++* more than **550 lines** — a hard failure, exit code `1`
++
++The soft limit is the convention of the project (a file above it needs a
++reason in its module header), the hard limit is the limit that review
++rejects. Only the hard limit fails the build, so the gate never blocks a
++change that is still below it.
++
++```console
++$ ./scripts/check-file-size.sh
++Phocommander - file size gate
++soft limit: 400 lines (warning), hard limit: 550 lines (failure)
++
++0 files above the soft limit, 0 files above the hard limit
++```
++
++## Running all of them
++
++```console
++$ cargo fmt --check
++$ cargo clippy --workspace --all-targets -- -D warnings
++$ cargo test --workspace
++$ cargo deny check
++$ ./scripts/check-crate-boundaries.sh
++$ ./scripts/check-file-size.sh
++```
+diff --git a/scripts/check-crate-boundaries.sh b/scripts/check-crate-boundaries.sh
+new file mode 100755
+index 0000000..c7d674e
+--- /dev/null
++++ b/scripts/check-crate-boundaries.sh
+@@ -0,0 +1,296 @@
++#!/usr/bin/env bash
++#
++# check-crate-boundaries.sh — the dependency direction of the Phocommander
++# workspace.
++#
++# WHAT: reads the Cargo.toml of every workspace member, evaluates every path
++#       dependency and checks it against the dependency rule of the project.
++# WHY: the rule "apps/* -> platform/* -> crates/*" and "no crate below
++#       crates/ may depend on a sibling crate below crates/" is a machine rule
++#       and not a convention. A convention is broken by the first change that
++#       is convenient; a machine rule stops the change and names the reason.
++#       The script distinguishes a path dependency (a crate of this
++#       workspace) from a registry dependency (a crate from crates.io) and
++#       checks only the first kind.
++# EXAMPLE: ./scripts/check-crate-boundaries.sh
++#
++# The rule, in full:
++#
++#   crates/*    may not depend on any other crate of the workspace
++#   platform/*  may depend on crates/*, may not depend on apps/* or xtask
++#   apps/*      may depend on platform/* and crates/*
++#   tests       may depend on crates/*, may not depend on apps/* or platform/*
++#   xtask       may depend on crates/*, may not depend on apps/* or platform/*
++#   the root    may point at any member, but only at a member
++#
++# `tests` is the package that carries the tests which cross a crate boundary.
++# It exists because the workspace is flat: a test that holds the core crate
++# and the configuration crate against each other needs both, and no crate
++# below `crates/` may depend on a sibling.
++#
++# Exit code 0 means that every path dependency points in an allowed
++# direction. Exit code 1 means that at least one dependency violates the
++# rule; every violation is named with the crate, the target and the reason.
++
++set -euo pipefail
++
++repo_root="$(cd "$(dirname "$0")/.." && pwd)"
++cd "$repo_root"
++
++work_dir="$(mktemp -d)"
++trap 'rm -rf "$work_dir"' EXIT
++
++root_map="$work_dir/root-map"
++members="$work_dir/members"
++records="$work_dir/records"
++
++# --- the catalogue of the workspace root -------------------------------------
++#
++# The root manifest may point at a member of the workspace; that is how a
++# shared dependency is declared once for all crates. Every such entry is
++# collected, because a crate that inherits it through `workspace = true` has
++# exactly this dependency.
++
++awk '
++    /^[ \t]*\[/ {
++        in_section = ($0 ~ /^[ \t]*\[workspace\.dependencies\][ \t]*$/)
++        next
++    }
++    in_section {
++        line = $0
++        sub(/[ \t]*#.*$/, "", line)
++        if (line !~ /^[A-Za-z0-9_-]+[ \t]*=/) next
++        key = line
++        sub(/[ \t]*=.*$/, "", key)
++        gsub(/[ \t]/, "", key)
++        if (match(line, /path[ \t]*=[ \t]*"[^"]*"/)) {
++            path = substr(line, RSTART, RLENGTH)
++            sub(/^path[ \t]*=[ \t]*"/, "", path)
++            sub(/"[ \t]*$/, "", path)
++            print key "\t" path
++        }
++    }
++' Cargo.toml > "$root_map"
++
++# --- the members of the workspace --------------------------------------------
++
++: > "$members"
++for manifest in crates/*/Cargo.toml apps/*/Cargo.toml platform/*/Cargo.toml tests/Cargo.toml xtask/Cargo.toml; do
++    if [ -f "$manifest" ]; then
++        directory="${manifest%/Cargo.toml}"
++        printf '%s\n' "$directory" >> "$members"
++    fi
++done
++
++if [ ! -s "$members" ]; then
++    echo "ERROR: no workspace member was found" >&2
++    exit 1
++fi
++
++# --- the path dependencies of every member -----------------------------------
++#
++# A dependency is either written directly as
++#
++#     name = { path = "../other" }
++#
++# or inherited from the catalogue of the root as
++#
++#     name = { workspace = true }
++#
++# In the second case the path is looked up in the catalogue. The record has
++# four fields: the member, the name of the dependency, the path and the flag
++# that says "inherited from the root".
++
++: > "$records"
++while IFS= read -r member; do
++    awk -v member="$member" '
++        function section_kind(header,   position, prefix, rest, kind, name) {
++            position = index(header, "dependencies")
++            if (position == 0) return ""
++            prefix = substr(header, 1, position - 1)
++            rest = substr(header, position + length("dependencies"))
++            kind = "dependencies"
++            if (prefix ~ /dev-$/) kind = "dev-dependencies"
++            else if (prefix ~ /build-$/) kind = "build-dependencies"
++            name = ""
++            if (rest ~ /^\./) name = substr(rest, 2)
++            return kind "\t" name
++        }
++        function path_of(line,   found) {
++            if (!match(line, /path[ \t]*=[ \t]*"[^"]*"/)) return ""
++            found = substr(line, RSTART, RLENGTH)
++            sub(/^path[ \t]*=[ \t]*"/, "", found)
++            sub(/"[ \t]*$/, "", found)
++            return found
++        }
++        /^[ \t]*\[/ {
++            header = $0
++            sub(/^[ \t]*\[/, "", header)
++            sub(/\][ \t]*$/, "", header)
++            result = section_kind(header)
++            in_section = (result != "")
++            key = ""
++            if (in_section) {
++                split(result, parts, "\t")
++                key = parts[2]
++            }
++            next
++        }
++        {
++            line = $0
++            sub(/[ \t]*#.*$/, "", line)
++            if (!in_section) {
++                # A dependency that is written as an inline table outside of a
++                # dependency section cannot be parsed by cargo, but it must
++                # not slip through the gate unnoticed either. A lone
++                # `path = "..."` line is not a dependency: it names the file
++                # of a target, as in [lib], [[test]] and [[bench]].
++                if (line ~ /^[A-Za-z0-9_-]+[ \t]*=.*path[ \t]*=[ \t]*"/) {
++                    print member "\t__outside__\t" path_of(line) "\t0"
++                }
++                next
++            }
++            if (line ~ /^[ \t]*path[ \t]*=/) {
++                print member "\t" key "\t" path_of(line) "\t0"
++                next
++            }
++            if (line ~ /^[ \t]*workspace[ \t]*=/) {
++                print member "\t" key "\t" "\t1"
++                next
++            }
++            if (line ~ /^[A-Za-z0-9_-]+[ \t]*=/) {
++                name = line
++                sub(/[ \t]*=.*$/, "", name)
++                gsub(/[ \t]/, "", name)
++                inherited = (line ~ /workspace[ \t]*=[ \t]*true/) ? 1 : 0
++                print member "\t" name "\t" path_of(line) "\t" inherited
++                next
++            }
++        }
++    ' "$member/Cargo.toml" >> "$records"
++done < "$members"
++
++# --- the check ----------------------------------------------------------------
++
++echo "Phocommander - crate boundary gate"
++echo "rule: apps/* -> platform/* -> crates/*, no crate below crates/ may depend"
++echo "      on another crate below crates/, registry dependencies are not checked"
++echo ""
++
++awk -F'\t' -v catalogue_file="$root_map" -v member_list="$members" '
++    function normalize(base, relative,   count, parts, position, stack, piece, segments, number, segment) {
++        count = split(base "/" relative, parts, "/")
++        stack = ""
++        for (position = 1; position <= count; position++) {
++            piece = parts[position]
++            if (piece == "" || piece == ".") continue
++            if (piece == "..") {
++                number = split(stack, segments, "/")
++                stack = ""
++                for (segment = 1; segment < number; segment++) {
++                    stack = (stack == "") ? segments[segment] : stack "/" segments[segment]
++                }
++                continue
++            }
++            stack = (stack == "") ? piece : stack "/" piece
++        }
++        return stack
++    }
++    function level_of(path) {
++        if (path == "xtask") return "xtask"
++        if (path == "tests") return "tests"
++        if (path ~ /^crates\//) return "crates"
++        if (path ~ /^apps\//) return "apps"
++        if (path ~ /^platform\//) return "platform"
++        return "outside"
++    }
++    function reason(from, to) {
++        if (to == "outside") return "the target is not a member of the workspace"
++        if (from == "crates" && to == "crates") return "a crate below crates/ must not depend on another crate below crates/"
++        if (from == "crates") return "a crate below crates/ must not depend on a crate above crates/"
++        if (from == "platform" && to == "platform") return "a crate below platform/ must not depend on another crate below platform/"
++        if (from == "platform" && to == "apps") return "a crate below platform/ must not depend on an application"
++        if (from == "platform" && to == "xtask") return "a crate below platform/ must not depend on the build helpers"
++        if (from == "tests" && to == "apps") return "the integration tests must not depend on an application"
++        if (from == "tests" && to == "platform") return "the integration tests must not depend on a platform adapter"
++        if (from == "tests" && to == "xtask") return "the integration tests must not depend on the build helpers"
++        if (from == "tests" && to == "tests") return "the integration tests must not depend on themselves"
++        if (from == "apps" && to == "apps") return "an application must not depend on another application"
++        if (from == "apps" && to == "xtask") return "an application must not depend on the build helpers"
++        if (from == "xtask" && to == "apps") return "the build helpers must not depend on an application"
++        if (from == "xtask" && to == "platform") return "the build helpers must not depend on a platform adapter"
++        if (from == "xtask" && to == "xtask") return "the build helpers must not depend on themselves"
++        return "the direction of the dependency is not allowed"
++    }
++    BEGIN {
++        checked = 0
++        violations = 0
++    }
++    FILENAME == catalogue_file {
++        catalogue[$1] = $2
++        next
++    }
++    FILENAME == member_list {
++        members[$0] = 1
++        next
++    }
++    {
++        member = $1
++        name = $2
++        path = $3
++        inherited = $4
++
++        if (name == "__outside__") {
++            printf "ERROR %s: the path dependency %s is written outside a dependency section\n", member, path
++            violations++
++            next
++        }
++
++        if (path == "" && inherited == 1) {
++            path = (name in catalogue) ? catalogue[name] : ""
++        }
++        if (path == "") next
++
++        target = normalize(member, path)
++        from = level_of(member)
++        to = level_of(target)
++
++        if (!(target in members)) {
++            printf "ERROR %s -> %s: %s\n", member, target, reason(from, "outside")
++            violations++
++            next
++        }
++
++        allowed = 0
++        if (from == "platform" && to == "crates") allowed = 1
++        if (from == "apps" && (to == "crates" || to == "platform")) allowed = 1
++        if (from == "xtask" && to == "crates") allowed = 1
++        if (from == "tests" && to == "crates") allowed = 1
++
++        if (allowed) {
++            printf "OK    %s -> %s (%s -> %s)\n", member, target, from, to
++            checked++
++        } else {
++            printf "ERROR %s -> %s: %s\n", member, target, reason(from, to)
++            violations++
++        }
++    }
++    END {
++        printf "\n%d path dependencies checked, %d violations\n", checked, violations
++        if (violations > 0) exit 1
++    }
++' "$root_map" "$members" "$records"
++
++# --- the catalogue of the root must point at members only --------------------
++
++while read -r name path; do
++    if [ -z "$path" ]; then
++        continue
++    fi
++    if [ ! -f "$path/Cargo.toml" ]; then
++        echo "ERROR the catalogue entry '$name' points at '$path', which is not a member of the workspace" >&2
++        exit 1
++    fi
++done < "$root_map"
++
++exit 0
+diff --git a/xtask/Cargo.toml b/xtask/Cargo.toml
+new file mode 100644
+index 0000000..0ce7fc9
+--- /dev/null
++++ b/xtask/Cargo.toml
+@@ -0,0 +1,22 @@
++# The build helpers of Phocommander.
++#
++# WHAT: a small task runner that is called through `cargo xtask <command>`.
++# WHY: the workspace has checks that do not belong into cargo itself — the
++#       crate boundary gate, the file size gate, the licence check. Putting
++#       them behind one command keeps the local run and the CI run identical.
++# EXAMPLE: `cargo xtask check`
++
++[package]
++name = "xtask"
++description = "Build helpers of the Phocommander workspace."
++version.workspace = true
++edition.workspace = true
++rust-version.workspace = true
++license.workspace = true
++repository.workspace = true
++publish = false
++
++[dependencies]
++
++[lints]
++workspace = true
+diff --git a/xtask/src/main.rs b/xtask/src/main.rs
+new file mode 100644
+index 0000000..2e470d1
+--- /dev/null
++++ b/xtask/src/main.rs
+@@ -0,0 +1,62 @@
++//! The build helpers of Phocommander.
++//!
++//! WHAT: the task runner of the workspace. `cargo xtask check` runs
++//!       `cargo check --workspace` and passes on its exit code.
++//! WHY: several checks of this project do not belong into cargo itself — the
++//!       gate for the crate boundaries, the gate for the file size, the
++//!       licence check. One command that collects them makes the local run
++//!       and the run in the CI identical. The exit code of the command is
++//!       the exit code of the check, so that a failing check fails the build
++//!       and not just prints a message.
++//! EXAMPLE: `cargo xtask check`
++
++use std::process::Command;
++
++/// Runs the task that was named on the command line.
++fn main() {
++    let arguments: Vec<String> = std::env::args().skip(1).collect();
++    let exit_code = match arguments.first().map(String::as_str) {
++        Some("check") => check_workspace(),
++        Some("help" | "--help" | "-h") => {
++            print_usage();
++            0
++        }
++        Some(unknown) => {
++            eprintln!("xtask: unknown command: {unknown}");
++            print_usage();
++            2
++        }
++        None => {
++            eprintln!("xtask: no command given");
++            print_usage();
++            2
++        }
++    };
++
++    std::process::exit(exit_code);
++}
++
++/// Runs `cargo check --workspace` and returns its exit code.
++///
++/// WHY: the exit code of the check is the exit code of the task. A check that
++/// fails has to fail the build, otherwise the gate can be ignored.
++fn check_workspace() -> i32 {
++    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
++
++    match Command::new(cargo).args(["check", "--workspace"]).status() {
++        Ok(status) => status.code().unwrap_or(1),
++        Err(error) => {
++            eprintln!("xtask: cargo could not be started: {error}");
++            1
++        }
++    }
++}
++
++/// Writes the list of the commands of this task runner.
++fn print_usage() {
++    println!("usage: cargo xtask <command>");
++    println!();
++    println!("commands:");
++    println!("  check    run `cargo check --workspace` and pass on its exit code");
++    println!("  help     print this text");
++}

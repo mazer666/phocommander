@@ -1,0 +1,23 @@
+# The user interface of Phocommander.
+#
+# WHAT: the crate that draws the two panels, the theme and the dialogs.
+# WHY: the user interface is the only crate that knows about egui. It keeps
+#       the state of a directory list outside of the immediate mode context,
+#       so that a list with a hundred thousand entries does not have to be
+#       rebuilt in every frame.
+# EXAMPLE: `let visuals = phocommander_ui::visuals(Theme::Dark, false);`
+
+[package]
+name = "phocommander-ui"
+description = "The egui user interface of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+egui = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,343 @@
+$ cargo test --workspace
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.98s
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_android-2b6041ceada713e1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_archive-7d8bc88788afee1c)
+
+running 12 tests
+test entry_name::tests::accepts_a_name_of_the_maximum_length ... ok
+test entry_name::tests::drops_a_trailing_separator_and_a_current_directory ... ok
+test entry_name::tests::keeps_a_name_with_non_latin_characters ... ok
+test entry_name::tests::keeps_a_normal_name ... ok
+test entry_name::tests::keeps_the_directories_of_a_name ... ok
+test entry_name::tests::refuses_a_name_that_is_too_long ... ok
+test entry_name::tests::refuses_a_name_that_leaves_the_destination ... ok
+test entry_name::tests::refuses_a_name_with_a_control_character ... ok
+test entry_name::tests::refuses_a_reserved_device_name ... ok
+test entry_name::tests::refuses_an_absolute_name ... ok
+test entry_name::tests::refuses_an_alternate_data_stream ... ok
+test entry_name::tests::refuses_an_empty_name ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_config-8c061d113003427c)
+
+running 10 tests
+test loader::tests::reads_an_empty_document_with_the_default_values ... ok
+test loader::tests::reads_every_section_of_the_shipped_file ... ok
+test loader::tests::refuses_a_connection_timeout_of_zero ... ok
+test loader::tests::refuses_a_limit_of_zero ... ok
+test loader::tests::refuses_a_schema_version_from_the_future ... ok
+test loader::tests::refuses_an_unknown_field ... ok
+test loader::tests::refuses_an_unknown_section ... ok
+test values::tests::defaults_match_the_shipped_default_file ... ok
+test values::tests::every_value_has_a_unique_spelling ... ok
+test values::tests::overwrite_is_never_the_default ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/shipped_defaults.rs (/tmp/qa-target/debug/deps/shipped_defaults-2240a90307ed673f)
+
+running 3 tests
+test the_shipped_configuration_file_carries_the_viewer_and_archive_limits ... ok
+test the_shipped_configuration_file_holds_the_specified_values ... ok
+test the_shipped_configuration_file_is_accepted ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_core-45528bd7523bcddf)
+
+running 7 tests
+test config::tests::archive_limits_leave_room_for_a_normal_archive ... ok
+test config::tests::every_limit_is_positive ... ok
+test config::tests::text_limit_is_smaller_than_the_file_limit ... ok
+test config::tests::the_limits_are_the_ones_the_specification_fixes ... ok
+test error::tests::io_error_names_the_path_and_keeps_the_source ... ok
+test error::tests::io_error_reports_the_original_error_as_source ... ok
+test error::tests::too_large_error_names_size_and_limit ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/main.rs (/tmp/qa-target/debug/deps/phocommander_desktop-d034ebf77641daf3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/core_limits.rs (/tmp/qa-target/debug/deps/core_limits-8b962c66e3774ed3)
+
+running 3 tests
+test the_shipped_configuration_file_carries_the_canonical_archive_limits ... ok
+test the_shipped_configuration_file_carries_the_canonical_viewer_limits ... ok
+test the_shipped_configuration_file_is_read_by_the_reader_of_the_crate ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests common/mod.rs (/tmp/qa-target/debug/deps/phocommander_testkit-cc30ec05efaecfd4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running integration/config_defaults.rs (/tmp/qa-target/debug/deps/config_defaults-67972671932fb015)
+
+running 5 tests
+test a_configuration_file_that_cannot_be_read_reports_the_path ... ok
+test a_configuration_file_with_an_unknown_field_is_refused ... ok
+test a_configuration_file_written_by_the_user_is_read_from_the_disk ... ok
+test the_shipped_configuration_file_holds_the_values_of_the_specification ... ok
+test the_shipped_configuration_file_is_accepted ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running integration/core_limits.rs (/tmp/qa-target/debug/deps/core_limits-ccbac530682cb91f)
+
+running 3 tests
+test the_canonical_limits_leave_room_for_a_normal_workload ... ok
+test the_shipped_configuration_file_carries_the_canonical_archive_limits ... ok
+test the_shipped_configuration_file_carries_the_canonical_viewer_limits ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running integration/keymap_bindings.rs (/tmp/qa-target/debug/deps/keymap_bindings-72ac3d95d8352c10)
+
+running 5 tests
+test every_action_of_the_keyboard_is_reachable_in_the_controller_context ... ok
+test every_action_of_the_keyboard_is_reachable_in_the_dpad_context ... ok
+test the_action_identifiers_of_the_shipped_file_are_well_formed ... ok
+test the_dpad_and_the_controller_bind_their_actions_to_the_action_palette ... ok
+test the_shipped_keymap_has_no_conflict_in_any_context ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running security/decompression_bomb.rs (/tmp/qa-target/debug/deps/security_decompression_bomb-bfe401fbeae133e4)
+
+running 4 tests
+test a_highly_compressible_entry_expands_far_beyond_its_own_size ... ok
+test an_archive_with_too_many_entries_exceeds_the_entry_limit ... ok
+test the_bomb_archive_costs_the_attacker_almost_nothing ... ok
+test the_bomb_archive_declares_more_bytes_than_the_budget_allows ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.84s
+
+     Running security/path_traversal.rs (/tmp/qa-target/debug/deps/security_path_traversal-bd373533c3729519)
+
+running 8 tests
+test a_name_that_is_too_long_is_refused ... ok
+test every_accepted_name_stays_inside_the_destination_directory ... ok
+test every_hostile_entry_name_is_refused ... ok
+test no_file_is_written_outside_of_the_destination_directory ... ok
+test the_attack_really_writes_outside_of_the_destination_without_the_hardening ... ok
+test the_harmless_entry_name_is_accepted ... ok
+test the_hostile_archive_really_carries_the_hostile_names ... ok
+test the_resolved_path_stays_inside ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_ios-c832fbc20bf86e83)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_keymap-d3616d567380ea9f)
+
+running 18 tests
+test bindings::tests::an_empty_context_has_no_bindings ... ok
+test bindings::tests::finds_the_key_combinations_of_an_action ... ok
+test bindings::tests::reads_a_table_of_the_configuration_file ... ok
+test bindings::tests::refuses_a_malformed_action_identifier ... ok
+test bindings::tests::refuses_an_empty_key_combination ... ok
+test bindings::tests::reports_a_conflict_between_two_actions ... ok
+test catalog::tests::accepts_the_identifiers_the_specification_uses ... ok
+test catalog::tests::every_context_has_a_unique_configuration_name ... ok
+test catalog::tests::finds_a_context_by_its_configuration_name ... ok
+test catalog::tests::reads_itself_from_a_string ... ok
+test catalog::tests::refuses_a_forbidden_character ... ok
+test catalog::tests::refuses_an_empty_identifier ... ok
+test catalog::tests::refuses_an_empty_segment ... ok
+test catalog::tests::refuses_an_identifier_without_a_group ... ok
+test keymap::tests::an_empty_keymap_has_no_conflicts ... ok
+test keymap::tests::does_not_report_a_conflict_between_two_contexts ... ok
+test keymap::tests::finds_the_bindings_of_a_context ... ok
+test keymap::tests::reports_a_conflict_inside_one_context ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_ops-ddbcd899ccc7d8b0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_platform-e5cf40f8f5d8743b)
+
+running 4 tests
+test host::tests::every_other_platform_uses_the_control_key ... ok
+test host::tests::macos_and_ipados_use_the_command_key ... ok
+test host::tests::the_configuration_directory_is_absolute_when_it_exists ... ok
+test host::tests::the_host_platform_is_one_of_the_six_targets ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_remote-219f522b9b7b9495)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_ui-6a228f21f125b40a)
+
+running 4 tests
+test theme::tests::an_explicit_theme_ignores_the_platform ... ok
+test theme::tests::every_theme_has_a_unique_spelling ... ok
+test theme::tests::reads_a_theme_by_its_configuration_name ... ok
+test theme::tests::the_system_theme_follows_the_platform ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/qa-target/debug/deps/phocommander_viewer-f473e8eb98036f53)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/tmp/qa-target/debug/deps/xtask-d74c9c82189cc2a3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests phocommander_android
+
+running 1 test
+test apps/phocommander-android/src/lib.rs - (line 32) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 1.44s; merged doctests compilation took 1.37s
+   Doc-tests phocommander_archive
+
+running 3 tests
+test crates/phocommander-archive/src/entry_name.rs - entry_name (line 14) - compile ... ok
+test crates/phocommander-archive/src/entry_name.rs - entry_name::resolve_entry_name (line 89) - compile ... ok
+test crates/phocommander-archive/src/lib.rs - (line 14) - compile ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+all doctests ran in 0.85s; merged doctests compilation took 0.78s
+   Doc-tests phocommander_config
+
+running 6 tests
+test crates/phocommander-config/src/lib.rs - (line 14) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader (line 10) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader::load_file (line 106) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader::parse_toml (line 84) - compile ... ok
+test crates/phocommander-config/src/schema.rs - schema (line 11) - compile ... ok
+test crates/phocommander-config/src/values.rs - values (line 10) - compile ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.92s; merged doctests compilation took 0.90s
+   Doc-tests phocommander_core
+
+running 5 tests
+test crates/phocommander-core/src/config.rs - config (line 12) - compile ... ok
+test crates/phocommander-core/src/error.rs - error (line 10) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::Error::io (line 63) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::Error::too_large (line 86) - compile ... ok
+test crates/phocommander-core/src/lib.rs - (line 12) - compile ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 1.24s; merged doctests compilation took 1.23s
+   Doc-tests phocommander_testkit
+
+running 9 tests
+test tests/common/mod.rs - (line 18) - compile ... ok
+test tests/common/mod.rs - TempTree::create_tree (line 138) - compile ... ok
+test tests/common/mod.rs - TempTree::entry_names (line 157) - compile ... ok
+test tests/common/mod.rs - TempTree::new (line 58) - compile ... ok
+test tests/common/mod.rs - TempTree::path (line 85) - compile ... ok
+test tests/common/mod.rs - TempTree::write_file (line 104) - compile ... ok
+test tests/common/mod.rs - count_files (line 245) - compile ... ok
+test tests/common/mod.rs - directory_names (line 216) - compile ... ok
+test tests/common/mod.rs - repository_root (line 193) - compile ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.83s; merged doctests compilation took 0.82s
+   Doc-tests phocommander_ios
+
+running 1 test
+test apps/phocommander-ios/src/lib.rs - (line 31) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.85s; merged doctests compilation took 0.81s
+   Doc-tests phocommander_keymap
+
+running 9 tests
+test crates/phocommander-keymap/src/bindings.rs - bindings (line 12) - compile ... ok
+test crates/phocommander-keymap/src/bindings.rs - bindings::Bindings::bind (line 85) - compile ... ok
+test crates/phocommander-keymap/src/bindings.rs - bindings::Bindings::conflicts (line 139) - compile ... ok
+test crates/phocommander-keymap/src/bindings.rs - bindings::Bindings::from_table (line 54) - compile ... ok
+test crates/phocommander-keymap/src/catalog.rs - catalog (line 11) - compile ... ok
+test crates/phocommander-keymap/src/catalog.rs - catalog::ActionId::new (line 107) - compile ... ok
+test crates/phocommander-keymap/src/keymap.rs - keymap (line 10) - compile ... ok
+test crates/phocommander-keymap/src/keymap.rs - keymap::Keymap::from_context_tables (line 52) - compile ... ok
+test crates/phocommander-keymap/src/lib.rs - (line 13) - compile ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 1.36s; merged doctests compilation took 1.33s
+   Doc-tests phocommander_ops
+
+running 1 test
+test crates/phocommander-ops/src/lib.rs - (line 18) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+all doctests ran in 2.35s; merged doctests compilation took 2.29s
+   Doc-tests phocommander_platform
+
+running 3 tests
+test platform/phocommander-platform/src/host.rs - host (line 10) - compile ... ok
+test platform/phocommander-platform/src/host.rs - host::config_directory (line 103) - compile ... ok
+test platform/phocommander-platform/src/lib.rs - (line 15) - compile ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.95s; merged doctests compilation took 0.92s
+   Doc-tests phocommander_remote
+
+running 1 test
+test crates/phocommander-remote/src/lib.rs - (line 21) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 1.08s; merged doctests compilation took 1.07s
+   Doc-tests phocommander_ui
+
+running 3 tests
+test crates/phocommander-ui/src/lib.rs - (line 18) - compile ... ok
+test crates/phocommander-ui/src/theme.rs - theme (line 10) - compile ... ok
+test crates/phocommander-ui/src/theme.rs - theme::visuals (line 63) - compile ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+all doctests ran in 3.27s; merged doctests compilation took 3.04s
+   Doc-tests phocommander_viewer
+
+running 1 test
+test crates/phocommander-viewer/src/lib.rs - (line 19) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 3.36s; merged doctests compilation took 3.32s
+wall clock: 39.8 s
+EXIT=0
