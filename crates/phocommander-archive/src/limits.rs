@@ -70,18 +70,18 @@ pub const EXTRACTED_DIRECTORY_MODE: u32 = 0o755;
 ///       can exercise the mechanism with a budget that fits into a test run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExtractionLimits {
-/// The largest total number of bytes that the extraction may write.
+    /// The largest total number of bytes that the extraction may write.
     pub max_total_bytes: u64,
 
-/// The largest number of entries that the extraction may write.
+    /// The largest number of entries that the extraction may write.
     pub max_entries: u64,
 
-/// The largest number of bytes that a single entry may have.
+    /// The largest number of bytes that a single entry may have.
     pub max_entry_bytes: u64,
 }
 
 impl Default for ExtractionLimits {
-/// Returns the limits of the specification.
+    /// Returns the limits of the specification.
     fn default() -> Self {
         Self {
             max_total_bytes: MAX_EXTRACTED_BYTES,
@@ -92,15 +92,15 @@ impl Default for ExtractionLimits {
 }
 
 impl ExtractionLimits {
-/// Builds a set of limits from the three values.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_archive::ExtractionLimits;
-///
-/// let limits = ExtractionLimits::new(1024, 10, 512);
-/// assert_eq!(limits.max_total_bytes, 1024);
-/// ```
+    /// Builds a set of limits from the three values.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_archive::ExtractionLimits;
+    ///
+    /// let limits = ExtractionLimits::new(1024, 10, 512);
+    /// assert_eq!(limits.max_total_bytes, 1024);
+    /// ```
     pub const fn new(max_total_bytes: u64, max_entries: u64, max_entry_bytes: u64) -> Self {
         Self {
             max_total_bytes,
@@ -109,50 +109,54 @@ impl ExtractionLimits {
         }
     }
 
-/// Whether an entry of the given size may be written.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_archive::ExtractionLimits;
-///
-/// let limits = ExtractionLimits::new(1024, 10, 512);
-/// assert!(limits.allows_entry_size(512));
-/// assert!(!limits.allows_entry_size(513));
-/// ```
+    /// Whether an entry of the given size may be written.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_archive::ExtractionLimits;
+    ///
+    /// let limits = ExtractionLimits::new(1024, 10, 512);
+    /// assert!(limits.allows_entry_size(512));
+    /// assert!(!limits.allows_entry_size(513));
+    /// ```
     pub const fn allows_entry_size(&self, size: u64) -> bool {
         size <= self.max_entry_bytes
     }
 
-/// Whether the given number of entries may be written.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_archive::ExtractionLimits;
-///
-/// let limits = ExtractionLimits::new(1024, 10, 512);
-/// assert!(limits.allows_entry_count(10));
-/// assert!(!limits.allows_entry_count(11));
-/// ```
+    /// Whether the given number of entries may be written.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_archive::ExtractionLimits;
+    ///
+    /// let limits = ExtractionLimits::new(1024, 10, 512);
+    /// assert!(limits.allows_entry_count(10));
+    /// assert!(!limits.allows_entry_count(11));
+    /// ```
     pub const fn allows_entry_count(&self, count: u64) -> bool {
         count <= self.max_entries
     }
 
-/// Whether the given number of bytes may be written in total.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_archive::ExtractionLimits;
-///
-/// let limits = ExtractionLimits::new(1024, 10, 512);
-/// assert!(limits.allows_total_size(1024));
-/// assert!(!limits.allows_total_size(1025));
-/// ```
+    /// Whether the given number of bytes may be written in total.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_archive::ExtractionLimits;
+    ///
+    /// let limits = ExtractionLimits::new(1024, 10, 512);
+    /// assert!(limits.allows_total_size(1024));
+    /// assert!(!limits.allows_total_size(1025));
+    /// ```
     pub const fn allows_total_size(&self, bytes: u64) -> bool {
         bytes <= self.max_total_bytes
     }
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
