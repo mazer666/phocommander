@@ -1,7 +1,7 @@
 # Phocommander — Threat Model
 
 **Status:** M0 baseline, version 1.0 · **Date:** 24.10.2026 · **Owner:** Security & Privacy
-**Binding source:** [`docs/REQUIREMENTS.md`](../REQUIREMENTS.md) — sections *Sicherheit*, *Datenschutz*, *Netzwerk- und Cloud-Zugriffe*, *SMB-Sicherheitsregeln*, *Produktmaximen*. Where this document and the specification disagree, the specification wins and this document is the defect.
+**Binding source:** [`docs/REQUIREMENTS.md`](../REQUIREMENTS.md) — sections *9 Security and Privacy Plan*, *4.8 Remote sources* and *2 Product Principles*. Where this document and the specification disagree, the specification wins and this document is the defect.
 
 ---
 
@@ -419,8 +419,8 @@ the audit; the "Recommendation" column is the binding design for the platform ad
 
 ### 7.3 Why no telemetry is needed
 
-The product does not need it, and the specification forbids it in the *Produktmaximen*
-section ("Werbefrei"). The technical justification is equally simple: Phocommander is a local
+The product does not need it, and the specification forbids it in the *2.3 Advertising-free*
+section. The technical justification is equally simple: Phocommander is a local
 file manager. Its quality does not depend on knowing anything about its users. The features
 that would need telemetry — "which feature do people use", "how often do people copy files" —
 are not features of this product; the product is judged on its speed, its keyboard handling

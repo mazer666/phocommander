@@ -27,8 +27,9 @@ import sys
 import tomllib
 from pathlib import Path
 
-# The key table of the specification, section "Tastatursteuerung". Every entry
-# is the binding the specification names for this action.
+# The classic key set that the specification names: "F2 to F10 carry the main
+# operations" in section 6.3, and F3 and Shift+F3 for the conflict jump list
+# in FR-35. Every entry is the binding for this action.
 SPECIFICATION_BINDINGS = {
     "panel.rename": "F2",
     "panel.view": "F3",

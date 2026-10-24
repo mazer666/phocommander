@@ -78,6 +78,11 @@ tar = "0.4"
 flate2 = "1"
 zstd = "0.14"
 sevenz-rust2 = "0.24"
+# The compression formats that a TAR container may use. `bzip2` is a pure
+# Rust implementation, `lzma-rust2` decodes and encodes XZ without a system
+# library. Both are needed for FR-67 ("TAR with GZip, BZip2, XZ and Zstd").
+bzip2 = "0.6"
+lzma-rust2 = "0.23"
 
 # ---------------------------------------------------------------------------
 # Viewer.

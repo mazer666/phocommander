@@ -12,9 +12,9 @@ This document is the reference for that catalogue:
 - The defaults for the central settings live in
   [`config/defaults.toml`](../config/defaults.toml); its `[keymap]` section overrides
   single assignments for one installation.
-- The binding is described in the specification, section **Tastatursteuerung**, in
-  [`docs/REQUIREMENTS.md`](REQUIREMENTS.md). This page follows that table and adds
-  what the specification states in prose.
+- The binding is described in the specification, sections **6.1 The action model** and
+  **6.3 The action palette**, in [`docs/REQUIREMENTS.md`](REQUIREMENTS.md). This page follows
+  the catalogue of the specification and adds what the specification states in prose.
 
 ## The rules behind the table
 

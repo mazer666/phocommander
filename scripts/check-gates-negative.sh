@@ -157,6 +157,85 @@ report "the gate is green again" 0 "$positive"
 echo
 
 echo "=============================================================="
+echo "Gate 5 — scripts/check-requirement-ids.py"
+echo "=============================================================="
+echo "5.1 negative run (a requirement of the catalogue is removed):"
+cp "$REPO_ROOT/docs/REQUIREMENTS-IDS.md" "$SCRATCH/catalog-missing.md"
+python3 - "$SCRATCH/catalog-missing.md" <<'PYTHON'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+kept = [line for line in lines if not line.startswith("| FR-22c ")]
+path.write_text("\n".join(kept) + "\n", encoding="utf-8")
+PYTHON
+python3 "$REPO_ROOT/scripts/check-requirement-ids.py" --catalog "$SCRATCH/catalog-missing.md" > "$SCRATCH/ids-missing.log" 2>&1
+negative=$?
+grep -E "FR-22c|^RESULT" "$SCRATCH/ids-missing.log"
+report "the gate is red when a requirement is missing" 1 "$negative"
+echo
+echo "5.2 negative run (a requirement of the catalogue is written twice):"
+cp "$REPO_ROOT/docs/REQUIREMENTS-IDS.md" "$SCRATCH/catalog-duplicate.md"
+python3 - "$SCRATCH/catalog-duplicate.md" <<'PYTHON'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+row = next(line for line in lines if line.startswith("| FR-22c "))
+path.write_text("\n".join(lines + [row]) + "\n", encoding="utf-8")
+PYTHON
+python3 "$REPO_ROOT/scripts/check-requirement-ids.py" --catalog "$SCRATCH/catalog-duplicate.md" > "$SCRATCH/ids-duplicate.log" 2>&1
+negative=$?
+grep -E "duplicate id|^RESULT" "$SCRATCH/ids-duplicate.log"
+report "the gate is red when a requirement is written twice" 1 "$negative"
+echo
+echo "5.3 positive run (the catalogue of the repository):"
+python3 "$REPO_ROOT/scripts/check-requirement-ids.py" > "$SCRATCH/ids-positive.log" 2>&1
+positive=$?
+grep -E "^RESULT" "$SCRATCH/ids-positive.log"
+report "the gate is green on the catalogue of the repository" 0 "$positive"
+echo
+echo "=============================================================="
+echo "Gate 6 — scripts/check-acceptance-ids.py"
+echo "=============================================================="
+echo "6.1 negative run (the acceptance criterion of a requirement is removed):"
+cp "$REPO_ROOT/docs/ACCEPTANCE-CRITERIA.md" "$SCRATCH/acceptance-missing.md"
+python3 - "$SCRATCH/acceptance-missing.md" <<'PYTHON'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+kept = [line for line in lines if not line.startswith("| AC-M1-10 ")]
+path.write_text("\n".join(kept) + "\n", encoding="utf-8")
+PYTHON
+python3 "$REPO_ROOT/scripts/check-acceptance-ids.py" --acceptance "$SCRATCH/acceptance-missing.md" > "$SCRATCH/acceptance-missing.log" 2>&1
+negative=$?
+grep -E "FR-22c|^RESULT" "$SCRATCH/acceptance-missing.log"
+report "the gate is red when a criterion is missing" 1 "$negative"
+echo
+echo "6.2 negative run (a criterion references a requirement that does not exist):"
+cp "$REPO_ROOT/docs/ACCEPTANCE-CRITERIA.md" "$SCRATCH/acceptance-unknown.md"
+python3 - "$SCRATCH/acceptance-unknown.md" <<'PYTHON'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+text = text.replace("| AC-M0-02 | FR-02 |", "| AC-M0-02 | FR-99 |", 1)
+path.write_text(text, encoding="utf-8")
+PYTHON
+python3 "$REPO_ROOT/scripts/check-acceptance-ids.py" --acceptance "$SCRATCH/acceptance-unknown.md" > "$SCRATCH/acceptance-unknown.log" 2>&1
+negative=$?
+grep -E "FR-99|^RESULT" "$SCRATCH/acceptance-unknown.log"
+report "the gate is red on a criterion that points at nothing" 1 "$negative"
+echo
+echo "6.3 positive run (the acceptance document of the repository):"
+python3 "$REPO_ROOT/scripts/check-acceptance-ids.py" > "$SCRATCH/acceptance-positive.log" 2>&1
+positive=$?
+grep -E "^RESULT" "$SCRATCH/acceptance-positive.log"
+report "the gate is green on the acceptance document of the repository" 0 "$positive"
+echo
+
+echo "=============================================================="
 if [ "$failures" -eq 0 ]; then
   echo "RESULT: PASS — every gate turned red on a broken state and green again."
   exit 0

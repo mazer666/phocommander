@@ -5,12 +5,11 @@
 # WHAT: this script scans every Cargo.toml of the repository for a dependency
 #       whose crate name belongs to the telemetry, analytics, tracking or
 #       crash-reporting category, and fails with exit code 1 when it finds one.
-# WHY:  the product maximum "Werbefrei" (no advertising, no tracking, no
+# WHY:  the product principle "advertising-free" (no advertising, no tracking, no
 #       analytics, no telemetry) is only credible if it is mechanically
 #       enforced. The specification names this check as the proof of that
-#       promise ("Prüfbar durch: … die CI-Prüfung auf Telemetrie-Abhängigkeiten",
-#       section *Produktmaximen*) and lists it as acceptance criterion
-#       AC-M0-04, AC-M0-45 and AC-M0-55.
+#       promise in section *2.3 Advertising-free* and carries the requirement
+#       FR-03 with the acceptance criterion AC-M0-03.
 #       The check is a heuristic over the manifests: it reads the dependency
 #       tables, not the crates.io registry. That is honest about its reach —
 #       it cannot see a telemetry SDK that hides behind a different name, and

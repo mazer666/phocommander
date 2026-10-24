@@ -1,7 +1,7 @@
 # Negative tests — the security test protocol of Phocommander
 
-**Binding source:** [`docs/REQUIREMENTS.md`](../../docs/REQUIREMENTS.md) — sections *Sicherheit*,
-*Datenschutz* and *Test- und Qualitätsstrategie*. **Threat model:**
+**Binding source:** [`docs/REQUIREMENTS.md`](../../docs/REQUIREMENTS.md) — sections *9 Security
+and Privacy Plan* and *10 Test and Quality Strategy*. **Threat model:**
 [`docs/security/THREAT_MODEL.md`](../../docs/security/THREAT_MODEL.md) — the rules H1 to H17 and the
 residual risks.
 

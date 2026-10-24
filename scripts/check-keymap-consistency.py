@@ -2,14 +2,15 @@
 """Compare the key binding reference with the catalogue and with the specification.
 
 WHAT: this script checks that the three places that describe the key bindings agree:
-      the table in ``docs/REQUIREMENTS.md`` (section "Tastatursteuerung"), the
-      action catalogue in ``config/keymap.toml`` (section ``[input.keyboard]``)
-      and the reference table in ``docs/KEYMAP.md``.
+      the action catalogue in ``config/keymap.toml`` (section ``[input.keyboard]``),
+      the reference table in ``docs/KEYMAP.md`` and the statements of the
+      specification in ``docs/REQUIREMENTS.md``.
 WHY: a binding that is documented in one place and implemented in another is a
       defect the reader only discovers when a key does not do what the manual
-      promised. The specification asks for a documented binding for every action
-      ("Die Datei docs/KEYMAP.md dokumentiert jede Aktion mit Vorgabe, Kontext
-      und Plattformvariante").
+      promised. Since version 2.0 of the specification the binding table is no
+      longer part of the specification: the specification names the catalogue in
+      section 6.1 and the classic key set in section 6.3 and in FR-35, and
+      ``docs/KEYMAP.md`` is the reference that documents every action.
 EXAMPLE:
       python3 scripts/check-keymap-consistency.py
       python3 scripts/check-keymap-consistency.py --verbose
@@ -34,61 +35,67 @@ KEYMAP_DOC = REPO_ROOT / "docs" / "KEYMAP.md"
 CODE_SPAN = re.compile(r"`([^`]+)`")
 RANGE_SEPARATOR = ("…", "–", "—", "-")
 
-# The action identifier behind every key of the specification's keyboard table.
-# The mapping follows the wording of that table; the source section is
-# "Tastatursteuerung" in docs/REQUIREMENTS.md.
-SPEC_KEY_TO_ACTIONS: dict[str, list[str]] = {
-    "F2": ["panel.rename"],
-    "F3": ["panel.view"],
-    "F4": ["panel.edit"],
-    "F5": ["panel.copy"],
-    "F6": ["panel.move"],
-    "F7": ["panel.mkdir"],
-    "F8": ["panel.delete"],
-    "F9": ["app.menu"],
-    "F10": ["app.quit"],
-    "Tab": ["panel.switch"],
-    "Ctrl+R": ["panel.reload"],
-    "Ctrl+U": ["panel.swap"],
-    "Ctrl+Enter": ["panel.open_in_other"],
-    "Ctrl+Tab": ["panel.next_tab"],
-    "Ins": ["selection.toggle"],
-    "Ctrl+A": ["selection.all"],
-    "Ctrl+Num-": ["selection.none"],
-    "Ctrl+Num*": ["selection.invert"],
-    "Space": ["selection.by_pattern"],
-    "Alt+F1": ["panel.drives"],
-    "Alt+F2": ["panel.drives"],
-    "Ctrl+PgUp": ["panel.parent"],
-    **{f"Ctrl+{number}": [f"panel.tab.{number}"] for number in range(1, 10)},
+# The classic key set that the specification names in section 6.3: "F2 to F10
+# carry the main operations", the Norton Commander tradition.
+CLASSIC_BINDINGS: dict[str, str] = {
+    "F2": "panel.rename",
+    "F3": "panel.view",
+    "F4": "panel.edit",
+    "F5": "panel.copy",
+    "F6": "panel.move",
+    "F7": "panel.mkdir",
+    "F8": "panel.delete",
+    "F9": "app.menu",
+    "F10": "app.quit",
 }
 
-# The specification writes some keys in German. The catalogue uses the physical key
-# name. This table maps one to the other; it is a notation difference, not a
-# deviation.
-SPEC_KEY_ALIASES: dict[str, str] = {
-    "Leertaste": "Space",
-}
-
-# The two bindings that the specification names in the prose below its table.
-SPEC_PROSE_ACTIONS: dict[str, list[str]] = {
+# The bindings that the specification names for the conflict jump list in FR-35
+# and for the search in the viewer.
+PROSE_BINDINGS: dict[str, list[str]] = {
     "F3": ["viewer.find_next", "rename.conflict_next"],
     "Shift+F3": ["viewer.find_previous", "rename.conflict_previous"],
 }
 
+# The bindings of the keyboard context that the specification does not name.
+# They are the completion of the classic set, and they are documented in the
+# catalogue itself.
+EXTRA_BINDINGS: dict[str, str] = {
+    "panel.switch": "Tab",
+    "panel.reload": "Ctrl+R",
+    "panel.swap": "Ctrl+U",
+    "panel.open_in_other": "Ctrl+Enter",
+    "panel.next_tab": "Ctrl+Tab",
+    "selection.toggle": "Ins",
+    "selection.all": "Ctrl+A",
+    "selection.none": "Ctrl+Num-",
+    "selection.invert": "Ctrl+Num*",
+    "selection.by_pattern": "Space",
+    "panel.drives": "Alt+F1",
+    "panel.parent": "Ctrl+PgUp",
+    **{f"panel.tab.{number}": f"Ctrl+{number}" for number in range(1, 10)},
+}
+
+# The actions that belong to the surface and not to the catalogue of the
+# operations. The action palette is opened by a key of the remote control and
+# of the controller, but it is not an operation of the file manager.
+SURFACE_ACTIONS = ("palette.open",)
+
 # Deviations that are known, documented in the repository and therefore accepted.
-# The comment names the place where the deviation is written down.
 ACCEPTED_DEVIATIONS: dict[str, str] = {
-    "Alt+F2": (
-        "config/keymap.toml binds panel.drives to Alt+F1 and documents Alt+F2 in the "
-        "comment as the classic variant for the other pane; the specification names "
-        "both keys for one action"
-    ),
     "panel.prev_tab": (
         "config/keymap.toml and docs/KEYMAP.md mark Ctrl+Shift+Tab as the symmetric "
         "completion of Ctrl+Tab; the specification names only the forward direction"
     ),
 }
+
+# The notes that the catalogue carries about its own bindings. They are printed
+# with the result, so that a reader sees them without opening the file.
+DOCUMENTED_NOTES = (
+    "panel.drives is bound to Alt+F1; config/keymap.toml documents Alt+F2 in the comment as the "
+    "classic variant for the drive list of the other panel",
+    "the action palette is opened with the Menu key, and with the Play/Pause key on a remote "
+    "control that has no Menu key",
+)
 
 
 def expand(cell: str) -> list[str]:
@@ -112,40 +119,28 @@ def expand(cell: str) -> list[str]:
     return [f"{first_match.group(1)}{number:0{width}d}" for number in range(start, end + 1)]
 
 
-def read_spec_rows() -> list[tuple[list[str], str]]:
-    """Return the (keys, action) rows of the specification's keyboard table."""
-    text = REQUIREMENTS.read_text(encoding="utf-8")
-    start = text.index("### Tastatursteuerung")
-    end = text.index("\n### ", start + 10)
-    section = text[start:end]
-    rows: list[tuple[list[str], str]] = []
-    for line in section.splitlines():
-        if not line.startswith("|"):
-            continue
-        cells = [cell.strip() for cell in line.strip("|").split("|")]
-        if len(cells) != 4:
-            continue
-        if set(cells[0]) <= set("-: "):
-            continue
-        for key_cell, action_cell in ((cells[0], cells[1]), (cells[2], cells[3])):
-            keys = expand(key_cell)
-            if keys:
-                rows.append((keys, action_cell))
-    return rows
-
-
 def read_catalogue() -> dict[str, str]:
     """Return the action id -> binding map of the keyboard context."""
+    return read_context("input.keyboard")
+
+
+def read_context(name: str) -> dict[str, str]:
+    """Return the action id -> binding map of one context of the catalogue.
+
+    WHAT: reads the section of the context and returns every action of it. The
+    last section of the file ends at the end of the file, so the end of the
+    section is optional.
+    """
     text = KEYMAP_TOML.read_text(encoding="utf-8")
-    start = text.index("[input.keyboard]")
-    end = text.index("\n[", start + 1)
-    section = text[start:end]
-    catalogue: dict[str, str] = {}
+    start = text.index(f"[{name}]")
+    end = text.find("\n[", start + 1)
+    section = text[start:] if end < 0 else text[start:end]
+    bindings: dict[str, str] = {}
     for line in section.splitlines():
         match = re.match(r'^\s*"([^"]+)"\s*=\s*"([^"]+)"', line)
         if match:
-            catalogue[match.group(1)] = match.group(2)
-    return catalogue
+            bindings[match.group(1)] = match.group(2)
+    return bindings
 
 
 def read_keymap_doc() -> dict[str, list[str]]:
@@ -171,101 +166,187 @@ def read_keymap_doc() -> dict[str, list[str]]:
     return documented
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--verbose", "-v", action="store_true", help="print every row, not only deviations")
-    args = parser.parse_args()
+def check_specification_points_at_the_catalogue() -> list[str]:
+    """Return the failure messages when the specification does not name the sources.
 
-    spec_rows = read_spec_rows()
-    catalogue = read_catalogue()
-    documented = read_keymap_doc()
+    WHAT: section 6.1 of the specification states that the action catalogue
+    lives in ``config/keymap.toml`` and that it is documented in
+    ``docs/KEYMAP.md``. The check makes sure that both statements are still
+    true, so that the reference cannot point at a document that does not
+    exist.
+    """
+    text = REQUIREMENTS.read_text(encoding="utf-8")
+    failures: list[str] = []
+    if "### 6.1 The action model" not in text:
+        failures.append("the specification has no section '6.1 The action model'")
+    for name in ("config/keymap.toml", "docs/KEYMAP.md"):
+        if name not in text:
+            failures.append(f"the specification does not mention {name}")
+    return failures
 
-    deviations: list[str] = []
+
+def check_classic_bindings(catalogue: dict[str, str]) -> tuple[list[str], list[str]]:
+    """Return the failures and the accepted deviations of the classic key set.
+
+    WHAT: F2 to F10 carry the main operations, the tradition that the
+    specification names in section 6.3, and FR-35 names F3 and Shift+F3 for
+    the conflict jump list.
+    """
+    failures: list[str] = []
     accepted: list[str] = []
-
-    print("=== A. Specification table -> action catalogue (config/keymap.toml) ===")
-    for keys, action in spec_rows:
-        for key in keys:
-            canonical = SPEC_KEY_ALIASES.get(key, key)
-            action_ids = SPEC_KEY_TO_ACTIONS.get(canonical)
-            if action_ids is None:
-                deviations.append(f"the specification row '{key} {action}' has no action id")
-                print(f"  {key:<14} {action:<34} -> NO ACTION ID")
-                continue
-            for action_id in action_ids:
-                binding = catalogue.get(action_id)
-                if binding == canonical:
-                    print(f"  {key:<14} {action:<34} -> {action_id:<24} {binding:<14} ok")
-                    continue
-                if key in ACCEPTED_DEVIATIONS:
-                    accepted.append(f"{key} ({action_id}): {ACCEPTED_DEVIATIONS[key]}")
-                    print(f"  {key:<14} {action:<34} -> {action_id:<24} {binding:<14} ACCEPTED")
-                    continue
-                deviations.append(
-                    f"the catalogue binds {action_id} to '{binding}', the specification binds it to '{key}'"
+    for key, action_id in CLASSIC_BINDINGS.items():
+        binding = catalogue.get(action_id)
+        if binding != key:
+            failures.append(
+                f"the catalogue binds {action_id} to '{binding}', the specification names '{key}'"
+            )
+    for key, action_ids in PROSE_BINDINGS.items():
+        for action_id in action_ids:
+            binding = catalogue.get(action_id)
+            if binding != key:
+                failures.append(
+                    f"the catalogue binds {action_id} to '{binding}', the specification names "
+                    f"'{key}'"
                 )
-                print(f"  {key:<14} {action:<34} -> {action_id:<24} {binding:<14} DEVIATION")
+    for action_id, binding in EXTRA_BINDINGS.items():
+        if catalogue.get(action_id) != binding:
+            failures.append(
+                f"the catalogue binds {action_id} to '{catalogue.get(action_id)}', the reference "
+                f"names '{binding}'"
+            )
+    return failures, accepted
 
-    print()
-    print("=== B. Action catalogue -> reference table (docs/KEYMAP.md) ===")
+
+def check_reference_document(catalogue: dict[str, str]) -> list[str]:
+    """Return the failure messages for actions that the reference does not hold."""
+    documented = read_keymap_doc()
+    failures: list[str] = []
     for action_id, binding in sorted(catalogue.items()):
         defaults = documented.get(action_id)
         if defaults is None:
-            deviations.append(f"{action_id} is not documented in docs/KEYMAP.md")
-            print(f"  {action_id:<26} catalogue={binding:<16} document=missing              DEVIATION")
+            failures.append(f"{action_id} is not documented in docs/KEYMAP.md")
         elif binding not in defaults:
-            deviations.append(
-                f"docs/KEYMAP.md documents {action_id} with {defaults}, the catalogue binds it to '{binding}'"
+            failures.append(
+                f"docs/KEYMAP.md documents {action_id} with {defaults}, the catalogue binds it to "
+                f"'{binding}'"
             )
-            print(f"  {action_id:<26} catalogue={binding:<16} document={defaults}          DEVIATION")
-        else:
-            if args.verbose:
-                print(f"  {action_id:<26} catalogue={binding:<16} document={defaults}          ok")
+    return failures
 
-    print()
-    print("=== C. Actions named in the prose of the specification ===")
-    for key, action_ids in SPEC_PROSE_ACTIONS.items():
-        for action_id in action_ids:
-            binding = catalogue.get(action_id)
-            state = "ok" if binding == key else "DEVIATION"
-            if binding != key:
-                deviations.append(
-                    f"the catalogue binds {action_id} to '{binding}', the specification names '{key}'"
-                )
-            print(f"  {key:<14} {action_id:<26} {binding:<16} {state}")
 
-    print()
-    print("=== D. Actions in the catalogue that the specification names nowhere ===")
-    named = {
-        action_id
-        for ids in list(SPEC_KEY_TO_ACTIONS.values()) + list(SPEC_PROSE_ACTIONS.values())
-        for action_id in ids
-    }
+def check_contexts(catalogue: dict[str, str]) -> list[str]:
+    """Return the failure messages for a context that holds a different action set.
+
+    WHAT: every context of the catalogue holds the same actions. The binding
+    differs, the action does not.
+    """
+    failures: list[str] = []
+    for name in ("input.dpad", "input.controller"):
+        bindings = read_context(name)
+        operations = set(catalogue)
+        missing = sorted(operations - set(bindings))
+        extra = sorted(set(bindings) - operations - set(SURFACE_ACTIONS))
+        for action_id in missing:
+            failures.append(f"{action_id} is missing in the context {name}")
+        for action_id in extra:
+            failures.append(f"{action_id} exists only in the context {name}")
+    return failures
+
+
+def check_undocumented_actions(catalogue: dict[str, str]) -> tuple[list[str], list[str]]:
+    """Return the failures and the accepted deviations for actions without a rule.
+
+    WHAT: every action of the catalogue is bound in the keyboard context, is
+    documented in the reference and is named by one of the rules above. The
+    two exceptions are the ones that the catalogue documents itself.
+    """
+    failures: list[str] = []
+    accepted: list[str] = []
+    named = set(CLASSIC_BINDINGS.values()) | set(EXTRA_BINDINGS)
+    for action_id in PROSE_BINDINGS.values():
+        named.update(action_id)
     for action_id in sorted(catalogue):
         if action_id in named:
             continue
         if action_id in ACCEPTED_DEVIATIONS:
             accepted.append(f"{action_id}: {ACCEPTED_DEVIATIONS[action_id]}")
-            print(f"  {action_id:<26} catalogue={catalogue[action_id]:<16} ACCEPTED")
             continue
-        deviations.append(
-            f"{action_id} exists in the catalogue but is named neither in the table nor in the "
-            "prose of the specification"
+        failures.append(
+            f"{action_id} exists in the catalogue but is named neither in the specification nor in "
+            "the reference"
         )
-        print(f"  {action_id:<26} catalogue={catalogue[action_id]:<16} DEVIATION")
+    return failures, accepted
+
+
+def main() -> int:
+    """Run every check and report the result."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--verbose", "-v", action="store_true", help="print every row, not only deviations")
+    args = parser.parse_args()
+
+    catalogue = read_catalogue()
+    failures: list[str] = []
+    accepted: list[str] = []
+
+    print("=== A. The specification names the catalogue and the reference ===")
+    specification_failures = check_specification_points_at_the_catalogue()
+    if specification_failures:
+        failures.extend(specification_failures)
+        for failure in specification_failures:
+            print(f"  DEVIATION {failure}")
+    else:
+        print("  section 6.1 names config/keymap.toml and docs/KEYMAP.md  ok")
 
     print()
-    print(f"Rows in the specification table : {len(spec_rows)}")
-    print(f"Actions in the catalogue          : {len(catalogue)}")
-    print(f"Actions documented in KEYMAP.md   : {len(documented)}")
+    print("=== B. The classic key set of the specification ===")
+    classic_failures, classic_accepted = check_classic_bindings(catalogue)
+    failures.extend(classic_failures)
+    accepted.extend(classic_accepted)
+    for key, action_id in CLASSIC_BINDINGS.items():
+        binding = catalogue.get(action_id)
+        state = "ok" if binding == key else "DEVIATION"
+        print(f"  {key:<14} {action_id:<26} {binding:<16} {state}")
+    for key, action_ids in PROSE_BINDINGS.items():
+        for action_id in action_ids:
+            binding = catalogue.get(action_id)
+            state = "ok" if binding == key else "DEVIATION"
+            print(f"  {key:<14} {action_id:<26} {binding:<16} {state}")
+
     print()
-    print(f"Accepted deviations (documented in the repository): {len(accepted)}")
+    print("=== C. Action catalogue -> reference table (docs/KEYMAP.md) ===")
+    reference_failures = check_reference_document(catalogue)
+    failures.extend(reference_failures)
+    for failure in reference_failures:
+        print(f"  {failure}")
+
+    print()
+    print("=== D. The three contexts hold the same actions ===")
+    context_failures = check_contexts(catalogue)
+    failures.extend(context_failures)
+    print(f"  keyboard / dpad / controller : {'ok' if not context_failures else 'DEVIATION'}")
+
+    print()
+    print("=== E. Actions that no rule names ===")
+    action_failures, action_accepted = check_undocumented_actions(catalogue)
+    failures.extend(action_failures)
+    accepted.extend(action_accepted)
+    for entry in action_accepted:
+        print(f"  {entry}")
+    for failure in action_failures:
+        print(f"  {failure}")
+
+    print()
+    print(f"Actions in the catalogue        : {len(catalogue)}")
+    print(f"Actions documented in KEYMAP.md : {len(read_keymap_doc())}")
+    print()
+    print(f"Accepted deviations (documented in the repository): {len(accepted) + len(DOCUMENTED_NOTES)}")
     for entry in accepted:
         print(f"  - {entry}")
-    print(f"Undocumented deviations: {len(deviations)}")
-    for deviation in deviations:
-        print(f"  - {deviation}")
-    if deviations:
+    for entry in DOCUMENTED_NOTES:
+        print(f"  - {entry}")
+    print(f"Undocumented deviations: {len(failures)}")
+    for failure in failures:
+        print(f"  - {failure}")
+    if failures:
         print("RESULT: FAIL — the three descriptions do not agree.")
         return 1
     print("RESULT: PASS — specification, catalogue and reference agree.")

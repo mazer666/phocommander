@@ -10,9 +10,10 @@ accepted residual risks, the permission audit and the audit protocol — lives i
 [`docs/security/THREAT_MODEL.md`](docs/security/THREAT_MODEL.md). This document is the
 front door: what is guaranteed, what to report, and how.
 
-The binding source for the security requirements of the project is the section **Sicherheit**
-of [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md), together with the sections *Datenschutz*
-and *Netzwerk- und Cloud-Zugriffe*. Where this policy and the specification disagree, the
+The binding source for the security requirements of the project are the sections
+**9.2 The hardening rules** and **9.4 Secure deletion** of
+[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md), together with the sections *9.5 Privacy* and
+*4.8 Remote sources*. Where this policy and the specification disagree, the
 specification wins — and the disagreement is a defect in this document.
 
 ---

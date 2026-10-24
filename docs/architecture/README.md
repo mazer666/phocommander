@@ -2,7 +2,7 @@
 
 Phocommander is one Cargo workspace with a fixed dependency direction. This page shows
 the layers, what each crate owns and where a change belongs. The binding source is
-[`docs/REQUIREMENTS.md`](../REQUIREMENTS.md), section *Systemarchitektur*.
+[`docs/REQUIREMENTS.md`](../REQUIREMENTS.md), section *5 Technical Plan*.
 
 ---
 
