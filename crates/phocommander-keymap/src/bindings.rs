@@ -1,8 +1,8 @@
 //! The key bindings of one input context.
 //!
-//! WHAT: the bindings of one input context ([`Bindings`]), the conflict
-//!       between two of them ([`BindingConflict`]) and the reasons why a
-//!       binding could not be read ([`BindingError`]).
+//! WHAT: the bindings of one input context ([{Bindings}]), the conflict
+//!       between two of them ([{BindingConflict}]) and the reasons why a
+//!       binding could not be read ([{BindingError}]).
 //! WHY: a binding is a relation between a key combination and an action, and
 //!       two actions on the same key cannot both be reachable. The conflict
 //!       check therefore lives next to the bindings, so that no caller can
@@ -35,7 +35,7 @@ pub struct Bindings {
 }
 
 impl Bindings {
-    /// Creates the empty bindings of a context.
+/// Creates the empty bindings of a context.
     pub fn new(context: Context) -> Self {
         Self {
             context,
@@ -43,26 +43,26 @@ impl Bindings {
         }
     }
 
-    /// Reads the bindings of a context from a table of the configuration file.
-    ///
-    /// WHY: the table is the shape the configuration file uses — an action
-    /// identifier and the key combination that triggers it. Reading it here
-    /// means that a malformed action identifier is reported with its name,
-    /// at the moment the file is read.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use std::collections::BTreeMap;
-    /// use phocommander_keymap::{Bindings, Context};
-    ///
-    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
-    /// let mut table = BTreeMap::new();
-    /// table.insert("panel.copy".to_string(), "F5".to_string());
-    /// let bindings = Bindings::from_table(Context::Keyboard, &table)?;
-    /// assert_eq!(bindings.len(), 1);
-    /// # Ok(())
-    /// # }
-    /// ```
+/// Reads the bindings of a context from a table of the configuration file.
+///
+/// WHY: the table is the shape the configuration file uses — an action
+/// identifier and the key combination that triggers it. Reading it here
+/// means that a malformed action identifier is reported with its name,
+/// at the moment the file is read.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use std::collections::BTreeMap;
+/// use phocommander_keymap::{Bindings, Context};
+///
+/// # fn main() -> Result<(), phocommander_keymap::BindingError> {
+/// let mut table = BTreeMap::new();
+/// table.insert("panel.copy".to_string(), "F5".to_string());
+/// let bindings = Bindings::from_table(Context::Keyboard, &table)?;
+/// assert_eq!(bindings.len(), 1);
+/// # Ok(())
+/// # }
+/// ```
     pub fn from_table(
         context: Context,
         table: &BTreeMap<String, String>,
@@ -75,23 +75,23 @@ impl Bindings {
         Ok(bindings)
     }
 
-    /// Adds a key combination for an action.
-    ///
-    /// WHY: an empty key combination would be bound to an action that can
-    /// never be triggered, and would hide a mistake in the configuration
-    /// file. It is therefore refused.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_keymap::{ActionId, Bindings, Context};
-    ///
-    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
-    /// let mut bindings = Bindings::new(Context::Keyboard);
-    /// bindings.bind(ActionId::new("panel.copy")?, "F5")?;
-    /// assert!(bindings.bind(ActionId::new("panel.view")?, "").is_err());
-    /// # Ok(())
-    /// # }
-    /// ```
+/// Adds a key combination for an action.
+///
+/// WHY: an empty key combination would be bound to an action that can
+/// never be triggered, and would hide a mistake in the configuration
+/// file. It is therefore refused.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_keymap::{ActionId, Bindings, Context};
+///
+/// # fn main() -> Result<(), phocommander_keymap::BindingError> {
+/// let mut bindings = Bindings::new(Context::Keyboard);
+/// bindings.bind(ActionId::new("panel.copy")?, "F5")?;
+/// assert!(bindings.bind(ActionId::new("panel.view")?, "").is_err());
+/// # Ok(())
+/// # }
+/// ```
     pub fn bind(&mut self, action: ActionId, key: impl Into<String>) -> Result<(), BindingError> {
         let key = key.into();
         if key.trim().is_empty() {
@@ -104,12 +104,12 @@ impl Bindings {
         Ok(())
     }
 
-    /// The key combinations that are bound to an action.
+/// The key combinations that are bound to an action.
     pub fn keys_for(&self, action: &ActionId) -> Option<&[String]> {
         self.entries.get(action).map(Vec::as_slice)
     }
 
-    /// The actions that are bound to a key combination.
+/// The actions that are bound to a key combination.
     pub fn actions_for(&self, key: &str) -> Vec<&ActionId> {
         self.entries
             .iter()
@@ -118,38 +118,38 @@ impl Bindings {
             .collect()
     }
 
-    /// The number of actions that are bound in this context.
+/// The number of actions that are bound in this context.
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
-    /// Whether no action is bound in this context.
+/// Whether no action is bound in this context.
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 
-    /// The conflicts inside these bindings.
-    ///
-    /// WHY: two actions on the same key combination cannot both be triggered
-    /// — the second one would never be reached. The conflicts are reported
-    /// with every action that is affected, sorted by the action identifier,
-    /// so that the same file always produces the same report.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_keymap::{ActionId, Bindings, Context};
-    ///
-    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
-    /// let mut bindings = Bindings::new(Context::Keyboard);
-    /// bindings.bind(ActionId::new("panel.copy")?, "F5")?;
-    /// bindings.bind(ActionId::new("file.copy")?, "F5")?;
-    ///
-    /// let conflicts = bindings.conflicts();
-    /// assert_eq!(conflicts.len(), 1);
-    /// assert_eq!(conflicts[0].actions().len(), 2);
-    /// # Ok(())
-    /// # }
-    /// ```
+/// The conflicts inside these bindings.
+///
+/// WHY: two actions on the same key combination cannot both be triggered
+/// — the second one would never be reached. The conflicts are reported
+/// with every action that is affected, sorted by the action identifier,
+/// so that the same file always produces the same report.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_keymap::{ActionId, Bindings, Context};
+///
+/// # fn main() -> Result<(), phocommander_keymap::BindingError> {
+/// let mut bindings = Bindings::new(Context::Keyboard);
+/// bindings.bind(ActionId::new("panel.copy")?, "F5")?;
+/// bindings.bind(ActionId::new("file.copy")?, "F5")?;
+///
+/// let conflicts = bindings.conflicts();
+/// assert_eq!(conflicts.len(), 1);
+/// assert_eq!(conflicts[0].actions().len(), 2);
+/// # Ok(())
+/// # }
+/// ```
     pub fn conflicts(&self) -> Vec<BindingConflict> {
         // WHY: the conflicts are collected per key combination and not per
         // action. Two actions on one key produce one conflict that names
@@ -184,17 +184,17 @@ pub struct BindingConflict {
 }
 
 impl BindingConflict {
-    /// The context the conflict happened in.
+/// The context the conflict happened in.
     pub fn context(&self) -> Context {
         self.context
     }
 
-    /// The key combination that is bound twice.
+/// The key combination that is bound twice.
     pub fn key(&self) -> &str {
         &self.key
     }
 
-    /// The actions that are bound to the key combination.
+/// The actions that are bound to the key combination.
     pub fn actions(&self) -> &[ActionId] {
         &self.actions
     }
@@ -203,14 +203,14 @@ impl BindingConflict {
 /// The reasons why a binding could not be read.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum BindingError {
-    /// An action identifier was malformed.
+/// An action identifier was malformed.
     #[error("the action identifier is not valid: {0}")]
     InvalidAction(#[from] ActionIdError),
 
-    /// A key combination was empty.
+/// A key combination was empty.
     #[error("the key combination of the action {action} is empty")]
     EmptyKey {
-        /// The action the empty key combination was meant for.
+/// The action the empty key combination was meant for.
         action: ActionId,
     },
 }
@@ -219,7 +219,7 @@ pub enum BindingError {
 mod tests {
     use super::*;
 
-    /// Returns the bindings of a table that has to be valid.
+/// Returns the bindings of a table that has to be valid.
     fn valid(result: Result<Bindings, BindingError>) -> Bindings {
         match result {
             Ok(bindings) => bindings,
@@ -227,7 +227,7 @@ mod tests {
         }
     }
 
-    /// Returns an action identifier that has to be valid.
+/// Returns an action identifier that has to be valid.
     fn action(identifier: &str) -> ActionId {
         match ActionId::new(identifier) {
             Ok(action) => action,

@@ -1,7 +1,7 @@
 //! The action catalogue of Phocommander.
 //!
-//! WHAT: the stable identifier of a command ([`ActionId`]) and the input
-//!       contexts ([`Context`]) in which a command can be triggered.
+//! WHAT: the stable identifier of a command ([{ActionId}]) and the input
+//!       contexts ([{Context}]) in which a command can be triggered.
 //! WHY: the user interface never asks *which key* was pressed, it asks *which
 //!       command* was requested. The identifier is therefore the contract
 //!       between the input layer, the configuration file and the user
@@ -30,28 +30,28 @@ use std::str::FromStr;
 /// action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Context {
-    /// A physical keyboard.
+/// A physical keyboard.
     Keyboard,
 
-    /// A mouse or a trackpad.
+/// A mouse or a trackpad.
     Pointer,
 
-    /// A finger on a touch screen.
+/// A finger on a touch screen.
     Touch,
 
-    /// The directional pad of a television remote control.
+/// The directional pad of a television remote control.
     Dpad,
 
-    /// A gamepad or a VR controller.
+/// A gamepad or a VR controller.
     Controller,
 }
 
 impl Context {
-    /// Every context, in a stable order.
-    ///
-    /// WHY: the order is fixed so that a list of contexts — in the
-    /// configuration file, in the documentation or in the user interface —
-    /// always reads the same way.
+/// Every context, in a stable order.
+///
+/// WHY: the order is fixed so that a list of contexts — in the
+/// configuration file, in the documentation or in the user interface —
+/// always reads the same way.
     pub const fn all() -> [Context; 5] {
         [
             Context::Keyboard,
@@ -62,7 +62,7 @@ impl Context {
         ]
     }
 
-    /// The spelling of this context in the configuration file.
+/// The spelling of this context in the configuration file.
     pub const fn config_name(&self) -> &'static str {
         match self {
             Context::Keyboard => "keyboard",
@@ -73,7 +73,7 @@ impl Context {
         }
     }
 
-    /// The context with the given spelling in the configuration file.
+/// The context with the given spelling in the configuration file.
     pub fn from_config_name(name: &str) -> Option<Self> {
         Context::all()
             .into_iter()
@@ -87,32 +87,32 @@ impl fmt::Display for Context {
     }
 }
 
-/// The stable identifier of a command, for example `panel.copy`.
+/// The stable identifier of a command, for example {panel.copy}.
 ///
 /// WHY: the identifier is written into the configuration file and into the
 /// documentation. It therefore has one shape everywhere: lower case letters,
-/// digits, `-` and `_`, separated into segments by `.`, with no empty segment.
+/// digits, '-' and {_}, separated into segments by {.}, with no empty segment.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ActionId(String);
 
 impl ActionId {
-    /// Creates an action identifier from its spelling.
-    ///
-    /// WHY: the identifier travels through the configuration file and through
-    /// the documentation. A malformed identifier is therefore refused at the
-    /// moment it is read, with the reason named, instead of silently doing
-    /// nothing later.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_keymap::ActionId;
-    ///
-    /// # fn main() -> Result<(), phocommander_keymap::ActionIdError> {
-    /// assert!(ActionId::new("panel.copy").is_ok());
-    /// assert!(ActionId::new("panel..copy").is_err());
-    /// # Ok(())
-    /// # }
-    /// ```
+/// Creates an action identifier from its spelling.
+///
+/// WHY: the identifier travels through the configuration file and through
+/// the documentation. A malformed identifier is therefore refused at the
+/// moment it is read, with the reason named, instead of silently doing
+/// nothing later.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_keymap::ActionId;
+///
+/// # fn main() -> Result<(), phocommander_keymap::ActionIdError> {
+/// assert!(ActionId::new("panel.copy").is_ok());
+/// assert!(ActionId::new("panel..copy").is_err());
+/// # Ok(())
+/// # }
+/// ```
     pub fn new(raw: &str) -> Result<Self, ActionIdError> {
         if raw.is_empty() {
             return Err(ActionIdError::Empty);
@@ -144,7 +144,7 @@ impl ActionId {
         Ok(Self(raw.to_string()))
     }
 
-    /// The identifier as it is written in the configuration file.
+/// The identifier as it is written in the configuration file.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -167,30 +167,30 @@ impl FromStr for ActionId {
 /// The reasons why an action identifier was refused.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ActionIdError {
-    /// The identifier was empty.
+/// The identifier was empty.
     #[error("an action identifier must not be empty")]
     Empty,
 
-    /// The identifier contained an empty segment, for example `panel..copy`.
+/// The identifier contained an empty segment, for example {panel..copy}.
     #[error("the action identifier {name:?} contains an empty segment")]
     EmptySegment {
-        /// The identifier that was refused.
+/// The identifier that was refused.
         name: String,
     },
 
-    /// The identifier contained a character that is not allowed.
+/// The identifier contained a character that is not allowed.
     #[error("the action identifier {name:?} contains the forbidden character {character:?}")]
     ForbiddenCharacter {
-        /// The identifier that was refused.
+/// The identifier that was refused.
         name: String,
-        /// The character that is not allowed.
+/// The character that is not allowed.
         character: char,
     },
 
-    /// The identifier did not separate the group from the action.
+/// The identifier did not separate the group from the action.
     #[error("the action identifier {name:?} must contain a '.' between the group and the action")]
     MissingSeparator {
-        /// The identifier that was refused.
+/// The identifier that was refused.
         name: String,
     },
 }

@@ -1,8 +1,8 @@
 //! The action catalogue and the key bindings of Phocommander.
 //!
 //! WHAT: the stable identifiers of the commands of the application
-//!       ([`catalog`]), the key bindings of one context ([`bindings`]) and the
-//!       complete keymap ([`keymap`]).
+//!       ([{catalog}]), the key bindings of one context ([{bindings}]) and the
+//!       complete keymap ([{keymap}]).
 //! WHY: the user interface must know *what* a command is, never *how* it was
 //!       triggered. The keyboard, the mouse, the finger, the television remote
 //!       control and the gamepad all deliver the same action identifier, so
