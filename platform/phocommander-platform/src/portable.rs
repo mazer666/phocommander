@@ -50,9 +50,8 @@ pub const PORTABLE_CONFIG_DIRECTORY_NAME: &str = "Phocommander";
 /// }
 /// ```
 pub fn executable_directory() -> Result<PathBuf, Error> {
-    let executable = std::env::current_exe().map_err(|source| {
-        Error::io(std::path::Path::new("the running executable"), source)
-    })?;
+    let executable = std::env::current_exe()
+        .map_err(|source| Error::io(std::path::Path::new("the running executable"), source))?;
     let directory = executable.parent().ok_or_else(|| {
         Error::io(
             executable.as_path(),
@@ -183,6 +182,10 @@ pub fn is_portable_in(installation: &Path) -> bool {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -243,11 +246,8 @@ mod tests {
     fn a_directory_with_the_marker_is_portable() {
         // act
         let (installation, _guard) = temporary_installation();
-        std::fs::write(
-            installation.join(PORTABLE_MARKER_FILE_NAME),
-            "portable",
-        )
-        .expect("the marker can be written");
+        std::fs::write(installation.join(PORTABLE_MARKER_FILE_NAME), "portable")
+            .expect("the marker can be written");
 
         // assert
         assert!(is_portable_in(&installation));
@@ -263,7 +263,10 @@ mod tests {
 
         // assert
         let configuration = portable_config_directory_in(&installation).expect("the path is known");
-        assert_eq!(configuration, installation.join(PORTABLE_CONFIG_DIRECTORY_NAME));
+        assert_eq!(
+            configuration,
+            installation.join(PORTABLE_CONFIG_DIRECTORY_NAME)
+        );
         assert_eq!(configuration.parent(), Some(installation.as_path()));
     }
 

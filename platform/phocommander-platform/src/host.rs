@@ -20,27 +20,27 @@ use phocommander_core::Error;
 /// The operating system Phocommander runs on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Platform {
-/// macOS — the first platform to be delivered.
+    /// macOS — the first platform to be delivered.
     MacOs,
 
-/// Windows.
+    /// Windows.
     Windows,
 
-/// Linux.
+    /// Linux.
     Linux,
 
-/// FreeBSD, NetBSD or OpenBSD.
+    /// FreeBSD, NetBSD or OpenBSD.
     Bsd,
 
-/// Android, including the television and the headset variants.
+    /// Android, including the television and the headset variants.
     Android,
 
-/// iPadOS.
+    /// iPadOS.
     Ios,
 }
 
 impl Platform {
-/// The name of the platform in a message to the user.
+    /// The name of the platform in a message to the user.
     pub fn name(&self) -> &'static str {
         match self {
             Platform::MacOs => "macOS",
@@ -52,11 +52,11 @@ impl Platform {
         }
     }
 
-/// The key that carries the "primary" meaning on this platform.
-///
-/// WHY: the actions are the same on every platform, only the key that
-/// triggers them differs. {Cmd} is the primary key on macOS and on
-/// iPadOS, {Ctrl} everywhere else.
+    /// The key that carries the "primary" meaning on this platform.
+    ///
+    /// WHY: the actions are the same on every platform, only the key that
+    /// triggers them differs. {Cmd} is the primary key on macOS and on
+    /// iPadOS, {Ctrl} everywhere else.
     pub fn primary_modifier(&self) -> &'static str {
         match self {
             Platform::MacOs | Platform::Ios => "Cmd",
@@ -125,6 +125,10 @@ pub fn config_directory() -> Result<PathBuf, Error> {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
