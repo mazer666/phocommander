@@ -1083,6 +1083,7 @@ The work is divided into packages small enough to be finished in one session.
 | M0.5 | The requirement catalogue and the acceptance criteria | All |
 | M0.6 | The threat model, `SECURITY.md`, `PRIVACY.md`, the governance documents | All |
 | M0.7 | The glossary, the user guide in both languages, the architecture overview | All |
+| M0.8 | The ADRs for the interface profiles and for the safe copy modes | Architect |
 
 **Definition of done.** Build, test, format, clippy, licence, advisory, boundary, file-size and
 telemetry checks all pass; the acceptance document M0 exists with the measured evidence; the
@@ -1334,7 +1335,7 @@ before pushing.
 |---|---|---|
 | `docs/REQUIREMENTS.md` | This document. The binding specification | Product Manager |
 | `docs/ARCHITECTURE.md` | The module boundaries, the data flows, the extension points | Architect |
-| `docs/adr/` | One document per decision that is not obvious | Architect |
+| `docs/adr/` | One document per decision that is not obvious. Six decisions exist: the workspace and the module boundaries, the file system abstraction, the error hierarchy, the archive extraction security, the interface profiles, the safe copy modes | Architect |
 | `docs/WHERE_TO_CHANGE.md` | "Where do I change this?" for contributors | Documentation Lead |
 | `docs/KEYMAP.md` | Every action, its binding, its context | Documentation Lead |
 | `docs/glossary.md` | The terms with a specific meaning in this project | Documentation Lead |
