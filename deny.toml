@@ -1,0 +1,57 @@
+# cargo-deny configuration for Phocommander.
+#
+# WHAT: the licence, advisory, duplicate-version and source rules that every
+#       dependency of this project has to pass.
+# WHY: Phocommander is distributed under "MIT OR Apache-2.0" and must stay
+#      buildable and redistributable. The tool version is pinned because
+#      cargo-deny interprets the very same file differently depending on its
+#      version — a floating tool version turned a licence check into a false
+#      alarm in the sibling project Vocument. Pinned version: cargo-deny
+#      0.20.2, cargo-audit 0.22.2.
+#
+# The allow list contains NO GPL and NO AGPL on purpose. A copyleft dependency
+# would pull the complete product — binary, sources and documentation — into a
+# copyleft licence and would break the "MIT OR Apache-2.0" promise made to
+# every user. The same argument rules out Slint in GPL mode and mupdf (AGPL).
+# MPL-2.0 stays allowed because it is a weak, file-level copyleft: it obliges
+# only the files that come from the dependency itself, not the combined work.
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "MPL-2.0",
+]
+
+[licenses.private]
+# Workspace members are published together with the project, so their licence
+# does not have to be listed separately.
+ignore = true
+
+[advisories]
+# A yanked release is a defect signal: it is usually pulled in by accident
+# through a loose version requirement. An unmaintained crate is only a warning
+# because a build on an unsupported platform may still need it.
+yanked = "deny"
+unmaintained = "warn"
+
+[bans]
+# Two versions of the same crate in one build are legal but increase the
+# download size and the audit surface, so they are reported.
+multiple-versions = "warn"
+# A wildcard requirement ("*") makes a build unreproducible.
+wildcards = "deny"
+
+[sources]
+# Only the crates.io registry is a trusted source for this project. A git
+# dependency or an unknown registry has to be reviewed explicitly before it
+# may be allowed here.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

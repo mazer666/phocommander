@@ -1,6 +1,6 @@
-# Phocommander — Anforderungsspezifikation 1.0
+# Phocommander — Anforderungsspezifikation 1.1
 
-**Status:** Entwurf zur Abstimmung · **Datum:** 24.10.2026 · **Sprache des Projekts:** Englisch (UI zweisprachig DE/EN)
+**Status:** Entwurf zur Abstimmung · **Datum:** 24.10.2026 · **Änderung 1.1:** Eingabemodelle, Netzwerk- und Cloud-Zugriffe, Produktmaximen · **Sprache des Projekts:** Englisch (UI zweisprachig DE/EN)
 **Repository-Ziel:** `github.com/mazer666/phocommander` (public) · **Lizenz:** `MIT OR Apache-2.0`
 
 ---
@@ -16,6 +16,7 @@ Der Geltungsbereich umfasst die Kern-Desktop-Funktionalität, die gemeinsame Rus
 Phocommander ist eine eigenständige Implementierung. Grundlage sind ausschließlich öffentlich dokumentierte Beobachtungen zum Funktionsumfang klassischer Zwei-Fenster-Dateimanager der Norton-Commander-Linie sowie der Quasi-Standard-Tastenbelegung, die sich seit den 1980er-Jahren als De-facto-Standard etabliert hat [4][36]. Weder Code, noch Bilder, noch Icons, noch Texte, noch Layoutvorgaben des Originalherstellers werden übernommen, gespiegelt oder nachgebaut.
 
 Kopiert wird ausschließlich die *Idee* einer Funktion: zwei synchron sichtbare Verzeichnisfenster, ein eingebetteter Betrachter, ein Mehrfach-Umbenennungsdialog mit Platzhaltern. Die konkrete Umsetzung, das Bedienkonzept, die Oberflächengestaltung und die Codebasis sind eigenständig. Der Begriff „Clean Room" bezeichnet in der Softwareentwicklung ein Vorgehen, bei dem die Spezifikation ohne Kenntnis der Originalimplementierung erstellt wird — genau so wird hier verfahren [2][4].
+
 
 ---
 
@@ -54,6 +55,157 @@ Die Gegenüberstellung zeigt die Lücke, die Phocommander schließen will: die B
 
 ---
 
+---
+
+## Produktmaximen
+
+Drei Devisen bestimmen das Produkt. Sie stehen hier, weil sie keine Absichtserklärung sind, sondern **prüfbare Anforderungen** — jede spätere Entscheidung wird gegen sie gemessen, und das CI-Gate überwacht sie.
+
+### Kostenlos
+
+Keine Lizenzgebühr, kein Abo, keine In-App-Käufe, keine geschlossenen Funktionen. Jede Funktion, die in einer Version existiert, existiert in allen Versionen identisch — es gibt keinen „Pro"-Zweig. Keine Wartungsgebühr für Sicherheitsupdates. Kein Build-Zeit-Check gegen eine Lizenzserver-Instanz. Der Quellcode baut die Anwendung ohne Netzwerkzugang.
+
+Prüfbar durch: eine CI-Prüfung, die bestätigt, dass kein Crate der Telemetrie- oder Analyse-Kategorien referenziert wird, und ein Test, der belegt, dass der Prozessstart keine Netzwerkverbindung öffnet.
+
+### Clutter-frei
+
+Keine Werbebanner, keine Empfehlungsspalten, keine Nachrichtendienste, kein Konto-Zwang, kein aufdrängender Onboarding-Tour. Der Startbildschirm ist die Arbeitsfläche, nicht eine Landingpage. Keine App-interne Werbung, keine gesponserten Treffer in Such- oder Verbindungslisten. Keine Einstellungen, die es nicht braucht.
+
+Prüfbar durch: ein Screenshot-Abgleich der Startansicht je Kontext, und eine Prüfung, dass die Verbindungsliste ausschließlich vom Nutzer selbst angelegte Einträge enthält.
+
+### Werbefrei
+
+Keine Werbung, kein Tracking, keine Analyse, keine Telemetrie, keine Nutzungsprofile, keine Weitergabe an Dritte, keine Affiliate-Links, keine gesponserten Platzierungen. Lokale Funktionen funktionieren ohne Registrierung und ohne Login. Der Quellcode zeigt es: Es gibt keine Netzwerkanfrage, die der Nutzer nicht selbst ausgelöst hat.
+
+Prüfbar durch: die Zusage in `PRIVACY.md`, den Null-Telemetrie-Nachweis im Sicherheitsdokument, und die CI-Prüfung auf Telemetrie-Abhängigkeiten.
+
+---
+
+## Eingabemodelle und Bedienkontexte
+
+Phocommander wird auf sechs Plattformen und in bis zu fünf Bedienkontexten bedient. Der zentrale Satz dieser Spezifikation lautet: **Bedienung ist nicht an Geräte, sondern an Aktionen gebunden.**
+
+### Das Aktionsmodell
+
+Jede bedienbare Funktion ist eine benannte Aktion mit stabiler Aktions-ID (`panel.copy`, `panel.view`, `selection.toggle`). Die Eingabeschicht übersetzt physische Eingaben in Aktions-IDs. Auf Desktop liefert `winit` Tastatur-, Maus- und Touch-Ereignisse, Gamepad-Ereignisse jedoch nur auf Redox — auf Linux weder unter X11 noch unter Wayland [48]. Für den `dpad`- und den `controller`-Kontext heißt das: Die Eingabe kommt **nicht** aus `winit`, sondern aus der jeweiligen Plattform-Shell. Die `controller`-Anbindung auf Desktop ist deshalb eine eigene Aufgabe mit der Variante, Gamepads über eine plattformnative Bibliothek anzubinden, nicht über `winit`. Die Oberflächenschicht kennt ausschließlich Aktions-IDs und weiß nicht, ob eine Aktion per Taste, Klick, Wischgeste, D-Pad-Taste oder Controller-Trigger ausgelöst wurde.
+
+Diese Trennung ist keine Abstraktion um der Schönheit willen. Sie ist die Voraussetzung dafür, dass dieselbe Anwendung auf einem MacBook mit Tastatur, auf einem iPad mit Fingern, auf einem Fire TV mit Fernbedienung und in einer Quest mit Controller ohne vier getrennte Oberflächen funktioniert.
+
+Der Aktionskatalog liegt in `config/keymap.toml` und wird von der Konfigurationsdatei referenziert. Die Datei `docs/KEYMAP.md` dokumentiert jede Aktion mit Vorgabe, Kontext und Plattformvariante.
+
+### Bedienkontexte
+
+Jeder Kontext beschreibt, wie ein bestimmtes Eingabegerät die Aktions-IDs erreicht. Die Vorgabe wird je Kontext getrennt gespeichert, damit ein Nutzer auf dem Laptop dieselbe Anwendung auf dem Fernseher mit anderen Belegungen sieht.
+
+| Kontext | Eingabegerät | Verfügbare Signale | Layoutprinzip |
+|---|---|---|---|
+| `keyboard` | Tastatur | Tasten, Modifier, Eingabetext | Vollständige Aktionsbelegung, Norton-Commander-Kurztasten |
+| `pointer` | Maus | Zeiger, Klick, Doppelklick, Rechtsklick, Ziehen, Scrollrad | Zwei Panels nebeneinander, Menüleiste, Iconleiste, Hover |
+| `touch` | Finger | Tippen, Long-Press, Wischen, Zwei-Finger-Scroll, Pinch | Gestapelte Panels, große Ziele, Sheet-Dialoge, kein Hover |
+| `dpad` | TV-Fernbedienung | D-Pad, OK, Zurück, Home, Play/Pause | Ein Panel sichtbar, 10-Fuß-Skalierung, Fokusrahmen |
+| `controller` | Gamepad, VR-Controller | Trigger, Griff, Thumbstick, A/B/X/Y, D-Pad | Räumliche Anordnung, Strahlzeiger, keine Modifier |
+
+### Die Aktionspalette als Ersatz für F-Tasten
+
+Das ist der zentrale Konflikt zwischen dem Bedienkonzept und der Fernbedienung. Die Norton-Commander-Kurztasten `F2` bis `F10` tragen die Hauptfunktionen — umbenennen, ansehen, kopieren, verschieben, löschen. Auf einer Fire-TV- oder Google-TV-Fernbedienung existieren diese Tasten nicht. Nur Richtungstasten, OK, Zurück und Home stehen zur Verfügung. Auch auf einem VR-Controller gibt es keine F-Tasten.
+
+Die Lösung ist die **Aktionspalette**: eine durchsuchbare Liste aller Aktionen, die im aktuellen Kontext verfügbar sind. Im `dpad`-Kontext öffnet sie sich über die Menü- oder Play/Pause-Taste und ist vollständig mit Richtungstasten und OK bedienbar. Sie ersetzt funktional die F-Tastenreihe und ist auf jedem Kontext verfügbar — auch auf dem Desktop als „Aktionen suchen".
+
+Die Palette filtert dabei nach Kontext: Im `dpad`-Kontext erscheinen nur Aktionen, die ohne Maus und ohne Modifier sinnvoll ausführbar sind. Eine Aktion, die eine gedrückte Umschalt-Taste braucht, ist dort nicht erreichbar und wird nicht angezeigt.
+
+### Fokus und Auswahl als getrennte Zustände
+
+Auf Plattformen ohne Zeiger gibt es kein Hover. Der Fokus muss deshalb ein **sichtbarer, dauerhaft erkennbarer Zustand** sein, nicht ein Nebenprodukt der Mausposition.
+
+Im `dpad`- und `controller`-Kontext werden Fokus und Auswahl getrennt geführt. Der Fokus bezeichnet die Zeile, auf die die nächste Aktion wirkt. Die Auswahl bezeichnet die markierten Dateien, die eine Aktion betrifft. Beim Navigieren wandert der Fokus, ohne die Auswahl zu verändern. Beim Anwählen wird die Auswahl verändert, ohne den Fokus zu verlieren.
+
+Die Mehrfachauswahl braucht auf Fernbedienung einen expliziten Modus, weil die Tastenkombination aus Tastatur und Maus nicht existiert. Der `dpad`-Kontext bietet deshalb einen Auswahlmodus an, in dem OK die Markierung umschaltet und die Richtungstasten den Fokus bewegen. Der Modus wird sichtbar angezeigt und lässt sich jederzeit verlassen.
+
+### Adaptive Layouts je Kontext
+
+Die Layouts unterscheiden sich strukturell, nicht nur in Farbe und Schriftgröße.
+
+Im `keyboard`- und `pointer`-Kontext stehen beide Panels gleichzeitig sichtbar. Quelle und Ziel sind auf einen Blick erfassbar, das ist der Kern des Bedienkonzepts.
+
+Im `touch`-Kontext sind die Panels gestapelt: eine Dateiliste füllt den Bildschirm, das zweite Panel liegt darunter und wird per Wischgeste oder über eine Umschaltfläche erreicht. Zeilenhöhen sind mindestens 44 Punkte hoch. Dialoge erscheinen als Sheet von unten, nicht als zentrale Box. Hover-Effekte entfallen, weil es sie nicht gibt.
+
+Im `dpad`-Kontext ist **ein Panel sichtbar**. Zwei gleichzeitige Panels wären auf einem Fernseher unlesbar. Das zweite Panel erscheint als Overlay, wenn eine Aktion ein Ziel braucht. Schriftgrößen sind für einen Betrachtungsabstand von etwa drei Metern ausgelegt, Fokusrahmen deutlich kräftiger als auf dem Desktop. Die Bedienhinweise („OK öffnet, Zurück geht zurück") sind sichtbar, weil eine Fernbedienung keine Tastenbeschriftung hat.
+
+Im `controller`-Kontext werden die Panels räumlich angeordnet, nicht in einem Fenster. Die Bedienung erfolgt über einen Strahlzeiger mit Trigger-Auswahl; der Fokus liegt auf dem Strahlzeiger, nicht auf der Zeile.
+
+### Meta Quest als Android-Konfiguration
+
+Horizon OS ist ein Android-Betriebssystem. Eine Horizon-OS-Anwendung ist ein normales Android-Programm, das als **flaches Panel** im Raum steht; Touch-Gesten wie Tippen, Wischen, Scrollen und Pinchen werden vom System auf Controller- und Hand-Tracking-Eingaben abgebildet [44][45].
+
+Daraus folgt die Empfehlung: **Kein immersiver VR-Port.** Die Android-Version wird um einen `controller`-Bedienkontext erweitert, und Quest bedient die Anwendung als Panel. Das spart ein vollständiges OpenXR- und Vulkan-Frontend, das für einen Dateimanager keinen Mehrwert liefert. Die OpenXR-Bibliothek `openxr` steht unter `MIT OR Apache-2.0` [46] und wäre verfügbar — sie wird für eine mögliche spätere räumliche Variante vorgehalten, aber nicht für M0 bis M9 eingeplant.
+
+Die Einschränkung ist ehrlich zu benennen: Im Panel-Modus ist die Bedienung auf Gesten und Controller-Aktionen beschränkt. Ein Dateimanager in VR lebt von Tastatur und Feinzeiger — beides hat ein Panel im Raum nicht. Quest ist deshalb als **Bedienkontext auf der Android-Version** eingeplant und nicht als eigenständiges Ziel.
+
+### Fire TV und Google TV
+
+Auf Fernsehern ist das D-Pad die primäre Navigation [40]. Google Play prüft TV-Anwendungen darauf, ob die **gesamte Funktionalität mit einem Fünf-Wege-D-Pad und der Zurück-Taste** erreichbar ist [41]. Weitere Vorgaben:
+
+- Die Anwendung darf nicht auf eine Menü-Taste der Fernbedienung angewiesen sein [41].
+- Zurück navigiert zurück und führt aus der Anwendung heraus, ohne Endlosschleifen [40].
+- `android.hardware.touchscreen` wird als nicht erforderlich deklariert, `CATEGORY_LEANBACK_LAUNCHER` gesetzt, ein 320×180-Pixel-Banner hinterlegt.
+- Der Zeiger ist auf keinen Fall das primäre Bedienmittel.
+
+Für Phocommander bedeutet das: Der `dpad`-Kontext ist eine **vollwertige Bedienart**, keine Notlösung. Jede Funktion, die im `keyboard`-Kontext erreichbar ist, muss im `dpad`-Kontext über die Aktionspalette erreichbar sein. Diese Regel wird bei der Abnahme mit einem Prüfprotokoll belegt: die Liste aller Aktionen wird gegen ihre Erreichbarkeit im `dpad`-Kontext geprüft.
+
+---
+
+## Netzwerk- und Cloud-Zugriffe
+
+### Quellen statt Funktionen
+
+Netzwerkzugriff ist kein eigener Funktionsbereich, sondern eine weitere **Quelle** in derselben Abstraktion. Eine SMB-Freigabe, ein WebDAV-Ordner, ein SFTP-Server und ein S3-Bucket liefern denselben „Ordnerinhalt" wie das lokale Dateisystem. Die Bedienung ist für alle Quellen identisch — kopieren, verschieben, umbenennen, löschen, ansehen, durchsuchen.
+
+Das ist die Konsequenz aus der Architekturentscheidung in der Plattform-Matrix: Die Dateisystemabstraktion kennt keine Quellenart. Jede Quelle implementiert dieselbe Schnittstelle, und der Kern bleibt frei von Protokolldetails.
+
+### Protokollunterstützung
+
+| Protokoll | Rust-Bibliothek | Lizenz | Anmerkung |
+|---|---|---|---|
+| SFTP | `russh` 0.64 | Apache-2.0 | Reines Rust, keine C-Abhängigkeit |
+| FTP, FTPS | `suppaftp` 12.2 | MIT OR Apache-2.0 | Reines Rust |
+| SMB 2/3 | `smb2` 0.35 | MIT OR Apache-2.0 | Reines Rust, pipelined I/O |
+| WebDAV | eigener Client auf `reqwest` | Apache-2.0 / MIT | `fast-dav-rs` ist LGPL-3.0 und fällt damit weg |
+| S3-kompatibel | `rusty-s3` 0.10 | BSD-2-Clause | AWS, Backblaze B2, Wasabi, MinIO |
+| OAuth 2.0 | `oauth2` 5.0 | MIT OR Apache-2.0 | Für Cloud-Anmeldung |
+
+Alle genannten Versionen und Lizenzen sind gegen das crates.io-Register geprüft [47].
+
+Der WebDAV-Client wird **selbst geschrieben** statt `fast-dav-rs` zu verwenden. Die Bibliothek ist funktional passend und LGPL-3.0-lizenziert [26]. LGPL erlaubt die Verwendung, verpflichtet aber bei statisch gelinkten Binaries zur Offenlegung oder Relinkbarkeit — das steht im Widerspruch zur Doppellizenz und zur Devise „kostenlos ohne Kompromisse". Der(WebDAV-)Zugriff braucht ohnehin nur `PROPFIND`, `GET`, `PUT`, `DELETE` und `MKCOL` [39], also ist der eigene Client klein und ohne Megabyte-Drittanbieter-Abhängigkeit gebaut.
+
+`pavao` (MIT) wäre für SMB eine Alternative, bindet aber `libsmbclient` ein und damit eine Systembibliothek. Das erschwert die Quer-Kompilierung für Android und iOS. `smb2` ist reines Rust und damit die bessere Wahl.
+
+### SMB-Sicherheitsregeln
+
+SMB ist das Protokoll mit der höchsten Angriffsfläche in dieser Liste. Die Regeln sind verbindlich:
+
+- **SMB1 wird nicht implementiert.** Das Protokoll ist deprecated, kennt keine moderne Signatur und war die Grundlage von EternalBlue; Microsoft liefert es seit Windows 10 1903 und Windows Server 2019 nicht mehr aus [43].
+- **NTLMv1 wird nicht verwendet.** Microsoft hat die NTLMv1-Netzwerkauthentifizierung in Windows 11 24H2 und Windows Server 2025 entfernt und plant, NTLM insgesamt standardmäßig abzuschalten [42]. Wo NTLM nötig wird, ist es NTLMv2.
+- **SMB-Signing wird verlangt, wenn der Server es unterstützt.** Ohne Signatur sind Relay-Angriffe möglich, bei denen ein Angreifer die Authentifizierung eines ahnungslosen Nutzers weiterreicht; Windows 11 24H2 verlangt die Signatur bei frischen Installationen bereits [43].
+- **Transportverschlüsselung (SMB 3) wird bevorzugt, Zugangsdaten liegen im Schlüsselbund.** Die Verschlüsselung schützt die Vertraulichkeit der Daten auf dem Weg, und Microsoft rät, sie zusätzlich zur Signatur einzusetzen, wo alle Geräte sie unterstützen [43]. Zugangsdaten stehen nie in der Konfigurationsdatei.
+
+Ein Verbindungsversuch gegen einen Server, der nur SMB1 oder nur NTLMv1 anbietet, schlägt mit einer verständlichen Meldung fehl. Er wird nicht „probiert und vielleicht klappt".
+
+### Cloud-Zugriff
+
+Cloud-Zugriff bedeutet OAuth 2.0 gegen den Anbieter und direkte API-Aufrufe über HTTPS. **Phocommander betreibt keinen eigenen Vermittlungsserver.** Jede Anmeldung läuft direkt zwischen der Anwendung und dem Anbieter; das Refresh-Token liegt im Schlüsselbund.
+
+Diese Entscheidung folgt aus der Devise „kostenlos, clutter-frei, werbefrei": Ein eigener Server wäre ein Betrieb, eine Kostenstelle, eine Datenverarbeitungsstelle und eine Datenschutzfrage — also das Gegenteil dessen, was das Produkt verspricht. Auch die Datenschutz-Zusage bleibt so vollständig: Es fließen nur die Daten, die der Nutzer selbst anfordert.
+
+S3-kompatible Ziele decken den großen Teil der privaten Cloud-Nutzung ab, weil Nextcloud, ownCloud, Seafile und viele NAS-Systeme WebDAV anbieten und die kommerziellen Object-Storage-Dienste S3 sprechen. Beide Wege sind abgedeckt, ohne einen Anbieter zu bevorzugen.
+
+### Verbindungsdaten und Protokollierung
+
+Zugangsdaten liegen im Schlüsselbund des Betriebssystems (Keychain, Credential Manager, Secret Service). Auf Plattformen ohne Schlüsselbund fällt die Anwendung auf die App-interne Sandbox zurück und weist darauf hin, dass die Daten dann nicht vom Betriebssystem geschützt sind.
+
+Verbindungen werden in einer vom Nutzer angelegten Liste verwaltet. Verbindungsnamen, Serveradressen und Benutzernamen gelten als personenbezogene Daten und erscheinen nicht im Protokoll. Das Protokoll nennt Protokoll, Zeitpunkt, Ergebnis und Dauer, niemals den Server oder den Benutzer.
+
+---
+
 ## Funktionsumfang
 
 ### Zwei-Fenster-Arbeitsfläche
@@ -89,6 +241,28 @@ Die Regelauswertung kombiniert, in dieser Reihenfolge:
 Der Dialog zeigt eine Live-Vorschau des Ergebnisses. Konflikte — der berechnete Name existiert bereits — werden farblich markiert und in einer eigenen Konfliktsprung-Liste geführt, die mit `F3` (nächster) und `Shift+F3` (vorheriger) durchlaufbar ist. Dieses Muster stammt aus SpeedCommander 18.00.9200 und hat sich bewährt [2].
 
 Regeln lassen sich als benannte Vorlagen speichern und wieder anwenden.
+
+**Das Serienfolgen-Muster.** Ein eigener Anwendungsfall treibt die Platzhalterauswahl: das Umbenennen von Serienfolgen nach dem Muster `Serienname - S01E01 - Titel der Folge.Format`.
+
+Der Dialog erkennt in einem vorhandenen Dateinamen zunächst die Staffel- und Episodennummer. Ein Dateiname wie `Duldung.avi` oder `The.Expanse.S01E03.avi` wird auf das Muster `SxxEyy` geprüft. Findet er eines, werden Staffel und Episode als Vorbelegung übernommen und der restliche Name als Episodentitel angeboten. Findet er keines, fragt der Dialog nach der Staffel und der Episodennummer ab, bevor er etwas vorbelegt — und merkt sich die letzte Eingabe als Vorbelegung für die nächste Datei, damit eine Serie in einem Durchgang benannt werden kann.
+
+Der Serienname stammt in der Regel aus dem übergeordneten Verzeichnis: Legt der Nutzer die Staffeln in einem Ordner `The Expanse` ab, ist das der Serienname. Das ist der Standard, wird aber immer angezeigt und ist überschreibbar — bei Serien, die in Sammelordner liegen, stimmt er sonst nicht.
+
+Die Zielformatierung lautet:
+
+```
+{serie} - S{staffel:02}E{episode:02} - {titel}.{format}
+```
+
+Dabei gilt: `{staffel:02}` und `{episode:02}` sind zweistellig nullgefüllt, damit `S01E01` und nicht `S1E1` entsteht. Bei Serien mit dreistelligen Episodennummern wird die Stellenbreite automatisch auf drei angehoben, sobald eine Folge mit dreistelliger Nummer in der Auswahl liegt — sonst wären die Dateien eines Laufs nicht einheitlich benannt.
+
+Der Episodentitel wird unverändert übernommen. Ein Doppelpunkt, ein Schrägstrich oder ein Fragezeichen im Titel sind auf Windows unzulässig und führen dort zu einem Fehler. Der Dialog weist darauf hin **bevor** die Umbenennung ausgeführt wird, und schlägt einen ersatz vor, statt stillschweigend zu ändern — der Nutzer entscheidet.
+
+Die Vorlage „Serienfolge" ist eine benannte Vorlage wie jede andere und damit Teil des Konfigurationsdatei-Mechanismus. Sie speichert das Zielformat, die Erkennungsregel und die Frage, ob der Serienname aus dem übergeordnern Verzeichnis übernommen werden soll.
+
+Ein Vorkonfiguriertes Set von Vorlagen liegt der Anwendung bei: „Serienfolge" (wie oben beschrieben), „Kamera" (Reihenfolge_Serienfolge_Titel, für Videokameras), „Podcast" (Datum_Titel), „Rechnung" (Jahr_Nummer_Beschreibung) und „Musik" (Interpret_Titel_Track). Jede Vorlage ist eine TOML-Datei im Konfigurationsverzeichnis und vom Nutzer anpassbar.
+
+Vor dem Umbenennen zeigt der Dialog eine Vorschau der neuen Namen aller ausgewählten Dateien nebeneinander, mit den erkannten Feldern als eigener Spalte. So sieht der Nutzer vor dem Klick, ob die Erkennung funktioniert hat — bei Serien mit uneinheitlichen Dateinamen ist genau das der Punkt, an dem man sonst zwanzig Dateien falsch umbenennt.
 
 ### Dateibetrachter
 
@@ -171,6 +345,18 @@ Daraus folgt die verbindliche Regel: Phocommander verwendet **nicht** die `extra
 
 **Abhängigkeiten.** Die CI prüft jede Abhängigkeit mit `cargo-deny` (Lizenz- und Advisories-Prüfung) und `cargo-audit` (bekannte Schwachstellen). Eine festgelegte Werkzeugversion wird verwendet, weil `cargo-deny` dieselbe Konfiguration je nach Version unterschiedlich liest — im Projekt Vocument hat dieser Umstand bereits zu einem falschen Fehlalarm geführt. `cargo-deny` 0.20.2 und `cargo-audit` 0.22.2 sind die aktuellen Stände [26].
 
+**Netzwerkquellen als Angriffsfläche.** Jede entfernte Quelle ist bösartig, genauso wie ein Archiv. Der Server liefert Eintragsnamen, Größenangaben, Zeitstempel und Inhalte — alles davon ist ungeprüft zu behandeln.
+
+*Zertifikatsprüfung:* Bei HTTPS-basierten Quellen (WebDAV, S3, OAuth) wird das Serverzertifikat streng geprüft. Kein „bei Fehler fortfahren", kein Opt-out für die Prüfung. Ein selbstsigniertes Zertifikat kann der Nutzer bewusst hinterlegen, mit einer PIN-geschützten Ausnahme für genau diesen Host — und nur für diesen.
+
+*Antwortgrößen:* Die Antwort eines Servers darf die erwartete Größe überschreiten, ohne dass der Speicher mitwächst. Der Client liest in einem festen Budget, bricht ab und meldet den Fehler. Ein Server, der eine Verzeichnisliste mit einem Gigabyte Antwort liefert, darf den Prozess nicht in den Speicherdruck treiben.
+
+*Protokoll-Downsizing:* Ein Server, der eine ältere Protokollversion anbietet, wird nicht stillschweigend akzeptiert. SMB1 und NTLMv1 werden abgelehnt; WebDAV-Server ohne TLS werden abgelehnt, sofern HTTPS nicht erreichbar ist.
+
+*Eingeschleuste Verzeichnisnamen:* Ein SMB- oder WebDAV-Server kann Namen mit Trennzeichen, Steuerzeichen oder absurd langen Pfaden liefern. Namen werden normalisiert, auf unzulässige Zeichen geprüft und in der Oberfläche gekürzt dargestellt, ohne den echten Namen zu verlieren.
+
+*Zeitlimits:* Jede Netzwerkoperation hat ein Zeitlimit. Ein Server, der eine Antwort nicht abschließt, führt nach Ablauf zu einem Abbruch mit verständlicher Meldung, nicht zu einem hängenden Auftrag.
+
 **Rechtsschutz.** Phocommander nutzt ausschließlich Bibliotheken mit permissiver Lizenz. Crates mit Copyleft-Wirkung (GPL, AGPL) sind ausgeschlossen, solange das Projekt unter `MIT OR Apache-2.0` steht. Das schließt `mupdf` (AGPL) und die `slint`-Laufzeit im GPL-Modus aus [10][11].
 
 ### Datenschutz
@@ -235,10 +421,11 @@ phocommander/
 ├── crates/
 │   ├── phocommander-core/     # Dateisystemmodell, Pfade, Symbole, Fehler
 │   ├── phocommander-config/   # Konfigurationsparser, Schema-Versionierung
-│   ├── phocommander-keymap/   # Tastenauflösung, plattformspezifische Belegung
+│   ├── phocommander-keymap/   # Aktionskatalog, Auflösung, Bedienkontexte
 │   ├── phocommander-ops/      # Kopieren, Verschieben, Löschen, Auftragswarteschlange
 │   ├── phocommander-archive/  # Archivadapter, gehärtete Extraktion
 │   ├── phocommander-viewer/   # Betrachterregistry und Formatadapter
+│   ├── phocommander-remote/   # Netzwerkquellen: SFTP, FTP, SMB, WebDAV, S3
 │   └── phocommander-ui/       # egui-Oberfläche, Panels, Theme
 ├── platform/
 │   └── phocommander-platform/ # OS-Adapter: Menü, Dialoge, Papierkorb, Berechtigungen
@@ -246,6 +433,8 @@ phocommander/
 │   ├── phocommander-desktop/  # macOS, Windows, Linux, BSD
 │   ├── phocommander-android/  # Gradle-Wrapper, Rust-Bibliothekscrate
 │   └── phocommander-ios/      # Xcode-Projekt, Rust-Bibliothekscrate
+├── scripts/                   # Prüfskripte (Crate-Grenzen, Dateigrößen, Links)
+├── config/                    # Vorgaben: defaults.toml, keymap.toml, Vorlagen/
 └── docs/
     ├── REQUIREMENTS.md        # dieses Dokument
     ├── ARCHITECTURE.md
@@ -363,6 +552,40 @@ log_level = "warn"
 # Anzahl der Worker-Threads für Hintergrundoperationen.
 # 0 = automatisch (Anzahl der verfügbaren Kerne)
 worker_threads = 0
+
+[input]
+# Welcher Bedienkontext aktiv ist. "auto" erkennt das Eingabegerät
+# zur Laufzeit: Tastatur oder Maus -> keyboard/pointer, Touch -> touch,
+# Fernbedienung -> dpad, Controller -> controller.
+context = "auto"
+# Tastenbelegung je Kontext. Jede Aktion hat eine eigene Vorgabe,
+# damit dieselbe Anwendung auf jedem Gerät richtig bedient wird.
+[input.keyboard]
+"panel.copy" = "F5"
+"panel.move" = "F6"
+[input.dpad]
+# Auf der Fernbedienung ersetzt die Aktionspalette die F-Tastenreihe.
+# "panel.copy" = "palette:file.copy"
+"panel.copy" = "palette:file.copy"
+"panel.move" = "palette:file.move"
+"palette.open" = "Menu"
+[input.controller]
+# Trigger = Aktion ausloesen, Griff = Auswahl umschalten.
+"panel.copy" = "palette:file.copy"
+"selection.toggle" = "Grip"
+
+[remote]
+# Verhalten bei Verbindungsproblemen: "retry" versucht es erneut,
+# "fail" bricht ab. Timeouts gelten pro Verbindungsaufbau.
+connect_timeout_seconds = 15
+# SMB: Signatur verlangen, wenn der Server sie unterstuetzt.
+# "require" lehnt Server ohne Signatur ab, "prefer" verhandelt.
+smb_signing = "prefer"
+# SMB: Transportverschluesselung (SMB 3) bevorzugen.
+smb_encryption = "prefer"
+# Groesster erlaubter Download einzelner Dateien aus entfernten Quellen.
+# 0 = unbegrenzt (nur bei bewusst vertrauenswürdigen Quellen).
+max_remote_download_bytes = 0
 ```
 
 Die Datei ist vollständig kommentiert, weil sie die erste Anlaufstelle für Nutzer und Mitwirkende ist. Sie enthält ein `schema_version`-Feld; bei inkompatiblen Änderungen migriert Phocommander die alte Datei und legt das Original als `.bak` daneben. Import und Export einer Konfiguration sind vorgesehen, damit Einstellungen zwischen Rechnern übertragen werden können.
@@ -391,6 +614,8 @@ Die Zugriffsrechte unterscheiden sich je Plattform grundlegend. Das ist der grö
 | Windows | Keine Sandbox. Pfadlänge 260 Zeichen ohne Opt-in, bis 32.767 mit `longPathAware` im Manifest [30][31] | Manifesteintrag `longPathAware` wird gesetzt. Fehlermeldungen bei Pfadlänge werden verständlich formuliert |
 | Linux | Keine Sandbox. X11 und Wayland | Standardpfad über `winit` [6]. Wayland-Eigenheiten beachten |
 | BSD | Keine Sandbox. FreeBSD und NetBSD sind bei `winit` Tier 2 (Bau garantiert, getestet nicht) [6] | Bau auf FreeBSD und NetBSD wird in der CI geprüft, Funktionstests erfolgen manuell |
+| Fire TV, Google TV | Android mit Leanback. Kein Touchscreen, D-Pad als primäre Navigation [40] | Eigener `dpad`-Bedienkontext, Aktionspalette, 10-Fuß-Layout, ein Panel sichtbar |
+| Meta Quest | Horizon OS ist Android [44]. Flat Panel, Gesten werden auf Controller abgebildet [45] | Kein eigener Port, sondern `controller`-Kontext auf der Android-Version |
 
 Die Matrix zeigt die eigentliche Architekturentscheidung: Phocommander braucht eine Dateisystemabstraktion, die einen „Ordnerinhalt" liefert, ohne zu wissen, ob er aus dem lokalen Dateisystem, aus einem Archiv, aus einem über SFTP erreichten Verzeichnis oder aus einem vom Nutzer freigegebenen Wurzelverzeichnis auf iPadOS stammt. Ohne diese Abstraktion entstehen für jede Quelle eigene Sonderfälle, die den Kern auseinanderziehen.
 
@@ -477,7 +702,10 @@ docs/
 │   ├── THREAT_MODEL.md
 │   └── HARDENING.md
 ├── glossary.md
-└── acceptance/              # Abnahmenachweise je Meilenstein
+├── acceptance/              # Abnahmenachweise je Meilenstein (M<n>-ACCEPTANCE.md)
+├── reviews/                 # Reviews und Prüfprotokolle
+├── guides/                  # Anleitungen (Installation, Netzwerk, Bedienkontexte)
+└── templates/               # Vorlagen für Abnahmen und Reviews
 ```
 
 ADR folgen dem Muster Status, Datum, Kontext, Entscheidung, Konsequenzen, Alternativen. Die erste Serie umfasst die Framework-Wahl, die Crate-Grenzen, die Fehlerhierarchie und die Sicherheitsstrategie für Archivextraktion.
@@ -500,7 +728,7 @@ Diese Doppellizenz entspricht der Konvention des Photocraft-Projekts [28] und de
 
 ## Roadmap
 
-### Phasen M0 bis M5
+### Phasen M0 bis M9
 
 Die Reihenfolge folgt der Priorität des Nutzers (macOS, Android, iPadOS, Windows, Linux, BSD) mit einer technischen Korrektur: **Windows, Linux und BSD teilen sich den vollständigen Desktop-Codepfad mit macOS.** Sie sind nach macOS nahezu kostenlos, während Android und iPadOS jeweils eigene Verpackung, eigene Berechtigungsmodelle und eigene Store-Anforderungen mitbringen [16][13]. Die teuersten Ziele sind damit nicht die letzten, sondern die mobilen.
 
@@ -512,10 +740,124 @@ Die Reihenfolge folgt der Priorität des Nutzers (macOS, Android, iPadOS, Window
 | **M3** | Windows- und Linux-/BSD-Ports, Paketierung, Long-Path-Behandlung, Wayland | Drei Desktop-Plattformen |
 | **M4** | Android: Gradle-Projekt, Rust-`cdylib`, SAF-Modus, optionaler Vollzugriff, Touch- und Tastatur-Bedienung | Android-Version |
 | **M5** | iPadOS: Xcode-Projekt, Dokumenten-Picker, security-scoped Bookmarks, geteilte Ansicht | iPadOS-Version |
-| **M6** | SFTP/FTP, Synchronisation, Verzeichnisvergleich produktiv, Suche mit Inhalt | Netzwerkfunktionen |
-| **M7** | Betrachter Stufe 3, Editor, Tags, Makros | Erweiterungen |
+| **M6** | Netzwerkquellen: SFTP, FTP, SMB, WebDAV; Verbindungsverwaltung; Synchronisation; Verzeichnisvergleich produktiv; Suche mit Inhalt | Netzwerkfunktionen |
+| **M7** | Cloud über OAuth 2.0 und S3-kompatible Ziele; Bedienkontext `controller` auf der Android-Version | Cloud- und Controller-Zugriff |
+| **M8** | Fire TV und Google TV: Bedienkontext `dpad`, Aktionspalette, 10-Fuß-Layout, Leanback-Manifest, Store-Abnahme | Fernseher-Version |
+| **M9** | Betrachter Stufe 3, Editor, Tags, Makros | Erweiterungen |
 
 Meilenstein M0 und M1 sind der Kern. Ab M2 ist jede weitere Plattform eine Auslieferungsvariante desselben Kerns.
+
+Die Netzwerkmeilensteine folgen bewusst **nach** den Desktop- und Mobilplattformen: Eine Quelle, die nicht funktioniert, ist reparierbar und sichtbar. Eine halbfertige Netzwerkschicht, die in M1 dazwischenhängt, gefährdet den Kern. Umgekehrt ist die Aktionpalette in M8 die Voraussetzung dafür, dass Fire TV die Anforderungen von Google Play besteht [41] — sie kommt nicht als Nachlieferung, sondern als eigener Meilenstein.
+
+
+---
+
+## Projektplan
+
+Der Projektplan übersetzt die Roadmap in eine Reihenfolge, in der gearbeitet wird. Er ist verbindlich: Ein Meilenstein gilt erst als erreicht, wenn seine Abnahmekriterien erfüllt sind **und** die zugehörige Abnahme unter `docs/acceptance/` dokumentiert ist.
+
+### Grundregeln des Ablaufs
+
+**Der Kern kommt vor der Oberfläche.** Jeder Meilenstein liefert zuerst eine funktionierende, testbare Schicht im Rust-Kern. Die Oberfläche bindet sie an. Eine Oberflächenfunktion ohne Kern-Unterstützung wird nicht begonnen.
+
+**Jeder Meilenstein endet mit einem gepushten Stand auf `main`.** Der Fortschritt ist damit jederzeit sichtbar und nachvollziehbar. Zwischenstände werden nicht gesammelt, sondern fortlaufend weitergegeben.
+
+**Kein Meilenstein gilt als erreicht ohne Beleg.** Ein Meilenstein ohne grünen Testlauf und ohne Abnahmedokument ist nicht erreicht, egal wie überzeugend die Beschreibung klingt.
+
+**Rückfragen werden gestellt, nicht geraten.** Wenn eine Entscheidung fehlt, wird sie beim Owner angefragt und die Antwort im jeweiligen Dokument festgehalten.
+
+### Meilensteine
+
+Die folgende Übersicht zeigt, welcher Meilenstein was liefert und worauf er aufbaut.
+
+| Meilenstein | Inhalt | Ergebnis | Abhängigkeit |
+|---|---|---|---|
+| **M0** | Cargo-Workspace, Crate-Grundgerüst, CI-Grundlage, Konfigurationsdatei mit Vorgaben, Tastenbelegung, Bedrohungsmodell, Projektdokumentation, Lizenzprüfung | Das Repository baut, prüft und testet sich auf drei Betriebssystemen. Die Spezifikation ist die verbindliche Grundlage jedes weiteren Schritts | keine |
+| **M1** | Dateisystemmodell, Auftragswarteschlange, Panel-Zustand, Tastenauflösung, Dateioperationen, Mehrfach-Umbenennen mit Vorlagen, Betrachter Stufe 1, Archivadapter Stufe 1, gehärtete Extraktion | Ein funktionaler Zwei-Fenster-Dateibrowser auf macOS. Kopieren, verschieben, umbenennen, ansehen, Archive öffnen | M0 |
+| **M2** | Registerkarten, Filterfeld, Eingabezeile, Verzeichnisbaum, Verzeichnisvergleich, Favoriten, Betrachter Stufe 2, native Menüs, Kontextmenüs | Eine reife macOS-Version, die im Alltag einen Dateibrowser ersetzen kann | M1 |
+| **M3** | Windows-, Linux- und BSD-Ports, Paketierung, Long-Path-Behandlung, Wayland, X11-Fallback, NetBSD- und FreeBSD-Bau | Drei weitere Desktop-Plattformen aus derselben Codebasis | M2 |
+| **M4** | Android-Shell, Gradle-Projekt, Rust-`cdylib`, SAF-Modus, optionaler Vollzugriff, Touch-Kontext, adaptive Layouts | Eine Android-Version, die im Store veröffentlicht werden kann | M3 |
+| **M5** | iPadOS-Shell, Xcode-Projekt, Dokumenten-Picker, security-scoped Bookmarks, geteilte Ansicht, Apple-Tastatur-Unterstützung | Eine iPadOS-Version für den App Store | M4 |
+| **M6** | Netzwerkquellen: SFTP, FTP, SMB, WebDAV; Verbindungsverwaltung; Schlüsselbund-Integration; Angriffsflächen-Härtung; Synchronisation | Entfernte Quellen sind bedienbar wie lokale Verzeichnisse | M5 |
+| **M7** | Cloud über OAuth 2.0 und S3-kompatible Ziele, Bedienkontext `controller` auf der Android-Version, Controller-Anbindung auf Desktop | Cloud-Zugriff ohne eigenen Server, Controller-Bedienung | M6 |
+| **M8** | Bedienkontext `dpad`, Aktionspalette, 10-Fuß-Layout, Leanback-Manifest, Store-Abnahme, Prüfprotokoll der D-Pad-Erreichbarkeit | Eine Fire-TV- und Google-TV-Version, die die Google-Play-Prüfung besteht | M7 |
+| **M9** | Betrachter Stufe 3, Texteditor, Tags, Makros | Die Erweiterungen des Funktionsumfangs | M8 |
+
+Die Reihenfolge ist linear, weil jede Stufe auf der vorherigen aufsetzt. Ausnahmen sind nur dort vorgesehen, wo ein Teilbereich unabhängig ist: Die Dokumentation, das Bedrohungsmodell und die Lizenzprüfung laufen ab M0 parallel mit dem Code und werden in jedem Meilenstein nachgeführt.
+
+### Risikoregister
+
+Die acht folgenden Risiken sind die bekannten Unsicherheiten des Vorhabens. Jedes trägt eine Gegenmaßnahme und einen Verantwortlichen.
+
+| Risiko | Eintritt | Auswirkung | Gegenmaßnahme | Owner |
+|---|---|---|---|---|
+| Die Dateisystemabstraktion erweist sich als zu eng | mittel | hoch | ADR-0002 entscheidet die Schnittstelle vor M1; die Protokollquellen aus M6 werden bereits in M1 als Testimplementierung durchgespielt | Architekt |
+| Die Aktionspalette wird zu mächtig und unübersichtlich | mittel | mittel | Die Palette zeigt nur Kontext-Aktionen und filtert nach Verfügbarkeit; die Filterregel wird in M1 festgelegt und in M8 geprüft | UI-Engineer |
+| Der Fernbedienungs-Kontext scheitert an der Play-Prüfung | mittel | hoch | M8 ist ein eigener Meilenstein mit eigenem Prüfprotokoll, nicht eine Nachlieferung zu M4; die Erreichbarkeitsliste wird ab M1 mitgeführt | Produkt |
+| SMB-Bibliotheken tragen ein ungünstiges Lizenzmodell | niedrig | mittel | `pavao` ist nicht eingebunden; die `deny.toml` erzwingt die Lizenzprüfung, eine Copyleft-Abhängigkeit fällt im Gate durch | Sicherheit |
+| Die Quer-Kompilierung für Android und iOS scheitert an Systembibliotheken | hoch | hoch | `smb2` und `russh` sind reines Rust; Bibliotheken mit C-Anteilen (`pavao`, `ssh2`) sind ausgeschlossen | Architekt |
+| Die iPadOS-Sandbox begrenzt den Funktionsumfang stärker als erwartet | hoch | mittel | Die Einschränkung steht in der Spezifikation und wird im M5-Dokument ausgewiesen, nicht verschwiegen | Produkt |
+| Die Codelänge-Regel bremst die Entwicklung | mittel | niedrig | Die Grenze von 400 Zeilen zwingt zur sauberen Zerlegung; das ist der Zweck, kein Hindernis | Architekt |
+| Der Build bricht in der CI und nicht lokal | mittel | mittel | Der zentrale Build in der CI ist das Gate; lokal wird nur entwickelt | Qualität |
+
+Das höchste Risiko liegt bei der Dateisystemabstraktion, und es ist das einzige mit der Bewertung „hoch" bei beiden Achsen. Deshalb wird sie vor dem ersten Code in einem ADR entschieden und in M1 mit einer Testimplementierung einer entfernten Quelle geprüft, statt erst in M6 aufzutauchen. Die beiden Risiken mit der höchsten Eintrittswahrscheinlichkeit betreffen die Quer-Kompilierung und die iPadOS-Sandbox — beide sind unvermeidbar und werden deshalb früh verifiziert statt später umgangen.
+
+### Rücksprungregel
+
+Stellt sich in einem Meilenstein heraus, dass eine Grundannahme nicht trägt, wird **nicht** am Symptom herumgebaut. Der betroffene Meilenstein wird angehalten, die Annahme in einem ADR oder in der Spezifikation korrigiert, und die Arbeit am veränderten Teil wiederholt. Das kostet Tage, spart aber ein Feature, das auf einer falschen Annahme ruht.
+
+---
+
+## Abnahmeregelungen
+
+Jede Meilensteinabnahme folgt demselben Muster. Die Datei liegt unter `docs/acceptance/M<n>-ACCEPTANCE.md` und trägt die Abschnitte in dieser Reihenfolge.
+
+### Aufbau einer Abnahme
+
+**Funktionalität.** Welche Funktionen des Meilenstands sind vorhanden und wie verhalten sie sich? Jede Zeile nennt die Anforderungs-ID und ein beobachtetes Verhalten, keine Behauptung.
+
+**Technik.** Welche Architekturentscheidungen sind umgesetzt, welche Crate-Grenzen wurden eingehalten, welche Werkzeuge liefen durch?
+
+**Leistung.** Welche Zielwerte wurden gemessen, mit welchem Werkzeug, mit welchem Ergebnis? Nicht gemessene Zielwerte werden als „nicht gemessen" ausgewiesen — nicht als „erfüllt".
+
+**Benutzerführung.** Wie sieht der Meilenstein aus und wie wird er bedient? Tastaturführung ist getrennt auszuweisen, weil sie der Hauptbedienweg ist.
+
+**Sicherheit und Datenschutz.** Welche Härtungen sind wirksam, und **welcher negative Test belegt das**? Ein positiver Test beweist nichts über die Abwehr.
+
+**Interoperabilität.** Welche fremden Systeme wurden geprüft — Archive mit fremden Werkzeugen, Netzlaufwerke mit Samba, WebDAV mit Nextcloud?
+
+**Bekannte Einschränkungen.** Was funktioniert nicht, und warum? Diese Liste ist Pflicht und darf nicht leer sein, solange es etwas gibt.
+
+**Entscheidung.** Abgenommen, mit Auflagen, oder abgelehnt. Die Entscheidung nennt die Person und das Datum.
+
+### Belegregeln
+
+Ein Beleg ist eine Kommandoausgabe, ein Testname mit grünem Ergebnis oder ein Abzug aus einer Abnahmedokumentation. „Funktioniert" ist kein Beleg. „Sollte passen" ist kein Beleg. Eine Coverage-Prozentzahl ohne Messung ist kein Beleg.
+
+Tests, die nicht ausgeführt werden konnten, werden als **NOT RUN mit exaktem Grund** ausgewiesen. Ein NOT RUN mit Begründung ist zulässig und ehrlich. Ein vorgetäuschter PASS ist unzulässig.
+
+### Die Abnahme-Gates
+
+Diese Gates bilden das Gerüst, an dem jede Änderung gemessen wird.
+
+| Gate | Wann | Was geprüft wird | Was bei Rot passiert |
+|---|---|---|---|
+| **Formatierung** | jede Änderung | `cargo fmt --check` | Der Build bricht ab |
+| **Statische Analyse** | jede Änderung | `cargo clippy --all-targets -- -D warnings` | Der Build bricht ab |
+| **Lizenzprüfung** | jede Änderung | `cargo deny check` | Der Build bricht ab |
+| **Schwachstellenprüfung** | jede Änderung | `cargo audit` | Der Build bricht ab |
+| **Crate-Grenzen** | jede Änderung | `scripts/check-crate-boundaries.sh` | Der Build bricht ab |
+| **Testlauf** | jede Änderung | `cargo test --workspace` | Der Build bricht ab |
+| **Plattformbau** | vor Meilensteinabschluss | Bau auf Linux, macOS, Windows, FreeBSD, Android, iOS | Der Meilenstein gilt nicht als erreicht |
+| **Leistung** | vor Meilensteinabschluss | Die Zielwerte der Spezifikation, gemessen mit `criterion` | Der Meilenstein gilt nicht als erreicht |
+| **Sicherheitsnachweis** | vor Meilensteinabschluss | Die negativen Tests für jede Härtung | Der Meilenstein gilt nicht als erreicht |
+| **Bedienerreichbarkeit** | vor M8 | Jede Aktion ist im `dpad`-Kontext erreichbar | M8 gilt nicht als erreicht |
+
+Kein Gate wird abgeschwächt, um grün zu werden. Ein Lint wird nicht mit `#[allow]` wegkommentiert, eine Prüfung wird nicht aus der CI entfernt, ein Test wird nicht deaktiviert.
+
+### Nachweisverzeichnis
+
+Unter `docs/acceptance/` liegen die Abnahmedokumente, unter `docs/reviews/` die Reviews und unter `docs/security/` das Bedrohungsmodell. Die Dateien sind nummeriert und datiert, damit der Verlauf des Projekts nachvollziehbar bleibt.
 
 ---
 
@@ -537,21 +879,37 @@ Ein Team-Durchlauf arbeitet in Zyklen aus Erzeugung und unabhängiger Prüfung: 
 
 ---
 
-## Offene Entscheidungen
+## Getroffene Entscheidungen
 
-Fünf Punkte brauchen eine Entscheidung des Eigentümers, bevor die Umsetzung beginnt. Zu jedem steht eine Empfehlung.
+Die folgenden Entscheidungen sind vom Owner am 24.10.2026 getroffen. Sie sind verbindlich. Jede Abweichung braucht eine neue Entscheidung, die hier mit Datum und Begründung nachgetragen wird.
 
-**E1 — Strenge der Plattformanpassung.** Option A (empfohlen): egui als gemeinsame Oberfläche mit nativer Menüleiste, nativen Dialogen, Plattform-Shortcuts und Plattform-Metriken. Einheitliches, dichtes Werkzeug, ein Codepfad, sechs Plattformen. Option B: native Oberflächen je Plattform (AppKit, UIKit, Win32, GTK, Compose) über eine Rust-Kernbibliothek. Echtes Systemoptik, aber der sechsfache Pflegeaufwand und je Zielplatform eine zweite Sprache. Option C: Tauri mit Weboberfläche. Am schnellsten zu einer optisch modernen Oberfläche, aber kein reines Rust und plattformabhängige Webview-Darstellung.
+**E1 — Strenge der Plattformanpassung: Option A.** egui als gemeinsame Oberfläche, ergänzt um native Menüleiste über `muda`, native Dialoge über `rfd`, Plattform-Shortcuts und Plattform-Metriken. Ein Codepfad, sechs Plattformen.
 
-**E2 — Reichweite der Archivunterstützung.** Empfehlung: sieben Verfahren in drei Formaten zum Start (ZIP, TAR mit GZip/BZip2/XZ/Zstd, 7z), RAR und die exotischen Formate ausgeschlossen. RAR erfordert eine Lizenz der WinRAR-Eigentümer, die nicht eingeholt wird. Oder: RAR später über eine Freeware-Bibliothek nachziehen, sobald die Architektur steht.
+**E2 — Reichweite der Archivunterstützung: ZIP, TAR mit fünf Kompressionen, 7z.** RAR und die exotischen Formate bleiben außen vor. RAR erfordert eine Lizenz der WinRAR-Eigentümer, die nicht eingeholt wird.
 
-**E3 — Strenge der Sicherheitshärtung.** Empfehlung: streng. Kein `extract()` aus den Crates, eigene kanonisierte Pfadauflösung, Symlinks aus Archivenmaterial grundsätzlich nicht erzeugen, Größenlimits gegen Dekompressionsbomben, `cargo-deny` und `cargo-audit` als harte CI-Gates. Der Aufwand ist einmalig und schützt vor der graviersten Fehlerklasse in Dateimanagern.
+**E3 — Strenge der Sicherheitshärtung: streng.** Kein `extract()` aus den Crates, eigene kanonisierte Pfadauflösung, Symlinks aus Archivmaterial werden nicht erzeugt, Größenlimits gegen Dekompressionsbomben, `cargo-deny` und `cargo-audit` als harte CI-Gates.
 
-**E4 — Einsatz der App-Sandbox auf macOS.** Empfehlung: nein, mit Notarisierung und einer Erststart-Seite, die „Full Disk Access" erklärt. Ein sandboxed Dateimanager verliert seine Grundfunktion. Der Preis ist die Verantwortung des Nutzers, der die Berechtigung erteilt — die App darf sie weder erzwingen noch umgehen [35].
+**E4 — App-Sandbox auf macOS: nein.** Auslieferung ohne App-Sandbox, mit Notarisierung, Hardened Runtime und einer Erststart-Seite, die „Full Disk Access" erklärt. Die App erzwingt die Berechtigung nicht und umgeht sie nicht.
 
-**E5 — Umfang der Viewer-Formate zum Start.** Empfehlung: Stufe 1 komplett (Text, Hex, Bilder, Archivinhalt, Metadaten), PDF und Syntaxhervorhebung in M2, Audio und Video in M3. Die Konkurrenz nennt „80+ Formate"; eine ehrliche Liste mit zehn wirklich funktionierenden Formaten ist die bessere Positionierung.
+**E5 — Viewer-Umfang zum Start: Stufe 1 vollständig.** Text, Hex, Bilder, Archivinhalt und Metadaten ab M1, PDF und Syntaxhervorhebung ab M2, Audio und Video ab M9. Eine ehrliche Liste mit zehn funktionierenden Formaten ist die Positionierung.
 
----
+**E6 — Reihenfolge der Netzwerkmeilensteine: SMB und WebDAV zuerst.** Beide werden im eigenen Heimnetz genutzt, WebDAV deckt zugleich Nextcloud, ownCloud und die meisten NAS-Systeme ab. SFTP und FTP folgen in M6 gemeinsam mit dem Verbindungsmanagement.
+
+**E7 — SMB-Härtung: streng.** SMB1 und NTLMv1 werden nicht implementiert. Signatur und Transportverschlüsselung werden nach Möglichkeit verlangt. Ein Server ohne Unterstützung für Signatur oder Verschlüsselung wird abgelehnt statt stillschweigend akzeptiert.
+
+**E8 — Quest-Unterstützung: Bedienkontext `controller` auf der Android-Version.** Kein immersiver VR-Port. Die Einschränkung — im Panel-Modus gibt es keine Tastatur — wird in der Dokumentation ausgewiesen.
+
+**E9 — Fernbedienungs-Bedienung: Vollversion, keine Zusatzfunktion.** Jede Aktion ist im `dpad`-Kontext erreichbar, weil Google Play die gesamte Funktionalität mit Fünf-Wege-D-Pad prüft. Eine Einschränkung auf eine Grundversion wäre auch eine kostenpflichtige Aufweichung der Devise „kostenlos".
+
+### Offene Punkte für die Umsetzung
+
+Die folgenden Punkte sind während der Umsetzung zu klären. Sie blockieren den Start nicht, brauchen aber eine Antwort, bevor die betroffene Zeile Code geschrieben wird.
+
+**Bezugsgröße der Serienfolgen-Erkennung.** Ob der Serienname aus dem übergeordneten Verzeichnis übernommen oder bei jeder Serie neu eingegeben wird, ist eine Frage der Gewohnheit. Vorschlag: Der Verzeichnisname ist die Vorgabe, er wird aber immer angezeigt und ist überschreibbar. Die Entscheidung fällt bei der ersten Erprobung mit echten Serien.
+
+**Umfang der Aktionpalette.** Ob die Palette nur Aktionen zeigt, die im aktuellen Kontext sinnvoll sind, oder alle Aktionen mit einem Hinweis auf nicht erreichbare. Vorschlag: nur erreichbare. Eine Palette, die ständig nicht funktionierende Einträge zeigt, ist genau das Clutter, das das Produkt vermeiden soll.
+
+**Grenze der Ergebnisgröße bei Netzwerkquellen.** Der Vorschlag in der Spezifikation ist ein festes Lesebudget. Der genaue Wert richtet sich nach der kleinsten sinnvollen Zielplattform und wird bei M6 gemessen, nicht geraten.
 
 ## Quellenverzeichnis
 
@@ -593,3 +951,13 @@ Fünf Punkte brauchen eine Entscheidung des Eigentümers, bevor die Umsetzung be
 [36] Double Commander — Tastenbelegung als Quasi-Standard-Referenz: https://github.com/networm/doublecmd/blob/main/shortcuts.scf
 [37] Rust-GUI-Ökosystem — Tauri im Detail: https://github.com/GoldStrikeArch/rust-gui-desktop-ecosystem-state/blob/main/report/04-tauri.md
 [38] Die besten macOS-Dateimanager 2026: https://www.compsmag.com/best/mac-file-managers/
+[39] Nextcloud — WebDAV-Basic-APIs (PROPFIND, PUT, MKCOL): https://docs.nextcloud.com/server/latest/developer_manual/client_apis/WebDAV/basic.html
+[40] Android TV — Navigation mit D-Pad: https://developer.android.com/training/tv/get-started/navigation
+[41] Android TV — TV-App-Qualitätsvorgaben (TV-DP, TV-DM, TV-DB, TV-ML, TV-MT): https://developer.android.com/develop/adaptive-apps/quality-guidelines/tv-app-quality
+[42] TrueNAS — SMB-Dienst, NTLMv1-Abschaltung durch Microsoft: https://www.truenas.com/docs/scale/26/systemsettings/services/smbservice/
+[43] Microsoft — SMB-Abfangschutz, SMB1-Abschaltung, Signaturpflicht: https://learn.microsoft.com/en-us/windows-server/storage/file-server/smb-interception-defense
+[44] Meta — Horizon OS, Grundlagen (Android-basiert): https://developers.meta.com/vr/essentials/quick-start/
+[45] Meta — Plattformen und Werkzeuge (Flat Panels, Gestenabbildung): https://developers.meta.com/vr/discover/platforms/
+[46] openxr — Rust-Bindings für OpenXR: https://crates.io/crates/openxr
+[47] crates.io — Paketregister (Versionen und Lizenzen der genannten Crates): https://crates.io/
+[48] winit — Plattform- und Eingabeunterstützung: https://docs.rs/crate/winit/latest/source/FEATURES.md
