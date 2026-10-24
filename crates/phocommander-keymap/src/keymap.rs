@@ -36,35 +36,35 @@ pub struct Keymap {
 }
 
 impl Keymap {
-/// Creates a keymap without any binding.
+    /// Creates a keymap without any binding.
     pub fn new() -> Self {
         Self::default()
     }
 
-/// Reads the bindings of every context from the tables of the
-/// configuration file.
-///
-/// WHY: the keymap is built from the tables of the configuration file, so
-/// that the file stays the only place a binding is written down. A
-/// malformed action identifier is refused here, with its name.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use std::collections::BTreeMap;
-/// use phocommander_keymap::{Context, Keymap};
-///
-/// # fn main() -> Result<(), phocommander_keymap::BindingError> {
-/// let mut keyboard = BTreeMap::new();
-/// keyboard.insert("panel.copy".to_string(), "F5".to_string());
-///
-/// let mut tables = BTreeMap::new();
-/// tables.insert(Context::Keyboard, keyboard);
-///
-/// let keymap = Keymap::from_context_tables(&tables)?;
-/// assert!(keymap.conflicts().is_empty());
-/// # Ok(())
-/// # }
-/// ```
+    /// Reads the bindings of every context from the tables of the
+    /// configuration file.
+    ///
+    /// WHY: the keymap is built from the tables of the configuration file, so
+    /// that the file stays the only place a binding is written down. A
+    /// malformed action identifier is refused here, with its name.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use std::collections::BTreeMap;
+    /// use phocommander_keymap::{Context, Keymap};
+    ///
+    /// # fn main() -> Result<(), phocommander_keymap::BindingError> {
+    /// let mut keyboard = BTreeMap::new();
+    /// keyboard.insert("panel.copy".to_string(), "F5".to_string());
+    ///
+    /// let mut tables = BTreeMap::new();
+    /// tables.insert(Context::Keyboard, keyboard);
+    ///
+    /// let keymap = Keymap::from_context_tables(&tables)?;
+    /// assert!(keymap.conflicts().is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_context_tables(
         tables: &BTreeMap<Context, BTreeMap<String, String>>,
     ) -> Result<Self, BindingError> {
@@ -75,21 +75,21 @@ impl Keymap {
         Ok(Self { contexts })
     }
 
-/// The bindings of a context.
+    /// The bindings of a context.
     pub fn bindings(&self, context: Context) -> Option<&Bindings> {
         self.contexts.get(&context)
     }
 
-/// The key combinations that are bound to an action in a context.
+    /// The key combinations that are bound to an action in a context.
     pub fn keys_for(&self, context: Context, action: &ActionId) -> Option<&[String]> {
         self.contexts.get(&context)?.keys_for(action)
     }
 
-/// Every conflict of the keymap.
-///
-/// WHY: the same key combination may be used in different contexts — {F5}
-/// on the keyboard and a palette entry on the television remote control
-/// do not collide. Only the bindings inside one context can conflict.
+    /// Every conflict of the keymap.
+    ///
+    /// WHY: the same key combination may be used in different contexts — {F5}
+    /// on the keyboard and a palette entry on the television remote control
+    /// do not collide. Only the bindings inside one context can conflict.
     pub fn conflicts(&self) -> Vec<BindingConflict> {
         let mut conflicts = Vec::new();
         for bindings in self.contexts.values() {
@@ -100,6 +100,10 @@ impl Keymap {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
