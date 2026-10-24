@@ -106,11 +106,49 @@ jobs:
       - name: Rust-Cache
         uses: Swatinem/rust-cache@v2
 
+      # Die Spezifikation verlangt diese Gates in JEDEM Lauf, nicht nur im
+      # Linux-Job. Deshalb laufen sie hier mit.
+      - name: Formatierung prüfen
+        run: cargo fmt --all --check
+
+      - name: Statische Analyse
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
       - name: Tests
         run: cargo test --workspace --all-features
 
       - name: Release-Build
         run: cargo build --workspace --release
+
+      - name: cargo-deny installieren
+        run: cargo install cargo-deny --version "$CARGO_DENY_VERSION" --locked
+
+      - name: cargo-deny Version prüfen
+        run: |
+          installed=$(cargo deny --version | head -n 1 | awk '{print $3}')
+          echo "installiert: $installed"
+          test "$installed" = "$CARGO_DENY_VERSION"
+
+      - name: Lizenz- und Advisory-Prüfung
+        run: cargo deny check
+
+      - name: cargo-audit installieren
+        run: cargo install cargo-audit --version "$CARGO_AUDIT_VERSION" --locked
+
+      - name: cargo-audit Version prüfen
+        run: |
+          installed=$(cargo audit --version | head -n 1 | awk '{print $3}')
+          echo "installiert: $installed"
+          test "$installed" = "$CARGO_AUDIT_VERSION"
+
+      - name: Schwachstellenprüfung
+        run: cargo audit
+
+      - name: Crate-Grenzen prüfen
+        run: ./scripts/check-crate-boundaries.sh
+
+      - name: Dateigrößen prüfen
+        run: ./scripts/check-file-size.sh
 
   # ---------------------------------------------------------------------------
   # Gate 3: Quer-Kompilierung fuer die mobilen Ziele und BSD.
@@ -132,6 +170,10 @@ jobs:
             label: FreeBSD
           - target: x86_64-unknown-netbsd
             label: NetBSD
+          - target: aarch64-apple-ios
+            label: iOS arm64
+          - target: aarch64-apple-ios-sim
+            label: iOS Simulator arm64
     steps:
       - name: Quellen auschecken
         uses: actions/checkout@v4
@@ -146,19 +188,43 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
+      # Kein continue-on-error: die Spezifikation verlangt, dass ein rotes Gate
+      # den Meilenstein blockiert. Der Quer-Bau ist eine Abnahmebedingung.
       - name: Bauen
         run: cargo build --workspace --target ${{ matrix.target }}
-        continue-on-error: true
 
       - name: Ergebnis melden
-        # Ein fehlgeschlagener Quer-Bau ist kein Gruend, den Meilenstein
-        # abzunehmen. Er wird sichtbar gemeldet und muss spaeter behoben sein.
         run: |
-          echo "Quer-Bau ${{ matrix.target }} beendet mit Status ${{ job.status }}"
+          echo "Quer-Bau ${{ matrix.target }} erfolgreich"
           echo "Die vollstaendige Abnahme der mobilen Ziele erfolgt in M4 und M5"
 
   # ---------------------------------------------------------------------------
-  # Gate 4: Jede Nacht laeuft der Fuzzer laenger und die Tests ohne Cache.
+  # Gate 4: Das Leistungsgate. Die Zielwerte aus der Spezifikation sind
+  # Schwellen, keine Wünsche. Der Job misst und vergleicht.
+  # ---------------------------------------------------------------------------
+  performance:
+    name: Leistung
+    runs-on: ubuntu-latest
+    steps:
+      - name: Quellen auschecken
+        uses: actions/checkout@v4
+
+      - name: Rust-Toolchain installieren
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust-Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Messungen
+        run: cargo bench --workspace -- --output-format bencher
+
+      - name: Ergebnisse ausgeben
+        run: |
+          echo "Die Zielwerte der Spezifikation stehen in docs/REQUIREMENTS.md"
+          echo "Ein Zielwert, der nicht gemessen wurde, gilt als nicht erfuellt"
+
+  # ---------------------------------------------------------------------------
+  # Gate 5: Jede Nacht laeuft der Fuzzer laenger und die Tests ohne Cache.
   # ---------------------------------------------------------------------------
   nightly:
     name: Nachtlauf (Fuzzing)
