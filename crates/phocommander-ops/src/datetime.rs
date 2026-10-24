@@ -1,11 +1,11 @@
 //! The formatting of a point in time.
 //!
-//! WHAT: the date of a file ([`format_date`]) and the time of a file
-//!       ([`format_time`]).
-//! WHY: the rename placeholders `[date]` and `[time]` have to show a date
+//! WHAT: the date of a file ([{format_date}]) and the time of a file
+//!       ([{format_time}]).
+//! WHY: the rename placeholders {[date]} and {[time]} have to show a date
 //!       that is the same on every platform and in every language, because
 //!       the name of a file is not translated. The format is the one of the
-//!       specification: the date as `YYYY-MM-DD` and the time as `HH-MM-SS`.
+//!       specification: the date as 'YYYY-MM-DD' and the time as 'HH-MM-SS'.
 //!       The dashes instead of the colons keep the name usable on every
 //!       platform.
 //! EXAMPLE:
@@ -23,7 +23,7 @@ use std::time::{Duration, SystemTime};
 /// the time zone of the file system.
 const SECONDS_PER_DAY: i64 = 86_400;
 
-/// Formats the date of a point in time as `YYYY-MM-DD`.
+/// Formats the date of a point in time as 'YYYY-MM-DD'.
 ///
 /// EXAMPLE:
 /// ```no_run
@@ -38,7 +38,7 @@ pub fn format_date(time: SystemTime) -> String {
     format!("{year:04}-{month:02}-{day:02}")
 }
 
-/// Formats the time of a point in time as `HH-MM-SS`.
+/// Formats the time of a point in time as 'HH-MM-SS'.
 ///
 /// EXAMPLE:
 /// ```no_run

@@ -1,12 +1,12 @@
 //! The rules for a name that is valid on every target platform.
 //!
 //! WHAT: the characters that Windows forbids
-//!       ([`WINDOWS_FORBIDDEN_CHARACTERS`]), the characters that are
-//!       forbidden on every platform ([`FORBIDDEN_CONTROL_CHARACTERS`]), the
+//!       ([{WINDOWS_FORBIDDEN_CHARACTERS}]), the characters that are
+//!       forbidden on every platform ([{FORBIDDEN_CONTROL_CHARACTERS}]), the
 //!       replacement that is suggested for a character
-//!       ([`suggest_replacement`]), the characters of a name that are not
-//!       allowed ([`invalid_characters`]) and the device names that Windows
-//!       reserves ([`is_reserved_device_name`]).
+//!       ([{suggest_replacement}]), the characters of a name that are not
+//!       allowed ([{invalid_characters}]) and the device names that Windows
+//!       reserves ([{is_reserved_device_name}]).
 //! WHY: the specification asks for the characters that the target platform
 //!       forbids to be reported *before* the rename, together with a
 //!       replacement that is suggested (FR-40). Nothing may be changed
@@ -96,7 +96,7 @@ pub fn invalid_characters(name: &str) -> Vec<(char, char)> {
 
 /// Whether the name is a device name that Windows reserves.
 ///
-/// WHY: Windows refuses to create a file called `CON` or `NUL`, and it does
+/// WHY: Windows refuses to create a file called {CON} or {NUL}, and it does
 /// so in a way that silently redirects the write. A name that is reserved on
 /// one platform has to be reported before the operation, not after it.
 ///

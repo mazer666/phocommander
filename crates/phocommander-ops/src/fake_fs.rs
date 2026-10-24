@@ -1,7 +1,7 @@
 //! A file system that lives in the memory, for the tests of the crate.
 //!
-//! WHAT: [`FakeFileSystem`], an implementation of
-//!       [`crate::port::FileSystem`] that keeps its files in a map.
+//! WHAT: [{FakeFileSystem}], an implementation of
+//!       [{crate::port::FileSystem}] that keeps its files in a map.
 //! WHY: the operations have to be testable without a file system — a test
 //!       that writes into a temporary directory proves that the copy works,
 //!       a test that works on a map proves that the *decisions* of the copy
@@ -44,15 +44,15 @@ pub struct FakeFileSystem {
 }
 
 impl FakeFileSystem {
-    /// Builds a file system that is empty.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    ///
-    /// let fs = FakeFileSystem::new();
-    /// assert!(fs.read_dir(std::path::Path::new("/")).unwrap_or_default().is_empty());
-    /// ```
+/// Builds a file system that is empty.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+///
+/// let fs = FakeFileSystem::new();
+/// assert!(fs.read_dir(std::path::Path::new("/")).unwrap_or_default().is_empty());
+/// ```
     pub fn new() -> Self {
         let mut entries = HashMap::new();
         entries.insert(
@@ -68,17 +68,17 @@ impl FakeFileSystem {
         }
     }
 
-    /// Writes a file and creates the directories above it.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use std::path::Path;
-    ///
-    /// let fs = FakeFileSystem::new();
-    /// fs.write_file(Path::new("/photos/a.txt"), b"payload").unwrap_or_default();
-    /// assert_eq!(fs.read_file(Path::new("/photos/a.txt")).unwrap_or_default(), b"payload");
-    /// ```
+/// Writes a file and creates the directories above it.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use std::path::Path;
+///
+/// let fs = FakeFileSystem::new();
+/// fs.write_file(Path::new("/photos/a.txt"), b"payload").unwrap_or_default();
+/// assert_eq!(fs.read_file(Path::new("/photos/a.txt")).unwrap_or_default(), b"payload");
+/// ```
     pub fn write_file(&self, path: &Path, content: &[u8]) -> Result<(), OpError> {
         let mut entries = self.lock();
         if let Some(parent) = path.parent() {
@@ -102,17 +102,17 @@ impl FakeFileSystem {
         Ok(())
     }
 
-    /// The content of a file.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use std::path::Path;
-    ///
-    /// let fs = FakeFileSystem::new();
-    /// fs.write_file(Path::new("/a.txt"), b"payload").unwrap_or_default();
-    /// assert_eq!(fs.read_file(Path::new("/a.txt")).unwrap_or_default(), b"payload");
-    /// ```
+/// The content of a file.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use std::path::Path;
+///
+/// let fs = FakeFileSystem::new();
+/// fs.write_file(Path::new("/a.txt"), b"payload").unwrap_or_default();
+/// assert_eq!(fs.read_file(Path::new("/a.txt")).unwrap_or_default(), b"payload");
+/// ```
     pub fn read_file(&self, path: &Path) -> Result<Vec<u8>, OpError> {
         let entries = self.lock();
         match entries.get(path) {
@@ -123,47 +123,47 @@ impl FakeFileSystem {
         }
     }
 
-    /// Whether a path exists.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use std::path::Path;
-    ///
-    /// let fs = FakeFileSystem::new();
-    /// assert!(!fs.exists(Path::new("/a.txt")));
-    /// ```
+/// Whether a path exists.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use std::path::Path;
+///
+/// let fs = FakeFileSystem::new();
+/// assert!(!fs.exists(Path::new("/a.txt")));
+/// ```
     pub fn exists(&self, path: &Path) -> bool {
         self.lock().contains_key(path)
     }
 
-    /// The number of entries the file system holds.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    ///
-    /// let fs = FakeFileSystem::new();
-    /// assert_eq!(fs.len(), 1);
-    /// ```
+/// The number of entries the file system holds.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+///
+/// let fs = FakeFileSystem::new();
+/// assert_eq!(fs.len(), 1);
+/// ```
     pub fn len(&self) -> usize {
         self.lock().len()
     }
 
-    /// Whether the file system is empty.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    ///
-    /// let fs = FakeFileSystem::new();
-    /// assert!(!fs.is_empty());
-    /// ```
+/// Whether the file system is empty.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+///
+/// let fs = FakeFileSystem::new();
+/// assert!(!fs.is_empty());
+/// ```
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    /// Locks the entries of the file system.
+/// Locks the entries of the file system.
     fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<PathBuf, FakeEntry>> {
         self.entries
             .lock()

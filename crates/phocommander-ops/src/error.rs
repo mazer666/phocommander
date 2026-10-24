@@ -1,8 +1,8 @@
 //! The failures of the operations and the stable codes of the jobs.
 //!
-//! WHAT: the failure of a single file operation ([`OpError`]), the failure a
-//!       job collects ([`JobError`]) and the code that names it
-//!       ([`JobErrorCode`]).
+//! WHAT: the failure of a single file operation ([{OpError}]), the failure a
+//!       job collects ([{JobError}]) and the code that names it
+//!       ([{JobErrorCode}]).
 //! WHY: a job does not stop at the first failure — it collects the failures
 //!       and continues with the next item (FR-25). Every collected failure
 //!       therefore has to name the item it belongs to and say whether the job
@@ -31,28 +31,28 @@ use std::path::PathBuf;
 /// The reason why a name cannot be used.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NameProblem {
-    /// The name contains a character that Windows forbids.
+/// The name contains a character that Windows forbids.
     ForbiddenCharacter,
 
-    /// The name is a device name that Windows reserves.
+/// The name is a device name that Windows reserves.
     ReservedDeviceName,
 
-    /// The name is empty.
+/// The name is empty.
     Empty,
 
-    /// The name contains a separator and would name a directory.
+/// The name contains a separator and would name a directory.
     PathSeparator,
 }
 
 impl NameProblem {
-    /// The stable code of the problem.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::NameProblem;
-    ///
-    /// assert_eq!(NameProblem::ForbiddenCharacter.as_str(), "path.reserved");
-    /// ```
+/// The stable code of the problem.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::NameProblem;
+///
+/// assert_eq!(NameProblem::ForbiddenCharacter.as_str(), "path.reserved");
+/// ```
     pub fn as_str(&self) -> &'static str {
         match self {
             NameProblem::ForbiddenCharacter => "path.reserved",
@@ -66,76 +66,76 @@ impl NameProblem {
 /// The failure of a single file operation.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum OpError {
-    /// The file system refused the operation.
+/// The file system refused the operation.
     #[error("the file system refused the operation for {path}: {source}")]
     Io {
-        /// The path the operation was working on.
+/// The path the operation was working on.
         path: PathBuf,
-        /// The error the operating system reported.
+/// The error the operating system reported.
         #[source]
         source: io::Error,
     },
 
-    /// The path does not exist.
+/// The path does not exist.
     #[error("{path} does not exist")]
     NotFound {
-        /// The path that does not exist.
+/// The path that does not exist.
         path: PathBuf,
     },
 
-    /// The path exists already.
+/// The path exists already.
     #[error("{path} exists already")]
     AlreadyExists {
-        /// The path that exists.
+/// The path that exists.
         path: PathBuf,
     },
 
-    /// The name cannot be used on the target platform.
+/// The name cannot be used on the target platform.
     #[error("the name {name} cannot be used: {problem}")]
     InvalidName {
-        /// The name that was refused.
+/// The name that was refused.
         name: String,
-        /// The reason why the name was refused.
+/// The reason why the name was refused.
         problem: NameProblem,
     },
 
-    /// The plan of a synchronisation was not confirmed.
+/// The plan of a synchronisation was not confirmed.
     #[error("the synchronisation plan was not confirmed")]
     NotConfirmed,
 
-    /// The source and the destination differ after a verified copy.
+/// The source and the destination differ after a verified copy.
     #[error("the checksum of {path} differs from the checksum of the source")]
     ChecksumMismatch {
-        /// The path of the destination that was checked.
+/// The path of the destination that was checked.
         path: PathBuf,
     },
 
-    /// The mode does not belong to the operation.
+/// The mode does not belong to the operation.
     #[error("the mode {mode} does not belong to this operation")]
     UnsupportedMode {
-        /// The name of the mode.
+/// The name of the mode.
         mode: String,
     },
 
-    /// The operation was cancelled.
+/// The operation was cancelled.
     #[error("the operation was cancelled")]
     Cancelled,
 }
 
 impl OpError {
-    /// The stable code of the failure.
-    ///
-    /// WHY: the code decides which message the user interface shows and
-    /// whether the job may continue.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::{JobErrorCode, OpError};
-    /// use std::path::PathBuf;
-    ///
-    /// let error = OpError::NotFound { path: PathBuf::from("a.txt") };
-    /// assert_eq!(error.code(), JobErrorCode::NotFound);
-    /// ```
+/// The stable code of the failure.
+///
+/// WHY: the code decides which message the user interface shows and
+/// whether the job may continue.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::{JobErrorCode, OpError};
+/// use std::path::PathBuf;
+///
+/// let error = OpError::NotFound { path: PathBuf::from("a.txt") };
+/// assert_eq!(error.code(), JobErrorCode::NotFound);
+/// ```
     pub fn code(&self) -> JobErrorCode {
         match self {
             OpError::Io { source, .. } => {
@@ -164,51 +164,51 @@ impl OpError {
 /// The stable code of a failure that a job collected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JobErrorCode {
-    /// A file or a directory could not be read.
+/// A file or a directory could not be read.
     IoRead,
 
-    /// A file could not be written.
+/// A file could not be written.
     IoWrite,
 
-    /// The operating system refused the access.
+/// The operating system refused the access.
     IoPermission,
 
-    /// The source and the destination differ after a verified copy.
+/// The source and the destination differ after a verified copy.
     ChecksumMismatch,
 
-    /// The name of a file is not usable.
+/// The name of a file is not usable.
     NameInvalid,
 
-    /// The operation was cancelled.
+/// The operation was cancelled.
     Cancelled,
 
-    /// The plan of a synchronisation was not confirmed.
+/// The plan of a synchronisation was not confirmed.
     NotConfirmed,
 
-    /// The path does not exist.
+/// The path does not exist.
     NotFound,
 
-    /// The path exists already.
+/// The path exists already.
     AlreadyExists,
 
-    /// The mode does not belong to the operation.
+/// The mode does not belong to the operation.
     ModeUnsupported,
 }
 
 impl JobErrorCode {
-    /// The name of the code.
-    ///
-    /// WHY: the codes of ADR-0003 are the contract with the user interface.
-    /// A code that this crate adds keeps the same shape, so that the
-    /// interface can map every code with one table.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::JobErrorCode;
-    ///
-    /// assert_eq!(JobErrorCode::IoRead.as_str(), "io.read");
-    /// assert_eq!(JobErrorCode::ChecksumMismatch.as_str(), "job.checksum_mismatch");
-    /// ```
+/// The name of the code.
+///
+/// WHY: the codes of ADR-0003 are the contract with the user interface.
+/// A code that this crate adds keeps the same shape, so that the
+/// interface can map every code with one table.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::JobErrorCode;
+///
+/// assert_eq!(JobErrorCode::IoRead.as_str(), "io.read");
+/// assert_eq!(JobErrorCode::ChecksumMismatch.as_str(), "job.checksum_mismatch");
+/// ```
     pub fn as_str(&self) -> &'static str {
         match self {
             JobErrorCode::IoRead => "io.read",
@@ -224,17 +224,17 @@ impl JobErrorCode {
         }
     }
 
-    /// The number of the code.
-    ///
-    /// WHY: the number is what a log record carries. It stays stable, even
-    /// when a new code is added next to it.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::JobErrorCode;
-    ///
-    /// assert_eq!(JobErrorCode::ChecksumMismatch.number(), 1301);
-    /// ```
+/// The number of the code.
+///
+/// WHY: the number is what a log record carries. It stays stable, even
+/// when a new code is added next to it.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::JobErrorCode;
+///
+/// assert_eq!(JobErrorCode::ChecksumMismatch.number(), 1301);
+/// ```
     pub fn number(&self) -> u16 {
         match self {
             JobErrorCode::IoRead => 1001,
@@ -254,39 +254,39 @@ impl JobErrorCode {
 /// A failure that a job collected.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JobError {
-    /// The item the operation was working on.
+/// The item the operation was working on.
     pub item: PathBuf,
 
-    /// The stable code of the failure.
+/// The stable code of the failure.
     pub code: JobErrorCode,
 
-    /// The message for the log.
-    ///
-    /// WHY: the message names the cause and never the user. The user
-    /// interface does not show it — it shows the message of the translation
-    /// catalogue that belongs to the code.
+/// The message for the log.
+///
+/// WHY: the message names the cause and never the user. The user
+/// interface does not show it — it shows the message of the translation
+/// catalogue that belongs to the code.
     pub message: String,
 
-    /// Whether the job continues with the next item.
+/// Whether the job continues with the next item.
     pub continues: bool,
 }
 
 impl JobError {
-    /// Builds a collected failure.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::{JobError, JobErrorCode};
-    /// use std::path::PathBuf;
-    ///
-    /// let error = JobError::new(
-    ///     PathBuf::from("sunset.jpg"),
-    ///     JobErrorCode::IoWrite,
-    ///     "the file system refused the operation",
-    ///     true,
-    /// );
-    /// assert_eq!(error.item(), PathBuf::from("sunset.jpg"));
-    /// ```
+/// Builds a collected failure.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::{JobError, JobErrorCode};
+/// use std::path::PathBuf;
+///
+/// let error = JobError::new(
+///     PathBuf::from("sunset.jpg"),
+///     JobErrorCode::IoWrite,
+///     "the file system refused the operation",
+///     true,
+/// );
+/// assert_eq!(error.item(), PathBuf::from("sunset.jpg"));
+/// ```
     pub fn new(
         item: PathBuf,
         code: JobErrorCode,
@@ -301,44 +301,44 @@ impl JobError {
         }
     }
 
-    /// The item the operation was working on.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::{JobError, JobErrorCode};
-    /// use std::path::PathBuf;
-    ///
-    /// let error = JobError::new(PathBuf::from("a.txt"), JobErrorCode::NotFound, "missing", true);
-    /// assert_eq!(error.item(), &PathBuf::from("a.txt"));
-    /// ```
+/// The item the operation was working on.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::{JobError, JobErrorCode};
+/// use std::path::PathBuf;
+///
+/// let error = JobError::new(PathBuf::from("a.txt"), JobErrorCode::NotFound, "missing", true);
+/// assert_eq!(error.item(), &PathBuf::from("a.txt"));
+/// ```
     pub fn item(&self) -> &std::path::Path {
         &self.item
     }
 
-    /// The stable code of the failure.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::{JobError, JobErrorCode};
-    /// use std::path::PathBuf;
-    ///
-    /// let error = JobError::new(PathBuf::from("a.txt"), JobErrorCode::NotFound, "missing", true);
-    /// assert_eq!(error.code(), JobErrorCode::NotFound);
-    /// ```
+/// The stable code of the failure.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::{JobError, JobErrorCode};
+/// use std::path::PathBuf;
+///
+/// let error = JobError::new(PathBuf::from("a.txt"), JobErrorCode::NotFound, "missing", true);
+/// assert_eq!(error.code(), JobErrorCode::NotFound);
+/// ```
     pub fn code(&self) -> JobErrorCode {
         self.code
     }
 
-    /// Whether the job continues with the next item.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::error::{JobError, JobErrorCode};
-    /// use std::path::PathBuf;
-    ///
-    /// let error = JobError::new(PathBuf::from("a.txt"), JobErrorCode::NotFound, "missing", true);
-    /// assert!(error.continues());
-    /// ```
+/// Whether the job continues with the next item.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::error::{JobError, JobErrorCode};
+/// use std::path::PathBuf;
+///
+/// let error = JobError::new(PathBuf::from("a.txt"), JobErrorCode::NotFound, "missing", true);
+/// assert!(error.continues());
+/// ```
     pub fn continues(&self) -> bool {
         self.continues
     }

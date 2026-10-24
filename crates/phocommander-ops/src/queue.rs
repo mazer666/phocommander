@@ -1,8 +1,8 @@
 //! The queue of the background jobs.
 //!
-//! WHAT: the queue itself ([`JobQueue`]), the state it keeps ([`JobState`]
+//! WHAT: the queue itself ([{JobQueue}]), the state it keeps ([{JobState}]
 //!       of the crate) and the snapshot the user interface reads
-//!       ([`JobSnapshot`]).
+//!       ([{JobSnapshot}]).
 //! WHY: every operation that can take longer than a frame belongs into the
 //!       queue, so that the user interface stays usable while a copy runs
 //!       (FR-21, NFR-09). The queue is thread-safe, the number of workers is
@@ -26,7 +26,7 @@
 //! assert!(queue.snapshot_of(id).is_some());
 //! ```
 //! BOUNDARY: the queue owns the jobs and the workers. It performs no file
-//!       operation itself — the workers use the [`crate::port::FileSystem`]
+//!       operation itself — the workers use the [{crate::port::FileSystem}]
 //!       that the composition root hands over.
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -53,33 +53,33 @@ const REPORT_INTERVAL: Duration = Duration::from_millis(100);
 /// One job of the queue.
 #[derive(Debug)]
 struct JobRecord {
-    /// The job itself.
+/// The job itself.
     job: Job,
 
-    /// The flags the worker and the queue share.
+/// The flags the worker and the queue share.
     control: Arc<JobControl>,
 }
 
 /// The state the queue keeps.
 #[derive(Debug, Default)]
 struct QueueState {
-    /// The jobs of the queue, in the order they were submitted.
+/// The jobs of the queue, in the order they were submitted.
     records: Vec<JobRecord>,
 
-    /// The number the next job receives.
+/// The number the next job receives.
     next_id: u64,
 
-    /// Whether the queue is closing.
+/// Whether the queue is closing.
     shutting_down: bool,
 }
 
 /// The parts the workers share.
 #[derive(Debug)]
 struct QueueInner {
-    /// The state of the queue.
+/// The state of the queue.
     state: Mutex<QueueState>,
 
-    /// Wakes a worker that waits for a job.
+/// Wakes a worker that waits for a job.
     wake: Condvar,
 }
 
@@ -91,22 +91,22 @@ pub struct JobQueue {
 }
 
 impl JobQueue {
-    /// Builds a queue and starts its workers.
-    ///
-    /// WHY: the number of workers is bounded, because a queue that starts one
-    /// thread per job would flood the disk with seeks and would take the
-    /// machine away from the program that shows the progress. A number of
-    /// zero means one worker.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 2);
-    /// assert!(queue.snapshot().is_empty());
-    /// ```
+/// Builds a queue and starts its workers.
+///
+/// WHY: the number of workers is bounded, because a queue that starts one
+/// thread per job would flood the disk with seeks and would take the
+/// machine away from the program that shows the progress. A number of
+/// zero means one worker.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 2);
+/// assert!(queue.snapshot().is_empty());
+/// ```
     pub fn new(fs: Arc<dyn FileSystem>, workers: usize) -> Self {
         let inner = Arc::new(QueueInner {
             state: Mutex::new(QueueState {
@@ -133,25 +133,25 @@ impl JobQueue {
         }
     }
 
-    /// Puts a job into the queue.
-    ///
-    /// WHY: the job gets its identifier here, because the identifier is what
-    /// the user interface holds on to while the job runs.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::job::{Job, JobKind, Priority};
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
-    /// let id = queue.enqueue(Job::new(
-    ///     JobKind::CreateDirectory { path: "/photos".into() },
-    ///     Priority::Normal,
-    /// );
-    /// assert!(id.get() > 0);
-    /// ```
+/// Puts a job into the queue.
+///
+/// WHY: the job gets its identifier here, because the identifier is what
+/// the user interface holds on to while the job runs.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::job::{Job, JobKind, Priority};
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
+/// let id = queue.enqueue(Job::new(
+///     JobKind::CreateDirectory { path: "/photos".into() },
+///     Priority::Normal,
+/// );
+/// assert!(id.get() > 0);
+/// ```
     pub fn enqueue(&self, mut job: Job) -> JobId {
         let mut state = self.lock();
         let id = JobId::new(state.next_id);
@@ -166,20 +166,20 @@ impl JobQueue {
         id
     }
 
-    /// The state of every job, as the user interface reads it.
-    ///
-    /// WHY: the interface never reaches into the queue. It reads a copy of
-    /// the state and draws that.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
-    /// assert!(queue.snapshot().is_empty());
-    /// ```
+/// The state of every job, as the user interface reads it.
+///
+/// WHY: the interface never reaches into the queue. It reads a copy of
+/// the state and draws that.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
+/// assert!(queue.snapshot().is_empty());
+/// ```
     pub fn snapshot(&self) -> Vec<JobSnapshot> {
         let state = self.lock();
         state
@@ -189,22 +189,22 @@ impl JobQueue {
             .collect()
     }
 
-    /// The state of one job.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::job::{Job, JobKind, Priority};
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
-    /// let id = queue.enqueue(Job::new(
-    ///     JobKind::CreateDirectory { path: "/photos".into() },
-    ///     Priority::Normal,
-    /// );
-    /// assert!(queue.snapshot_of(id).is_some());
-    /// ```
+/// The state of one job.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::job::{Job, JobKind, Priority};
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
+/// let id = queue.enqueue(Job::new(
+///     JobKind::CreateDirectory { path: "/photos".into() },
+///     Priority::Normal,
+/// );
+/// assert!(queue.snapshot_of(id).is_some());
+/// ```
     pub fn snapshot_of(&self, id: JobId) -> Option<JobSnapshot> {
         let state = self.lock();
         state
@@ -214,22 +214,22 @@ impl JobQueue {
             .map(|record| record.job.snapshot())
     }
 
-    /// The failures of one job.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::job::{Job, JobKind, Priority};
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
-    /// let id = queue.enqueue(Job::new(
-    ///     JobKind::CreateDirectory { path: "/photos".into() },
-    ///     Priority::Normal,
-    /// );
-    /// assert!(queue.errors_of(id).unwrap_or_default().is_empty());
-    /// ```
+/// The failures of one job.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::job::{Job, JobKind, Priority};
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
+/// let id = queue.enqueue(Job::new(
+///     JobKind::CreateDirectory { path: "/photos".into() },
+///     Priority::Normal,
+/// );
+/// assert!(queue.errors_of(id).unwrap_or_default().is_empty());
+/// ```
     pub fn errors_of(&self, id: JobId) -> Option<Vec<JobError>> {
         let state = self.lock();
         state
@@ -239,27 +239,27 @@ impl JobQueue {
             .map(|record| record.job.errors.clone())
     }
 
-    /// Changes a job that has not finished.
-    ///
-    /// WHY: the rule of the states decides whether the change is allowed at
-    /// all, and a change to a running job waits in the control of the job
-    /// until the worker reaches the next item boundary.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::edit::Edit;
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::job::{Job, JobKind, Priority};
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
-    /// let id = queue.enqueue(Job::new(
-    ///     JobKind::CreateDirectory { path: "/photos".into() },
-    ///     Priority::Normal,
-    /// );
-    /// assert!(queue.apply_edit(id, Edit::Priority(Priority::High)).is_ok());
-    /// ```
+/// Changes a job that has not finished.
+///
+/// WHY: the rule of the states decides whether the change is allowed at
+/// all, and a change to a running job waits in the control of the job
+/// until the worker reaches the next item boundary.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::edit::Edit;
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::job::{Job, JobKind, Priority};
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
+/// let id = queue.enqueue(Job::new(
+///     JobKind::CreateDirectory { path: "/photos".into() },
+///     Priority::Normal,
+/// );
+/// assert!(queue.apply_edit(id, Edit::Priority(Priority::High)).is_ok());
+/// ```
     pub fn apply_edit(&self, id: JobId, edit: Edit) -> Result<(), EditError> {
         let mut state = self.lock();
         let record = state
@@ -339,21 +339,21 @@ impl JobQueue {
         }
     }
 
-    /// Waits until no job of the queue is running any more.
-    ///
-    /// WHY: the test of the queue needs a point at which it can look at the
-    /// result. The interface never waits — it draws the snapshot.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    /// use std::time::Duration;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
-    /// assert!(queue.wait_until_idle(Duration::from_millis(50)));
-    /// ```
+/// Waits until no job of the queue is running any more.
+///
+/// WHY: the test of the queue needs a point at which it can look at the
+/// result. The interface never waits — it draws the snapshot.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+/// use std::time::Duration;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
+/// assert!(queue.wait_until_idle(Duration::from_millis(50)));
+/// ```
     pub fn wait_until_idle(&self, timeout: Duration) -> bool {
         let deadline = Instant::now() + timeout;
         loop {
@@ -377,20 +377,20 @@ impl JobQueue {
         }
     }
 
-    /// Closes the queue and waits for its workers.
-    ///
-    /// WHY: a program that leaves does not leave workers behind that write
-    /// into files. The workers stop after the job they are working on.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::fake_fs::FakeFileSystem;
-    /// use phocommander_ops::queue::JobQueue;
-    /// use std::sync::Arc;
-    ///
-    /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
-    /// queue.shutdown();
-    /// ```
+/// Closes the queue and waits for its workers.
+///
+/// WHY: a program that leaves does not leave workers behind that write
+/// into files. The workers stop after the job they are working on.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::fake_fs::FakeFileSystem;
+/// use phocommander_ops::queue::JobQueue;
+/// use std::sync::Arc;
+///
+/// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
+/// queue.shutdown();
+/// ```
     pub fn shutdown(&mut self) {
         {
             let mut state = self.lock();
@@ -403,7 +403,7 @@ impl JobQueue {
         }
     }
 
-    /// Locks the state of the queue.
+/// Locks the state of the queue.
     fn lock(&self) -> std::sync::MutexGuard<'_, QueueState> {
         self.inner
             .state
@@ -413,10 +413,10 @@ impl JobQueue {
 }
 
 impl Drop for JobQueue {
-    /// Closes the queue when it is dropped.
-    ///
-    /// WHY: a queue that is dropped without being closed would leave its
-    /// workers running.
+/// Closes the queue when it is dropped.
+///
+/// WHY: a queue that is dropped without being closed would leave its
+/// workers running.
     fn drop(&mut self) {
         if !self.closed.load(Ordering::SeqCst) {
             self.shutdown();

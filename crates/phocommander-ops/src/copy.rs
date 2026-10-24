@@ -1,9 +1,9 @@
 //! The copy: the modes of the specification and the comparison of two trees.
 //!
-//! WHAT: the modes of a copy ([`CopyMode`]), the request of a copy
-//!       ([`CopyRequest`]), what a copy did ([`CopyOutcome`]), the execution
-//!       of a copy ([`execute_copy`]) and the comparison of two directory
-//!       trees ([`compare_trees`]).
+//! WHAT: the modes of a copy ([{CopyMode}]), the request of a copy
+//!       ([{CopyRequest}]), what a copy did ([{CopyOutcome}]), the execution
+//!       of a copy ([{execute_copy}]) and the comparison of two directory
+//!       trees ([{compare_trees}]).
 //! WHY: a copy is not one operation but a family of them, and the difference
 //!       between them is the difference between a fast copy and a copy that
 //!       can be trusted (section 6.9 of the specification). The user chooses
@@ -23,7 +23,7 @@
 //! let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"));
 //! assert_eq!(request.mode, CopyMode::Verified);
 //! ```
-//! BOUNDARY: this module works through the [`crate::port::FileSystem`] of the
+//! BOUNDARY: this module works through the [{crate::port::FileSystem}] of the
 //!       operations. It never touches a file system on its own.
 
 use std::path::{Path, PathBuf};
@@ -41,45 +41,45 @@ static TEMPORARY_COUNTER: AtomicU64 = AtomicU64::new(0);
 ///
 /// WHY: the modes are the ones of the specification: quick, verified,
 /// atomic, sync-mirror, sync-update, sync-two-way and sync-preview. The
-/// default of a copy is `verified` and the default of a synchronisation is
-/// `sync-preview`, so that the destructive case always requires an explicit
+/// default of a copy is {verified} and the default of a synchronisation is
+/// 'sync-preview', so that the destructive case always requires an explicit
 /// act.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum CopyMode {
-    /// Byte copy, no verification.
+/// Byte copy, no verification.
     Quick,
 
-    /// Byte copy, then a checksum of source and destination compared.
+/// Byte copy, then a checksum of source and destination compared.
     #[default]
     Verified,
 
-    /// Write to a temporary file next to the destination, verify it, then
-    /// rename it into place.
+/// Write to a temporary file next to the destination, verify it, then
+/// rename it into place.
     Atomic,
 
-    /// The destination becomes an exact copy of the source.
+/// The destination becomes an exact copy of the source.
     SyncMirror,
 
-    /// The destination is brought up to date with the source, nothing is
-    /// deleted.
+/// The destination is brought up to date with the source, nothing is
+/// deleted.
     SyncUpdate,
 
-    /// The newer version wins in both directions.
+/// The newer version wins in both directions.
     SyncTwoWay,
 
-    /// No data is moved. The comparison produces a plan.
+/// No data is moved. The comparison produces a plan.
     SyncPreview,
 }
 
 impl CopyMode {
-    /// The name of the mode, as the configuration file writes it.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::copy::CopyMode;
-    ///
-    /// assert_eq!(CopyMode::SyncMirror.as_str(), "sync-mirror");
-    /// ```
+/// The name of the mode, as the configuration file writes it.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::CopyMode;
+///
+/// assert_eq!(CopyMode::SyncMirror.as_str(), "sync-mirror");
+/// ```
     pub fn as_str(&self) -> &'static str {
         match self {
             CopyMode::Quick => "quick",
@@ -92,15 +92,15 @@ impl CopyMode {
         }
     }
 
-    /// Whether the mode belongs to a synchronisation.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::copy::CopyMode;
-    ///
-    /// assert!(CopyMode::SyncPreview.is_sync());
-    /// assert!(!CopyMode::Verified.is_sync());
-    /// ```
+/// Whether the mode belongs to a synchronisation.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::CopyMode;
+///
+/// assert!(CopyMode::SyncPreview.is_sync());
+/// assert!(!CopyMode::Verified.is_sync());
+/// ```
     pub fn is_sync(&self) -> bool {
         matches!(
             self,
@@ -108,33 +108,33 @@ impl CopyMode {
         )
     }
 
-    /// Whether the mode deletes anything.
-    ///
-    /// WHY: `sync-mirror` is the only mode that deletes. The answer decides
-    /// whether the operation may be started without a confirmation.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::copy::CopyMode;
-    ///
-    /// assert!(CopyMode::SyncMirror.deletes());
-    /// assert!(!CopyMode::SyncUpdate.deletes());
-    /// ```
+/// Whether the mode deletes anything.
+///
+/// WHY: 'sync-mirror' is the only mode that deletes. The answer decides
+/// whether the operation may be started without a confirmation.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::CopyMode;
+///
+/// assert!(CopyMode::SyncMirror.deletes());
+/// assert!(!CopyMode::SyncUpdate.deletes());
+/// ```
     pub fn deletes(&self) -> bool {
         matches!(self, CopyMode::SyncMirror)
     }
 
-    /// Whether the mode compares the source and the destination after the
-    /// copy.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::copy::CopyMode;
-    ///
-    /// assert!(CopyMode::Verified.verifies());
-    /// assert!(CopyMode::Atomic.verifies());
-    /// assert!(!CopyMode::Quick.verifies());
-    /// ```
+/// Whether the mode compares the source and the destination after the
+/// copy.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::CopyMode;
+///
+/// assert!(CopyMode::Verified.verifies());
+/// assert!(CopyMode::Atomic.verifies());
+/// assert!(!CopyMode::Quick.verifies());
+/// ```
     pub fn verifies(&self) -> bool {
         matches!(self, CopyMode::Verified | CopyMode::Atomic)
     }
@@ -143,30 +143,30 @@ impl CopyMode {
 /// The request of a copy.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CopyRequest {
-    /// The directory or the file that is copied.
+/// The directory or the file that is copied.
     pub source: PathBuf,
 
-    /// The directory or the file that receives the copy.
+/// The directory or the file that receives the copy.
     pub destination: PathBuf,
 
-    /// The mode of the copy.
+/// The mode of the copy.
     pub mode: CopyMode,
 
-    /// The policy for a file that exists already.
+/// The policy for a file that exists already.
     pub policy: ConflictPolicy,
 }
 
 impl CopyRequest {
-    /// Builds a request with the default mode and the default policy.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::copy::{CopyMode, CopyRequest};
-    /// use std::path::PathBuf;
-    ///
-    /// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"));
-    /// assert_eq!(request.mode, CopyMode::Verified);
-    /// ```
+/// Builds a request with the default mode and the default policy.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::{CopyMode, CopyRequest};
+/// use std::path::PathBuf;
+///
+/// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"));
+/// assert_eq!(request.mode, CopyMode::Verified);
+/// ```
     pub fn new(source: impl Into<PathBuf>, destination: impl Into<PathBuf>) -> Self {
         Self {
             source: source.into(),
@@ -176,34 +176,34 @@ impl CopyRequest {
         }
     }
 
-    /// Sets the mode of the copy.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::copy::{CopyMode, CopyRequest};
-    /// use std::path::PathBuf;
-    ///
-    /// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"))
-    ///     .with_mode(CopyMode::Quick);
-    /// assert_eq!(request.mode, CopyMode::Quick);
-    /// ```
+/// Sets the mode of the copy.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::{CopyMode, CopyRequest};
+/// use std::path::PathBuf;
+///
+/// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"))
+///     .with_mode(CopyMode::Quick);
+/// assert_eq!(request.mode, CopyMode::Quick);
+/// ```
     pub fn with_mode(mut self, mode: CopyMode) -> Self {
         self.mode = mode;
         self
     }
 
-    /// Sets the policy for a file that exists already.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::copy::CopyRequest;
-    /// use phocommander_ops::edit::ConflictPolicy;
-    /// use std::path::PathBuf;
-    ///
-    /// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"))
-    ///     .with_policy(ConflictPolicy::KeepBoth);
-    /// assert_eq!(request.policy, ConflictPolicy::KeepBoth);
-    /// ```
+/// Sets the policy for a file that exists already.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::CopyRequest;
+/// use phocommander_ops::edit::ConflictPolicy;
+/// use std::path::PathBuf;
+///
+/// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"))
+///     .with_policy(ConflictPolicy::KeepBoth);
+/// assert_eq!(request.policy, ConflictPolicy::KeepBoth);
+/// ```
     pub fn with_policy(mut self, policy: ConflictPolicy) -> Self {
         self.policy = policy;
         self
@@ -213,35 +213,35 @@ impl CopyRequest {
 /// What a copy did.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CopyOutcome {
-    /// The number of files that were copied.
+/// The number of files that were copied.
     pub files_copied: u64,
 
-    /// The number of bytes that were copied.
+/// The number of bytes that were copied.
     pub bytes_copied: u64,
 
-    /// The number of files that were left alone.
+/// The number of files that were left alone.
     pub files_skipped: u64,
 
-    /// The failures the copy collected.
+/// The failures the copy collected.
     pub errors: Vec<JobError>,
 }
 
 /// One file of a tree, as the copy sees it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TreeItem {
-    /// The path of the file, relative to the root of the tree.
+/// The path of the file, relative to the root of the tree.
     pub relative_path: PathBuf,
 
-    /// The path of the file.
+/// The path of the file.
     pub path: PathBuf,
 
-    /// The size of the file in bytes.
+/// The size of the file in bytes.
     pub size: u64,
 
-    /// The time of the last change of the file.
+/// The time of the last change of the file.
     pub modified: Option<std::time::SystemTime>,
 
-    /// Whether the item is a directory.
+/// Whether the item is a directory.
     pub is_directory: bool,
 }
 

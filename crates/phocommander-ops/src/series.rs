@@ -1,11 +1,11 @@
 //! The detection of a season and an episode number in an existing name.
 //!
-//! WHAT: the numbers of a series episode ([`SeriesNumbers`]), the function
-//!       that recognises them in a name ([`detect_series_numbers`]) and the
+//! WHAT: the numbers of a series episode ([{SeriesNumbers}]), the function
+//!       that recognises them in a name ([{detect_series_numbers}]) and the
 //!       function that reads the series name from the parent directory
-//!       ([`series_name_from_parent`]).
+//!       ([{series_name_from_parent}]).
 //! WHY: the template of a series names its files
-//!       `{serie} - S{staffel:02}E{episode:02} - {titel}.{format}`. When the
+//!       {{serie} - S{staffel:02}E{episode:02} - {titel}.{format}}. When the
 //!       user renames a file that already carries such a number, the dialog
 //!       offers the numbers it found as the pre-filled values (FR-37), and
 //!       the name of the series is the name of the directory the files live
@@ -25,18 +25,18 @@ use std::path::Path;
 /// The season and the episode number of a series.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SeriesNumbers {
-    /// The number of the season.
+/// The number of the season.
     pub season: u64,
 
-    /// The number of the episode.
+/// The number of the episode.
     pub episode: u64,
 }
 
-/// Recognises the pattern `SxxEyy` in a name.
+/// Recognises the pattern {SxxEyy} in a name.
 ///
 /// WHY: the pattern is the one the template of the specification uses. The
 /// search ignores the case, because a file that was named by another
-/// program may carry a lower case `s`.
+/// program may carry a lower case {s}.
 ///
 /// EXAMPLE:
 /// ```no_run
@@ -65,7 +65,7 @@ pub fn detect_series_numbers(name: &str) -> Option<SeriesNumbers> {
     None
 }
 
-/// Reads the number that starts at `start`.
+/// Reads the number that starts at {start}.
 fn read_number(characters: &[char], start: usize) -> u64 {
     let mut number = 0u64;
     let mut index = start;

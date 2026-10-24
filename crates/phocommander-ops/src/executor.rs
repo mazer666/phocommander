@@ -1,7 +1,7 @@
 //! The execution of a job: what a job kind means in terms of file operations.
 //!
-//! WHAT: the result of an execution ([`JobResult`]) and the function that
-//!       carries out the work of a job ([`execute`]).
+//! WHAT: the result of an execution ([{JobResult}]) and the function that
+//!       carries out the work of a job ([{execute}]).
 //! WHY: the queue knows about jobs and about workers, but not about files.
 //!       The mapping from the kind of a job to the file operations belongs
 //!       in one place, so that a new kind of job is added here and nowhere
@@ -32,7 +32,7 @@
 //! # Ok(())
 //! # }
 //! ```
-//! BOUNDARY: this module works through the [`crate::port::FileSystem`] of the
+//! BOUNDARY: this module works through the [{crate::port::FileSystem}] of the
 //!       operations. It never touches a file system on its own.
 
 use std::path::Path;
@@ -47,16 +47,16 @@ use crate::sync::{Approval, SyncPlan, execute_sync};
 /// What the execution of a job produced.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JobResult {
-    /// The state the job ends in.
+/// The state the job ends in.
     pub state: JobState,
 
-    /// The failures the job collected.
+/// The failures the job collected.
     pub errors: Vec<JobError>,
 
-    /// The number of items that are done.
+/// The number of items that are done.
     pub items_done: u64,
 
-    /// The number of bytes that are done.
+/// The number of bytes that are done.
     pub bytes_done: u64,
 }
 

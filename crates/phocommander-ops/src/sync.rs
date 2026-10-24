@@ -1,13 +1,13 @@
 //! The plan of a synchronisation and the execution of the plan.
 //!
-//! WHAT: the state of an entry in the comparison ([`SyncState`]), what the
-//!       synchronisation does with it ([`SyncAction`]), one entry of the plan
-//!       ([`SyncPlanEntry`]), the plan itself ([`SyncPlan`]), the
-//!       confirmation of the user ([`Approval`]) and the execution of the
-//!       plan ([`execute_sync`]).
+//! WHAT: the state of an entry in the comparison ([{SyncState}]), what the
+//!       synchronisation does with it ([{SyncAction}]), one entry of the plan
+//!       ([{SyncPlanEntry}]), the plan itself ([{SyncPlan}]), the
+//!       confirmation of the user ([{Approval}]) and the execution of the
+//!       plan ([{execute_sync}]).
 //! WHY: the plan is the document the user confirms, and the same document
 //!       that the acceptance of a synchronisation refers to. No data moves
-//!       before the plan is confirmed, and `sync-mirror` — the only mode that
+//!       before the plan is confirmed, and 'sync-mirror' — the only mode that
 //!       deletes — puts every deletion into the plan before it runs. The
 //!       confirmation is therefore an argument of the operation and not a
 //!       remark in the documentation.
@@ -23,7 +23,7 @@
 //! # Ok(())
 //! # }
 //! ```
-//! BOUNDARY: this module works through the [`crate::port::FileSystem`] of the
+//! BOUNDARY: this module works through the [{crate::port::FileSystem}] of the
 //!       operations. It never touches a file system on its own.
 
 use std::path::{Path, PathBuf};
@@ -36,28 +36,28 @@ use crate::progress::JobContext;
 /// The state of an entry in the comparison of two directories.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SyncState {
-    /// The entry exists on both sides and is the same.
+/// The entry exists on both sides and is the same.
     Identical,
 
-    /// The entry exists on both sides and differs.
+/// The entry exists on both sides and differs.
     Different,
 
-    /// The entry exists in the source and not in the destination.
+/// The entry exists in the source and not in the destination.
     MissingInDestination,
 
-    /// The entry exists in the destination and not in the source.
+/// The entry exists in the destination and not in the source.
     ExtraInDestination,
 }
 
 impl SyncState {
-    /// The name of the state.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::sync::SyncState;
-    ///
-    /// assert_eq!(SyncState::ExtraInDestination.as_str(), "extra-in-destination");
-    /// ```
+/// The name of the state.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::sync::SyncState;
+///
+/// assert_eq!(SyncState::ExtraInDestination.as_str(), "extra-in-destination");
+/// ```
     pub fn as_str(&self) -> &'static str {
         match self {
             SyncState::Identical => "identical",
@@ -71,75 +71,75 @@ impl SyncState {
 /// What the synchronisation does with an entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SyncAction {
-    /// The entry is copied to the destination.
+/// The entry is copied to the destination.
     Copy,
 
-    /// The entry in the destination is overwritten by the source.
+/// The entry in the destination is overwritten by the source.
     Overwrite,
 
-    /// The entry is deleted in the destination.
+/// The entry is deleted in the destination.
     Delete,
 
-    /// The entry is left alone.
+/// The entry is left alone.
     Keep,
 
-    /// The entry in the source is overwritten by the destination.
+/// The entry in the source is overwritten by the destination.
     CopyToSource,
 }
 
 /// One entry of a synchronisation plan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyncPlanEntry {
-    /// The path of the entry, relative to the two directories.
+/// The path of the entry, relative to the two directories.
     pub relative_path: PathBuf,
 
-    /// The kind of the entry.
+/// The kind of the entry.
     pub kind: EntryKind,
 
-    /// The state of the entry in the comparison.
+/// The state of the entry in the comparison.
     pub state: SyncState,
 
-    /// The size of the entry in the source.
+/// The size of the entry in the source.
     pub source_size: Option<u64>,
 
-    /// The size of the entry in the destination.
+/// The size of the entry in the destination.
     pub destination_size: Option<u64>,
 
-    /// The time of the last change in the source.
+/// The time of the last change in the source.
     pub source_modified: Option<std::time::SystemTime>,
 
-    /// The time of the last change in the destination.
+/// The time of the last change in the destination.
     pub destination_modified: Option<std::time::SystemTime>,
 
-    /// The checksum of the entry, if one was computed.
+/// The checksum of the entry, if one was computed.
     pub checksum: Option<u64>,
 
-    /// What the synchronisation does with the entry.
+/// What the synchronisation does with the entry.
     pub action: SyncAction,
 }
 
 impl SyncPlanEntry {
-    /// Whether the entry is deleted by the plan.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::sync::{SyncAction, SyncPlanEntry, SyncState};
-    /// use phocommander_ops::port::EntryKind;
-    /// use std::path::PathBuf;
-    ///
-    /// let entry = SyncPlanEntry {
-    ///     relative_path: PathBuf::from("a.txt"),
-    ///     kind: EntryKind::File,
-    ///     state: SyncState::ExtraInDestination,
-    ///     source_size: None,
-    ///     destination_size: Some(1),
-    ///     source_modified: None,
-    ///     destination_modified: None,
-    ///     checksum: None,
-    ///     action: SyncAction::Delete,
-    /// };
-    /// assert!(entry.is_deletion());
-    /// ```
+/// Whether the entry is deleted by the plan.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::sync::{SyncAction, SyncPlanEntry, SyncState};
+/// use phocommander_ops::port::EntryKind;
+/// use std::path::PathBuf;
+///
+/// let entry = SyncPlanEntry {
+///     relative_path: PathBuf::from("a.txt"),
+///     kind: EntryKind::File,
+///     state: SyncState::ExtraInDestination,
+///     source_size: None,
+///     destination_size: Some(1),
+///     source_modified: None,
+///     destination_modified: None,
+///     checksum: None,
+///     action: SyncAction::Delete,
+/// };
+/// assert!(entry.is_deletion());
+/// ```
     pub fn is_deletion(&self) -> bool {
         matches!(self.action, SyncAction::Delete)
     }
@@ -148,57 +148,57 @@ impl SyncPlanEntry {
 /// The plan of a synchronisation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyncPlan {
-    /// The mode the plan was built for.
+/// The mode the plan was built for.
     pub mode: CopyMode,
 
-    /// The directory that is the reference of the synchronisation.
+/// The directory that is the reference of the synchronisation.
     pub source: PathBuf,
 
-    /// The directory that is brought into the state of the reference.
+/// The directory that is brought into the state of the reference.
     pub destination: PathBuf,
 
-    /// The entries of the plan.
+/// The entries of the plan.
     pub entries: Vec<SyncPlanEntry>,
 }
 
 impl SyncPlan {
-    /// The entries of the plan.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::sync::{SyncPlan, build_plan};
-    /// use phocommander_ops::copy::CopyMode;
-    /// use std::path::Path;
-    ///
-    /// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
-    /// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncPreview)?;
-    /// assert_eq!(plan.entries().len(), plan.entries.len());
-    /// # Ok(())
-    /// # }
-    /// ```
+/// The entries of the plan.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::sync::{SyncPlan, build_plan};
+/// use phocommander_ops::copy::CopyMode;
+/// use std::path::Path;
+///
+/// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+/// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncPreview)?;
+/// assert_eq!(plan.entries().len(), plan.entries.len());
+/// # Ok(())
+/// # }
+/// ```
     pub fn entries(&self) -> &[SyncPlanEntry] {
         &self.entries
     }
 
-    /// The entries the plan deletes.
-    ///
-    /// WHY: the deletions are the dangerous part of a synchronisation, and
-    /// they have to be visible before the operation runs.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ops::sync::{SyncPlan, build_plan};
-    /// use phocommander_ops::copy::CopyMode;
-    /// use std::path::Path;
-    ///
-    /// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
-    /// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncMirror)?;
-    /// for entry in plan.deletions() {
-    ///     println!("{}", entry.relative_path.display());
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
+/// The entries the plan deletes.
+///
+/// WHY: the deletions are the dangerous part of a synchronisation, and
+/// they have to be visible before the operation runs.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::sync::{SyncPlan, build_plan};
+/// use phocommander_ops::copy::CopyMode;
+/// use std::path::Path;
+///
+/// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+/// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncMirror)?;
+/// for entry in plan.deletions() {
+///     println!("{}", entry.relative_path.display());
+/// }
+/// # Ok(())
+/// # }
+/// ```
     pub fn deletions(&self) -> Vec<&SyncPlanEntry> {
         self.entries
             .iter()
@@ -210,11 +210,11 @@ impl SyncPlan {
 /// Whether the user confirmed the plan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Approval {
-    /// The user confirmed the plan and the operation may run.
+/// The user confirmed the plan and the operation may run.
     Granted,
 
-    /// The user did not confirm the plan. Nothing is moved and nothing is
-    /// deleted.
+/// The user did not confirm the plan. Nothing is moved and nothing is
+/// deleted.
     Withheld,
 }
 
