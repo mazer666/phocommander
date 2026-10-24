@@ -1,6 +1,6 @@
 //! Reading the configuration file of Phocommander.
 //!
-//! WHAT: the functions that turn a TOML document into a [`Config`] and the
+//! WHAT: the functions that turn a TOML document into a [{Config}] and the
 //!       errors they report.
 //! WHY: a configuration file is written by hand. Every mistake in it has to
 //!       be reported with the name of the field and the reason, because the
@@ -33,42 +33,42 @@ pub const SUPPORTED_SCHEMA_VERSION: u32 = 1;
 /// The reasons why a configuration file cannot be used.
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
-    /// The file could not be read.
+/// The file could not be read.
     #[error("the configuration file {path} could not be read: {source}")]
     Io {
-        /// The path of the configuration file.
+/// The path of the configuration file.
         path: PathBuf,
-        /// The error the operating system reported.
+/// The error the operating system reported.
         #[source]
         source: io::Error,
     },
 
-    /// The file is not valid TOML or contains a field that does not exist.
+/// The file is not valid TOML or contains a field that does not exist.
     #[error("the configuration file is not valid: {source}")]
     Syntax {
-        /// The error the TOML parser reported.
+/// The error the TOML parser reported.
         #[source]
         source: toml::de::Error,
     },
 
-    /// The file was written for a newer version of the schema.
+/// The file was written for a newer version of the schema.
     #[error(
         "the configuration file uses schema version {found}, \
          this build understands version {supported}"
     )]
     UnsupportedSchemaVersion {
-        /// The version the file declares.
+/// The version the file declares.
         found: u32,
-        /// The newest version this build understands.
+/// The newest version this build understands.
         supported: u32,
     },
 
-    /// A value in the file cannot be used.
+/// A value in the file cannot be used.
     #[error("the value of {field} cannot be used: {reason}")]
     InvalidValue {
-        /// The name of the field, written as it is in the file.
+/// The name of the field, written as it is in the file.
         field: &'static str,
-        /// The reason why the value was refused.
+/// The reason why the value was refused.
         reason: &'static str,
     },
 }
@@ -164,11 +164,11 @@ mod tests {
     use super::*;
     use crate::values::{InputContext, Language, OverwritePolicy, Theme};
 
-    /// Returns the configuration of a document that has to be valid.
-    ///
-    /// WHY: the workspace forbids `expect` and `unwrap`, also in tests. A
-    /// panic with the reason of the failure says more than the exit code of a
-    /// test.
+/// Returns the configuration of a document that has to be valid.
+///
+/// WHY: the workspace forbids {expect} and {unwrap}, also in tests. A
+/// panic with the reason of the failure says more than the exit code of a
+/// test.
     fn valid(result: Result<Config, ConfigError>) -> Config {
         match result {
             Ok(config) => config,

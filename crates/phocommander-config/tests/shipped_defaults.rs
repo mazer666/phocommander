@@ -1,7 +1,7 @@
 //! Integration test: the configuration file that ships with the repository and
 //! the schema of the configuration crate.
 //!
-//! WHAT: the file `config/defaults.toml` is read with the reader of the
+//! WHAT: the file {config/defaults.toml} is read with the reader of the
 //!       crate and compared with the schema.
 //! WHY: the shipped file is the first file a user copies and the first file
 //!       a contributor reads. If the reader refuses it — because it knows a

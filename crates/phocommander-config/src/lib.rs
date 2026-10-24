@@ -1,15 +1,15 @@
 //! Reading and validating the configuration file of Phocommander.
 //!
-//! WHAT: the typed shape of `config/defaults.toml` ([`schema`]) and the
-//!       functions that read it ([`loader`]).
+//! WHAT: the typed shape of {config/defaults.toml} ([{schema}]) and the
+//!       functions that read it ([{loader}]).
 //! WHY: the configuration file is the place where a user changes the
 //!       behaviour of the application and where a contributor looks first. A
 //!       typo in it must produce a clear message instead of a silently
 //!       ignored setting, so unknown fields are rejected. The canonical
-//!       *defaults* live in `phocommander-core::config`; this crate may not
+//!       *defaults* live in 'phocommander-core::config'; this crate may not
 //!       depend on that crate — the workspace is flat — therefore the values
 //!       that have a default are optional here and the composition root
-//!       (`apps/phocommander-desktop`) supplies the default.
+//!       ('apps/phocommander-desktop') supplies the default.
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_config::Config;

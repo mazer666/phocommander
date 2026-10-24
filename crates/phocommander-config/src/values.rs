@@ -17,26 +17,26 @@ use serde::{Deserialize, Serialize};
 
 /// The language of the user interface.
 ///
-/// WHY: the default is `system`, the value the shipped default file carries.
+/// WHY: the default is {system}, the value the shipped default file carries.
 /// The German translation is the fallback of the translation catalogue, not a
 /// fixed choice of the interface: a user on an English system expects an
 /// English interface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Language {
-    /// German.
+/// German.
     De,
 
-    /// English.
+/// English.
     En,
 
-    /// The language of the operating system.
+/// The language of the operating system.
     #[default]
     System,
 }
 
 impl Language {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::De => "de",
@@ -50,19 +50,19 @@ impl Language {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Theme {
-    /// The colour scheme of the operating system.
+/// The colour scheme of the operating system.
     #[default]
     System,
 
-    /// The light colour scheme.
+/// The light colour scheme.
     Light,
 
-    /// The dark colour scheme.
+/// The dark colour scheme.
     Dark,
 }
 
 impl Theme {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::System => "system",
@@ -76,19 +76,19 @@ impl Theme {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum FileSizeFormat {
-    /// Kilobyte, megabyte, gigabyte — powers of 1024.
+/// Kilobyte, megabyte, gigabyte — powers of 1024.
     #[default]
     Binary,
 
-    /// Kilobyte, megabyte, gigabyte — powers of 1000.
+/// Kilobyte, megabyte, gigabyte — powers of 1000.
     Decimal,
 
-    /// Kilobyte, mebibyte, gibibyte — powers of 1024 with IEC names.
+/// Kilobyte, mebibyte, gibibyte — powers of 1024 with IEC names.
     Iec,
 }
 
 impl FileSizeFormat {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Binary => "binary",
@@ -102,16 +102,16 @@ impl FileSizeFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PanelLayout {
-    /// Both panels are visible side by side.
+/// Both panels are visible side by side.
     #[default]
     Horizontal,
 
-    /// Both panels are visible one above the other.
+/// Both panels are visible one above the other.
     Vertical,
 }
 
 impl PanelLayout {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Horizontal => "horizontal",
@@ -124,16 +124,16 @@ impl PanelLayout {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RightClickAction {
-    /// A context menu opens.
+/// A context menu opens.
     #[default]
     ContextMenu,
 
-    /// The selection of the clicked file is toggled.
+/// The selection of the clicked file is toggled.
     ToggleSelection,
 }
 
 impl RightClickAction {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::ContextMenu => "context_menu",
@@ -149,22 +149,22 @@ impl RightClickAction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OverwritePolicy {
-    /// The user is asked.
+/// The user is asked.
     #[default]
     Ask,
 
-    /// The existing file is kept, the operation continues with the next file.
+/// The existing file is kept, the operation continues with the next file.
     Never,
 
-    /// The existing file is replaced.
+/// The existing file is replaced.
     Always,
 
-    /// The existing file is kept and the new file is written under a new name.
+/// The existing file is kept and the new file is written under a new name.
     KeepBoth,
 }
 
 impl OverwritePolicy {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Ask => "ask",
@@ -179,25 +179,25 @@ impl OverwritePolicy {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
-    /// Only failures are written.
+/// Only failures are written.
     Error,
 
-    /// Failures and warnings are written.
+/// Failures and warnings are written.
     #[default]
     Warn,
 
-    /// Additional information about the operation is written.
+/// Additional information about the operation is written.
     Info,
 
-    /// Detailed information for the developer is written.
+/// Detailed information for the developer is written.
     Debug,
 
-    /// Everything is written.
+/// Everything is written.
     Trace,
 }
 
 impl LogLevel {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Error => "error",
@@ -213,28 +213,28 @@ impl LogLevel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum InputContext {
-    /// The context is recognised from the input device at run time.
+/// The context is recognised from the input device at run time.
     #[default]
     Auto,
 
-    /// A physical keyboard.
+/// A physical keyboard.
     Keyboard,
 
-    /// A mouse or a trackpad.
+/// A mouse or a trackpad.
     Pointer,
 
-    /// A finger on a touch screen.
+/// A finger on a touch screen.
     Touch,
 
-    /// The directional pad of a television remote control.
+/// The directional pad of a television remote control.
     Dpad,
 
-    /// A gamepad or a VR controller.
+/// A gamepad or a VR controller.
     Controller,
 }
 
 impl InputContext {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Auto => "auto",
@@ -251,16 +251,16 @@ impl InputContext {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SmbSigning {
-    /// A server without signature support is refused.
+/// A server without signature support is refused.
     Require,
 
-    /// The signature is used when the server supports it.
+/// The signature is used when the server supports it.
     #[default]
     Prefer,
 }
 
 impl SmbSigning {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Require => "require",
@@ -273,16 +273,16 @@ impl SmbSigning {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SmbEncryption {
-    /// A server without transport encryption is refused.
+/// A server without transport encryption is refused.
     Require,
 
-    /// The transport encryption is used when the server supports it.
+/// The transport encryption is used when the server supports it.
     #[default]
     Prefer,
 }
 
 impl SmbEncryption {
-    /// The spelling of this value in the configuration file.
+/// The spelling of this value in the configuration file.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Require => "require",
