@@ -286,6 +286,13 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 
 | ID | Requirement | Milestone | Priority | Verification |
 |---|---|---|---|---|
+| FR-74a | The current directory can be filtered while typing, without a dialog | M1 | Must | Manual test plus unit test of the matcher |
+| FR-74b | The filter matches the name with a pattern language: `*` and `?` as wildcards, `~` for a case-insensitive match, and a plain text that matches anywhere in the name | M1 | Must | Unit test per pattern form |
+| FR-74c | The filter can be limited to files, to directories or to both | M1 | Must | Unit test per kind |
+| FR-74d | The filter can search deeper than the current directory, with a configurable depth | M1 | Should | Integration test |
+| FR-74e | The number of matching entries is shown while the filter is typed, and the list updates live | M1 | Must | Manual test |
+| FR-74f | The filter state belongs to the panel and survives a directory change, so the user does not have to retype it | M1 | Should | State model test |
+| FR-74g | The filter is searchable by content in the same field, using an explicit prefix, so that the name filter stays fast | M6 | Should | Integration test |
 | FR-75 | The search matches name, size, date and content | M6 | Must | Integration test |
 | FR-76 | Text, hex and binary search are supported | M6 | Should | Integration test |
 | FR-77 | Boolean operators AND, OR, NOT are supported | M6 | Could | Integration test |
@@ -377,6 +384,16 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | NFR-20 | The crate dependency direction is `apps` → `platform` → `crates` | M0 | Must | `scripts/check-crate-boundaries.sh` with a negative test |
 | NFR-21 | The build is reproducible from the committed lock file | M0 | Must | `cargo build --locked` |
 | NFR-22 | The application is fully operable with the keyboard, the pointer and the touch | M2 | Must | Per-context test protocol |
+| NFR-23 | The application never runs with elevated privileges and never asks for them | M2 | Must | Code review plus a test that the process does not request elevation |
+| NFR-24 | The application writes only inside its own configuration directory and the directories the user explicitly opens | M2 | Must | Test that traces every write |
+| NFR-25 | The application opens no network connection unless the user configured a remote source and triggers it | M2 | Must | Test that the start-up opens no socket |
+| NFR-26 | The application is signed on Windows and macOS, and the signature is verified before the release is published | M3 | Must | Verification of the release artefact |
+| NFR-27 | The application requests no permission that it does not use | M3 | Must | Manifest review against the documented use |
+| NFR-28 | The application makes no change to the security configuration of the machine it runs on | M3 | Must | Code review |
+| NFR-29 | The rules of section 9.7 are configurable: the user decides which of them apply | M2 | Must | Configuration test per rule |
+| NFR-30 | The configuration carries a `corporate` profile that enables every rule of section 9.7 at once | M2 | Must | Configuration test |
+| NFR-31 | A rule that is switched off is never executed, and the switch is visible in the settings | M2 | Must | Unit test plus manual test |
+| NFR-32 | Three guarantees cannot be switched off: the absence of telemetry, the absence of an elevation request and the absence of a background index | M2 | Must | Test that the attempt to configure them has no effect |
 
 The non-functional requirements are the acceptance conditions of the milestones above. Every one
 of them is measured rather than estimated, and a value that was not measured is reported as not
@@ -1030,6 +1047,127 @@ Copyleft dependencies are excluded. This is why the WebDAV client is written as 
 project instead of taken from `fast-dav-rs`, which is LGPL-3.0 [26]: a statically linked binary
 under LGPL creates obligations that conflict with the licence of the project.
 
+
+### 9.7 Security in a managed corporate environment
+
+A file manager with full read access is, by its nature, the tool that a security department looks
+at first. This section does not pretend that the problem can be designed away. It states what
+Phocommander does so that the application is not a liability, and what it deliberately does not do.
+
+**The three places where a file manager becomes visible.** On a managed Windows machine, the
+application shows up in three independent places, and a good tool has to answer all three.
+
+| Place | What the organisation sees | What Phocommander does |
+|---|---|---|
+| Application control | Windows Defender Application Control or AppLocker decides which programs may start. A policy in enforce mode blocks everything that is not explicitly allowed [52][53] | The application is signed, so that a publisher rule can admit it. It never asks for elevation, so it never triggers the "run as administrator" branch that policies watch for [54] |
+| Data loss prevention | An endpoint agent intercepts reads, writes, copies and moves, and reports the file names, the paths and the timestamps [55][56] | The application reads only what the user opens. It does not scan, index, preview or fingerprint the disk in the background |
+| Portable media control | A policy often allows a removable drive but blocks unknown executables on it, because a stick can carry a tool that copies data out [57] | The portable variant is one signed executable. It writes its configuration into its own directory, so it leaves nothing on the machine it runs on |
+
+**The rules that follow from this.**
+
+*Never elevate.* Phocommander never requests administrator rights and never restarts itself as
+administrator. A file manager that needs elevation for a single path is a file manager that has
+to be run elevated for everything, and an elevated file manager is a much larger risk than the
+problem it solves. Where an operation genuinely fails because of a permission, the application
+says so in plain language and lets the user decide.
+
+*Never scan what was not asked for.* The application does not index the disk, does not build a
+search index in the background, does not calculate checksums of files the user has not opened and
+does not preview directories in advance. Every file access is a consequence of a user action:
+opening a directory, selecting a file, starting a copy, applying a filter. This is a privacy
+requirement and at the same time the requirement that keeps the application out of the
+data-at-rest scan of a DLP agent [56].
+
+*Never write outside the own directory.* Without a user action, the application writes only into
+its configuration directory. It creates no temporary files in the directories of the user, it does
+not write a log file next to the files it copies, and it does not touch the registry or the
+system configuration. The portable variant goes further and writes nothing outside its own
+directory at all (section 7.5).
+
+*Stay quiet.* The application opens no network connection at start-up, sends nothing anywhere and
+contains no update check. An update is a download the user starts. A file manager that phones
+home is a file manager that a network policy has to look at, and the user has to justify.
+
+*Be signed.* On Windows and macOS the released binary is signed, and the signature is verified
+before a release is published. A signed binary can be admitted by a publisher rule in a
+corporate policy [52]. An unsigned one cannot, and it will be blocked by every managed machine
+that runs an application control policy.
+
+*Ask for nothing it does not use.* The application requests no permission it does not need, and
+the manifest of every platform is reviewed against the documented use of every permission. A
+file manager needs no camera, no microphone, no location and no contacts. On Android it asks for
+the file access it needs and for nothing else; the special permission for the whole storage is
+offered as an explicit, optional extension and is declared in the Play Console [18][42].
+
+**What the application does not do, and will not do.**
+
+It does not attempt to work around a corporate policy. No elevation, no service installation, no
+registry change, no scheduled task, no driver, no shell extension. If a policy blocks it, the
+user reads the reason in the event log of the policy and asks the responsible department. A tool
+that tries to be clever here is the reason a tool gets blocked.
+
+It does not run in the background. There is no resident process, no indexer, no watcher that runs
+after the window is closed. The file watcher of an open panel exists only while the panel is
+open.
+
+It does not read files in order to classify them. The application has no idea what a file
+contains until the user opens it in the viewer, and even then it reads the bytes the format
+requires.
+
+**The honest limit.** Phocommander cannot make itself invisible to a security department, and
+it does not try to. A file manager that can read everything is by definition a tool that a
+security department wants to know about. What the application can do is make the answer easy:
+it is signed, it runs without elevation, it reads only what the user asks for, it writes only
+into its own directory, it talks to nobody, and it says plainly what it is doing. A colleague
+can read the source and verify every one of these claims.
+
+
+---
+
+### 9.8 Configurable security rules
+
+The rules of section 9.7 are not carved in stone. They are the default, and the user may adjust
+them to the machine and to the policy in force. A rule that is switched off is simply not
+executed, and the switch is visible in the settings rather than hidden in a build flag.
+
+**The profile.** The configuration carries a profile for this group:
+
+| Profile | What it does | Who it is for |
+|---|---|---|
+| `standard` | The rules of section 9.7, with the convenience switches that do not weaken a guarantee | A private machine |
+| `corporate` | Every rule of section 9.7 enabled, including the ones that cost convenience | A managed machine, where the policy has to be provable |
+| `custom` | Whatever the user set | A user who knows the machine |
+
+**The individual switches.**
+
+| Switch | Default | What it changes |
+|---|---|---|
+| `verify_directory_before_refresh` | on | The content of a directory is read again before it is shown, so that a change made elsewhere is noticed |
+| `background_index` | off | The application keeps no index. It never reads a file that the user has not opened |
+| `remember_session` | on | The last directories are written at the end. Switching it off leaves nothing behind |
+| `read_only_on_demand` | on | The viewer reads a file only when the user opens it in the viewer |
+| `checksum_on_copy` | on | The verified copy mode compares the checksums of source and destination |
+| `follow_symlinks` | off | A symlink is copied as a symlink and never followed |
+
+**The three guarantees that are not configurable.** Three rules cannot be switched off, because
+switching them off would break a promise the product makes:
+
+1. There is no telemetry. There is nothing to switch off, because there is nothing.
+2. The application never asks for elevation. A user who wants an elevated operation runs the
+   operation in a terminal; the file manager does not become a privileged process.
+3. There is no background index. The application never reads a file that the user has not asked
+   for.
+
+The attempt to configure one of these in the configuration file has no effect and produces a
+message in the log, so that a configuration that was carried over from another machine does not
+silently weaken the guarantee.
+
+**The point of the switch.** A tool that is used on a private machine and a tool that is used
+on a managed machine do not have to behave differently in their code. They have the same code and
+a different setting. The settings that a corporate policy would want to enforce are the ones the
+`corporate` profile switches on, and the user who wants to see for himself what the application
+does with a file can switch them off and read the source.
+
 ---
 
 ## 10. Test and Quality Strategy
@@ -1568,3 +1706,9 @@ documentation already uses and they read clearly in a compact field.
 [48] RustSec advisory database: https://rustsec.org/advisories/
 [49] SpeedCommander — activation on a USB stick, the portable edition: https://www.speedproject.com/help/activation-on-usb-stick/
 [50] Gizmodo — SpeedCommander, the portable build for technicians: https://gizmodo.com/download/speedcommander
+[52] Microsoft — Windows Defender Application Control: https://learn.microsoft.com/en-us/windows/security/application-security/application-control/windows-defender-application-control/wdac
+[53] Microsoft — AppLocker, the rules and the enforcement modes: https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/applocker/administer-applocker
+[54] Microsoft — App Control for Business, the overview: https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/appcontrol
+[55] Palo Alto Networks — Endpoint DLP, how it monitors the file operations of an endpoint: https://docs.paloaltonetworks.com/enterprise-dlp/administration/configure-enterprise-dlp/endpoint-dlp/how-does-endpoint-dlp-work
+[56] Palo Alto Networks — Enterprise DLP, the data in use and the data at rest: https://www.paloaltonetworks.com/sase/enterprise-data-loss-prevention
+[57] Australian Cyber Security Centre — application control, the accepted rule types: https://learn.microsoft.com/en-us/compliance/anz/e8-app-control
