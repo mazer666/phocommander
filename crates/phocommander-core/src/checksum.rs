@@ -1,8 +1,8 @@
 //! The checksum that the verified copy compares.
 //!
-//! WHAT: a CRC-32 checksum ([`Crc32`]) that is computed over a stream of
-//!       bytes ([`crc32`]), over a slice ([`crc32_bytes`]) or over a file
-//!       ([`crc32_file`]).
+//! WHAT: a CRC-32 checksum ([{Crc32}]) that is computed over a stream of
+//!       bytes ([{crc32}]), over a slice ([{crc32_bytes}]) or over a file
+//!       ([{crc32_file}]).
 //! WHY: the copy modes of the specification compare the source and the
 //!       destination after a copy, and the comparison has to be cheap enough
 //!       to run on every file and strong enough to notice a truncated or a
@@ -74,28 +74,28 @@ pub struct Crc32 {
 }
 
 impl Crc32 {
-    /// Starts a new checksum.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_core::checksum::Crc32;
-    ///
-    /// let checksum = Crc32::new();
-    /// assert_ne!(checksum.finish(), 0);
-    /// ```
+/// Starts a new checksum.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_core::checksum::Crc32;
+///
+/// let checksum = Crc32::new();
+/// assert_ne!(checksum.finish(), 0);
+/// ```
     pub fn new() -> Self {
         Self { state: 0xFFFF_FFFF }
     }
 
-    /// Adds a block of bytes to the checksum.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_core::checksum::Crc32;
-    ///
-    /// let mut checksum = Crc32::new();
-    /// checksum.update(b"data");
-    /// ```
+/// Adds a block of bytes to the checksum.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_core::checksum::Crc32;
+///
+/// let mut checksum = Crc32::new();
+/// checksum.update(b"data");
+/// ```
     pub fn update(&mut self, bytes: &[u8]) {
         let table = table();
         let mut state = self.state;
@@ -106,46 +106,46 @@ impl Crc32 {
         self.state = state;
     }
 
-    /// The checksum of everything that was added so far.
-    ///
-    /// WHY: the value can be read without consuming the checksum, so that
-    /// the caller can compare an intermediate state and continue afterwards.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_core::checksum::Crc32;
-    ///
-    /// let mut checksum = Crc32::new();
-    /// checksum.update(b"data");
-    /// let first = checksum.finish();
-    /// assert_eq!(first, checksum.finish());
-    /// ```
+/// The checksum of everything that was added so far.
+///
+/// WHY: the value can be read without consuming the checksum, so that
+/// the caller can compare an intermediate state and continue afterwards.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_core::checksum::Crc32;
+///
+/// let mut checksum = Crc32::new();
+/// checksum.update(b"data");
+/// let first = checksum.finish();
+/// assert_eq!(first, checksum.finish());
+/// ```
     pub fn finish(&self) -> u32 {
         self.state ^ 0xFFFF_FFFF
     }
 
-    /// Starts over with an empty checksum.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_core::checksum::Crc32;
-    ///
-    /// let mut checksum = Crc32::new();
-    /// checksum.update(b"data");
-    /// checksum.reset();
-    /// assert_eq!(checksum.finish(), Crc32::new().finish());
-    /// ```
+/// Starts over with an empty checksum.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_core::checksum::Crc32;
+///
+/// let mut checksum = Crc32::new();
+/// checksum.update(b"data");
+/// checksum.reset();
+/// assert_eq!(checksum.finish(), Crc32::new().finish());
+/// ```
     pub fn reset(&mut self) {
         self.state = 0xFFFF_FFFF;
     }
 }
 
 impl Default for Crc32 {
-    /// Starts a new checksum.
-    ///
-    /// WHY: the type has a natural zero value — the checksum of no bytes at
-    /// all — so that a caller does not have to know about the initial state
-    /// of the algorithm.
+/// Starts a new checksum.
+///
+/// WHY: the type has a natural zero value — the checksum of no bytes at
+/// all — so that a caller does not have to know about the initial state
+/// of the algorithm.
     fn default() -> Self {
         Self::new()
     }

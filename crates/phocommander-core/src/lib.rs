@@ -1,12 +1,12 @@
 //! The shared vocabulary of Phocommander.
 //!
 //! WHAT: the model of the file system — the entries of a directory
-//!       ([`entry`]), the interfaces a source implements ([`source`]), the
-//!       local implementation of those interfaces ([`local`]), the resolution
-//!       of a path against its destination directory ([`path`]), the
-//!       checksum of a file ([`checksum`]), the canonical configuration
-//!       defaults ([`config`]) and the error type of the core layer
-//!       ([`error`]).
+//!       ([{entry}]), the interfaces a source implements ([{source}]), the
+//!       local implementation of those interfaces ([{local}]), the resolution
+//!       of a path against its destination directory ([{path}]), the
+//!       checksum of a file ([{checksum}]), the canonical configuration
+//!       defaults ([{config}]) and the error type of the core layer
+//!       ([{error}]).
 //! WHY: the core is the only level that every other level may use, and it
 //!       knows no window, no widget and no protocol. The concept it owns is
 //!       the concept of ADR-0002: the core asks a source for the content of

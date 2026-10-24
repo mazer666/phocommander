@@ -3,7 +3,7 @@
 //! WHAT: every limit that more than one crate has to agree on, each exactly
 //!       once, with a name that explains what it limits.
 //! WHY: a limit that exists twice drifts. The specification fixes the numbers
-//!       in `docs/REQUIREMENTS.md` under "Konfigurationsdatei"; this module is
+//!       in {docs/REQUIREMENTS.md} under "Konfigurationsdatei"; this module is
 //!       the single place where they are written down, so that the
 //!       configuration file, the viewer, the archive adapter and the test
 //!       suite cannot disagree about them. A limit that only one crate
@@ -23,7 +23,7 @@
 ///
 /// WHY: an archive is untrusted input. Without a total limit a small archive
 /// can fill the disk of the machine it is unpacked on (decompression bomb).
-/// The value is the one the specification fixes in the `[archives]` section of
+/// The value is the one the specification fixes in the {[archives]} section of
 /// the configuration file.
 pub const MAX_EXTRACTED_BYTES: u64 = 2_147_483_648;
 
@@ -45,7 +45,7 @@ pub const MAX_VIEWER_FILE_SIZE: u64 = 10_485_760;
 ///
 /// WHY: text decoding needs several times the memory of the file itself
 /// (character conversion, line splitting). The limit is therefore lower than
-/// [`MAX_VIEWER_FILE_SIZE`].
+/// [{MAX_VIEWER_FILE_SIZE}].
 pub const MAX_VIEWER_TEXT_SIZE: u64 = 4_194_304;
 
 #[cfg(test)]

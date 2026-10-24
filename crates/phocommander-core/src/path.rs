@@ -1,9 +1,9 @@
 //! The resolution of a target path against the directory it belongs to.
 //!
 //! WHAT: the functions that decide where a file may be written inside a
-//!       destination directory — [`resolve_within`], [`normalize_relative`]
-//!       and [`is_within`] — together with the two policies they need,
-//!       [`CaseSensitivity`] and the error type [`PathError`].
+//!       destination directory — [{resolve_within}], [{normalize_relative}]
+//!       and [{is_within}] — together with the two policies they need,
+//!       [{CaseSensitivity}] and the error type [{PathError}].
 //! WHY: a name that comes from outside — from an archive, from a server, from
 //!       a file system the user released on another device — decides where a
 //!       file is written. A name that leaves the destination directory is
@@ -35,71 +35,71 @@ use std::path::{Component, Path, PathBuf};
 /// How a file system compares two names that differ only in their case.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum CaseSensitivity {
-    /// The file system tells `Report.txt` and `report.txt` apart.
-    ///
-    /// WHY: Linux and the BSDs behave this way, and the core cannot know
-    /// what the file system of the machine it runs on does.
+/// The file system tells {Report.txt} and {report.txt} apart.
+///
+/// WHY: Linux and the BSDs behave this way, and the core cannot know
+/// what the file system of the machine it runs on does.
     #[default]
     Sensitive,
 
-    /// The file system treats `Report.txt` and `report.txt` as one name.
-    ///
-    /// WHY: macOS and Windows behave this way by default. A name that
-    /// differs only in the case is the same name there, so a path that
-    /// leaves the destination is detected with the same comparison.
+/// The file system treats {Report.txt} and {report.txt} as one name.
+///
+/// WHY: macOS and Windows behave this way by default. A name that
+/// differs only in the case is the same name there, so a path that
+/// leaves the destination is detected with the same comparison.
     Insensitive,
 }
 
 /// The reason why a path was refused.
 #[derive(Debug, thiserror::Error)]
 pub enum PathError {
-    /// The path was absolute where a relative one was required.
+/// The path was absolute where a relative one was required.
     #[error("the path {path} is absolute, a path inside the destination is required")]
     Absolute {
-        /// The path that was refused.
+/// The path that was refused.
         path: PathBuf,
     },
 
-    /// The path tried to leave the destination directory.
+/// The path tried to leave the destination directory.
     #[error("the path {path} leaves the destination directory")]
     Traversal {
-        /// The path that was refused.
+/// The path that was refused.
         path: PathBuf,
     },
 
-    /// The name is not valid on every target platform.
+/// The name is not valid on every target platform.
     #[error("the name {name} is not valid on every target platform")]
     Reserved {
-        /// The name that was refused.
+/// The name that was refused.
         name: String,
     },
 
-    /// The file system refused the operation.
+/// The file system refused the operation.
     #[error("the file system refused the operation for {path}: {source}")]
     Io {
-        /// The path the operation was working on.
+/// The path the operation was working on.
         path: PathBuf,
-        /// The error the operating system reported.
+/// The error the operating system reported.
         #[source]
         source: io::Error,
     },
 }
 
 impl PathError {
-    /// The stable code of the failure, as the table of ADR-0003 names it.
-    ///
-    /// WHY: the user interface matches on the code and shows the message of
-    /// its translation catalogue. It must never parse the text of the error.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_core::error::ErrorCode;
-    /// use phocommander_core::path::PathError;
-    /// use std::path::Path;
-    ///
-    /// let error = PathError::Traversal { path: Path::new("../escape.txt").to_path_buf() };
-    /// assert_eq!(error.code(), ErrorCode::PathTraversal);
-    /// ```
+/// The stable code of the failure, as the table of ADR-0003 names it.
+///
+/// WHY: the user interface matches on the code and shows the message of
+/// its translation catalogue. It must never parse the text of the error.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_core::error::ErrorCode;
+/// use phocommander_core::path::PathError;
+/// use std::path::Path;
+///
+/// let error = PathError::Traversal { path: Path::new("../escape.txt").to_path_buf() };
+/// assert_eq!(error.code(), ErrorCode::PathTraversal);
+/// ```
     pub fn code(&self) -> crate::error::ErrorCode {
         match self {
             PathError::Absolute { .. } => crate::error::ErrorCode::PathAbsolute,
@@ -118,11 +118,11 @@ impl PathError {
 pub const WINDOWS_FORBIDDEN_CHARACTERS: [char; 9] =
     ['<', '>', ':', '"', '/', '\\', '?', '*', '|'];
 
-/// Resolves `relative` against `base` and proves that the result stays inside.
+/// Resolves {relative} against {base} and proves that the result stays inside.
 ///
 /// WHY: this is the function the extraction hardening and the copy
 /// operations call before they write anything. It refuses the three ways a
-/// path can leave the destination — an absolute path, a `..` segment and a
+/// path can leave the destination — an absolute path, a parent segment and a
 /// symbolic link — and it resolves the destination itself, so that a link in
 /// the destination cannot be used as a way out either.
 ///
@@ -180,11 +180,11 @@ pub fn resolve_within(
     Ok(canonical_existing.join(tail))
 }
 
-/// Removes the `.` and the `..` segments of a relative path.
+/// Removes the current and the parent segments of a relative path.
 ///
 /// WHY: a name that arrives from outside may contain segments that carry no
-/// information (`./docs`) or that point outwards (`../escape`). The result of
-/// this function never contains a `..` segment, so that joining it with a
+/// information ({./docs}) or that point outwards ({../escape}). The result of
+/// this function never contains a parent segment, so that joining it with a
 /// destination cannot leave the destination.
 ///
 /// EXAMPLE:
@@ -245,7 +245,7 @@ pub fn normalize_relative(relative: &Path) -> Result<PathBuf, PathError> {
     Ok(normalized)
 }
 
-/// Whether `candidate` lies inside `base`.
+/// Whether {candidate} lies inside {base}.
 ///
 /// WHY: the comparison has to follow the case policy of the file system.
 /// On a case-insensitive file system a path that differs from the base only
@@ -294,7 +294,7 @@ pub fn same_name(left: &str, right: &str, case: CaseSensitivity) -> bool {
 
 /// Whether the name is a device name that Windows reserves.
 ///
-/// WHY: Windows refuses to create a file called `CON` or `NUL`, and it does
+/// WHY: Windows refuses to create a file called {CON} or {NUL}, and it does
 /// so in a way that silently redirects the write. A name that is reserved on
 /// one platform has to be reported before the operation, not after it.
 ///
@@ -320,7 +320,7 @@ pub fn is_reserved_device_name(name: &str) -> bool {
     }
 }
 
-/// Whether the name starts with a drive letter such as `C:`.
+/// Whether the name starts with a drive letter such as {C:}.
 fn has_drive_letter(name: &str) -> bool {
     let mut characters = name.chars();
     match (characters.next(), characters.next()) {
