@@ -48,6 +48,21 @@ serde_json = "1"
 toml = "1"
 
 # ---------------------------------------------------------------------------
+# Localisation.
+#
+# The catalogue format is Mozilla Fluent (section 8.2 of the specification).
+# The `fluent` crate is the umbrella crate and re-exports `fluent-bundle`;
+# `fluent-syntax` is used to read the identifiers of the messages out of a
+# parsed catalogue, `rust-embed` embeds the `.ftl` files into the binary and
+# `sys-locale` asks the operating system for the language of the user.
+# ---------------------------------------------------------------------------
+fluent = "0.17"
+fluent-syntax = "0.12"
+rust-embed = { version = "8.13", features = ["debug-embed"] }
+sys-locale = "0.3"
+unic-langid = "0.9"
+
+# ---------------------------------------------------------------------------
 # Error handling and diagnostics.
 # ---------------------------------------------------------------------------
 thiserror = "2"
