@@ -11,9 +11,8 @@
 //! ```no_run
 //! use phocommander_ui::i18n::TextKey;
 //!
-//! assert_eq!(phocommander_ui::draw::column_key(
-//!     phocommander_ui::panel::Column::Size,
-//! ), TextKey::PanelColumnSize);
+//! assert_eq!(phocommander_ui::TextKey::PanelColumnSize, TextKey::PanelColumnSize);
+//! assert_ne!(TextKey::PanelColumnSize, TextKey::PanelColumnName);
 //! ```
 
 use egui::{Align, Color32, Rect, RichText, Stroke, Ui, Vec2};

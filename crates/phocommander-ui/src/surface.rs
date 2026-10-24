@@ -268,6 +268,9 @@ mod tests {
 
     #[test]
     fn the_focus_alternates_between_the_two_panels() {
+        // WHY: switching the focus moves the focus and nothing else. The
+        // entries stay in the panel they were put into, which is what the
+        // second assertion checks.
         // arrange
         let mut surface = surface();
 
@@ -276,7 +279,11 @@ mod tests {
 
         // assert
         assert_eq!(surface.active_side(), PanelSide::Right);
-        assert_eq!(surface.other().row_count(), 0);
+        // The panel without the focus is the left one, and it holds the
+        // entries, because they were put into the left panel before the
+        // switch.
+        assert_eq!(surface.other().row_count(), 2);
+        assert_eq!(surface.active().row_count(), 0);
     }
 
     #[test]

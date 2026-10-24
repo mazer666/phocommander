@@ -469,6 +469,7 @@ mod tests {
     use crate::keymap_view::KeymapView;
     use crate::listing::{Entry, EntryKind};
     use crate::panel::PanelSide;
+    use crate::Argument;
     use std::collections::BTreeMap;
 
     /// A catalogue that answers every key with the key itself.

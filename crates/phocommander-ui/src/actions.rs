@@ -12,7 +12,7 @@
 //! ```no_run
 //! use phocommander_ui::{Action, ActionCategory};
 //!
-//! let copy = Action::from_id("panel.copy").unwrap_or(Action::PanelCopy);
+//! let copy = Action::from_id("panel.copy").expect("the catalogue holds the action");
 //! assert_eq!(copy.id(), "panel.copy");
 //! assert_eq!(copy.category(), ActionCategory::File);
 //! ```
@@ -325,7 +325,7 @@ mod tests {
     #[test]
     fn every_identifier_is_unique() {
         // act
-        let identifiers: BTreeSet<&str> = Action::all().iter().map(Action::id).collect();
+        let identifiers: BTreeSet<&str> = Action::all().iter().map(|action| action.id()).collect();
 
         // assert
         assert_eq!(identifiers.len(), Action::all().len());
@@ -338,7 +338,7 @@ mod tests {
         let missing = Action::from_id("panel.nonsense");
 
         // assert
-        assert_eq!(found.map(Action::id), Some("panel.copy"));
+        assert_eq!(found.map(|action| action.id()), Some("panel.copy"));
         assert!(missing.is_none());
     }
 
@@ -361,7 +361,7 @@ mod tests {
         // integration test of the workspace compares it with the file
         // itself.
         // act
-        let identifiers: Vec<&str> = Action::all().iter().map(Action::id).collect();
+        let identifiers: Vec<&str> = Action::all().iter().map(|action| action.id()).collect();
 
         // assert
         assert_eq!(identifiers.len(), 36);

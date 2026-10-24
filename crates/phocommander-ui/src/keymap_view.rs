@@ -278,7 +278,7 @@ impl KeyStroke {
 /// ```no_run
 /// use phocommander_ui::{Key, KeyStroke};
 ///
-/// let stroke = KeyStroke::new(Key::F5);
+/// let stroke = KeyStroke::new(Key::Function(5));
 /// assert!(stroke.modifiers.is_empty());
 /// ```
     pub const fn new(key: Key) -> Self {
@@ -797,8 +797,8 @@ mod tests {
         let in_dpad = view.resolve(Context::Dpad, &event);
 
         // assert
-        assert_eq!(in_keyboard.map(Action::id), Some("panel.copy"));
-        assert_eq!(in_dpad.map(Action::id), Some("app.quit"));
+        assert_eq!(in_keyboard.map(|action| action.id()), Some("panel.copy"));
+        assert_eq!(in_dpad.map(|action| action.id()), Some("app.quit"));
         assert_ne!(in_keyboard, in_dpad);
     }
 
@@ -822,7 +822,7 @@ mod tests {
         // assert
         assert_eq!(first, second);
         // WHY: "panel.copy" comes before "panel.move" in the catalogue.
-        assert_eq!(first.map(Action::id), Some("panel.copy"));
+        assert_eq!(first.map(|action| action.id()), Some("panel.copy"));
         let conflicts = view.conflicts();
         assert_eq!(conflicts.len(), 1);
         assert_eq!(conflicts[0].kept().id(), "panel.copy");
@@ -860,7 +860,7 @@ mod tests {
         );
 
         // assert
-        assert_eq!(resolved.map(Action::id), Some("panel.copy"));
+        assert_eq!(resolved.map(|action| action.id()), Some("panel.copy"));
         assert!(
             view.resolve(Context::Keyboard, &InputEvent::Palette("file.copy".to_string()))
                 .is_none()
