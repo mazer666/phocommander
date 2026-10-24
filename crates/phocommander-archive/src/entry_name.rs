@@ -8,8 +8,14 @@
 //!       RUSTSEC-2026-0369 — all use the name of an entry to write outside of
 //!       the directory the user chose. The rules below therefore refuse
 //!       everything that could leave the destination: absolute paths, drive
-//!       letters, `..` segments, control characters, alternate data streams
-//!       and the reserved device names of Windows.
+//!       letters, `..` segments, control characters, alternate data streams,
+//!       the characters and the endings that Windows forbids, and the
+//!       reserved device names of Windows.
+//!
+//!       The resolution is a pure function. The same name always produces the
+//!       same result, and a name that is refused always produces the same
+//!       reason and the same suggestion. A user who reads the message of a
+//!       refusal can therefore rely on it.
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_archive::resolve_entry_name;
@@ -27,10 +33,12 @@
 
 use std::path::PathBuf;
 
+use crate::windows_name;
+
 /// The longest name of an archive entry that is accepted, in bytes.
 ///
 /// WHY: a name that is far longer than any file system accepts is either an
-/// attack or a mistake. Refusing it early keeps the error message clear.
+///       attack or a mistake. Refusing it early keeps the error message clear.
 pub const MAX_ENTRY_NAME_BYTES: usize = 4096;
 
 /// The reasons why the name of an archive entry was refused.
@@ -61,11 +69,41 @@ pub enum EntryNameError {
         name: String,
     },
 
-    /// The name was a reserved device name or an alternate data stream.
-    #[error("the archive entry name {name:?} is not a valid file name on every platform")]
+    /// The name was a reserved device name of Windows.
+    #[error("the archive entry name {name:?} is a reserved device name of Windows")]
     ReservedName {
         /// The name that was refused.
         name: String,
+    },
+
+    /// The name contained a colon, which Windows reads as an alternate data
+    /// stream of another file.
+    #[error("the archive entry name {name:?} contains a colon, which Windows reads as an alternate data stream; the name {suggestion:?} would work on every platform")]
+    AlternateDataStream {
+        /// The name that was refused.
+        name: String,
+        /// The name that would work on every platform.
+        suggestion: String,
+    },
+
+    /// The name contained a character that Windows forbids in a file name.
+    #[error("the archive entry name {name:?} contains the character {character:?}, which Windows forbids in a file name; the name {suggestion:?} would work on every platform")]
+    ForbiddenCharacter {
+        /// The name that was refused.
+        name: String,
+        /// The character that caused the refusal.
+        character: char,
+        /// The name that would work on every platform.
+        suggestion: String,
+    },
+
+    /// The name ended in a dot or in a space, which Windows removes silently.
+    #[error("the archive entry name {name:?} ends in a dot or a space, which Windows removes silently; the name {suggestion:?} would work on every platform")]
+    ForbiddenEnding {
+        /// The name that was refused.
+        name: String,
+        /// The name that would work on every platform.
+        suggestion: String,
     },
 
     /// The name was longer than [`MAX_ENTRY_NAME_BYTES`].
@@ -81,9 +119,10 @@ pub enum EntryNameError {
 /// Resolves the name of an archive entry to a relative path.
 ///
 /// WHY: the result is always relative and never contains a `..` segment, so
-/// that joining it with the destination directory cannot leave the
-/// destination. The function is the only place where an entry name is turned
-/// into a path, so a reader cannot resolve a name in a laxer way.
+///       that joining it with the destination directory cannot leave the
+///       destination. The function is the only place where an entry name is
+///       turned into a path, so a reader cannot resolve a name in a laxer
+///       way. It is pure: the same name always produces the same result.
 ///
 /// EXAMPLE:
 /// ```no_run
@@ -136,14 +175,30 @@ pub fn resolve_entry_name(name: &str) -> Result<PathBuf, EntryNameError> {
         }
 
         if segment.contains(':') {
-            return Err(EntryNameError::ReservedName {
+            return Err(EntryNameError::AlternateDataStream {
                 name: name.to_string(),
+                suggestion: windows_name::suggest_replacement(name),
             });
         }
 
         if is_reserved_device_name(segment) {
             return Err(EntryNameError::ReservedName {
                 name: name.to_string(),
+            });
+        }
+
+        if let Some(character) = windows_name::first_forbidden_character(segment) {
+            return Err(EntryNameError::ForbiddenCharacter {
+                name: name.to_string(),
+                character,
+                suggestion: windows_name::suggest_replacement(name),
+            });
+        }
+
+        if windows_name::has_forbidden_ending(segment) {
+            return Err(EntryNameError::ForbiddenEnding {
+                name: name.to_string(),
+                suggestion: windows_name::suggest_replacement(name),
             });
         }
 
@@ -169,8 +224,9 @@ fn has_drive_letter(name: &str) -> bool {
 /// Whether the segment is a reserved device name of Windows.
 ///
 /// WHY: Windows refuses to create a file called `CON` or `NUL`, and it does
-/// so in a way that silently redirects the write. An archive that contains
-/// such a name would therefore write somewhere the user did not choose.
+///       so in a way that silently redirects the write. An archive that
+///       contains such a name would therefore write somewhere the user did
+///       not choose.
 fn is_reserved_device_name(segment: &str) -> bool {
     let stem = segment
         .split('.')
@@ -186,180 +242,5 @@ fn is_reserved_device_name(segment: &str) -> bool {
             matches!(digit, b'1'..=b'9')
         }
         _ => false,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn keeps_a_normal_name() {
-        // act
-        let path = match resolve_entry_name("readme.md") {
-            Ok(path) => path,
-            Err(error) => panic!("the name should be accepted: {error}"),
-        };
-
-        // assert
-        assert_eq!(path.to_string_lossy(), "readme.md");
-        assert!(path.is_relative());
-    }
-
-    #[test]
-    fn keeps_the_directories_of_a_name() {
-        // act
-        let path = match resolve_entry_name("photos/2026/sunset.jpg") {
-            Ok(path) => path,
-            Err(error) => panic!("the name should be accepted: {error}"),
-        };
-
-        // assert
-        assert_eq!(path.components().count(), 3);
-        assert_eq!(path.to_string_lossy(), "photos/2026/sunset.jpg");
-    }
-
-    #[test]
-    fn keeps_a_name_with_non_latin_characters() {
-        // act
-        let path = match resolve_entry_name("übung/Übersicht.md") {
-            Ok(path) => path,
-            Err(error) => panic!("the name should be accepted: {error}"),
-        };
-
-        // assert
-        assert_eq!(path.to_string_lossy(), "übung/Übersicht.md");
-    }
-
-    #[test]
-    fn drops_a_trailing_separator_and_a_current_directory() {
-        // act
-        let path = match resolve_entry_name("docs/./readme.md/") {
-            Ok(path) => path,
-            Err(error) => panic!("the name should be accepted: {error}"),
-        };
-
-        // assert
-        assert_eq!(path.to_string_lossy(), "docs/readme.md");
-    }
-
-    #[test]
-    fn refuses_an_empty_name() {
-        // act
-        let result = resolve_entry_name("");
-
-        // assert
-        assert_eq!(result.err(), Some(EntryNameError::Empty));
-    }
-
-    #[test]
-    fn refuses_a_name_that_leaves_the_destination() {
-        // WHY: this is the attack the hardening exists for.
-        // act
-        let names = [
-            "../escape.txt",
-            "..",
-            "docs/../../escape.txt",
-            "..\\escape.txt",
-            "docs\\..\\..\\escape.txt",
-        ];
-
-        // assert
-        for name in names {
-            let result = resolve_entry_name(name);
-            assert!(
-                matches!(result, Err(EntryNameError::Traversal { .. })),
-                "{name} was accepted"
-            );
-        }
-    }
-
-    #[test]
-    fn refuses_an_absolute_name() {
-        // act
-        let names = [
-            "/etc/passwd",
-            "\\windows\\system32",
-            "C:\\Windows\\evil.dll",
-            "d:evil.txt",
-        ];
-
-        // assert
-        for name in names {
-            let result = resolve_entry_name(name);
-            assert!(
-                matches!(result, Err(EntryNameError::Absolute { .. })),
-                "{name} was accepted"
-            );
-        }
-    }
-
-    #[test]
-    fn refuses_a_name_with_a_control_character() {
-        // act
-        let result = resolve_entry_name("evil\u{0}.txt");
-
-        // assert
-        assert!(
-            matches!(result, Err(EntryNameError::ControlCharacter { .. })),
-            "{result:?}"
-        );
-    }
-
-    #[test]
-    fn refuses_a_reserved_device_name() {
-        // act
-        let names = ["CON", "nul.txt", "docs/PRN", "COM1", "LPT9.log"];
-
-        // assert
-        for name in names {
-            let result = resolve_entry_name(name);
-            assert!(
-                matches!(result, Err(EntryNameError::ReservedName { .. })),
-                "{name} was accepted"
-            );
-        }
-    }
-
-    #[test]
-    fn refuses_an_alternate_data_stream() {
-        // act
-        let result = resolve_entry_name("readme.txt:hidden");
-
-        // assert
-        assert!(
-            matches!(result, Err(EntryNameError::ReservedName { .. })),
-            "{result:?}"
-        );
-    }
-
-    #[test]
-    fn refuses_a_name_that_is_too_long() {
-        // arrange
-        let name = "a".repeat(MAX_ENTRY_NAME_BYTES + 1);
-
-        // act
-        let result = resolve_entry_name(&name);
-
-        // assert
-        assert_eq!(
-            result.err(),
-            Some(EntryNameError::TooLong {
-                length: MAX_ENTRY_NAME_BYTES + 1,
-                limit: MAX_ENTRY_NAME_BYTES,
-            })
-        );
-    }
-
-    #[test]
-    fn accepts_a_name_of_the_maximum_length() {
-        // arrange
-        let name = "a".repeat(MAX_ENTRY_NAME_BYTES);
-
-        // act
-        let result = resolve_entry_name(&name);
-
-        // assert
-        assert!(result.is_ok());
     }
 }

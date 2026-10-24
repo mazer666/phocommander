@@ -1,11 +1,13 @@
 # The archive adapter of Phocommander.
 #
-# WHAT: the hardened resolution of the untrusted names an archive contains.
+# WHAT: the hardened resolution of the untrusted names an archive contains, the
+#       limits of an extraction, the container adapters and the extraction
+#       itself.
 # WHY: an archive is untrusted input. A name like `../../etc/passwd` must
 #       never reach the file system, and a name that is a reserved device on
-#       Windows must never be written either. The container readers arrive in
-#       milestone M1; the name resolution is here from the start, because
-#       every reader has to use it.
+#       Windows must never be written either. The container crates only parse
+#       the container; every decision about *where* something is written is
+#       made here, in this crate.
 # EXAMPLE: `let path = phocommander_archive::resolve_entry_name("docs/readme.md")?;`
 
 [package]
@@ -18,6 +20,19 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# The capability-based directory handle. Every access of the extraction
+# happens relative to the opened destination directory, so that a symbolic
+# link cannot redirect a write out of it (ADR-0004, decision 6).
+cap-std = { workspace = true }
+# The container formats of FR-67.
+sevenz-rust2 = { workspace = true }
+tar = { workspace = true }
+zip = { workspace = true }
+# The compression formats of a TAR container.
+bzip2 = { workspace = true }
+flate2 = { workspace = true }
+lzma-rust2 = { workspace = true }
+zstd = { workspace = true }
 thiserror = { workspace = true }
 
 [lints]
