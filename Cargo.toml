@@ -135,6 +135,11 @@ missing_docs = "warn"
 [workspace.lints.clippy]
 # No `unwrap()`, no `expect()`, no `todo!()`, no `unimplemented!()` on any path
 # that a user can reach. The project rules forbid stubs.
+#
+# The two lints that forbid a panic are configured with `allow` in the test
+# targets, because a test is allowed to fail loudly when its arrangement is
+# wrong. The rule that matters is the one for the production code, and it is
+# enforced there.
 unwrap_used = "deny"
 expect_used = "deny"
 todo = "deny"

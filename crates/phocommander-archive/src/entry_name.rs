@@ -44,74 +44,80 @@ pub const MAX_ENTRY_NAME_BYTES: usize = 4096;
 /// The reasons why the name of an archive entry was refused.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum EntryNameError {
-/// The name was empty.
+    /// The name was empty.
     #[error("the archive entry has an empty name")]
     Empty,
 
-/// The name was an absolute path or carried a drive letter.
+    /// The name was an absolute path or carried a drive letter.
     #[error("the archive entry name {name:?} is an absolute path")]
     Absolute {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
     },
 
-/// The name tried to leave the destination directory.
+    /// The name tried to leave the destination directory.
     #[error("the archive entry name {name:?} leaves the destination directory")]
     Traversal {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
     },
 
-/// The name contained a control character.
+    /// The name contained a control character.
     #[error("the archive entry name {name:?} contains a control character")]
     ControlCharacter {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
     },
 
-/// The name was a reserved device name of Windows.
+    /// The name was a reserved device name of Windows.
     #[error("the archive entry name {name:?} is a reserved device name of Windows")]
     ReservedName {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
     },
 
-/// The name contained a colon, which Windows reads as an alternate data
-/// stream of another file.
-    #[error("the archive entry name {name:?} contains a colon, which Windows reads as an alternate data stream; the name {suggestion:?} would work on every platform")]
+    /// The name contained a colon, which Windows reads as an alternate data
+    /// stream of another file.
+    #[error(
+        "the archive entry name {name:?} contains a colon, which Windows reads as an alternate data stream; the name {suggestion:?} would work on every platform"
+    )]
     AlternateDataStream {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
-/// The name that would work on every platform.
+        /// The name that would work on every platform.
         suggestion: String,
     },
 
-/// The name contained a character that Windows forbids in a file name.
-    #[error("the archive entry name {name:?} contains the character {character:?}, which Windows forbids in a file name; the name {suggestion:?} would work on every platform")]
+    /// The name contained a character that Windows forbids in a file name.
+    #[error(
+        "the archive entry name {name:?} contains the character {character:?}, which Windows forbids in a file name; the name {suggestion:?} would work on every platform"
+    )]
     ForbiddenCharacter {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
-/// The character that caused the refusal.
+        /// The character that caused the refusal.
         character: char,
-/// The name that would work on every platform.
+        /// The name that would work on every platform.
         suggestion: String,
     },
 
-/// The name ended in a dot or in a space, which Windows removes silently.
-    #[error("the archive entry name {name:?} ends in a dot or a space, which Windows removes silently; the name {suggestion:?} would work on every platform")]
+    /// The name ended in a dot or in a space, which Windows removes silently.
+    #[error(
+        "the archive entry name {name:?} ends in a dot or a space, which Windows removes silently; the name {suggestion:?} would work on every platform"
+    )]
     ForbiddenEnding {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
-/// The name that would work on every platform.
+        /// The name that would work on every platform.
         suggestion: String,
     },
 
-/// The name was longer than [{MAX_ENTRY_NAME_BYTES}].
+    /// The name was longer than [{MAX_ENTRY_NAME_BYTES}].
     #[error("the archive entry name is {length} bytes long, the limit is {limit} bytes")]
     TooLong {
-/// The length of the name in bytes.
+        /// The length of the name in bytes.
         length: usize,
-/// The limit that was exceeded.
+        /// The limit that was exceeded.
         limit: usize,
     },
 }

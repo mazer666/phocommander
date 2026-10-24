@@ -49,6 +49,10 @@ pub const MAX_VIEWER_FILE_SIZE: u64 = 10_485_760;
 pub const MAX_VIEWER_TEXT_SIZE: u64 = 4_194_304;
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

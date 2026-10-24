@@ -31,54 +31,54 @@ use crate::values::{
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-/// The version of the schema the file was written for.
-///
-/// WHY: an incompatible change raises this number. A file with a higher
-/// number than the program understands is refused instead of being read
-/// with a wrong meaning.
+    /// The version of the schema the file was written for.
+    ///
+    /// WHY: an incompatible change raises this number. A file with a higher
+    /// number than the program understands is refused instead of being read
+    /// with a wrong meaning.
     pub schema_version: u32,
 
-/// The general behaviour of the application.
+    /// The general behaviour of the application.
     #[serde(default)]
     pub general: General,
 
-/// The appearance of the user interface.
+    /// The appearance of the user interface.
     #[serde(default)]
     pub appearance: Appearance,
 
-/// The behaviour of the two panels.
+    /// The behaviour of the two panels.
     #[serde(default)]
     pub panels: Panels,
 
-/// Overrides of the platform default key bindings.
+    /// Overrides of the platform default key bindings.
     #[serde(default)]
     pub keymap: KeymapOverrides,
 
-/// The limits of the file viewer.
+    /// The limits of the file viewer.
     #[serde(default)]
     pub viewer: Viewer,
 
-/// The limits of the archive adapter.
+    /// The limits of the archive adapter.
     #[serde(default)]
     pub archives: Archives,
 
-/// The privacy settings.
+    /// The privacy settings.
     #[serde(default)]
     pub privacy: Privacy,
 
-/// The advanced settings.
+    /// The advanced settings.
     #[serde(default)]
     pub advanced: Advanced,
 
-/// The {[security]} section.
+    /// The {[security]} section.
     #[serde(default)]
     pub security: Security,
 
-/// The input contexts and their key bindings.
+    /// The input contexts and their key bindings.
     #[serde(default)]
     pub input: Input,
 
-/// The behaviour of the network sources.
+    /// The behaviour of the network sources.
     #[serde(default)]
     pub remote: Remote,
 }
@@ -87,11 +87,11 @@ pub struct Config {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct General {
-/// The language of the user interface.
+    /// The language of the user interface.
     #[serde(default)]
     pub language: Language,
 
-/// Whether the last opened directories are restored at start.
+    /// Whether the last opened directories are restored at start.
     #[serde(default)]
     pub restore_session: bool,
 }
@@ -100,26 +100,26 @@ pub struct General {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Appearance {
-/// The colour scheme of the user interface.
+    /// The colour scheme of the user interface.
     #[serde(default)]
     pub theme: Theme,
 
-/// The height of a row in the file list, in points.
-///
-/// WHY: zero means that the platform decides the height. A fixed height
-/// that is too small would cut off the file names.
+    /// The height of a row in the file list, in points.
+    ///
+    /// WHY: zero means that the platform decides the height. A fixed height
+    /// that is too small would cut off the file names.
     #[serde(default)]
     pub row_height: u32,
 
-/// Whether hidden files are listed.
+    /// Whether hidden files are listed.
     #[serde(default)]
     pub show_hidden_files: bool,
 
-/// Whether system files are listed.
+    /// Whether system files are listed.
     #[serde(default)]
     pub show_system_files: bool,
 
-/// The format in which file sizes are shown.
+    /// The format in which file sizes are shown.
     #[serde(default)]
     pub file_size_format: FileSizeFormat,
 }
@@ -128,15 +128,15 @@ pub struct Appearance {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Panels {
-/// Whether the two panels stand next to each other or below each other.
+    /// Whether the two panels stand next to each other or below each other.
     #[serde(default)]
     pub layout: PanelLayout,
 
-/// What a right click does.
+    /// What a right click does.
     #[serde(default)]
     pub right_click_action: RightClickAction,
 
-/// What happens when a file that is to be written already exists.
+    /// What happens when a file that is to be written already exists.
     #[serde(default)]
     pub overwrite_policy: OverwritePolicy,
 }
@@ -150,7 +150,7 @@ pub struct Panels {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct KeymapOverrides {
-/// The binding of an action, by action identifier.
+    /// The binding of an action, by action identifier.
     pub bindings: BTreeMap<String, String>,
 }
 
@@ -158,11 +158,11 @@ pub struct KeymapOverrides {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Viewer {
-/// The largest file the viewer loads into memory, in bytes.
+    /// The largest file the viewer loads into memory, in bytes.
     #[serde(default)]
     pub max_file_size: Option<u64>,
 
-/// The largest file the viewer reads as text, in bytes.
+    /// The largest file the viewer reads as text, in bytes.
     #[serde(default)]
     pub max_text_size: Option<u64>,
 }
@@ -171,11 +171,11 @@ pub struct Viewer {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Archives {
-/// The largest total size an extraction may write, in bytes.
+    /// The largest total size an extraction may write, in bytes.
     #[serde(default)]
     pub max_extracted_bytes: Option<u64>,
 
-/// The largest number of entries an archive may contain.
+    /// The largest number of entries an archive may contain.
     #[serde(default)]
     pub max_entries: Option<u64>,
 }
@@ -184,7 +184,7 @@ pub struct Archives {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Privacy {
-/// How much the application writes into its log.
+    /// How much the application writes into its log.
     #[serde(default)]
     pub log_level: LogLevel,
 }
@@ -193,10 +193,10 @@ pub struct Privacy {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Advanced {
-/// The number of worker threads for background operations.
-///
-/// WHY: zero means that the program uses as many threads as the machine
-/// has cores.
+    /// The number of worker threads for background operations.
+    ///
+    /// WHY: zero means that the program uses as many threads as the machine
+    /// has cores.
     #[serde(default)]
     pub worker_threads: u32,
 }
@@ -210,18 +210,18 @@ pub struct Advanced {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Security {
-/// The profile that decides which rules apply.
+    /// The profile that decides which rules apply.
     #[serde(default)]
     pub profile: SecurityProfile,
 
-/// Read the content of a directory again before it is shown.
+    /// Read the content of a directory again before it is shown.
     ///
     /// WHY: a change that was made elsewhere is noticed. On a network
     /// drive this costs round trips, which is why it is a switch.
     #[serde(default = "default_true")]
     pub verify_directory_before_refresh: bool,
 
-/// Keep no index.
+    /// Keep no index.
     ///
     /// WHY: the application never reads a file that the user has not
     /// opened. The field exists so that the value is visible; the
@@ -229,22 +229,22 @@ pub struct Security {
     #[serde(default)]
     pub background_index: bool,
 
-/// Write the last directories at the end of a session.
+    /// Write the last directories at the end of a session.
     ///
     /// WHY: switching this off leaves nothing behind on a machine that
     /// is not the user's own.
     #[serde(default = "default_true")]
     pub remember_session: bool,
 
-/// The viewer reads a file only when the user opens it.
+    /// The viewer reads a file only when the user opens it.
     #[serde(default = "default_true")]
     pub read_only_on_demand: bool,
 
-/// Compare the checksums of source and destination in the verified copy.
+    /// Compare the checksums of source and destination in the verified copy.
     #[serde(default = "default_true")]
     pub checksum_on_copy: bool,
 
-/// Copy a symbolic link as a symbolic link and never follow it.
+    /// Copy a symbolic link as a symbolic link and never follow it.
     #[serde(default)]
     pub follow_symlinks: bool,
 }
@@ -258,14 +258,14 @@ pub struct Security {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SecurityProfile {
-/// The rules of section 9.7 with the convenience switches.
+    /// The rules of section 9.7 with the convenience switches.
     #[default]
     Standard,
 
-/// Every rule of section 9.7, for a managed machine.
+    /// Every rule of section 9.7, for a managed machine.
     Corporate,
 
-/// Exactly what the switches of the section say.
+    /// Exactly what the switches of the section say.
     Custom,
 }
 
@@ -278,27 +278,27 @@ fn default_true() -> bool {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Input {
-/// The input context that is active.
+    /// The input context that is active.
     #[serde(default)]
     pub context: InputContext,
 
-/// The bindings of the keyboard context.
+    /// The bindings of the keyboard context.
     #[serde(default)]
     pub keyboard: InputBindings,
 
-/// The bindings of the pointer context.
+    /// The bindings of the pointer context.
     #[serde(default)]
     pub pointer: InputBindings,
 
-/// The bindings of the touch context.
+    /// The bindings of the touch context.
     #[serde(default)]
     pub touch: InputBindings,
 
-/// The bindings of the television remote control context.
+    /// The bindings of the television remote control context.
     #[serde(default)]
     pub dpad: InputBindings,
 
-/// The bindings of the gamepad context.
+    /// The bindings of the gamepad context.
     #[serde(default)]
     pub controller: InputBindings,
 }
@@ -307,7 +307,7 @@ pub struct Input {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct InputBindings {
-/// The binding of an action, by action identifier.
+    /// The binding of an action, by action identifier.
     pub bindings: BTreeMap<String, String>,
 }
 
@@ -315,22 +315,22 @@ pub struct InputBindings {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Remote {
-/// The time limit for establishing a connection, in seconds.
+    /// The time limit for establishing a connection, in seconds.
     #[serde(default)]
     pub connect_timeout_seconds: Option<u64>,
 
-/// Whether the signature of an SMB server is required.
+    /// Whether the signature of an SMB server is required.
     #[serde(default)]
     pub smb_signing: SmbSigning,
 
-/// Whether the transport encryption of an SMB server is required.
+    /// Whether the transport encryption of an SMB server is required.
     #[serde(default)]
     pub smb_encryption: SmbEncryption,
 
-/// The largest file that may be downloaded from a remote source, in bytes.
-///
-/// WHY: zero means that there is no limit. The default is zero because the
-/// limit is only sensible for sources the user trusts.
+    /// The largest file that may be downloaded from a remote source, in bytes.
+    ///
+    /// WHY: zero means that there is no limit. The default is zero because the
+    /// limit is only sensible for sources the user trusts.
     #[serde(default)]
     pub max_remote_download_bytes: u64,
 }
