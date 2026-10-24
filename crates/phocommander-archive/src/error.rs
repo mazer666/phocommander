@@ -18,7 +18,7 @@
 //! ```
 
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::entry_name::EntryNameError;
 
@@ -92,6 +92,29 @@ impl ArchiveError {
             Self::LimitExceeded { kind, .. } => kind.code(),
         }
     }
+
+    /// Builds the error for an input or output failure.
+    ///
+    /// WHAT: wraps the error of the operating system together with the
+    ///       thing the operation was working on.
+    /// WHY: the adapters of this crate open a file, read an archive or
+    ///       write an entry, and in every case the user wants to know
+    ///       *which* file failed. The constructor keeps that path next to
+    ///       the system error, so that no call site can lose it.
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_archive::ArchiveError;
+    /// use std::path::Path;
+    ///
+    /// let failure = ArchiveError::io(Path::new("/tmp/archive.zip"), std::io::Error::other("no"));
+    /// assert_eq!(failure.code(), "io.read");
+    /// ```
+    pub fn io(path: impl AsRef<Path>, source: io::Error) -> Self {
+        Self::Io {
+            path: path.as_ref().to_path_buf(),
+            source,
+        }
+    }
 }
 
 /// The limit that an extraction exceeded.
@@ -137,6 +160,25 @@ impl LimitKind {
             Self::EntryCount => "number of entries",
             Self::SingleEntryBytes => "size of a single entry",
         }
+    }
+}
+
+impl std::fmt::Display for LimitKind {
+    /// Writes the name of the limit, so that the limit can appear in a
+    /// message without the caller naming it.
+    ///
+    /// WHY: the message of the error names the limit through this type.
+    /// Implementing `Display` keeps that knowledge in one place instead of
+    /// spreading a match over the call sites.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_archive::LimitKind;
+    ///
+    /// assert_eq!(LimitKind::EntryCount.to_string(), "number of entries");
+    /// ```
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.label())
     }
 }
 
