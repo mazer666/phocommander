@@ -109,6 +109,13 @@ pub fn primary_modifier() -> &'static str {
 /// }
 /// ```
 pub fn config_directory() -> Result<PathBuf, Error> {
+    // WHY: the portable mode keeps its configuration beside the executable,
+    // so that a copy on a USB stick carries its settings to another machine.
+    // The decision belongs to the portable module, which knows the marker
+    // file; this function only forwards the result.
+    if super::portable::is_portable() {
+        return super::portable::portable_config_directory();
+    }
     let base = dirs::config_dir().ok_or(Error::NoConfigDirectory)?;
     let name = match host_platform() {
         Platform::MacOs | Platform::Ios | Platform::Windows => "Phocommander",

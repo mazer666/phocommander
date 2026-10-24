@@ -225,6 +225,11 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-22j | A running job can be paused, resumed and cancelled, and a change takes effect at the next item boundary | M1 | Must | Unit test with a controlled source |
 | FR-22k | The failed items of a job can be retried on their own | M2 | Should | Unit test |
 | FR-22l | The job list can be reordered, filtered by state and inspected | M2 | Should | Manual test |
+| FR-22m | The Windows build ships in a portable variant that runs from a USB stick without installation | M3 | Must | Manual test on a removable drive |
+| FR-22n | The portable variant keeps its configuration next to the executable, not in the user profile | M3 | Must | Unit test of the path resolution |
+| FR-22o | The portable variant writes no file outside its own directory except the documents the user explicitly opens | M3 | Must | Test that the portable directory is the only place written |
+| FR-22p | The installed and the portable variant share one executable; the behaviour is selected by the presence of a marker file | M3 | Must | Manual test of both modes |
+| FR-22q | The portable variant carries no activation, no licence check and no network call at start-up | M3 | Must | Test that the start-up opens no socket |
 | FR-23 | Overwrite is not the default | M1 | Must | Configuration test |
 | FR-24 | Every job reports progress with a rate and can be cancelled | M1 | Must | Unit test on the job queue |
 | FR-25 | A job collects its errors instead of stopping at the first one | M1 | Should | Unit test with a partially failing copy |
@@ -849,7 +854,38 @@ The `clean` profile removes furniture, never capability. Every action stays reac
 action palette. A clean interface is a smaller interface, not a reduced product. This is the
 difference between a profile and a feature gate, and it is what keeps principle 2.1 intact.
 
-### 7.5 Configurability without complexity
+### 7.5 The portable variant
+
+The Windows build ships in a portable variant, in the tradition of the reference product, which
+offers a portable edition for technicians who move between machines [50]. The variant runs from a
+USB stick without installation and behaves like an installed copy.
+
+**One executable, two modes.** The portable variant is not a second build. It is the same
+executable, and the mode is decided by the presence of a marker file — `portable.txt` — next to
+the executable. Without the marker the application behaves like an installed copy and keeps its
+configuration in the user profile. With the marker it keeps its configuration next to the
+executable.
+
+**The configuration follows the executable.** In portable mode the settings, the key bindings,
+the favourites and the interface profiles live in a `Phocommander/` directory beside the
+executable. The rule is the same as for the local source of the model: the path is resolved once,
+at the boundary, and everything below the platform layer works with the result.
+
+**Nothing is written outside the directory.** The portable variant writes only inside its own
+directory, with two exceptions that the user causes: the documents the user explicitly opens and
+the trash of the system, when the user chooses to delete rather than to move to the trash. A
+technician who carries the stick on a foreign machine leaves nothing behind.
+
+**No activation.** This is the practical difference from the reference product, which binds a
+licence file to the USB stick through its activation server [50]. Phocommander is free and has no
+licence server, so a portable copy needs no preparation beyond copying the directory. That is the
+whole point of the variant, and it is worth stating plainly: the portable copy is as complete as
+the installed one.
+
+**What the variant is not.** It is not a different product with fewer functions. Every function
+of the installed variant is available, because there is only one code path.
+
+### 7.6 Configurability without complexity
 
 The configuration surface is deliberately small. It has four groups: appearance, panels, commands
 and input. Anything that would need a fifth group has to earn its place by being something a user
@@ -1530,3 +1566,5 @@ documentation already uses and they read clearly in a compact field.
 [46] openxr — Rust bindings, licence: https://crates.io/crates/openxr
 [47] Apple — file access from the macOS app sandbox: https://developer.apple.com/tutorials/data/documentation/security/accessing-files-from-the-macos-app-sandbox.md
 [48] RustSec advisory database: https://rustsec.org/advisories/
+[49] SpeedCommander — activation on a USB stick, the portable edition: https://www.speedproject.com/help/activation-on-usb-stick/
+[50] Gizmodo — SpeedCommander, the portable build for technicians: https://gizmodo.com/download/speedcommander
