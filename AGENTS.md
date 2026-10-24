@@ -8,6 +8,10 @@ The binding source is [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). If a rule 
 and the specification disagree, the specification wins — and the disagreement is a bug
 in this file that you should fix in the same change.
 
+Do not edit `docs/REQUIREMENTS.md` to match your implementation. If the specification
+is wrong, describe the conflict in `deliverable.md` and let the owner decide; every
+deviation from a decision needs a new decision, dated and justified.
+
 ---
 
 ## 1. Read before you change
@@ -16,13 +20,14 @@ Never edit a file you have not opened. Never edit a file you have not understood
 
 Before your first write in a task:
 
-1. Read `docs/REQUIREMENTS.md` — at least the sections your task touches. It is ~600
+1. Read `docs/REQUIREMENTS.md` — at least the sections your task touches. It is ~960
    lines; read the whole thing if the task is bigger than one function.
 2. Read the target file completely, plus the module header of its neighbours.
 3. Read [`docs/WHERE_TO_CHANGE.md`](docs/WHERE_TO_CHANGE.md) to find out which crate
    is actually responsible for what. Touching the wrong crate is the most common
    mistake in this codebase, because the UI layer can do almost anything.
-4. Check the git status. Someone else's uncommitted work may be in the tree.
+4. Check the git status. Someone else's uncommitted work may be in the tree — in
+   this project several workers write in parallel.
 
 Every module in this repository starts with a header comment that names its
 responsibility *and its boundary*. If you cannot say in one sentence what your module
@@ -42,6 +47,8 @@ This is the rule that separates useful work from plausible-sounding work.
 - Do not describe code you have not read. Do not describe a file you have not opened.
 - Do not estimate a deadline, a percentage, a file size or a line count and present it
   as a fact. Either measure it or leave it out.
+- Do not promise a behaviour that the code does not have yet. "Scheduled for M3" and
+  "available today" are two different sentences, and only one of them may be true.
 
 If you could not measure something, say so explicitly in the handover. "Not measured,
 here is how to measure it" is a good handover. A guess dressed as a fact is not.
@@ -56,7 +63,9 @@ A stub is any of these:
 - an empty `Ok(())` where real work is required,
 - `todo!()`, `unimplemented!()`, `unreachable!()` used to silence the compiler,
 - a commented-out block that "should come back later",
-- a placeholder comment where the real implementation belongs.
+- a placeholder comment where the real implementation belongs,
+- a documentation page that says "to be filled in later" — a page is either finished
+  or it does not exist.
 
 `todo!()` and `unimplemented!()` are only acceptable in a `#[cfg(test)]` helper that
 proves a code path is unreachable. Everywhere else, a missing implementation is a
@@ -71,7 +80,7 @@ half-implemented feature that pretends to be complete is not.
 ## 4. Rust rules the workspace enforces
 
 These are not style preferences. The CI gate rejects the workspace if they are
-violated.
+violated. The lints live in `[workspace.lints]` in `Cargo.toml`.
 
 ### 4.1 No `unwrap()` and no `expect()` on externally reachable paths
 
@@ -196,7 +205,31 @@ path and a `.bak` copy of the original file.
 
 ---
 
-## 6. Language rules
+## 6. Documentation is part of the change
+
+A behaviour that is not documented does not exist for the next contributor.
+
+- Change the binding table in `docs/KEYMAP.md` in the same change as the binding
+  itself. The action identifiers are the contract between the keymap crate and the
+  interface; they are spelled `panel.copy`, `panel.view`, `selection.toggle`.
+- Change `docs/WHERE_TO_CHANGE.md` in the same change as a new crate, a new module
+  or a moved file. A missing row is a documentation bug.
+- The user guide is bilingual. A new screen, dialog or error message needs a German
+  and an English page, with the same structure — not a German page and a note that
+  the English one comes later.
+- Every relative Markdown link must resolve. Run the checker:
+
+  ```bash
+  python3 scripts/check-links.py
+  ```
+
+  It exits with code 1 on a dead link. The single documented exception is
+  `docs/security/THREAT_MODEL.md`, which the security worker writes in parallel;
+  the checker knows about it and reports it as *in progress*.
+
+---
+
+## 7. Language rules
 
 | Content | Language |
 |---|---|
@@ -212,38 +245,50 @@ never a hardcoded string in the code.
 
 ---
 
-## 7. Handover: patch plus `deliverable.md`
+## 8. Handover: changed files plus `deliverable.md`
 
 **Do not commit, push, tag or release.** Not even a "fixup" commit, not even on your
 own branch. The owner decides what enters the history.
 
-Instead, hand over:
+Hand over:
 
-1. **A patch.** The diff of your work against the state you started from, as a file
-   that can be applied with `git apply`.
+1. **The changed files, in place in the working tree.** That is the primary
+   handover: the owner sees exactly what you produced, unfiltered.
 2. **`deliverable.md`, written in German**, containing:
    - what you changed, file by file, with line counts and the reason for each change,
    - the commands you ran and their real output (paste it, do not summarise it),
+   - a link check and the result,
    - what you deliberately did *not* do, and why,
    - what is still open, what you could not measure, and what you would do next.
 3. **A progress entry** in the team board, so the next agent knows where the work
    stands.
 
-If you cannot apply your own patch cleanly, that is a finding, not an excuse — fix it
-before handing over.
+If your change touches several files, list every one of them in `deliverable.md` —
+a handover that mentions only the "interesting" files hides the rest.
 
 ---
 
-## 8. Checklist before you hand over
+## 9. Checks before you hand over
+
+```bash
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test --workspace
+cargo deny check
+cargo audit
+python3 scripts/check-links.py
+```
 
 - [ ] Every file I touched was read before it was written.
-- [ ] No stub, no `todo!()`, no fake return value.
+- [ ] No stub, no `todo!()`, no fake return value, no placeholder page.
 - [ ] No `unwrap()`/`expect()` on a path reachable from outside the module.
 - [ ] No `unsafe`.
 - [ ] No source file above 400 lines without a documented reason; none above 550.
 - [ ] Every new or changed public function has a unit test.
 - [ ] Every hardening has a negative test that performs the attack.
 - [ ] Every public function has a WHAT / WHY / EXAMPLE doc comment.
+- [ ] Documentation changed in the same change as the behaviour it describes.
 - [ ] Code, comments and commits are English; `deliverable.md` is German.
 - [ ] All claims in the handover are backed by a command output I pasted.
-- [ ] A patch file and `deliverable.md` exist; nothing was committed or pushed.
+- [ ] Nothing was committed or pushed; the handover is the working tree plus
+      `deliverable.md`.

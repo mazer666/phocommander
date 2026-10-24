@@ -1,0 +1,48 @@
+# Multiple rename template: music.
+#
+# This template renames music files to the pattern
+#   {artist}_{title}_{track}.{format}
+# The artist and the title come first, the track number last, so that a sorted
+# directory shows the tracks of an album in the right order.
+#
+# Placeholders of this template:
+#   {artist}  — the artist, taken from the audio metadata when the file carries
+#               it, otherwise from the original file name.
+#   {title}   — the title, taken from the audio metadata when the file carries
+#               it, otherwise from the original file name.
+#   {track}   — the track number, taken from the audio metadata when the file
+#               carries it, otherwise from the counter. It is written with the
+#               width {track:02}, so the result is "07" and not "7".
+#   {format}  — the file extension of the original file, without the dot.
+#
+# The template uses curly braces for its placeholders. The generic rename
+# placeholders of the dialog ([name], [ext], [parent], [n], [date], [time],
+# [size], [hash], [rand], [case], [lower], [upper], [title]) are named in
+# square brackets in the specification.
+
+# Name of the template as it appears in the template list of the dialog.
+name = "Music"
+
+# One sentence describing what this template produces.
+description = "Names music files as {artist}_{title}_{track}.{format}."
+
+# The rule definition of the template.
+[rule]
+# The target file name. Every placeholder in braces is replaced by the dialog.
+format = "{artist}_{title}_{track}.{format}"
+
+# How the fields are detected in the original file name.
+[rule.detection]
+# The music template has no pattern to recognise: the fields come from the
+# audio metadata and from the original file name.
+pattern = ""
+# What is inspected: "file_name" or "parent_directory".
+source = "file_name"
+# Where the fields come from when the file carries audio metadata.
+metadata_first = true
+
+# The numbering of the track number when the metadata carries none.
+[rule.counter]
+# Start value, step, width of the written number and the order in which the
+# selected files receive it.
+track = { start = 1, step = 1, width = 2, sort = "selection" }

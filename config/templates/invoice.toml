@@ -1,0 +1,57 @@
+# Multiple rename template: invoice.
+#
+# This template renames invoice documents to the pattern
+#   {year}_{number}_{description}.{format}
+# The year and the invoice number come first, because an archive is searched by
+# year and number; the description of the original file name follows.
+#
+# Placeholders of this template:
+#   {year}        — the year of the invoice, taken from the modification date
+#                   of the file and written as {year:YYYY}.
+#   {number}      — the invoice number. It is taken from the original file name
+#                   when the detection pattern recognises it, otherwise it
+#                   comes from the counter and can be corrected by the user.
+#   {description} — the descriptive part of the original file name.
+#   {format}      — the file extension of the original file, without the dot.
+#
+# The template uses curly braces for its placeholders. The generic rename
+# placeholders of the dialog ([name], [ext], [parent], [n], [date], [time],
+# [size], [hash], [rand], [case], [lower], [upper], [title]) are named in
+# square brackets in the specification.
+
+# Name of the template as it appears in the template list of the dialog.
+name = "Invoice"
+
+# One sentence describing what this template produces.
+description = "Names invoice documents as {year}_{number}_{description}.{format}."
+
+# The rule definition of the template.
+[rule]
+# The target file name. Every placeholder in braces is replaced by the dialog.
+format = "{year}_{number}_{description}.{format}"
+
+# How the fields are detected in the original file name.
+[rule.detection]
+# Regular expression that recognises the invoice number in an existing file
+# name, for example "Rechnung_2026-0142.pdf".
+pattern = "(?P<number>\\d{2,8})"
+# The pattern is recognised regardless of upper and lower case.
+case_sensitive = false
+# What is inspected: "file_name" or "parent_directory".
+source = "file_name"
+# What happens when the pattern does not match: "ask" makes the dialog ask for
+# the invoice number.
+on_no_match = "ask"
+
+# Where the year comes from.
+[rule.date]
+# Source of the year: "modified" or "created".
+source = "modified"
+# Layout of the written year.
+layout = "YYYY"
+
+# The numbering of the invoice number when it cannot be recognised.
+[rule.counter]
+# Start value, step, width of the written number and the order in which the
+# selected files receive it.
+number = { start = 1, step = 1, width = 4, sort = "selection" }

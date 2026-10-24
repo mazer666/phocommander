@@ -1,0 +1,54 @@
+# Multiple rename template: camera.
+#
+# This template renames files of a video camera to the pattern
+#   {n}_{serie}_{titel}.{format}
+# The order number comes first, then the series, then the title — the order a
+# camera operator needs when the footage is cut and sorted afterwards.
+#
+# Placeholders of this template:
+#   {n}       — the running order number. It counts the selected files in the
+#               order of the selection and is written with the width {n:03},
+#               so the result is "001" and not "1".
+#   {serie}   — the series. Default is the name of the parent directory; the
+#               value is always shown before the rename and can be overridden.
+#   {titel}   — the title, taken over unchanged from the original file name.
+#   {format}  — the file extension of the original file, without the dot.
+#
+# The template uses curly braces for its placeholders. The generic rename
+# placeholders of the dialog ([name], [ext], [parent], [n], [date], [time],
+# [size], [hash], [rand], [case], [lower], [upper], [title]) are named in
+# square brackets in the specification.
+
+# Name of the template as it appears in the template list of the dialog.
+name = "Camera"
+
+# One sentence describing what this template produces.
+description = "Names video camera files as {n}_{serie}_{titel}.{format}."
+
+# The rule definition of the template.
+[rule]
+# The target file name. Every placeholder in braces is replaced by the dialog.
+format = "{n}_{serie}_{titel}.{format}"
+
+# How the fields are detected in the original file name.
+[rule.detection]
+# The camera template has no pattern to recognise: the fields come from the
+# counter, from the parent directory and from the original file name.
+pattern = ""
+# What is inspected: "file_name" or "parent_directory".
+source = "file_name"
+
+# Where the series name comes from.
+[rule.series_name]
+# Default source of the series name: "parent_directory" or "user_input".
+default_source = "parent_directory"
+# The value is always shown in the dialog before the rename runs.
+always_visible = true
+# The value can be changed by the user for the current selection.
+overridable = true
+
+# The numbering of the order number.
+[rule.counter]
+# The order number: start value, step, width of the written number and the
+# order in which the selected files receive it.
+order = { start = 1, step = 1, width = 3, sort = "selection" }

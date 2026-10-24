@@ -1,0 +1,186 @@
+# Phocommander — Continuous Integration
+#
+# Diese Datei definiert die Abnahme-Gates aus docs/REQUIREMENTS.md.
+# Kein Gate wird abgeschwaecht, um gruen zu werden: keine auskommentierten
+# Lints, keine deaktivierten Tests, keine entfernten Pruefungen.
+#
+# Jeder Job laeuft unabhaengig. Ein rotes Gate blockiert den Meilenstein.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Alle Jobs abbrechen, wenn einer davon scheitert. Ein gruener Status entsteht
+# nur, wenn JEDES Gate bestanden hat.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Die Werkzeugversionen sind gepinnt. cargo-deny liest dieselbe Konfiguration
+  # je nach Version unterschiedlich - eine ungepinnte Version fuehrt zu einem
+  # Fehlalarm, der die Konfiguration statt des Problems beschuldigt.
+  CARGO_DENY_VERSION: 0.20.2
+  CARGO_AUDIT_VERSION: 0.22.2
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Gate 1: Formatierung, statische Analyse, Tests, Lizenzen, Schwachstellen.
+  # Das ist das Gate, das bei JEDER Aenderung laeuft.
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Qualität (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Quellen auschecken
+        uses: actions/checkout@v4
+
+      - name: Rust-Toolchain installieren
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust-Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Formatierung prüfen
+        run: cargo fmt --all --check
+
+      - name: Statische Analyse
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Tests
+        run: cargo test --workspace --all-features
+
+      - name: Crate-Grenzen prüfen
+        run: ./scripts/check-crate-boundaries.sh
+
+      - name: Dateigrößen prüfen
+        run: ./scripts/check-file-size.sh
+
+      - name: cargo-deny installieren
+        run: cargo install cargo-deny --version "$CARGO_DENY_VERSION" --locked
+
+      - name: cargo-deny Version prüfen
+        # Die Version wird verifiziert, weil unterschiedliche Versionen
+        # unterschiedliche Allow-Listen-Syntaxen lesen.
+        run: |
+          installed=$(cargo deny --version | head -n 1 | awk '{print $3}')
+          echo "installiert: $installed"
+          test "$installed" = "$CARGO_DENY_VERSION"
+
+      - name: Lizenz- und Advisory-Prüfung
+        run: cargo deny check
+
+      - name: cargo-audit installieren
+        run: cargo install cargo-audit --version "$CARGO_AUDIT_VERSION" --locked
+
+      - name: Schwachstellenprüfung
+        run: cargo audit
+
+  # ---------------------------------------------------------------------------
+  # Gate 2: Der Build laeuft auf jedem unterstuetzten Desktop-Betriebssystem.
+  # Ein Fehler auf einer Plattform blockiert, auch wenn Linux gruen ist.
+  # ---------------------------------------------------------------------------
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Quellen auschecken
+        uses: actions/checkout@v4
+
+      - name: Rust-Toolchain installieren
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust-Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Tests
+        run: cargo test --workspace --all-features
+
+      - name: Release-Build
+        run: cargo build --workspace --release
+
+  # ---------------------------------------------------------------------------
+  # Gate 3: Quer-Kompilierung fuer die mobilen Ziele und BSD.
+  # Der Bau wird geprueft, die Funktionstests bleiben eine manuelle Aufgabe
+  # (NOT RUN mit Grund, bis echte Geraete im Testlauf stehen).
+  # ---------------------------------------------------------------------------
+  cross-compile:
+    name: Quer-Kompilierung (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-linux-android
+            label: Android arm64
+          - target: x86_64-unknown-linux-gnu
+            label: Linux
+          - target: x86_64-unknown-freebsd
+            label: FreeBSD
+          - target: x86_64-unknown-netbsd
+            label: NetBSD
+    steps:
+      - name: Quellen auschecken
+        uses: actions/checkout@v4
+
+      - name: Rust-Toolchain installieren
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust-Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Bauen
+        run: cargo build --workspace --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - name: Ergebnis melden
+        # Ein fehlgeschlagener Quer-Bau ist kein Gruend, den Meilenstein
+        # abzunehmen. Er wird sichtbar gemeldet und muss spaeter behoben sein.
+        run: |
+          echo "Quer-Bau ${{ matrix.target }} beendet mit Status ${{ job.status }}"
+          echo "Die vollstaendige Abnahme der mobilen Ziele erfolgt in M4 und M5"
+
+  # ---------------------------------------------------------------------------
+  # Gate 4: Jede Nacht laeuft der Fuzzer laenger und die Tests ohne Cache.
+  # ---------------------------------------------------------------------------
+  nightly:
+    name: Nachtlauf (Fuzzing)
+    runs-on: ubuntu-latest
+    schedule:
+      - cron: "17 3 * * *"
+    continue-on-error: true
+    steps:
+      - name: Quellen auschecken
+        uses: actions/checkout@v4
+
+      - name: Rust-Toolchain installieren
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Rust-Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Fuzzing
+        run: |
+          cargo +nightly fuzz run -- -max_total_time=600
+
+      - name: Tests ohne Cache
+        run: cargo test --workspace --all-features

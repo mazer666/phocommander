@@ -1,0 +1,150 @@
+# Phocommander — central configuration file (template).
+#
+# This file is the single source of truth for the settings of the application and
+# the first contact point for users and contributors. Every key below carries a
+# comment that explains what it does, because a user must never have to guess.
+#
+# Location of the active configuration file (the copy you edit, not this template):
+#   macOS:      ~/Library/Application Support/Phocommander/
+#   Windows:    %APPDATA%\Phocommander\
+#   Linux/BSD:  $XDG_CONFIG_HOME/phocommander/
+#   Android:    app sandbox
+#   iPadOS:     app sandbox
+#
+# The file format is TOML (parsed with `toml` + `serde`).
+# The action bindings live in `keymap.toml`; this file only overrides single
+# assignments of that catalogue in the `[keymap]` section.
+
+# Schema version of this file.
+# The number is increased on incompatible changes. On start-up Phocommander
+# migrates an older file automatically and keeps the original as a `.bak` file.
+schema_version = 1
+
+# General application behaviour that does not belong to a single subsystem.
+[general]
+# Language of the user interface: "de", "en" or "system".
+# "system" follows the language of the operating system.
+language = "system"
+# Restore the previously open directories when the application starts.
+restore_session = true
+
+# Appearance of the panels, the lists and the viewer.
+[appearance]
+# Colour scheme of the user interface: "system", "light" or "dark".
+theme = "system"
+# Height of a file list row in points.
+# 0 means the platform-dependent default, which is the recommended setting.
+row_height = 0
+# Show files and directories whose name starts with a dot.
+show_hidden_files = false
+# Show operating system internal files that carry no user relevance.
+show_system_files = false
+# Format of file sizes: "binary" (1024), "decimal" (1000) or "iec" (1024 with
+# the IEC prefixes KiB, MiB, GiB).
+file_size_format = "binary"
+
+# Behaviour of the two-panel workspace.
+[panels]
+# Default arrangement of the two panes: "horizontal" (side by side) or
+# "vertical" (one above the other).
+layout = "horizontal"
+# What a right click does: "context_menu" opens the context menu,
+# "toggle_selection" toggles the marking of the clicked entry.
+right_click_action = "context_menu"
+# Behaviour when a file already exists at the target: "ask", "never",
+# "always" or "keep_both".
+# Overwriting is never the default — the user decides.
+overwrite_policy = "ask"
+
+# Overrides for single actions of the key binding catalogue.
+# The catalogue itself is `keymap.toml`; this section only replaces individual
+# assignments of the platform default for this installation.
+# "primary" is Cmd on macOS and iPadOS, Ctrl on Windows, Linux and BSD.
+[keymap]
+# Binding for the action "panel.copy" (copy the selection into the other pane).
+"panel.copy" = "F5"
+# Binding for the action "panel.move" (move the selection into the other pane).
+"panel.move" = "F6"
+
+# Limits of the built-in file viewer.
+[viewer]
+# Largest file the viewer loads into memory, in bytes.
+max_file_size = 10485760
+# Largest text file the viewer loads, in bytes.
+# A text file above this limit is not loaded.
+max_text_size = 4194304
+
+# Limits of the archive handling.
+[archives]
+# Largest total size of extracted data, in bytes.
+# The limit protects against decompression bombs.
+max_extracted_bytes = 2147483648
+# Largest number of entries an archive may contain before the operation aborts.
+max_entries = 100000
+
+# Privacy and data protection settings.
+[privacy]
+# Verbosity of the log file: "off", "error", "warn", "info" or "debug".
+# Phocommander never writes user names, machine names or IP addresses to it.
+log_level = "warn"
+
+# Settings that most users never need to touch.
+[advanced]
+# Number of worker threads for background operations.
+# 0 means automatic: the number of available cores is used.
+worker_threads = 0
+
+# Input handling and operating contexts.
+[input]
+# Which operating context is active.
+# "auto" detects the input device at run time:
+# keyboard or mouse -> keyboard/pointer, touch -> touch,
+# remote control -> dpad, controller -> controller.
+context = "auto"
+
+# Key binding per operating context. Every action has its own default, so that
+# the same application is operated correctly on every device.
+[input.keyboard]
+# Binding for the action "panel.copy" in the keyboard context.
+"panel.copy" = "F5"
+# Binding for the action "panel.move" in the keyboard context.
+"panel.move" = "F6"
+
+# Binding per operating context for the TV remote control.
+# On the remote control the action palette replaces the row of F keys.
+# "panel.copy" = "palette:file.copy"
+[input.dpad]
+# Binding for the action "panel.copy" in the dpad context.
+# "palette:file.copy" means: the action is reachable through the action palette
+# under the entry "file.copy", because the remote control has no F keys.
+"panel.copy" = "palette:file.copy"
+# Binding for the action "panel.move" in the dpad context.
+"panel.move" = "palette:file.move"
+# Binding for the action "palette.open" in the dpad context.
+# The action palette opens with the Menu key; on remotes that have no Menu key
+# the Play/Pause key is the documented alternative.
+"palette.open" = "Menu"
+
+# Binding per operating context for the gamepad and VR controller.
+# Trigger = execute the action, grip = toggle the selection.
+[input.controller]
+# Binding for the action "panel.copy" in the controller context.
+# "palette:file.copy" means: the action is reachable through the action palette
+# under the entry "file.copy".
+"panel.copy" = "palette:file.copy"
+# Binding for the action "selection.toggle" in the controller context.
+"selection.toggle" = "Grip"
+
+# Behaviour of remote sources (SFTP, FTP, SMB, WebDAV, S3).
+[remote]
+# Behaviour on connection problems: "retry" tries again, "fail" aborts.
+# The timeouts apply per connection establishment.
+connect_timeout_seconds = 15
+# SMB: require the signature when the server supports it.
+# "require" rejects servers without a signature, "prefer" negotiates it.
+smb_signing = "prefer"
+# SMB: prefer transport encryption (SMB 3).
+smb_encryption = "prefer"
+# Largest allowed download of a single file from a remote source, in bytes.
+# 0 means unlimited — only use this with sources you trust explicitly.
+max_remote_download_bytes = 0

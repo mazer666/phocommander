@@ -1,0 +1,43 @@
+# Multiple rename template: podcast.
+#
+# This template renames podcast episodes to the pattern
+#   {date}_{titel}.{format}
+# The date comes first, because a podcast library is sorted by date.
+#
+# Placeholders of this template:
+#   {date}    — the date of the episode, taken from the modification date of the
+#               file and written as {date:YYYY-MM-DD}. The format hint after the
+#               colon describes the layout of the date.
+#   {titel}   — the title, taken over unchanged from the original file name.
+#   {format}  — the file extension of the original file, without the dot.
+#
+# The template uses curly braces for its placeholders. The generic rename
+# placeholders of the dialog ([name], [ext], [parent], [n], [date], [time],
+# [size], [hash], [rand], [case], [lower], [upper], [title]) are named in
+# square brackets in the specification.
+
+# Name of the template as it appears in the template list of the dialog.
+name = "Podcast"
+
+# One sentence describing what this template produces.
+description = "Names podcast episodes as {date}_{titel}.{format}."
+
+# The rule definition of the template.
+[rule]
+# The target file name. Every placeholder in braces is replaced by the dialog.
+format = "{date}_{titel}.{format}"
+
+# How the fields are detected in the original file name.
+[rule.detection]
+# The podcast template has no pattern to recognise: the date comes from the
+# file, the title from the original file name.
+pattern = ""
+# What is inspected: "file_name" or "parent_directory".
+source = "file_name"
+
+# Where the date comes from.
+[rule.date]
+# Source of the date: "modified" or "created".
+source = "modified"
+# Layout of the written date.
+layout = "YYYY-MM-DD"
