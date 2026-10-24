@@ -62,34 +62,34 @@ use crate::entry::Entry;
 /// # Ok::<(), std::io::Error>(())
 /// ```
 pub trait Source {
-/// The failure type of this source.
-///
-/// WHY: every source reports its own failures — a permission that was
-/// revoked is not the same failure as a server that did not answer, and
-/// the core must not flatten them into one string.
+    /// The failure type of this source.
+    ///
+    /// WHY: every source reports its own failures — a permission that was
+    /// revoked is not the same failure as a server that did not answer, and
+    /// the core must not flatten them into one string.
     type Error;
 
-/// Lists the entries of the directory at {path}.
-///
-/// WHY: the listing is the one operation that every source supports.
-/// It is also the operation the user interface needs most often, and it
-/// is the only one that has to work on a source that cannot be written
-/// to.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::entry::Entry;
-/// use phocommander_core::source::Source;
-/// use std::path::Path;
-///
-/// # fn list<S: Source<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
-/// let entries = source.list(Path::new("/tmp"))?;
-/// for entry in entries {
-///     println!("{}", entry.name);
-/// }
-/// # Ok(())
-/// # }
-/// ```
+    /// Lists the entries of the directory at {path}.
+    ///
+    /// WHY: the listing is the one operation that every source supports.
+    /// It is also the operation the user interface needs most often, and it
+    /// is the only one that has to work on a source that cannot be written
+    /// to.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::entry::Entry;
+    /// use phocommander_core::source::Source;
+    /// use std::path::Path;
+    ///
+    /// # fn list<S: Source<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
+    /// let entries = source.list(Path::new("/tmp"))?;
+    /// for entry in entries {
+    ///     println!("{}", entry.name);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     fn list(&self, path: &Path) -> Result<Vec<Entry>, Self::Error>;
 }
 
@@ -114,101 +114,105 @@ pub trait Source {
 /// }
 /// ```
 pub trait MutableSource: Source {
-/// Copies the file at {from} to {to}.
-///
-/// WHY: a symbolic link is copied as a link and never as the file it
-/// points at. A copy that dereferences the link would copy a file the
-/// user never selected and would lose the link itself.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::source::MutableSource;
-/// use std::path::Path;
-///
-/// # fn copy<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
-/// source.copy(Path::new("a.txt"), Path::new("b.txt"))?;
-/// # Ok(())
-/// # }
-/// ```
+    /// Copies the file at {from} to {to}.
+    ///
+    /// WHY: a symbolic link is copied as a link and never as the file it
+    /// points at. A copy that dereferences the link would copy a file the
+    /// user never selected and would lose the link itself.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::source::MutableSource;
+    /// use std::path::Path;
+    ///
+    /// # fn copy<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
+    /// source.copy(Path::new("a.txt"), Path::new("b.txt"))?;
+    /// # Ok(())
+    /// # }
+    /// ```
     fn copy(&self, from: &Path, to: &Path) -> Result<(), Self::Error>;
 
-/// Moves the file or the directory at {from} to {to}.
-///
-/// WHY: the move is a separate operation and not a copy followed by a
-/// delete, because the two fail differently: a move across two file
-/// systems cannot be atomic, and a source that cannot move can still
-/// copy.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::source::MutableSource;
-/// use std::path::Path;
-///
-/// # fn move_it<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
-/// source.move_entry(Path::new("a.txt"), Path::new("b.txt"))?;
-/// # Ok(())
-/// # }
-/// ```
+    /// Moves the file or the directory at {from} to {to}.
+    ///
+    /// WHY: the move is a separate operation and not a copy followed by a
+    /// delete, because the two fail differently: a move across two file
+    /// systems cannot be atomic, and a source that cannot move can still
+    /// copy.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::source::MutableSource;
+    /// use std::path::Path;
+    ///
+    /// # fn move_it<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
+    /// source.move_entry(Path::new("a.txt"), Path::new("b.txt"))?;
+    /// # Ok(())
+    /// # }
+    /// ```
     fn move_entry(&self, from: &Path, to: &Path) -> Result<(), Self::Error>;
 
-/// Renames the file or the directory at {from} to {to}.
-///
-/// WHY: a rename stays inside one directory. The operations that need a
-/// different directory use the move instead, because the two have
-/// different failure modes on the different platforms.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::source::MutableSource;
-/// use std::path::Path;
-///
-/// # fn rename_it<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
-/// source.rename(Path::new("a.txt"), Path::new("c.txt"))?;
-/// # Ok(())
-/// # }
-/// ```
+    /// Renames the file or the directory at {from} to {to}.
+    ///
+    /// WHY: a rename stays inside one directory. The operations that need a
+    /// different directory use the move instead, because the two have
+    /// different failure modes on the different platforms.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::source::MutableSource;
+    /// use std::path::Path;
+    ///
+    /// # fn rename_it<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
+    /// source.rename(Path::new("a.txt"), Path::new("c.txt"))?;
+    /// # Ok(())
+    /// # }
+    /// ```
     fn rename(&self, from: &Path, to: &Path) -> Result<(), Self::Error>;
 
-/// Deletes the file or the directory at {path}.
-///
-/// WHY: a symbolic link is unlinked and never followed. A delete that
-/// follows the link would remove a file outside the directory the user
-/// pointed at.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::source::MutableSource;
-/// use std::path::Path;
-///
-/// # fn delete<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
-/// source.remove(Path::new("a.txt"))?;
-/// # Ok(())
-/// # }
-/// ```
+    /// Deletes the file or the directory at {path}.
+    ///
+    /// WHY: a symbolic link is unlinked and never followed. A delete that
+    /// follows the link would remove a file outside the directory the user
+    /// pointed at.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::source::MutableSource;
+    /// use std::path::Path;
+    ///
+    /// # fn delete<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
+    /// source.remove(Path::new("a.txt"))?;
+    /// # Ok(())
+    /// # }
+    /// ```
     fn remove(&self, path: &Path) -> Result<(), Self::Error>;
 
-/// Creates the directory at {path} and every missing directory above it.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::source::MutableSource;
-/// use std::path::Path;
-///
-/// # fn create<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
-/// source.create_directory(Path::new("photos/2026"))?;
-/// # Ok(())
-/// # }
-/// ```
+    /// Creates the directory at {path} and every missing directory above it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::source::MutableSource;
+    /// use std::path::Path;
+    ///
+    /// # fn create<S: MutableSource<Error = std::io::Error>>(source: &S) -> Result<(), std::io::Error> {
+    /// source.create_directory(Path::new("photos/2026"))?;
+    /// # Ok(())
+    /// # }
+    /// ```
     fn create_directory(&self, path: &Path) -> Result<(), Self::Error>;
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::entry::{Entry, EntryKind};
     use std::cell::RefCell;
 
-/// A source that answers from a list that the test prepares.
+    /// A source that answers from a list that the test prepares.
     struct FakeSource {
         entries: RefCell<Vec<Entry>>,
         copied: RefCell<Vec<(std::path::PathBuf, std::path::PathBuf)>>,

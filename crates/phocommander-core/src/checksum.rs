@@ -74,28 +74,28 @@ pub struct Crc32 {
 }
 
 impl Crc32 {
-/// Starts a new checksum.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::checksum::Crc32;
-///
-/// let checksum = Crc32::new();
-/// assert_ne!(checksum.finish(), 0);
-/// ```
+    /// Starts a new checksum.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::checksum::Crc32;
+    ///
+    /// let checksum = Crc32::new();
+    /// assert_ne!(checksum.finish(), 0);
+    /// ```
     pub fn new() -> Self {
         Self { state: 0xFFFF_FFFF }
     }
 
-/// Adds a block of bytes to the checksum.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::checksum::Crc32;
-///
-/// let mut checksum = Crc32::new();
-/// checksum.update(b"data");
-/// ```
+    /// Adds a block of bytes to the checksum.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::checksum::Crc32;
+    ///
+    /// let mut checksum = Crc32::new();
+    /// checksum.update(b"data");
+    /// ```
     pub fn update(&mut self, bytes: &[u8]) {
         let table = table();
         let mut state = self.state;
@@ -106,46 +106,46 @@ impl Crc32 {
         self.state = state;
     }
 
-/// The checksum of everything that was added so far.
-///
-/// WHY: the value can be read without consuming the checksum, so that
-/// the caller can compare an intermediate state and continue afterwards.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::checksum::Crc32;
-///
-/// let mut checksum = Crc32::new();
-/// checksum.update(b"data");
-/// let first = checksum.finish();
-/// assert_eq!(first, checksum.finish());
-/// ```
+    /// The checksum of everything that was added so far.
+    ///
+    /// WHY: the value can be read without consuming the checksum, so that
+    /// the caller can compare an intermediate state and continue afterwards.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::checksum::Crc32;
+    ///
+    /// let mut checksum = Crc32::new();
+    /// checksum.update(b"data");
+    /// let first = checksum.finish();
+    /// assert_eq!(first, checksum.finish());
+    /// ```
     pub fn finish(&self) -> u32 {
         self.state ^ 0xFFFF_FFFF
     }
 
-/// Starts over with an empty checksum.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::checksum::Crc32;
-///
-/// let mut checksum = Crc32::new();
-/// checksum.update(b"data");
-/// checksum.reset();
-/// assert_eq!(checksum.finish(), Crc32::new().finish());
-/// ```
+    /// Starts over with an empty checksum.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::checksum::Crc32;
+    ///
+    /// let mut checksum = Crc32::new();
+    /// checksum.update(b"data");
+    /// checksum.reset();
+    /// assert_eq!(checksum.finish(), Crc32::new().finish());
+    /// ```
     pub fn reset(&mut self) {
         self.state = 0xFFFF_FFFF;
     }
 }
 
 impl Default for Crc32 {
-/// Starts a new checksum.
-///
-/// WHY: the type has a natural zero value — the checksum of no bytes at
-/// all — so that a caller does not have to know about the initial state
-/// of the algorithm.
+    /// Starts a new checksum.
+    ///
+    /// WHY: the type has a natural zero value — the checksum of no bytes at
+    /// all — so that a caller does not have to know about the initial state
+    /// of the algorithm.
     fn default() -> Self {
         Self::new()
     }
@@ -216,6 +216,10 @@ pub fn crc32_file(path: &Path) -> io::Result<u32> {
 }
 
 #[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::fs;

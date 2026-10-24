@@ -35,71 +35,71 @@ use std::path::{Component, Path, PathBuf};
 /// How a file system compares two names that differ only in their case.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum CaseSensitivity {
-/// The file system tells {Report.txt} and {report.txt} apart.
-///
-/// WHY: Linux and the BSDs behave this way, and the core cannot know
-/// what the file system of the machine it runs on does.
+    /// The file system tells {Report.txt} and {report.txt} apart.
+    ///
+    /// WHY: Linux and the BSDs behave this way, and the core cannot know
+    /// what the file system of the machine it runs on does.
     #[default]
     Sensitive,
 
-/// The file system treats {Report.txt} and {report.txt} as one name.
-///
-/// WHY: macOS and Windows behave this way by default. A name that
-/// differs only in the case is the same name there, so a path that
-/// leaves the destination is detected with the same comparison.
+    /// The file system treats {Report.txt} and {report.txt} as one name.
+    ///
+    /// WHY: macOS and Windows behave this way by default. A name that
+    /// differs only in the case is the same name there, so a path that
+    /// leaves the destination is detected with the same comparison.
     Insensitive,
 }
 
 /// The reason why a path was refused.
 #[derive(Debug, thiserror::Error)]
 pub enum PathError {
-/// The path was absolute where a relative one was required.
+    /// The path was absolute where a relative one was required.
     #[error("the path {path} is absolute, a path inside the destination is required")]
     Absolute {
-/// The path that was refused.
+        /// The path that was refused.
         path: PathBuf,
     },
 
-/// The path tried to leave the destination directory.
+    /// The path tried to leave the destination directory.
     #[error("the path {path} leaves the destination directory")]
     Traversal {
-/// The path that was refused.
+        /// The path that was refused.
         path: PathBuf,
     },
 
-/// The name is not valid on every target platform.
+    /// The name is not valid on every target platform.
     #[error("the name {name} is not valid on every target platform")]
     Reserved {
-/// The name that was refused.
+        /// The name that was refused.
         name: String,
     },
 
-/// The file system refused the operation.
+    /// The file system refused the operation.
     #[error("the file system refused the operation for {path}: {source}")]
     Io {
-/// The path the operation was working on.
+        /// The path the operation was working on.
         path: PathBuf,
-/// The error the operating system reported.
+        /// The error the operating system reported.
         #[source]
         source: io::Error,
     },
 }
 
 impl PathError {
-/// The stable code of the failure, as the table of ADR-0003 names it.
-///
-/// WHY: the user interface matches on the code and shows the message of
-/// its translation catalogue. It must never parse the text of the error.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::error::ErrorCode;
-/// use phocommander_core::path::PathError;
-/// use std::path::Path;
-///
-/// let error = PathError::Traversal { path: Path::new("../escape.txt").to_path_buf() };
-/// assert_eq!(error.code(), ErrorCode::PathTraversal);
-/// ```
+    /// The stable code of the failure, as the table of ADR-0003 names it.
+    ///
+    /// WHY: the user interface matches on the code and shows the message of
+    /// its translation catalogue. It must never parse the text of the error.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::error::ErrorCode;
+    /// use phocommander_core::path::PathError;
+    /// use std::path::Path;
+    ///
+    /// let error = PathError::Traversal { path: Path::new("../escape.txt").to_path_buf() };
+    /// assert_eq!(error.code(), ErrorCode::PathTraversal);
+    /// ```
     pub fn code(&self) -> crate::error::ErrorCode {
         match self {
             PathError::Absolute { .. } => crate::error::ErrorCode::PathAbsolute,
@@ -115,8 +115,7 @@ impl PathError {
 /// WHY: a name that Windows refuses cannot be created there, and a
 /// synchronisation between a Linux disk and a Windows disk has to notice
 /// that before it starts, not after it copied a thousand files.
-pub const WINDOWS_FORBIDDEN_CHARACTERS: [char; 9] =
-    ['<', '>', ':', '"', '/', '\\', '?', '*', '|'];
+pub const WINDOWS_FORBIDDEN_CHARACTERS: [char; 9] = ['<', '>', ':', '"', '/', '\\', '?', '*', '|'];
 
 /// Resolves {relative} against {base} and proves that the result stays inside.
 ///

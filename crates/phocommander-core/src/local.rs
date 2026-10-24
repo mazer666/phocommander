@@ -43,18 +43,18 @@ pub struct LocalSource {
 }
 
 impl LocalSource {
-/// Builds a source that uses the paths it is given as they are.
-///
-/// WHY: the local file system is the only source whose entries are
-/// addressed by a path, so it needs no root to make a path meaningful.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::local::LocalSource;
-///
-/// let source = LocalSource::new();
-/// assert!(source.root().is_none());
-/// ```
+    /// Builds a source that uses the paths it is given as they are.
+    ///
+    /// WHY: the local file system is the only source whose entries are
+    /// addressed by a path, so it needs no root to make a path meaningful.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    ///
+    /// let source = LocalSource::new();
+    /// assert!(source.root().is_none());
+    /// ```
     pub fn new() -> Self {
         Self {
             root: None,
@@ -62,21 +62,21 @@ impl LocalSource {
         }
     }
 
-/// Builds a source whose paths are relative to {root}.
-///
-/// WHY: a source that stands for a directory the user released — on
-/// iPadOS, on Android, in a container — must not be able to leave that
-/// directory. The root makes the boundary part of the type instead of a
-/// convention.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::local::LocalSource;
-/// use std::path::Path;
-///
-/// let source = LocalSource::rooted("/tmp/photos");
-/// assert_eq!(source.root(), Some(Path::new("/tmp/photos")));
-/// ```
+    /// Builds a source whose paths are relative to {root}.
+    ///
+    /// WHY: a source that stands for a directory the user released — on
+    /// iPadOS, on Android, in a container — must not be able to leave that
+    /// directory. The root makes the boundary part of the type instead of a
+    /// convention.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    /// use std::path::Path;
+    ///
+    /// let source = LocalSource::rooted("/tmp/photos");
+    /// assert_eq!(source.root(), Some(Path::new("/tmp/photos")));
+    /// ```
     pub fn rooted(root: impl Into<PathBuf>) -> Self {
         Self {
             root: Some(root.into()),
@@ -84,67 +84,67 @@ impl LocalSource {
         }
     }
 
-/// Sets the way the source compares names that differ only in their case.
-///
-/// WHY: the core cannot know whether the file system of the machine is
-/// case-sensitive. The caller knows, and the source uses the answer for
-/// every check that depends on it.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::local::LocalSource;
-/// use phocommander_core::path::CaseSensitivity;
-///
-/// let source = LocalSource::new().with_case_sensitivity(CaseSensitivity::Insensitive);
-/// assert!(source.is_case_sensitive() == false);
-/// ```
+    /// Sets the way the source compares names that differ only in their case.
+    ///
+    /// WHY: the core cannot know whether the file system of the machine is
+    /// case-sensitive. The caller knows, and the source uses the answer for
+    /// every check that depends on it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    /// use phocommander_core::path::CaseSensitivity;
+    ///
+    /// let source = LocalSource::new().with_case_sensitivity(CaseSensitivity::Insensitive);
+    /// assert!(source.is_case_sensitive() == false);
+    /// ```
     pub fn with_case_sensitivity(mut self, case: CaseSensitivity) -> Self {
         self.case = case;
         self
     }
 
-/// The directory the source is rooted at, if it is rooted.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::local::LocalSource;
-///
-/// assert_eq!(LocalSource::new().root(), None);
-/// ```
+    /// The directory the source is rooted at, if it is rooted.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    ///
+    /// assert_eq!(LocalSource::new().root(), None);
+    /// ```
     pub fn root(&self) -> Option<&Path> {
         self.root.as_deref()
     }
 
-/// Whether the source compares names case-sensitively.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::local::LocalSource;
-///
-/// assert!(LocalSource::new().is_case_sensitive());
-/// ```
+    /// Whether the source compares names case-sensitively.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    ///
+    /// assert!(LocalSource::new().is_case_sensitive());
+    /// ```
     pub fn is_case_sensitive(&self) -> bool {
         self.case == CaseSensitivity::Sensitive
     }
 
-/// Resolves a path of the source to the path of the file system.
-///
-/// WHY: a rooted source refuses a path that leaves its root. The check
-/// is the same one the archive extraction uses, so that a released
-/// directory behaves like a destination directory.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::local::LocalSource;
-/// use std::path::Path;
-///
-/// # fn main() -> Result<(), phocommander_core::Error> {
-/// let source = LocalSource::rooted("/tmp/photos");
-/// let path = source.resolve(Path::new("2026/sunset.jpg"))?;
-/// assert!(path.starts_with("/tmp/photos"));
-/// # Ok(())
-/// # }
-/// ```
+    /// Resolves a path of the source to the path of the file system.
+    ///
+    /// WHY: a rooted source refuses a path that leaves its root. The check
+    /// is the same one the archive extraction uses, so that a released
+    /// directory behaves like a destination directory.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    /// use std::path::Path;
+    ///
+    /// # fn main() -> Result<(), phocommander_core::Error> {
+    /// let source = LocalSource::rooted("/tmp/photos");
+    /// let path = source.resolve(Path::new("2026/sunset.jpg"))?;
+    /// assert!(path.starts_with("/tmp/photos"));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn resolve(&self, path: &Path) -> Result<PathBuf, Error> {
         match &self.root {
             Some(root) => Ok(resolve_within(root, path, self.case)?),
@@ -152,24 +152,24 @@ impl LocalSource {
         }
     }
 
-/// The checksum of a file of the local file system.
-///
-/// WHY: the verified copy compares the checksum of the source and of the
-/// destination. The calculation belongs to the file system that holds the
-/// file, not to the operation that copies it.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_core::local::LocalSource;
-/// use std::path::Path;
-///
-/// # fn main() -> Result<(), phocommander_core::Error> {
-/// let source = LocalSource::new();
-/// let checksum = source.checksum(Path::new("notes.txt"))?;
-/// println!("{checksum:08x}");
-/// # Ok(())
-/// # }
-/// ```
+    /// The checksum of a file of the local file system.
+    ///
+    /// WHY: the verified copy compares the checksum of the source and of the
+    /// destination. The calculation belongs to the file system that holds the
+    /// file, not to the operation that copies it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    /// use std::path::Path;
+    ///
+    /// # fn main() -> Result<(), phocommander_core::Error> {
+    /// let source = LocalSource::new();
+    /// let checksum = source.checksum(Path::new("notes.txt"))?;
+    /// println!("{checksum:08x}");
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn checksum(&self, path: &Path) -> Result<u32, Error> {
         crc32_file(path).map_err(|source| Error::io(path, source))
     }
@@ -248,7 +248,8 @@ impl MutableSource for LocalSource {
             // the delete are two steps then, and a failure of the second one
             // leaves the copy behind — which the job reports.
             Err(error) if error.kind() == io::ErrorKind::CrossesDevices => {
-                fs::copy(&source, &destination).map_err(|error| Error::write(&destination, error))?;
+                fs::copy(&source, &destination)
+                    .map_err(|error| Error::write(&destination, error))?;
                 fs::remove_file(&source).map_err(|error| Error::write(&source, error))?;
                 Ok(())
             }
