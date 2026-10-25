@@ -84,10 +84,23 @@ so that an archive cannot exceed the limit by spreading it over many entries.
 
 **6. The window between the check and the write is closed with descriptor-based access.**
 Where the check of a target and the access to it can come apart, the access is made through a
-descriptor relative to the already opened directory (`openat` semantics, through `rustix` or
-`cap-std`), not through a path that is resolved a second time. Where that is not possible, the
-check is repeated immediately before the access. The remaining race is named in the threat
-model rather than hidden.
+descriptor relative to the already opened directory (`openat` semantics, through `rustix`), not
+through a path that is resolved a second time. Where that is not possible, the check is repeated
+immediately before the access. The remaining race is named in the threat model rather than hidden.
+
+*Amendment of 25.10.2026.* The decision named `rustix` **or** `cap-std`. The implementation uses
+`rustix`, and the reason is written down here, because it is not a matter of taste: the crate
+`cap-std` asks the compiler for properties that the stable compiler does not allow — every
+version of it does, the old ones through a `rustix` that uses a compiler attribute that was
+removed from the compiler years ago. The crate therefore needs a nightly compiler, and a nightly
+compiler is not acceptable for a project that writes its security argument in safe Rust. The
+crate `rustix` offers the same access — the descriptor of the directory, the relative opening,
+the symbolic links refused — without a single line of `unsafe` in this repository, and it builds
+with the stable compiler.
+
+The negative tests of the hardening rules H-02 to H-06 were run against the change, and they
+hold: the attack that escapes the destination is still refused, and the symbolic link that
+redirects a write is still refused.
 
 **7. The version of the `zip` crate is pinned from below at 9.0.5.** The four advisories
 above are fixed in that release. The catalogue in the root manifest carries the pin, and

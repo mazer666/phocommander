@@ -2,8 +2,9 @@
 //!
 //! WHAT: the functions that decide where a file may be written inside a
 //!       destination directory — [{resolve_within}], [{normalize_relative}]
-//!       and [{is_within}] — together with the two policies they need,
-//!       [{CaseSensitivity}] and the error type [{PathError}].
+//!       and [{is_within}] — the rules of the length of a path
+//!       ([{length}]) and the two policies they need, [{CaseSensitivity}]
+//!       and the error type [{PathError}].
 //! WHY: a name that comes from outside — from an archive, from a server, from
 //!       a file system the user released on another device — decides where a
 //!       file is written. A name that leaves the destination directory is
@@ -11,7 +12,9 @@
 //!       place, otherwise one call site can forget it. The resolution is
 //!       *canonicalised*: it asks the file system what the path really is,
 //!       so that a symbolic link in the destination cannot be used to write
-//!       outside of it.
+//!       outside of it. The length of a path belongs to the same place,
+//!       because the limit of the platform is a rule of the path and not a
+//!       rule of the window (FR-28).
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_core::path::{CaseSensitivity, resolve_within};
@@ -31,6 +34,14 @@
 use std::ffi::{OsStr, OsString};
 use std::io;
 use std::path::{Component, Path, PathBuf};
+
+pub mod length;
+
+pub use length::{
+    LINUX_MAX_PATH_BYTES, LengthUnit, PathAdvice, PathLengthLimit, PathPlatform, PathTooLong,
+    WINDOWS_LONG_PATH_CHARACTERS, WINDOWS_MAX_PATH_CHARACTERS, check_path_length,
+    measure_path_length,
+};
 
 /// How a file system compares two names that differ only in their case.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
