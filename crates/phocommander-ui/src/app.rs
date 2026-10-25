@@ -11,7 +11,9 @@
 //! SIZE: the shell is the place where the panels, the binding table and the
 //!       catalogue of the texts meet. The resolution of an event, the
 //!       dispatch of the action and the drawing belong to the same flow,
-//!       and a split would hide the order of the three steps.
+//!       and a split would hide the order of the three steps. The ways in
+//!       which the shell takes a language live in a module of their own, so
+//!       that the shell itself stays readable.
 //!
 //! EXAMPLE:
 //! ```no_run
@@ -34,6 +36,7 @@
 //! ```
 
 mod input;
+mod language;
 
 use std::path::PathBuf;
 
@@ -41,6 +44,7 @@ use crate::actions::Action;
 use crate::commands::{Command, Request};
 use crate::context::Context;
 use crate::draw;
+use crate::format::{Formats, PlainFormats};
 use crate::i18n::{Argument, Catalogue, Texts};
 use crate::input::PrimaryModifier;
 use crate::jobs::JobSource;
@@ -58,12 +62,13 @@ pub struct WorkSurfaceApp {
     surface: WorkSurface,
     keymap: KeymapView,
     catalogue: Box<dyn Catalogue>,
+    formats: Box<dyn Formats>,
     theme: Theme,
     metrics: Metrics,
     context: Context,
     primary: PrimaryModifier,
     commands: Vec<Command>,
-    status: Option<String>,
+    status: Option<StatusMessage>,
     activity: u64,
     visible_rows: usize,
     refresh_policy: RefreshPolicy,
@@ -71,6 +76,13 @@ pub struct WorkSurfaceApp {
     job_source: Option<Box<dyn JobSource>>,
     pending_transfer: Option<PendingTransfer>,
     undo: UndoAvailability,
+    /// The context of the last frame.
+    ///
+    /// WHY: a change of the language of the interface has to reach the screen
+    ///       without a restart and without the user having to cause a
+    ///       repaint (FR-124). The shell therefore keeps the context of egui
+    ///       and asks it for a repaint when the language changes.
+    egui_context: Option<egui::Context>,
 }
 
 /// A transfer that waits for the confirmation of the user.
@@ -84,6 +96,23 @@ struct PendingTransfer {
     transfer: TransferRequest,
 }
 
+/// The message of the status line, before it is read from the catalogue.
+///
+/// WHY: the status line shows the message of the last command. The message
+///       is kept as a key of the catalogue and as its arguments, and it is
+///       read in the frame that draws it. A change of the language of the
+///       interface therefore reaches the status line as well, and not only
+///       the labels of the panels (FR-124).
+#[derive(Debug, Clone)]
+struct StatusMessage {
+    /// The key of the catalogue that carries the message.
+    key: String,
+
+    /// The values that the message carries, with the names that the message
+    /// of the catalogue expects.
+    arguments: Vec<(&'static str, String)>,
+}
+
 impl WorkSurfaceApp {
     /// The shell with a work surface, a binding table and a catalogue.
     pub fn new(surface: WorkSurface, keymap: KeymapView, catalogue: Box<dyn Catalogue>) -> Self {
@@ -91,6 +120,7 @@ impl WorkSurfaceApp {
             surface,
             keymap,
             catalogue,
+            formats: Box::new(PlainFormats),
             theme: Theme::default(),
             metrics: Metrics::for_platform(Platform::default()),
             context: Context::default(),
@@ -104,6 +134,7 @@ impl WorkSurfaceApp {
             job_source: None,
             pending_transfer: None,
             undo: UndoAvailability::Unavailable,
+            egui_context: None,
         }
     }
 
@@ -292,8 +323,14 @@ impl WorkSurfaceApp {
     }
 
     /// The last message of the status line.
-    pub fn status(&self) -> Option<&str> {
-        self.status.as_deref()
+    ///
+    /// WHY: the message is read from the catalogue in the moment of the
+    ///       call, so that it speaks the language of the interface — also
+    ///       after a change of that language (FR-124).
+    pub fn status(&self) -> Option<String> {
+        self.status
+            .as_ref()
+            .map(|message| self.message_of_error(&message.key, &message.arguments))
     }
 
     /// The number of changes of the shell.
@@ -316,6 +353,12 @@ impl WorkSurfaceApp {
 
     /// Draws the work surface and resolves the input of the frame.
     pub fn update(&mut self, ui: &mut egui::Ui) {
+        // WHY: the context of egui is kept, so that a change of the language
+        //       of the interface can ask for a repaint (FR-124). The context
+        //       is cheap to copy and it is taken once, in the first frame.
+        if self.egui_context.is_none() {
+            self.egui_context = Some((*ui.ctx()).clone());
+        }
         // WHY: the index of the filter is rebuilt when the directory or the
         // filter changed. The check is cheap and happens before the input
         // is resolved, so that the cursor and the list always agree.
@@ -498,10 +541,10 @@ impl WorkSurfaceApp {
     /// ```no_run
     /// use phocommander_ui::app::WorkSurfaceApp;
     /// ```
-    fn message_of_error(&self, key: &str, arguments: &[String]) -> String {
+    fn message_of_error(&self, key: &str, arguments: &[(&'static str, String)]) -> String {
         let arguments: Vec<Argument<'_>> = arguments
             .iter()
-            .map(|value| Argument::Text(value.as_str()))
+            .map(|(name, value)| Argument::named(name, value.as_str()))
             .collect();
         self.catalogue
             .lookup_with(key, &arguments)
@@ -519,10 +562,15 @@ impl WorkSurfaceApp {
         let transfer = match self.surface.transfer_to_other() {
             Ok(transfer) => transfer,
             Err(error) => {
-                // WHY: the message of the error is read from the catalogue, so
-                //       that it speaks the language of the interface (FR-05).
-                self.status =
-                    Some(self.message_of_error(error.message_key(), &error.message_arguments()));
+                // WHY: the message of the error is kept as a key and as its
+                //       arguments, and it is read from the catalogue in the
+                //       frame that draws it. The status line therefore speaks
+                //       the language of the interface, also after a change of
+                //       that language (FR-05, FR-124).
+                self.status = Some(StatusMessage {
+                    key: error.message_key().to_string(),
+                    arguments: error.message_arguments(),
+                });
                 return;
             }
         };
@@ -596,11 +644,19 @@ impl WorkSurfaceApp {
         // borrowed, so that the text of the undo area is known when the
         // surface is drawn.
         let undo_notice = self.undo.notice(self.catalogue.as_ref());
+        // WHY: the message of the status line is read from the catalogue in
+        //       the frame that draws it, so that it speaks the language of
+        //       the interface — also after a change of that language
+        //       (FR-124).
+        let status = self
+            .status
+            .as_ref()
+            .map(|message| self.message_of_error(&message.key, &message.arguments));
         let WorkSurfaceApp {
             surface,
             catalogue,
+            formats,
             metrics,
-            status,
             visible_rows,
             ..
         } = self;
@@ -612,7 +668,7 @@ impl WorkSurfaceApp {
         let mut requested: Vec<Request> = Vec::new();
         // WHY: the bundle carries everything the drawing needs besides the
         //       surface itself. It is built once per frame.
-        let style = draw::DrawStyle::new(metrics, &palette, &texts, &profile);
+        let style = draw::DrawStyle::new(metrics, &palette, &texts, formats.as_ref(), &profile);
         let rows = draw::draw_surface(
             ui,
             surface,
