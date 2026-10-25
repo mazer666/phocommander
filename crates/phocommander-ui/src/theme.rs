@@ -120,6 +120,14 @@ pub struct Palette {
 
     /// The colour of the background of the entry under the cursor.
     pub cursor: Color32,
+
+    /// The colour of a text that reports a problem.
+    ///
+    /// WHY: a name that cannot be formed and a conflict of the rename are
+    ///       shown in this colour. The colour has to reach the same contrast
+    ///       as the text of the surface (NFR-11), because a warning that the
+    ///       user cannot read is no warning at all.
+    pub warning: Color32,
 }
 
 impl Palette {
@@ -134,6 +142,7 @@ impl Palette {
             separator: Color32::from_rgb(0xcf, 0xcf, 0xcf),
             marked: Color32::from_rgb(0xd6, 0xe4, 0xff),
             cursor: Color32::from_rgb(0xff, 0xf3, 0xc4),
+            warning: Color32::from_rgb(0xa8, 0x3a, 0x00),
         }
     }
 
@@ -148,6 +157,7 @@ impl Palette {
             separator: Color32::from_rgb(0x3d, 0x3d, 0x3d),
             marked: Color32::from_rgb(0x2f, 0x4a, 0x7a),
             cursor: Color32::from_rgb(0x3b, 0x3b, 0x2a),
+            warning: Color32::from_rgb(0xff, 0xa8, 0x5c),
         }
     }
 }
@@ -269,6 +279,19 @@ mod tests {
                 contrast_ratio(palette.focus_frame, palette.panel) >= 3.0,
                 "the focus frame has a contrast of {}",
                 contrast_ratio(palette.focus_frame, palette.panel)
+            );
+        }
+    }
+
+    #[test]
+    fn the_warning_reaches_the_contrast_the_specification_names() {
+        // WHY: NFR-11 — a warning is a text and needs a contrast of at least
+        //       4.5:1, otherwise the user does not see it.
+        for palette in [Palette::light(), Palette::dark()] {
+            assert!(
+                contrast_ratio(palette.warning, palette.panel) >= 4.5,
+                "the warning has a contrast of {}",
+                contrast_ratio(palette.warning, palette.panel)
             );
         }
     }

@@ -194,7 +194,9 @@ impl<'a> Formation<'a> {
         }
 
         let replacements = replace::compile(&rule.replacements)?;
-        let counter = counter::counter_values(rule.counter.as_ref(), inputs);
+        // WHY: the rule hands out the counter — the standard one, when the
+        //       format carries the placeholder and the rule names none.
+        let counter = counter::counter_values(rule.counter(), inputs);
         let series = rule.series.as_ref().map(|series_rule| {
             inputs
                 .iter()
@@ -206,7 +208,7 @@ impl<'a> Formation<'a> {
             (Some(values), Some(series_rule)) => series::widths_of(series_rule, values),
             _ => (0, 0),
         };
-        let counter_width = rule.counter.as_ref().map_or(0, |counter| counter.width);
+        let counter_width = rule.counter().map_or(0, |counter| counter.width);
 
         Ok(Self {
             format,

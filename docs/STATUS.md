@@ -16,7 +16,7 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 | Meilenstein | Inhalt | Stand | Nachweis |
 |---|---|---|---|
 | **M0** — Foundation | Workspace, CI, Konfiguration, Bedrohungsmodell, Dokumentation | **abgenommen** | `docs/acceptance/M0-ACCEPTANCE.md` |
-| **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** — die *Engine* der Namensbildung ist fertig, der *Dialog* fehlt | `docs/acceptance/M1-ACCEPTANCE.md` |
+| **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** — Engine und Dialog der Umbenennung sind fertig; offen sind das macOS-Protokoll und die Benchmarks | `docs/acceptance/M1-ACCEPTANCE.md` |
 | **M2** — Maturity on macOS | Registerkarten, Profile, sichere Kopiermodi, Layouts je Kontext | **abgenommen** | `docs/acceptance/M2-ACCEPTANCE.md` |
 | **M2b** — Internationalisierung | Englisch und Deutsch vollständig, lokalisierte Formatierung, Sprachwechsel zur Laufzeit | **in Arbeit** | `docs/ACCEPTANCE-CRITERIA.md`, Block M2b |
 | **M3** — The other desktop platforms | Windows, Linux, BSD | offen | `docs/ROADMAP.md` |
@@ -83,7 +83,8 @@ gefunden — im Code und in den Tests:
 23. Fluent registriert seine eingebauten Funktionen **nicht** von selbst. `NUMBER($count)` war deshalb eine unbekannte Funktion, und die Nachricht fiel auf den Schlüssel zurück.
 24. Fluent 0.16 schreibt eine Zahl **ohne** die Trennzeichen der Sprache — das Feld `use_grouping` existiert, wird aber nicht benutzt. Die Zahlen der Oberfläche tragen die Trennzeichen jetzt, weil der i18n-Crate sie selbst mit den Regeln von CLDR formatiert.
 25. Ein Argument der Oberfläche hatte **keinen Namen**.
-27. **Das Standard-Input der Shell trägt die Ausgabe des vorherigen Kommandos.** `rustc -` liest es als Rust-Quelltext und stirbt mit „unterminated character literal". Das war die Ursache der „Operation aborted"-Meldungen — **keine** Speicherprobleme, sondern ein verseuchtes stdin. Jeder cargo-Aufruf bekommt jetzt `< /dev/null`. Der Katalog konnte die Werte nicht zuordnen, und ein Argument, das zwei Zahlen trägt, wäre nicht zuordenbar gewesen.
+27. **`cargo clippy` war stundenlang kaputt** und sah aus wie ein sauberer Code. Der Compiler liest seinen Quelltext beim Aufruf mit „-" vom Standard-Input, und das trug die Ausgabe des vorherigen Kommandos. Der Wrapper `scripts/cargo.sh` leert es und zeigt cargo auf den echten Treiber des Toolchains.
+28. **Das Standard-Input der Shell trägt die Ausgabe des vorherigen Kommandos.** `rustc -` liest es als Rust-Quelltext und stirbt mit „unterminated character literal". Das war die Ursache der „Operation aborted"-Meldungen — **keine** Speicherprobleme, sondern ein verseuchtes stdin. Jeder cargo-Aufruf bekommt jetzt `< /dev/null`. Der Katalog konnte die Werte nicht zuordnen, und ein Argument, das zwei Zahlen trägt, wäre nicht zuordenbar gewesen.
 
 ## 5. Die Regeln, die aus diesem Meilenstein folgen
 
@@ -104,11 +105,10 @@ genauso leicht zu brechen sind:
 
 | # | Was | Warum |
 |---|---|---|
-| 1 | Den Dialog der Mehrfachumbenennung bauen | Die *Engine* der Namensbildung ist fertig und getestet: die Platzhalter, das Suchen und Ersetzen mit regulären Ausdrücken, der Zähler, die Determinismus mit dem Property-Test von FR-33, die Nullauffüllung, deren Breite mitwächst. Offen sind die Live-Vorschau (FR-34), die Konflikt-Sprungliste (FR-35) und die gespeicherten Vorlagen (FR-36) |
+| 1 | Das manuelle Protokoll von M1 auf einem macOS-Gerät | Die Sandbox hat ein Linux-System und keinen Bildschirm. Die Abnahme braucht dieses Protokoll, sonst bleibt M1 offen |
+| 2 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
 | 2 | Den Auslöser des Sprachwechsels festlegen | Der Desktop-Build liest die Konfigurationsdatei einmal pro Sekunde. Ein Eintrag in der nativen Menüleiste wäre die dauerhafte Lösung — `muda` kommt mit M3 |
-| 4 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
-| 5 | Den Meilenstein M3 beginnen — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft |
-| 6 | Das manuelle Protokoll von M1 auf einem macOS-Gerät | Die Sandbox hat ein Linux-System und keinen Bildschirm |
+| 3 | Den Meilenstein M3 beginnen — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft |
 
 ## 7. Die Fragen, die eine Entscheidung brauchen
 

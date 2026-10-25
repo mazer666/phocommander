@@ -32,11 +32,20 @@ impl WorkSurfaceApp {
             // WHY: the characters of the filter field arrive as a text
             // event and not as a key event, because the keyboard layout of
             // the user decides which characters a key produces.
-            if let egui::Event::Text(text) = &event
-                && self.filter_is_editing()
-            {
-                self.surface.active_mut().filter_insert(text);
-                continue;
+            if let egui::Event::Text(text) = &event {
+                if self.rename.is_some() {
+                    // WHY: the dialog has the focus while it is open. The
+                    //       text belongs to the field of the dialog that has
+                    //       the focus.
+                    if let Some(dialog) = self.rename.as_mut() {
+                        dialog.insert(text);
+                    }
+                    continue;
+                }
+                if self.filter_is_editing() {
+                    self.surface.active_mut().filter_insert(text);
+                    continue;
+                }
             }
 
             let egui::Event::Key {
@@ -53,6 +62,14 @@ impl WorkSurfaceApp {
             let Some(stroke) = crate::input::stroke_of(key, modifiers, primary) else {
                 continue;
             };
+
+            // WHY: the dialog of the multiple rename is a window above the
+            //       surface. While it is open, a key that it does not use
+            //       reaches neither the panel nor the tree.
+            if self.rename.is_some() {
+                self.rename_key(stroke);
+                continue;
+            }
 
             // WHY: the field that has the focus takes the keys that belong
             // to it. The escape key empties the field and hides it, the
