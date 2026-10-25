@@ -6,9 +6,9 @@
 //!       the operations work on ([{port}]), the progress of a job
 //!       ([{progress}]), the queue that runs the jobs ([{queue}]), the
 //!       comparison of two trees ([{compare}]), the plan of a synchronisation
-//!       ([{sync}]), the atomic multiple rename ([{rename}]), the temporary
-//!       file of the atomic copy ([{temporary}]) and the undo of a copy
-//!       ([{undo}]).
+//!       ([{sync}]), the atomic multiple rename ([{rename}]), the formation
+//!       of the new names of a rename ([{template}]), the temporary file of
+//!       the atomic copy ([{temporary}]) and the undo of a copy ([{undo}]).
 //! WHY: every operation that can take longer than a frame belongs into the
 //!       job queue, so that the user interface stays usable while a copy is
 //!       running. The conflict behaviour — overwrite, skip, keep both, ask —
@@ -45,6 +45,7 @@ pub mod queue;
 pub mod rename;
 pub mod series;
 pub mod sync;
+pub mod template;
 pub mod temporary;
 pub mod undo;
 
@@ -63,6 +64,10 @@ pub use rename::{RenameConflict, RenameConflictKind, RenamePair, execute_renames
 pub use sync::{
     Approval, SyncAction, SyncPlan, SyncPlanEntry, SyncState, build_plan, build_plan_with,
     execute_sync,
+};
+pub use template::{
+    CounterOrder, CounterRule, FormedName, Placeholder, RenameInput, RenameRule, ReplaceRule,
+    SeriesRule, TemplateError, form_names, name_problems, rename_pairs,
 };
 pub use temporary::{TemporaryFile, temporary_path};
 pub use undo::{UndoEntry, UndoLedger, UndoOutcome, UndoScope};

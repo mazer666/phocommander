@@ -80,6 +80,16 @@ tracing = "0.1"
 log = "0.4"
 
 # ---------------------------------------------------------------------------
+# Text processing.
+#
+# The search and the replacement of the multiple rename may be switched to
+# regular expressions (FR-31). The `regex` crate is the one the workspace
+# already carries in its dependency tree; its licence is MIT OR Apache-2.0 and
+# it needs no C component, so it fits the build policy of section 5.8.
+# ---------------------------------------------------------------------------
+regex = "1"
+
+# ---------------------------------------------------------------------------
 # Filesystem traversal.
 # ---------------------------------------------------------------------------
 walkdir = "2.5"

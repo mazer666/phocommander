@@ -21,6 +21,13 @@ repository.workspace = true
 # `thiserror`, so that a failure of a job carries the path of the item and
 # the code of the reason.
 thiserror = { workspace = true }
+# The search and the replacement of the multiple rename may be switched to
+# regular expressions (FR-31).
+regex = { workspace = true }
+
+[dev-dependencies]
+# The property test of the determinism of the rename rule (FR-33).
+proptest = { workspace = true }
 
 [lints]
 workspace = true
