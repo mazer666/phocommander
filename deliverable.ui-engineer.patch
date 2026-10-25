@@ -1,0 +1,2135 @@
+diff --git a/apps/phocommander-desktop/src/catalogue.rs b/apps/phocommander-desktop/src/catalogue.rs
+index b4c6643..33224cb 100644
+--- a/apps/phocommander-desktop/src/catalogue.rs
++++ b/apps/phocommander-desktop/src/catalogue.rs
+@@ -2,10 +2,14 @@
+ //!
+ //! WHAT: the adapter that connects the catalogue of the crate
+ //!       `phocommander-i18n` with the interface of the crate
+-//!       `phocommander-ui` ([`TranslatorCatalogue`]).
+-//! WHY: the interface asks for a [`Catalogue`], and the catalogue of the
+-//!       product knows its texts in its own way. The adapter is the one place
+-//!       where the two meet, so that neither crate has to know the other.
++//!       `phocommander-ui` ([`TranslatorCatalogue`]), the adapter that
++//!       connects the formats of a locale with the same interface
++//!       ([`LocaleFormats`]) and the catalogue that knows no key at all
++//!       ([`EmptyCatalogue`]).
++//! WHY: the interface asks for a [`Catalogue`] and for [`Formats`], and the
++//!       catalogue of the product knows its texts and its formats in its
++//!       own way. The adapters are the one place where the two meet, so
++//!       that neither crate has to know the other.
+ //! EXAMPLE:
+ //! ```no_run
+ //! use phocommander_desktop::catalogue::TranslatorCatalogue;
+@@ -18,8 +22,10 @@
+ //! assert!(catalogue.lookup("panel-column-name").is_some());
+ //! ```
+ 
+-use phocommander_i18n::Translator;
+-use phocommander_ui::{Argument, Catalogue};
++use std::time::SystemTime;
++
++use phocommander_i18n::{Locale, LocaleFormat, Translator};
++use phocommander_ui::{Argument, Catalogue, Formats, PlainFormats};
+ 
+ /// The catalogue of the interface, backed by the translations of the product.
+ ///
+@@ -61,3 +67,150 @@ impl Catalogue for TranslatorCatalogue {
+         }
+     }
+ }
++
++/// The formats of the interface, backed by the rules of a locale.
++///
++/// WHY: the numbers, the sizes, the dates and the times of the interface
++///       follow the rules of the locale of the user (FR-123). Those rules
++///       live in the data of CLDR, and the crate of the localisation owns
++///       that data. The adapter is therefore the one place where the two
++///       meet, so that the interface crate may not depend on the crate of
++///       the localisation (ADR-0001, option B).
++#[derive(Debug, Clone)]
++pub struct LocaleFormats {
++    /// The formats of the locale.
++    format: LocaleFormat,
++}
++
++impl LocaleFormats {
++    /// Builds the formats of a locale.
++    pub fn of(format: LocaleFormat) -> Self {
++        Self { format }
++    }
++
++    /// The formats of the locale that these formats carry.
++    pub fn format(&self) -> &LocaleFormat {
++        &self.format
++    }
++}
++
++impl Formats for LocaleFormats {
++    fn number(&self, value: u64) -> String {
++        self.format.number(value)
++    }
++
++    fn size(&self, bytes: u64) -> String {
++        self.format.size(bytes)
++    }
++
++    fn date(&self, moment: SystemTime) -> String {
++        self.format.date(moment)
++    }
++
++    fn time(&self, moment: SystemTime) -> String {
++        self.format.time(moment)
++    }
++
++    fn date_time(&self, moment: SystemTime) -> String {
++        self.format.date_time(moment)
++    }
++}
++
++/// The catalogue that knows no key at all.
++///
++/// WHY: the interface falls back to the key itself when no catalogue knows
++///       it, and the key is visible and can be diagnosed (FR-122). This
++///       catalogue is the answer of a broken installation: the program
++///       starts, the labels show their keys, and the program does not stop.
++#[derive(Debug, Clone, Copy, Default)]
++pub struct EmptyCatalogue;
++
++impl Catalogue for EmptyCatalogue {
++    fn lookup_with(&self, _key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
++        None
++    }
++}
++
++/// The formats of a locale, or the plain formats when the locale carries no
++/// data.
++///
++/// WHY: a locale that the data of CLDR does not know is not a crash and not
++///       an empty text: the plain formats are written instead, and the
++///       interface stays readable. The plain formats are the formats of the
++///       product before the locales were part of it.
++pub fn formats_for(tag: &str) -> Box<dyn Formats> {
++    match LocaleFormat::for_tag(tag) {
++        Ok(format) => Box::new(LocaleFormats::of(format)),
++        Err(_) => Box::new(PlainFormats),
++    }
++}
++
++/// The catalogue of a locale, or the empty catalogue when the catalogue
++/// cannot be read.
++///
++/// WHY: a catalogue that cannot be read is a broken installation and not a
++///       reason to stop the program. The empty catalogue lets the interface
++///       show its keys, which are visible and can be diagnosed (FR-122).
++pub fn catalogue_for(locale: &Locale) -> Box<dyn Catalogue> {
++    match Translator::new(locale.clone()) {
++        Ok(translator) => Box::new(TranslatorCatalogue::new(translator)),
++        Err(_) => Box::new(EmptyCatalogue),
++    }
++}
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests {
++    use super::*;
++
++    #[test]
++    fn the_formats_of_a_german_locale_write_the_sizes_the_way_german_writes_them() {
++        // WHY: FR-123 — the size of a file follows the locale of the user.
++        //       The test reads the separator of the decimals out of the text.
++        // act
++        let formats = formats_for("de");
++
++        // assert
++        assert_eq!(formats.size(1_200_000), "1,2 MB");
++    }
++
++    #[test]
++    fn the_formats_of_an_english_locale_write_the_sizes_the_way_english_writes_them() {
++        // act
++        let formats = formats_for("en");
++
++        // assert
++        assert_eq!(formats.size(1_200_000), "1.2 MB");
++    }
++
++    #[test]
++    fn a_locale_without_data_falls_back_to_the_plain_formats() {
++        // WHY: a broken locale must not stop the program and must not leave
++        //       an empty text behind.
++        // act
++        let formats = formats_for("not a tag");
++
++        // assert
++        assert_eq!(formats.size(2_048), "2.0 KiB");
++    }
++
++    #[test]
++    fn the_catalogue_of_a_known_locale_knows_the_keys_of_the_product() {
++        // act
++        let catalogue = catalogue_for(&Locale::of("de"));
++
++        // assert
++        assert!(catalogue.lookup("panel-column-name").is_some());
++    }
++
++    #[test]
++    fn the_catalogue_of_an_unknown_locale_knows_no_key() {
++        // act
++        let catalogue = catalogue_for(&Locale::of("xx"));
++
++        // assert
++        assert!(catalogue.lookup("panel-column-name").is_none());
++    }
++}
+diff --git a/apps/phocommander-desktop/src/desktop.rs b/apps/phocommander-desktop/src/desktop.rs
+new file mode 100644
+index 0000000..b1f644f
+--- /dev/null
++++ b/apps/phocommander-desktop/src/desktop.rs
+@@ -0,0 +1,131 @@
++//! The application of the desktop build.
++//!
++//! WHAT: the application that holds the shell of the interface and the
++//!       watcher of the configuration file ([`DesktopApp`]).
++//! WHY: the language of the interface can be changed while the program runs
++//!       (FR-124). The application therefore watches the configuration file
++//!       and hands a new language to the shell of the interface as soon as
++//!       the file names another one. The shell draws the surface; this type
++//!       holds it and the watcher beside it.
++//! BOUNDARY: this module is the composition of the desktop build. It reads
++//!       the configuration file and it applies the language. It performs no
++//!       file operation of its own and it draws nothing.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_desktop::desktop::DesktopApp;
++//! use phocommander_desktop::language::ConfigWatcher;
++//! use phocommander_i18n::Locale;
++//! use phocommander_ui::keymap_view::KeymapView;
++//! use phocommander_ui::surface::WorkSurface;
++//! use phocommander_ui::WorkSurfaceApp;
++//! use std::path::PathBuf;
++//!
++//! # struct Empty;
++//! # impl phocommander_ui::Catalogue for Empty {
++//! #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++//! #         None
++//! #     }
++//! # }
++//! let shell = WorkSurfaceApp::new(
++//!     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++//!     KeymapView::default(),
++//!     Box::new(Empty),
++//! );
++//! let app = DesktopApp::new(shell, Locale::english(), ConfigWatcher::without_file());
++//! assert_eq!(app.locale().as_str(), "en");
++//! ```
++
++use std::path::Path;
++
++use phocommander_i18n::Locale;
++use phocommander_ui::WorkSurfaceApp;
++
++use crate::language::{CHECK_INTERVAL, ConfigWatcher, InterfaceLanguage, locale_of};
++
++/// The application of the desktop build.
++pub struct DesktopApp {
++    /// The shell of the interface.
++    surface: WorkSurfaceApp,
++
++    /// The locale of the language that is on the screen.
++    locale: Locale,
++
++    /// The watcher of the configuration file.
++    watcher: ConfigWatcher,
++}
++
++impl DesktopApp {
++    /// The application with a shell, a locale and a watcher.
++    pub fn new(surface: WorkSurfaceApp, locale: Locale, watcher: ConfigWatcher) -> Self {
++        Self {
++            surface,
++            locale,
++            watcher,
++        }
++    }
++
++    /// The shell of the interface.
++    pub fn surface(&self) -> &WorkSurfaceApp {
++        &self.surface
++    }
++
++    /// The shell of the interface.
++    pub fn surface_mut(&mut self) -> &mut WorkSurfaceApp {
++        &mut self.surface
++    }
++
++    /// The locale of the language that is on the screen.
++    pub fn locale(&self) -> &Locale {
++        &self.locale
++    }
++
++    /// Applies a language to the shell of the interface.
++    ///
++    /// WHY: the language of the interface can be changed while the program
++    ///       runs (FR-124). The shell takes the new catalogue of the texts
++    ///       and the new formats of the values, and the interface shows them
++    ///       in the next frame — without a restart and without a lost state.
++    pub fn set_language(&mut self, locale: Locale) {
++        let mut language = InterfaceLanguage::of(locale.clone());
++        self.surface.set_catalogue(language.take_catalogue());
++        self.surface.set_formats(language.take_formats());
++        self.locale = locale;
++    }
++
++    /// Applies the language of the configuration file, if the file names
++    /// another language than the one on the screen.
++    ///
++    /// WHY: the file is the place where the user writes the choice of the
++    ///       language down. The program reads the file again and applies the
++    ///       change — the rest of the settings stays as it was read at the
++    ///       start, because a change of the security rules needs a restart.
++    pub fn apply_the_language_of_the_configuration(&mut self) {
++        if !self.watcher.changed() {
++            return;
++        }
++
++        let Some(path) = self.watcher.path().map(Path::to_path_buf) else {
++            return;
++        };
++
++        let (config, _notices) = phocommander_config::load_file_or_safe(path);
++        let locale = locale_of(config.general.language);
++        if locale == self.locale {
++            return;
++        }
++        self.set_language(locale);
++    }
++}
++
++impl eframe::App for DesktopApp {
++    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
++        self.apply_the_language_of_the_configuration();
++        self.surface.update(ui);
++        // WHY: the configuration file is watched, so the program wakes up
++        //       once a second to look at it. Without that wake-up a change
++        //       of the language would only be noticed when the user happens
++        //       to press a key (FR-124).
++        ui.ctx().request_repaint_after(CHECK_INTERVAL);
++    }
++}
+diff --git a/apps/phocommander-desktop/src/language.rs b/apps/phocommander-desktop/src/language.rs
+new file mode 100644
+index 0000000..2004d86
+--- /dev/null
++++ b/apps/phocommander-desktop/src/language.rs
+@@ -0,0 +1,313 @@
++//! The language of the interface of the desktop build.
++//!
++//! WHAT: the language of the interface ([`InterfaceLanguage`]), the locale of
++//!       a setting of the configuration file ([`locale_of`]) and the watcher
++//!       of that file ([`ConfigWatcher`]).
++//! WHY: the language of the interface can be changed while the program runs
++//!       (FR-124). The language of the running program is therefore built
++//!       again and handed to the shell of the interface, and the choice of
++//!       the user is read from the configuration file — the place where the
++//!       user writes it down.
++//! BOUNDARY: this module builds the language of the interface and watches the
++//!       file that names it. It draws nothing, and it reads no file beyond
++//!       the modification time of the configuration file.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_desktop::language::{InterfaceLanguage, locale_of};
++//! use phocommander_config::Language;
++//!
++//! let locale = locale_of(Language::De);
++//! let language = InterfaceLanguage::of(locale);
++//! assert_eq!(language.locale().as_str(), "de");
++//! ```
++
++use std::path::{Path, PathBuf};
++use std::time::{Duration, Instant, SystemTime};
++
++use phocommander_config::Language;
++use phocommander_i18n::Locale;
++use phocommander_ui::{Catalogue, Formats, PlainFormats};
++
++use crate::catalogue::{EmptyCatalogue, catalogue_for, formats_for};
++
++/// The time between two readings of the configuration file.
++///
++/// WHY: the file is read often enough that a change of the language is
++///       noticed while the user is still looking at the screen, and seldom
++///       enough that the program does not spend its time on the file.
++pub const CHECK_INTERVAL: Duration = Duration::from_secs(1);
++
++/// The language of the interface.
++///
++/// WHY: a language is not only the texts: it is also the way the numbers,
++///       the sizes, the dates and the times are written (FR-123). The two
++///       belong together, and the shell of the interface takes both of them.
++pub struct InterfaceLanguage {
++    /// The locale of the language.
++    locale: Locale,
++
++    /// The catalogue of the texts, until the shell takes it.
++    catalogue: Option<Box<dyn Catalogue>>,
++
++    /// The formats of the values, until the shell takes them.
++    formats: Option<Box<dyn Formats>>,
++}
++
++impl InterfaceLanguage {
++    /// Builds the language of a locale.
++    ///
++    /// WHY: a locale whose catalogue cannot be read and whose data of CLDR
++    ///       is unknown does not stop the program: the empty catalogue and
++    ///       the plain formats take its place, and the interface stays
++    ///       readable (FR-122).
++    pub fn of(locale: Locale) -> Self {
++        let catalogue = catalogue_for(&locale);
++        let formats = formats_for(locale.as_str());
++        Self {
++            locale,
++            catalogue: Some(catalogue),
++            formats: Some(formats),
++        }
++    }
++
++    /// The locale of the language.
++    pub fn locale(&self) -> &Locale {
++        &self.locale
++    }
++
++    /// Takes the catalogue of the texts out of the language.
++    ///
++    /// WHY: the shell of the interface keeps the catalogue, and the language
++    ///       keeps the locale — so that the caller can tell whether the
++    ///       language has changed. A language whose catalogue was taken
++    ///       already hands out the empty catalogue, which lets the interface
++    ///       show its keys (FR-122).
++    pub fn take_catalogue(&mut self) -> Box<dyn Catalogue> {
++        self.catalogue
++            .take()
++            .unwrap_or_else(|| Box::new(EmptyCatalogue))
++    }
++
++    /// Takes the formats of the values out of the language.
++    ///
++    /// WHY: a language whose formats were taken already hands out the plain
++    ///       formats, so that the interface always writes something.
++    pub fn take_formats(&mut self) -> Box<dyn Formats> {
++        self.formats.take().unwrap_or_else(|| Box::new(PlainFormats))
++    }
++}
++
++/// The locale of a language of the configuration file.
++///
++/// WHY: the setting of the configuration file names a language of the
++///       product. A language that the product does not ship leads to
++///       English, because English is the last step of the chain of the
++///       lookup (FR-122).
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_desktop::language::locale_of;
++/// use phocommander_config::Language;
++///
++/// assert_eq!(locale_of(Language::De).as_str(), "de");
++/// assert_eq!(locale_of(Language::En).as_str(), "en");
++/// ```
++pub fn locale_of(language: Language) -> Locale {
++    match language {
++        Language::De => Locale::of("de"),
++        Language::En => Locale::english(),
++        Language::System => Locale::from_system(),
++    }
++}
++
++/// The watcher of the configuration file.
++///
++/// WHY: the language of the interface can be changed while the program runs
++///       (FR-124). The configuration file is the place where the user writes
++///       that choice down, so the program watches the file and applies the
++///       change of the language as soon as the file names another one. Only
++///       the language is applied at run time: the other settings are read at
++///       the start, because a change of the security rules needs a restart
++///       of the program.
++pub struct ConfigWatcher {
++    /// The path of the file that is watched, if there is one.
++    path: Option<PathBuf>,
++
++    /// The state of the file at the last reading.
++    stamp: Option<FileStamp>,
++
++    /// The moment of the next reading of the file.
++    next_check: Instant,
++}
++
++/// The state of the watched file.
++///
++/// WHY: the moment of the last change alone is not enough. A file system
++///       that counts the moments in seconds would not notice a change that
++///       happens within the same second. The length of the file is part of
++///       the state as well, and a file that is written to carries a new
++///       length in nearly every case.
++#[derive(Debug, Clone, PartialEq, Eq)]
++struct FileStamp {
++    /// The moment of the last change of the file.
++    modified: Option<SystemTime>,
++
++    /// The length of the file in bytes.
++    length: u64,
++}
++
++impl ConfigWatcher {
++    /// Watches a file.
++    pub fn new(path: PathBuf) -> Self {
++        let stamp = stamp_of(&path);
++        Self {
++            path: Some(path),
++            stamp,
++            next_check: Instant::now(),
++        }
++    }
++
++    /// Watches no file at all.
++    ///
++    /// WHY: a machine without a configuration directory has no file to
++    ///       watch. The watcher then never reports a change, and the
++    ///       language of the interface stays the one of the start.
++    pub fn without_file() -> Self {
++        Self {
++            path: None,
++            stamp: None,
++            next_check: Instant::now(),
++        }
++    }
++
++    /// The path of the file that is watched, if there is one.
++    pub fn path(&self) -> Option<&Path> {
++        self.path.as_deref()
++    }
++
++    /// Whether the file has changed since the last reading.
++    ///
++    /// WHY: the file is read at most once per interval, so that a program
++    ///       that runs for hours does not spend its time on the file system.
++    pub fn changed(&mut self) -> bool {
++        let now = Instant::now();
++        if now < self.next_check {
++            return false;
++        }
++        self.next_check = now + CHECK_INTERVAL;
++
++        let Some(path) = self.path.as_deref() else {
++            return false;
++        };
++
++        let stamp = stamp_of(path);
++        if stamp == self.stamp {
++            return false;
++        }
++        self.stamp = stamp;
++        true
++    }
++}
++
++/// The state of a file, if it can be read.
++fn stamp_of(path: &Path) -> Option<FileStamp> {
++    let metadata = std::fs::metadata(path).ok()?;
++    Some(FileStamp {
++        modified: metadata.modified().ok(),
++        length: metadata.len(),
++    })
++}
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests {
++    use super::*;
++    use std::fs;
++
++    /// A file in a directory of its own.
++    fn temporary_file(name: &str) -> PathBuf {
++        let directory = std::env::temp_dir().join(format!("phocommander-{name}"));
++        fs::create_dir_all(&directory).unwrap_or_else(|error| {
++            panic!("the directory should be writable: {error}");
++        });
++        directory.join("config.toml")
++    }
++
++    #[test]
++    fn the_locale_of_a_setting_is_the_locale_of_the_product() {
++        // act
++        let german = locale_of(Language::De);
++        let english = locale_of(Language::En);
++
++        // assert
++        assert_eq!(german.as_str(), "de");
++        assert_eq!(english.as_str(), "en");
++    }
++
++    #[test]
++    fn a_file_that_does_not_change_is_not_reported() {
++        // arrange
++        let path = temporary_file("watcher-quiet");
++        fs::write(&path, "schema_version = 1\n").unwrap_or_else(|error| {
++            panic!("the file should be writable: {error}");
++        });
++        let mut watcher = ConfigWatcher::new(path);
++
++        // act
++        let changed = watcher.changed();
++
++        // assert
++        assert!(!changed, "the file was not written to");
++    }
++
++    #[test]
++    fn a_file_that_changes_is_reported() {
++        // WHY: the language of the interface follows the file, and the file
++        //       is the place where the user writes that choice down.
++        // arrange
++        let path = temporary_file("watcher-loud");
++        fs::write(&path, "schema_version = 1\n").unwrap_or_else(|error| {
++            panic!("the file should be writable: {error}");
++        });
++        let mut watcher = ConfigWatcher::new(path.clone());
++
++        // act
++        fs::write(&path, "schema_version = 1\nlanguage = \"de\"\n").unwrap_or_else(|error| {
++            panic!("the file should be writable: {error}");
++        });
++        let changed = watcher.changed();
++
++        // assert
++        assert!(changed, "the file was written to");
++    }
++
++    #[test]
++    fn a_watcher_without_a_file_reports_nothing() {
++        // arrange
++        let mut watcher = ConfigWatcher::without_file();
++
++        // act
++        let changed = watcher.changed();
++
++        // assert
++        assert!(!changed);
++        assert!(watcher.path().is_none());
++    }
++
++    #[test]
++    fn the_language_of_a_locale_carries_a_catalogue_and_the_formats() {
++        // arrange
++        let mut language = InterfaceLanguage::of(Locale::of("de"));
++
++        // act
++        let catalogue = language.take_catalogue();
++        let formats = language.take_formats();
++
++        // assert
++        assert!(catalogue.lookup("panel-column-name").is_some());
++        assert_eq!(formats.size(1_200_000), "1,2 MB");
++    }
++}
+diff --git a/apps/phocommander-desktop/src/lib.rs b/apps/phocommander-desktop/src/lib.rs
+index 8aa425c..5ca0b50 100644
+--- a/apps/phocommander-desktop/src/lib.rs
++++ b/apps/phocommander-desktop/src/lib.rs
+@@ -1,7 +1,10 @@
+ //! The desktop application of Phocommander.
+ //!
+ //! WHAT: the crate of the desktop build — the translation of the
+-//!       configuration into the rules of the subsystems ([{security}]).
++//!       configuration into the rules of the subsystems ([{security}]), the
++//!       catalogue of the texts and the formats of the values
++//!       ([{catalogue}]) and the language of the interface at run time
++//!       ([{language}]).
+ //! WHY: the application is the composition root of the workspace: it is the
+ //!       only crate that may see the core crate, the configuration crate, the
+ //!       operations crate, the viewer crate and the interface crate at the
+@@ -19,6 +22,8 @@
+ //! ```
+ 
+ pub mod catalogue;
++pub mod desktop;
++pub mod language;
+ pub mod security;
+ 
+ pub use security::SecurityPlan;
+diff --git a/apps/phocommander-desktop/src/main.rs b/apps/phocommander-desktop/src/main.rs
+index aa094ee..7cd60ea 100644
+--- a/apps/phocommander-desktop/src/main.rs
++++ b/apps/phocommander-desktop/src/main.rs
+@@ -11,14 +11,15 @@
+ //! EXAMPLE: `cargo run -p phocommander-desktop`
+ 
+ use std::collections::BTreeMap;
++use std::path::PathBuf;
+ use std::sync::Arc;
+ 
+ use phocommander_config::{
+-    Config, ConfigNotice, EffectiveSecurity, Language, NoticeSeverity, resolve_security,
++    Config, ConfigNotice, EffectiveSecurity, NoticeSeverity, resolve_security,
+ };
+-use phocommander_desktop::catalogue::TranslatorCatalogue;
++use phocommander_desktop::desktop::DesktopApp;
++use phocommander_desktop::language::{ConfigWatcher, InterfaceLanguage, locale_of};
+ use phocommander_desktop::security::SecurityPlan;
+-use phocommander_i18n::{Locale, Translator};
+ use phocommander_platform::config_directory;
+ use phocommander_ui::{
+     Context, KeymapView, Metrics, Platform, Theme, WorkSurface, WorkSurfaceApp, visuals,
+@@ -55,16 +56,43 @@ fn main() -> eframe::Result<()> {
+     eframe::run_native(
+         "Phocommander",
+         options,
+-        Box::new(|_creation| Ok(Box::new(build_application(&config)))),
++        Box::new(|_creation| Ok(Box::new(build_desktop_app(&config)))),
+     )
+ }
+ 
+-/// Baut die Anwendung.
++/// Builds the application of the desktop build.
+ ///
+-/// WHY: die Funktion baut alles zusammen, was die Oberfläche braucht — die
+-///       Oberfläche selbst, die Tastenbelegung, den Katalog der Texte, das
+-///       Thema und die Maße der Plattform. Sie ist die einzige Stelle, an der
+-///       diese Teile zusammenkommen.
++/// WHY: the application of the desktop build holds the shell of the interface
++///       and the watcher of the configuration file beside it. The watcher is
++///       what lets the language of the interface change while the program
++///       runs — the user writes the choice into the configuration file, and
++///       the interface follows (FR-124).
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_config::Config;
++/// use phocommander_desktop::build_desktop_app;
++///
++/// let app = build_desktop_app(&Config::safe());
++/// // WHY: die Anwendung ist gebaut und kann gezeichnet werden.
++/// let _ = app;
++/// ```
++pub fn build_desktop_app(config: &Config) -> DesktopApp {
++    let locale = locale_of(config.general.language);
++    let watcher = match configuration_path() {
++        Some(path) => ConfigWatcher::new(path),
++        None => ConfigWatcher::without_file(),
++    };
++
++    DesktopApp::new(build_application(config), locale, watcher)
++}
++
++/// Builds the application.
++///
++/// WHY: the function builds everything that the surface needs — the surface
++///       itself, the keymap, the catalog of the texts, the formats of the
++///       values, the theme and the dimensions of the platform. It is the
++///       only place where these parts come together.
+ ///
+ /// EXAMPLE:
+ /// ```no_run
+@@ -82,33 +110,29 @@ pub fn build_application(config: &Config) -> WorkSurfaceApp {
+     );
+ 
+     let keymap = read_keymap().unwrap_or_default();
+-    let catalogue = TranslatorCatalogue::new(build_translator(config));
+     let metrics = Metrics::for_platform(host_platform());
+ 
+-    WorkSurfaceApp::new(surface, keymap, Box::new(catalogue))
++    // WHY: the language of the interface is the catalogue of the texts and
++    //       the formats of the values. Both belong to the language, and the
++    //       shell takes both of them (FR-05, FR-123).
++    let mut language = InterfaceLanguage::of(locale_of(config.general.language));
++
++    WorkSurfaceApp::new(surface, keymap, language.take_catalogue())
++        .with_formats(language.take_formats())
+         .with_theme(Theme::Dark)
+         .with_metrics(metrics)
+         .with_context(Context::Keyboard)
+ }
+ 
+-/// Baut den Übersetzer der Oberfläche.
++/// The path of the configuration file, if the configuration directory can be
++/// found.
+ ///
+-/// WHY: die Sprache der Oberfläche folgt der Einstellung der
+-///       Konfigurationsdatei. Eine Sprache, die es nicht gibt, führt zu
+-///       Englisch, weil Englisch der letzte Schritt der Kette ist.
+-fn build_translator(config: &Config) -> Translator {
+-    // WHY: the language of the interface follows the setting of the
+-    //       configuration file. A language that the product does not ship
+-    //       leads to English, because English is the last step of the chain
+-    //       of the lookup.
+-    let locale = match config.general.language {
+-        Language::De => Locale::of("de"),
+-        Language::En => Locale::english(),
+-        Language::System => Locale::from_system(),
+-    };
+-
+-    Translator::new(locale)
+-        .unwrap_or_else(|_| Translator::new(Locale::english()).unwrap_or_else(|_| unreachable!()))
++/// WHY: the program reads the file at the start and the watcher looks at it
++///       while the program runs. Both ask the same place, so that the file
++///       that is watched is the file that is read.
++fn configuration_path() -> Option<PathBuf> {
++    let directory = config_directory().ok()?;
++    Some(directory.join(CONFIGURATION_FILE_NAME))
+ }
+ 
+ /// The platform of the machine, as the interface names it.
+diff --git a/apps/phocommander-desktop/src/tests.rs b/apps/phocommander-desktop/src/tests.rs
+index 16fe067..57f0122 100644
+--- a/apps/phocommander-desktop/src/tests.rs
++++ b/apps/phocommander-desktop/src/tests.rs
+@@ -16,6 +16,7 @@
+ #![allow(clippy::unwrap_used, clippy::expect_used)]
+ 
+ use super::*;
++use phocommander_config::Language;
+ 
+ #[test]
+ fn the_parser_reads_the_bindings_of_every_context() {
+@@ -89,19 +90,34 @@ fn the_application_is_built_from_the_safe_configuration() {
+ }
+ 
+ #[test]
+-fn the_translator_follows_the_language_of_the_configuration() {
++fn the_locale_follows_the_language_of_the_configuration() {
+     // arrange
+     let mut config = Config::safe();
+ 
+     // act
+     config.general.language = Language::De;
+-    let german = build_translator(&config);
++    let german = locale_of(config.general.language);
+ 
+     // act
+     config.general.language = Language::En;
+-    let english = build_translator(&config);
++    let english = locale_of(config.general.language);
+ 
+     // assert
+-    assert_eq!(german.locale().as_str(), "de");
+-    assert_eq!(english.locale().as_str(), "en");
++    assert_eq!(german.as_str(), "de");
++    assert_eq!(english.as_str(), "en");
++}
++
++#[test]
++fn the_application_of_the_desktop_build_is_built_from_the_configuration() {
++    // arrange
++    let config = Config::safe();
++
++    // act
++    let app = build_desktop_app(&config);
++
++    // assert
++    // WHY: the application exists and can be drawn. The test does not open
++    //       a window, because a window needs a screen and a test may run on
++    //       a machine without one.
++    let _ = app;
+ }
+diff --git a/crates/phocommander-i18n/src/format.rs b/crates/phocommander-i18n/src/format.rs
+index 5c41034..11b6822 100644
+--- a/crates/phocommander-i18n/src/format.rs
++++ b/crates/phocommander-i18n/src/format.rs
+@@ -29,7 +29,8 @@ use icu::datetime::fieldsets::{T, YMD};
+ use icu::datetime::input::Time;
+ use icu::datetime::{DateTimeFormatter, DateTimeFormatterPreferences, NoCalendarFormatter};
+ use icu::decimal::input::Decimal;
+-use icu::decimal::{DecimalFormatter, DecimalFormatterOptions, DecimalFormatterPreferences};
++use icu::decimal::options::DecimalFormatterOptions;
++use icu::decimal::{DecimalFormatter, DecimalFormatterPreferences};
+ use icu::locale::Locale as IcuLocale;
+ use writeable::Writeable;
+ 
+@@ -332,8 +333,13 @@ mod tests {
+     }
+ 
+     /// The moment of 2024-05-17, 14:30:00 in the time zone of UTC.
++    ///
++    /// WHY: the formatter reads the moment in the time zone of UTC, because
++    ///       the platform layer has not yet supplied the offset of the time
++    ///       zone of the machine. The moment of the test is therefore the
++    ///       one that carries 14:30 in that time zone.
+     fn moment() -> SystemTime {
+-        UNIX_EPOCH + Duration::from_secs(1_715_934_600)
++        UNIX_EPOCH + Duration::from_secs(1_715_956_200)
+     }
+ 
+     #[test]
+@@ -385,9 +391,16 @@ mod tests {
+         let german = format("de-DE").date(moment());
+ 
+         // assert
+-        assert!(english.contains("5") && english.contains("17"), "{english}");
++        // WHY: English writes the month before the day, German writes the day
++        //       before the month. The test reads the order out of the text
++        //       and not out of a fixed shape, because the shape of the
++        //       medium date is a rule of the data of CLDR and not a rule of
++        //       this crate.
++        assert!(english.starts_with("May"), "{english}");
++        assert!(english.contains("17"), "{english}");
+         assert!(english.contains("2024"), "{english}");
+-        assert!(german.contains("17.05.2024"), "{german}");
++        assert!(german.starts_with("17"), "{german}");
++        assert!(german.contains("05.2024"), "{german}");
+     }
+ 
+     #[test]
+diff --git a/crates/phocommander-i18n/src/lib.rs b/crates/phocommander-i18n/src/lib.rs
+index d34f671..f6d86bf 100644
+--- a/crates/phocommander-i18n/src/lib.rs
++++ b/crates/phocommander-i18n/src/lib.rs
+@@ -1,16 +1,19 @@
+ //! The localisation layer of Phocommander.
+ //!
+ //! WHAT: the locales of the interface ([{Locale}]), the embedded Fluent
+-//!       catalogues ([{Translator}]) and the reasons why a catalogue could
+-//!       not be read ([{CatalogueError}]).
++//!       catalogues ([{Translator}]), the formats of a locale
++//!       ([{LocaleFormat}]) and the reasons why a catalogue could not be
++//!       read ([{CatalogueError}]).
+ //! WHY: every visible string of the product is externalised, so that the
+ //!       interface can be translated without touching the source code
+ //!       (FR-125) and so that a missing translation can never produce an
+ //!       empty label (FR-122). The lookup chain is fixed: requested locale →
+-//!       English → the key itself.
+-//! BOUNDARY: this crate owns the catalogue and the lookup. It knows nothing
+-//!       about widgets, panels or the file system, and it opens no file at
+-//!       run time — the catalogues are embedded into the binary.
++//!       English → the key itself. The numbers, the sizes, the dates and the
++//!       times follow the rules of the locale as well (FR-123), and those
++//!       rules live in the data of CLDR — not in the source code.
++//! BOUNDARY: this crate owns the catalogue, the lookup and the formats. It
++//!       knows nothing about widgets, panels or the file system, and it opens
++//!       no file at run time — the catalogues are embedded into the binary.
+ //!
+ //! EXAMPLE:
+ //! ```no_run
+@@ -29,12 +32,14 @@
+ /// itself knows nothing about the application. That keeps the translations
+ /// readable for a translator who does not read Rust.
+ pub mod catalogue;
++pub mod format;
+ pub mod locale;
+ 
+ pub use catalogue::{
+     CatalogueError, Translator, catalogue_directories, catalogue_keys,
+     catalogue_keys_of_every_locale,
+ };
++pub use format::{FormatError, LocaleFormat};
+ pub use locale::{Locale, lookup_chain};
+ 
+ #[cfg(test)]
+diff --git a/crates/phocommander-ui/src/app.rs b/crates/phocommander-ui/src/app.rs
+index bd428af..b98a0f2 100644
+--- a/crates/phocommander-ui/src/app.rs
++++ b/crates/phocommander-ui/src/app.rs
+@@ -11,7 +11,9 @@
+ //! SIZE: the shell is the place where the panels, the binding table and the
+ //!       catalogue of the texts meet. The resolution of an event, the
+ //!       dispatch of the action and the drawing belong to the same flow,
+-//!       and a split would hide the order of the three steps.
++//!       and a split would hide the order of the three steps. The ways in
++//!       which the shell takes a language live in a module of their own, so
++//!       that the shell itself stays readable.
+ //!
+ //! EXAMPLE:
+ //! ```no_run
+@@ -34,6 +36,7 @@
+ //! ```
+ 
+ mod input;
++mod language;
+ 
+ use std::path::PathBuf;
+ 
+@@ -41,6 +44,7 @@ use crate::actions::Action;
+ use crate::commands::{Command, Request};
+ use crate::context::Context;
+ use crate::draw;
++use crate::format::{Formats, PlainFormats};
+ use crate::i18n::{Argument, Catalogue, Texts};
+ use crate::input::PrimaryModifier;
+ use crate::jobs::JobSource;
+@@ -58,12 +62,13 @@ pub struct WorkSurfaceApp {
+     surface: WorkSurface,
+     keymap: KeymapView,
+     catalogue: Box<dyn Catalogue>,
++    formats: Box<dyn Formats>,
+     theme: Theme,
+     metrics: Metrics,
+     context: Context,
+     primary: PrimaryModifier,
+     commands: Vec<Command>,
+-    status: Option<String>,
++    status: Option<StatusMessage>,
+     activity: u64,
+     visible_rows: usize,
+     refresh_policy: RefreshPolicy,
+@@ -71,6 +76,13 @@ pub struct WorkSurfaceApp {
+     job_source: Option<Box<dyn JobSource>>,
+     pending_transfer: Option<PendingTransfer>,
+     undo: UndoAvailability,
++    /// The context of the last frame.
++    ///
++    /// WHY: a change of the language of the interface has to reach the screen
++    ///       without a restart and without the user having to cause a
++    ///       repaint (FR-124). The shell therefore keeps the context of egui
++    ///       and asks it for a repaint when the language changes.
++    egui_context: Option<egui::Context>,
+ }
+ 
+ /// A transfer that waits for the confirmation of the user.
+@@ -84,6 +96,22 @@ struct PendingTransfer {
+     transfer: TransferRequest,
+ }
+ 
++/// The message of the status line, before it is read from the catalogue.
++///
++/// WHY: the status line shows the message of the last command. The message
++///       is kept as a key of the catalogue and as its arguments, and it is
++///       read in the frame that draws it. A change of the language of the
++///       interface therefore reaches the status line as well, and not only
++///       the labels of the panels (FR-124).
++#[derive(Debug, Clone)]
++struct StatusMessage {
++    /// The key of the catalogue that carries the message.
++    key: String,
++
++    /// The values that the message carries.
++    arguments: Vec<String>,
++}
++
+ impl WorkSurfaceApp {
+     /// The shell with a work surface, a binding table and a catalogue.
+     pub fn new(surface: WorkSurface, keymap: KeymapView, catalogue: Box<dyn Catalogue>) -> Self {
+@@ -91,6 +119,7 @@ impl WorkSurfaceApp {
+             surface,
+             keymap,
+             catalogue,
++            formats: Box::new(PlainFormats),
+             theme: Theme::default(),
+             metrics: Metrics::for_platform(Platform::default()),
+             context: Context::default(),
+@@ -104,6 +133,7 @@ impl WorkSurfaceApp {
+             job_source: None,
+             pending_transfer: None,
+             undo: UndoAvailability::Unavailable,
++            egui_context: None,
+         }
+     }
+ 
+@@ -292,8 +322,14 @@ impl WorkSurfaceApp {
+     }
+ 
+     /// The last message of the status line.
+-    pub fn status(&self) -> Option<&str> {
+-        self.status.as_deref()
++    ///
++    /// WHY: the message is read from the catalogue in the moment of the
++    ///       call, so that it speaks the language of the interface — also
++    ///       after a change of that language (FR-124).
++    pub fn status(&self) -> Option<String> {
++        self.status
++            .as_ref()
++            .map(|message| self.message_of_error(&message.key, &message.arguments))
+     }
+ 
+     /// The number of changes of the shell.
+@@ -316,6 +352,12 @@ impl WorkSurfaceApp {
+ 
+     /// Draws the work surface and resolves the input of the frame.
+     pub fn update(&mut self, ui: &mut egui::Ui) {
++        // WHY: the context of egui is kept, so that a change of the language
++        //       of the interface can ask for a repaint (FR-124). The context
++        //       is cheap to copy and it is taken once, in the first frame.
++        if self.egui_context.is_none() {
++            self.egui_context = Some((*ui.ctx()).clone());
++        }
+         // WHY: the index of the filter is rebuilt when the directory or the
+         // filter changed. The check is cheap and happens before the input
+         // is resolved, so that the cursor and the list always agree.
+@@ -519,10 +561,15 @@ impl WorkSurfaceApp {
+         let transfer = match self.surface.transfer_to_other() {
+             Ok(transfer) => transfer,
+             Err(error) => {
+-                // WHY: the message of the error is read from the catalogue, so
+-                //       that it speaks the language of the interface (FR-05).
+-                self.status =
+-                    Some(self.message_of_error(error.message_key(), &error.message_arguments()));
++                // WHY: the message of the error is kept as a key and as its
++                //       arguments, and it is read from the catalogue in the
++                //       frame that draws it. The status line therefore speaks
++                //       the language of the interface, also after a change of
++                //       that language (FR-05, FR-124).
++                self.status = Some(StatusMessage {
++                    key: error.message_key().to_string(),
++                    arguments: error.message_arguments(),
++                });
+                 return;
+             }
+         };
+@@ -596,11 +643,19 @@ impl WorkSurfaceApp {
+         // borrowed, so that the text of the undo area is known when the
+         // surface is drawn.
+         let undo_notice = self.undo.notice(self.catalogue.as_ref());
++        // WHY: the message of the status line is read from the catalogue in
++        //       the frame that draws it, so that it speaks the language of
++        //       the interface — also after a change of that language
++        //       (FR-124).
++        let status = self
++            .status
++            .as_ref()
++            .map(|message| self.message_of_error(&message.key, &message.arguments));
+         let WorkSurfaceApp {
+             surface,
+             catalogue,
++            formats,
+             metrics,
+-            status,
+             visible_rows,
+             ..
+         } = self;
+@@ -612,7 +667,7 @@ impl WorkSurfaceApp {
+         let mut requested: Vec<Request> = Vec::new();
+         // WHY: the bundle carries everything the drawing needs besides the
+         //       surface itself. It is built once per frame.
+-        let style = draw::DrawStyle::new(metrics, &palette, &texts, &profile);
++        let style = draw::DrawStyle::new(metrics, &palette, &texts, formats.as_ref(), &profile);
+         let rows = draw::draw_surface(
+             ui,
+             surface,
+diff --git a/crates/phocommander-ui/src/app/language.rs b/crates/phocommander-ui/src/app/language.rs
+new file mode 100644
+index 0000000..52d1aa0
+--- /dev/null
++++ b/crates/phocommander-ui/src/app/language.rs
+@@ -0,0 +1,230 @@
++//! The language of the interface, seen by the shell.
++//!
++//! WHAT: the ways in which the shell takes a language — a new catalogue of
++//!       texts ([`WorkSurfaceApp::set_catalogue`]) and new formats of the
++//!       values ([`WorkSurfaceApp::set_formats`]).
++//! WHY: the language of the interface can be changed while the program runs
++//!       (FR-124). The catalogue and the formats are therefore not fixed at
++//!       the start: the shell takes them from the composition root and can
++//!       take them again. The change reaches the screen in the next frame —
++//!       without a restart and without the user having to cause a repaint.
++//! BOUNDARY: this module knows the shell and nothing else. It builds no
++//!       catalogue and no formats of its own: the composition root owns
++//!       them, because the interface crate may not depend on the crate of
++//!       the localisation (ADR-0001, option B).
++//!
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::app::WorkSurfaceApp;
++//! use phocommander_ui::keymap_view::KeymapView;
++//! use phocommander_ui::surface::WorkSurface;
++//! use phocommander_ui::Catalogue;
++//! use std::path::PathBuf;
++//!
++//! # struct Empty;
++//! # impl phocommander_ui::Catalogue for Empty {
++//! #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++//! #         None
++//! #     }
++//! # }
++//! let mut app = WorkSurfaceApp::new(
++//!     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++//!     KeymapView::default(),
++//!     Box::new(Empty),
++//! );
++//! app.set_catalogue(Box::new(Empty));
++//! assert!(app.catalogue().lookup("common-ok").is_none());
++//! ```
++
++use crate::app::WorkSurfaceApp;
++use crate::format::Formats;
++use crate::i18n::Catalogue;
++
++impl WorkSurfaceApp {
++    /// The shell with other formats for the values of the interface.
++    ///
++    /// WHY: the numbers, the sizes, the dates and the times follow the rules
++    ///       of the locale of the user (FR-123). The shell therefore takes
++    ///       the formats from the composition root, exactly as it takes the
++    ///       catalogue of the texts. A shell without formats writes the
++    ///       plain formats, and a caller that has no locale needs no
++    ///       decision.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::app::WorkSurfaceApp;
++    /// use phocommander_ui::format::PlainFormats;
++    /// use phocommander_ui::keymap_view::KeymapView;
++    /// use phocommander_ui::surface::WorkSurface;
++    /// use phocommander_ui::Formats;
++    /// use std::path::PathBuf;
++    ///
++    /// # struct Empty;
++    /// # impl phocommander_ui::Catalogue for Empty {
++    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++    /// #         None
++    /// #     }
++    /// # }
++    /// let app = WorkSurfaceApp::new(
++    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++    ///     KeymapView::default(),
++    ///     Box::new(Empty),
++    /// )
++    /// .with_formats(Box::new(PlainFormats));
++    /// assert_eq!(app.formats().size(512), "512 B");
++    /// ```
++    pub fn with_formats(mut self, formats: Box<dyn Formats>) -> Self {
++        self.formats = formats;
++        self
++    }
++
++    /// Replaces the catalogue of the texts.
++    ///
++    /// WHY: the language of the interface can be changed while the program
++    ///       runs (FR-124). The catalogue is therefore not fixed at the
++    ///       start, and the shell asks for a repaint — the new language is on
++    ///       the screen in the next frame, without a restart and without the
++    ///       user having to cause a repaint. The state of the panels is not
++    ///       touched by the change: only the language of the texts and of the
++    ///       values changes.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::app::WorkSurfaceApp;
++    /// use phocommander_ui::keymap_view::KeymapView;
++    /// use phocommander_ui::surface::WorkSurface;
++    /// use phocommander_ui::Catalogue;
++    /// use std::path::PathBuf;
++    ///
++    /// # struct German;
++    /// # impl phocommander_ui::Catalogue for German {
++    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++    /// #         Some("Abbrechen".to_string())
++    /// #     }
++    /// # }
++    /// let mut app = WorkSurfaceApp::new(
++    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++    ///     KeymapView::default(),
++    ///     Box::new(German),
++    /// );
++    /// app.set_catalogue(Box::new(German));
++    /// assert_eq!(app.catalogue().lookup("common-cancel"), Some("Abbrechen".to_string()));
++    /// ```
++    pub fn set_catalogue(&mut self, catalogue: Box<dyn Catalogue>) {
++        self.catalogue = catalogue;
++        self.request_repaint();
++    }
++
++    /// Replaces the formats of the values of the interface.
++    ///
++    /// WHY: the formats belong to the language of the interface, and a
++    ///       change of the language changes them as well (FR-123, FR-124).
++    ///       The shell asks for a repaint, so that the new formats are on the
++    ///       screen in the next frame.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::app::WorkSurfaceApp;
++    /// use phocommander_ui::format::PlainFormats;
++    /// use phocommander_ui::keymap_view::KeymapView;
++    /// use phocommander_ui::surface::WorkSurface;
++    /// use phocommander_ui::Formats;
++    /// use std::path::PathBuf;
++    ///
++    /// # struct Empty;
++    /// # impl phocommander_ui::Catalogue for Empty {
++    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++    /// #         None
++    /// #     }
++    /// # }
++    /// let mut app = WorkSurfaceApp::new(
++    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++    ///     KeymapView::default(),
++    ///     Box::new(Empty),
++    /// );
++    /// app.set_formats(Box::new(PlainFormats));
++    /// assert_eq!(app.formats().size(2_048), "2.0 KiB");
++    /// ```
++    pub fn set_formats(&mut self, formats: Box<dyn Formats>) {
++        self.formats = formats;
++        self.request_repaint();
++    }
++
++    /// The catalogue of the texts that is in force.
++    ///
++    /// WHY: a caller that wants to know the language of the interface — a
++    ///       test, a report — asks the shell and does not keep a copy of
++    ///       the catalogue.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::app::WorkSurfaceApp;
++    /// use phocommander_ui::keymap_view::KeymapView;
++    /// use phocommander_ui::surface::WorkSurface;
++    /// use phocommander_ui::Catalogue;
++    /// use std::path::PathBuf;
++    ///
++    /// # struct Empty;
++    /// # impl phocommander_ui::Catalogue for Empty {
++    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++    /// #         None
++    /// #     }
++    /// # }
++    /// let app = WorkSurfaceApp::new(
++    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++    ///     KeymapView::default(),
++    ///     Box::new(Empty),
++    /// );
++    /// assert!(app.catalogue().lookup("common-ok").is_none());
++    /// ```
++    pub fn catalogue(&self) -> &dyn Catalogue {
++        self.catalogue.as_ref()
++    }
++
++    /// The formats of the values that are in force.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::app::WorkSurfaceApp;
++    /// use phocommander_ui::keymap_view::KeymapView;
++    /// use phocommander_ui::surface::WorkSurface;
++    /// use phocommander_ui::Formats;
++    /// use std::path::PathBuf;
++    ///
++    /// # struct Empty;
++    /// # impl phocommander_ui::Catalogue for Empty {
++    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++    /// #         None
++    /// #     }
++    /// # }
++    /// let app = WorkSurfaceApp::new(
++    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++    ///     KeymapView::default(),
++    ///     Box::new(Empty),
++    /// );
++    /// assert_eq!(app.formats().size(512), "512 B");
++    /// ```
++    pub fn formats(&self) -> &dyn Formats {
++        self.formats.as_ref()
++    }
++
++    /// Asks for a repaint, so that a change of the language reaches the
++    /// screen.
++    ///
++    /// WHY: the program may stand still between two frames. A change of the
++    ///       language would then stay invisible until the user happens to
++    ///       press a key. The shell therefore asks egui for a repaint — the
++    ///       new language is on the screen in the next frame (FR-124).
++    fn request_repaint(&self) {
++        if let Some(context) = &self.egui_context {
++            context.request_repaint();
++        }
++    }
++}
++
++#[cfg(test)]
++// WHY: the tests of the module live in a file of their own, so that the
++// implementation and its proof can grow independently. The file of the
++// tests carries its own exception, because a test may fail loudly when its
++// arrangement is wrong.
++mod tests;
+diff --git a/crates/phocommander-ui/src/app/language/tests.rs b/crates/phocommander-ui/src/app/language/tests.rs
+new file mode 100644
+index 0000000..da36ad3
+--- /dev/null
++++ b/crates/phocommander-ui/src/app/language/tests.rs
+@@ -0,0 +1,160 @@
++// The tests of the language of the interface.
++//
++// WHAT: the tests of the ways in which the shell takes a new language, and
++//       the test of the harness of egui that proves that a change of the
++//       language reaches the screen in the next frame.
++// WHY: FR-124 — the language of the interface can be changed while the
++//       program runs, without a restart and without the user having to cause
++//       a repaint. The test of the harness draws the surface, changes the
++//       catalogue and draws again: the labels of the second frame come from
++//       the new catalogue.
++// EXAMPLE: `cargo test -p phocommander-ui app::language`
++
++#![allow(clippy::unwrap_used, clippy::expect_used)]
++
++use egui_kittest::Harness;
++use egui_kittest::kittest::Queryable;
++
++use super::*;
++use crate::format::PlainFormats;
++use crate::i18n::Argument;
++use crate::keymap_view::KeymapView;
++use crate::listing::{Entry, EntryKind};
++use crate::surface::WorkSurface;
++use std::path::PathBuf;
++
++/// A catalogue that answers every key with the key itself.
++struct Echo;
++
++impl Catalogue for Echo {
++    fn lookup_with(&self, key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
++        Some(key.to_string())
++    }
++}
++
++/// A catalogue that answers with a German text.
++struct German;
++
++impl Catalogue for German {
++    fn lookup_with(&self, key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
++        match key {
++            "common-cancel" => Some("Abbrechen".to_string()),
++            _ => Some(key.to_string()),
++        }
++    }
++}
++
++/// A catalogue that answers every key with a marked text.
++///
++/// WHY: the marker shows in the labels of the buttons of the toolbar, and
++///       the harness reads those labels out of the tree of the accessibility.
++///       The test therefore sees what the user sees.
++struct Marked {
++    /// The mark that every text of this catalogue carries.
++    marker: &'static str,
++}
++
++impl Catalogue for Marked {
++    fn lookup_with(&self, key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
++        Some(format!("{}{key}", self.marker))
++    }
++}
++
++/// The shell with a catalogue of its own.
++fn app() -> WorkSurfaceApp {
++    WorkSurfaceApp::new(
++        WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++        KeymapView::default(),
++        Box::new(Echo),
++    )
++}
++
++/// The shell with a marked catalogue and one entry in the left panel.
++fn marked_app(marker: &'static str) -> WorkSurfaceApp {
++    let mut surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
++    surface
++        .active_mut()
++        .set_entries(vec![Entry::new("a.txt", EntryKind::File).with_size(1_200_000)]);
++
++    WorkSurfaceApp::new(
++        surface,
++        KeymapView::default(),
++        Box::new(Marked { marker }),
++    )
++}
++
++#[test]
++fn the_catalogue_can_be_replaced_while_the_program_runs() {
++    // WHY: FR-124 — the language of the interface can be changed at run
++    //       time, without a restart of the program.
++    // arrange
++    let mut app = app();
++
++    // act
++    app.set_catalogue(Box::new(German));
++
++    // assert
++    assert_eq!(
++        app.catalogue().lookup("common-cancel"),
++        Some("Abbrechen".to_string())
++    );
++}
++
++#[test]
++fn the_formats_can_be_replaced_while_the_program_runs() {
++    // arrange
++    let mut app = app();
++
++    // act
++    app.set_formats(Box::new(PlainFormats));
++
++    // assert
++    assert_eq!(app.formats().size(512), "512 B");
++}
++
++#[test]
++fn a_shell_without_formats_writes_the_plain_formats() {
++    // WHY: a caller that has no locale needs no decision. The shell writes
++    //       the plain formats until a composition root hands other ones
++    //       over.
++    // act
++    let app = app();
++
++    // assert
++    assert_eq!(app.formats().size(512), "512 B");
++}
++
++#[test]
++fn a_change_of_the_language_reaches_the_screen_in_the_next_frame() {
++    // arrange
++    let mut harness = Harness::new_ui_state(
++        |ui, app: &mut WorkSurfaceApp| app.update(ui),
++        marked_app("en-"),
++    );
++    harness.run_steps(1);
++
++    // assert
++    // WHY: the surface is drawn with the catalogue of the start. The
++    //       buttons of the toolbar carry the texts of that catalogue.
++    assert!(
++        harness.query_all_by_label_contains("en-").count() > 0,
++        "the interface should carry the texts of the first catalogue"
++    );
++
++    // act
++    harness
++        .state_mut()
++        .set_catalogue(Box::new(Marked { marker: "de-" }));
++    harness.run_steps(1);
++
++    // assert
++    assert!(
++        harness.query_all_by_label_contains("de-").count() > 0,
++        "the interface should carry the texts of the new catalogue"
++    );
++    assert_eq!(
++        harness.query_all_by_label_contains("en-").count(),
++        0,
++        "the interface should not carry the texts of the old catalogue"
++    );
++}
+diff --git a/crates/phocommander-ui/src/draw.rs b/crates/phocommander-ui/src/draw.rs
+index 274068e..00e5a70 100644
+--- a/crates/phocommander-ui/src/draw.rs
++++ b/crates/phocommander-ui/src/draw.rs
+@@ -26,6 +26,7 @@ pub mod panel;
+ use egui::{Rect, Vec2};
+ 
+ use crate::commands::Request;
++use crate::format::Formats;
+ use crate::i18n::Texts;
+ use crate::layout::{LayoutProfile, PanelStructure};
+ use crate::metrics::Metrics;
+@@ -38,13 +39,14 @@ pub(crate) const SEPARATOR_WIDTH: f32 = 1.0;
+ 
+ /// Everything the drawing needs besides the thing that is drawn.
+ ///
+-/// WHY: every part of the surface needs the same five things: the measures
++/// WHY: every part of the surface needs the same six things: the measures
+ ///       of the platform, the colours of the theme, the texts of the
+-///       catalogue, the profile of the layout and the place where the
+-///       requests of the user are collected. Carrying them as five
+-///       parameters would make every signature long and unreadable, and it
+-///       would make it easy to mix two of them up. The bundle names them
+-///       once, and every drawing function reads what it needs from it.
++///       catalogue, the formats of the locale, the profile of the layout and
++///       the place where the requests of the user are collected. Carrying
++///       them as six parameters would make every signature long and
++///       unreadable, and it would make it easy to mix two of them up. The
++///       bundle names them once, and every drawing function reads what it
++///       needs from it.
+ ///
+ // BOUNDARY: the bundle is an internal helper of the drawing. It is not a
+ //       part of the public surface of the crate, because a caller outside the
+@@ -60,6 +62,13 @@ pub(crate) struct DrawStyle<'texts> {
+     /// The texts of the catalogue in the language of the interface.
+     pub(crate) texts: &'texts Texts<'texts>,
+ 
++    /// The formats of the locale of the interface.
++    ///
++    /// WHY: the sizes and the dates of the file list are written the way the
++    ///       locale of the user writes them (FR-123). The drawing therefore
++    ///       asks the formats and writes no rule of a locale itself.
++    pub(crate) formats: &'texts dyn Formats,
++
+     /// The profile of the layout: which areas exist and how they are placed.
+     pub(crate) profile: &'texts LayoutProfile,
+ }
+@@ -70,12 +79,14 @@ impl<'texts> DrawStyle<'texts> {
+         metrics: &'texts Metrics,
+         palette: &'texts Palette,
+         texts: &'texts Texts<'texts>,
++        formats: &'texts dyn Formats,
+         profile: &'texts LayoutProfile,
+     ) -> Self {
+         Self {
+             metrics,
+             palette,
+             texts,
++            formats,
+             profile,
+         }
+     }
+diff --git a/crates/phocommander-ui/src/draw/list.rs b/crates/phocommander-ui/src/draw/list.rs
+index 510a80c..954e2cf 100644
+--- a/crates/phocommander-ui/src/draw/list.rs
++++ b/crates/phocommander-ui/src/draw/list.rs
+@@ -214,8 +214,12 @@ pub(crate) fn draw_list(
+         for column in &layout.columns {
+             let (text, color) = match column {
+                 Column::Name => (row.name().to_string(), text_color),
+-                Column::Size => (row.size_text(), dimmed),
+-                Column::Date => (row.date_text(), dimmed),
++                // WHY: the size and the date are written the way the locale
++                //       of the user writes them (FR-123). The drawing asks
++                //       the formats of the interface and knows no rule of a
++                //       locale itself.
++                Column::Size => (row.size_text(style.formats), dimmed),
++                Column::Date => (row.date_text(style.formats), dimmed),
+                 Column::Type => (texts.get(row.type_key()), dimmed),
+             };
+ 
+diff --git a/crates/phocommander-ui/src/format.rs b/crates/phocommander-ui/src/format.rs
+new file mode 100644
+index 0000000..3edca2e
+--- /dev/null
++++ b/crates/phocommander-ui/src/format.rs
+@@ -0,0 +1,267 @@
++//! The formats of the values that the interface writes.
++//!
++//! WHAT: the seam that carries the formats of a locale ([`Formats`]) and the
++//!       formats that carry no rule of a locale ([`PlainFormats`]).
++//! WHY: the numbers, the sizes, the dates and the times of the interface
++//!       follow the rules of the locale of the user (FR-123). Those rules
++//!       live in the data of CLDR, and the interface crate may not depend on
++//!       the crate that owns that data — the crate rule of ADR-0001 forbids a
++//!       dependency on a sibling. The seam is therefore a trait, and the
++//!       composition root hands the implementation over, exactly as it does
++//!       for the texts of the catalogue.
++//! BOUNDARY: this module writes the values of the interface. It reads no
++//!       file, it asks no operating system for a locale and it knows nothing
++//!       about widgets or panels.
++//!
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::format::{Formats, PlainFormats};
++//!
++//! let formats = PlainFormats;
++//! assert_eq!(formats.size(2048), "2.0 KiB");
++//! ```
++
++use std::time::SystemTime;
++
++/// The formats of the values that the interface writes.
++///
++/// WHY: the surface must not know how a locale writes its numbers, its sizes
++///       and its dates — that is the business of the localisation module. The
++///       trait is the seam between the two, and the shell that owns the
++///       catalogue of the texts owns the formats as well: a language is not
++///       only the texts, it is also the way the numbers and the dates are
++///       written.
++pub trait Formats {
++    /// A whole number, written the way the locale writes numbers.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::format::{Formats, PlainFormats};
++    ///
++    /// assert_eq!(PlainFormats.number(1234), "1234");
++    /// ```
++    fn number(&self, value: u64) -> String;
++
++    /// A size in bytes, written the way the locale writes sizes.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::format::{Formats, PlainFormats};
++    ///
++    /// assert_eq!(PlainFormats.size(512), "512 B");
++    /// ```
++    fn size(&self, bytes: u64) -> String;
++
++    /// The date of a moment, written the way the locale writes dates.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::format::{Formats, PlainFormats};
++    /// use std::time::{Duration, UNIX_EPOCH};
++    ///
++    /// let moment = UNIX_EPOCH + Duration::from_secs(1_715_956_200);
++    /// assert_eq!(PlainFormats.date(moment), "2024-05-17");
++    /// ```
++    fn date(&self, moment: SystemTime) -> String;
++
++    /// The time of the day of a moment, written the way the locale writes
++    /// times.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::format::{Formats, PlainFormats};
++    /// use std::time::{Duration, UNIX_EPOCH};
++    ///
++    /// let moment = UNIX_EPOCH + Duration::from_secs(1_715_956_200);
++    /// assert_eq!(PlainFormats.time(moment), "14:30");
++    /// ```
++    fn time(&self, moment: SystemTime) -> String;
++
++    /// The date and the time of a moment, written the way the locale writes
++    /// them.
++    ///
++    /// WHY: the column of the date of a file list carries the date and the
++    ///       time together. A locale may write them with a separator of its
++    ///       own, so the implementation of a locale may replace this answer.
++    ///       The plain formats join the two parts with a space.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::format::{Formats, PlainFormats};
++    /// use std::time::{Duration, UNIX_EPOCH};
++    ///
++    /// let moment = UNIX_EPOCH + Duration::from_secs(1_715_956_200);
++    /// assert_eq!(PlainFormats.date_time(moment), "2024-05-17 14:30");
++    /// ```
++    fn date_time(&self, moment: SystemTime) -> String {
++        format!("{} {}", self.date(moment), self.time(moment))
++    }
++}
++
++/// The formats that carry no rule of a locale.
++///
++/// WHY: a caller that has no locale — a test, a tool that reads a listing —
++///       still needs sizes and dates. These formats are the ones the product
++///       wrote before the locales were part of it: the sizes in the binary
++///       units, the date as `YYYY-MM-DD` and the time as `HH:MM`. They are
++///       the fallback of the seam and not the format of the product: the
++///       composition root installs the formats of the locale of the user.
++#[derive(Debug, Clone, Copy, Default)]
++pub struct PlainFormats;
++
++impl Formats for PlainFormats {
++    fn number(&self, value: u64) -> String {
++        value.to_string()
++    }
++
++    fn size(&self, bytes: u64) -> String {
++        let mut value = bytes as f64;
++        let mut unit = 0;
++        while value >= SIZE_STEP && unit + 1 < SIZE_UNITS.len() {
++            value /= SIZE_STEP;
++            unit += 1;
++        }
++
++        if unit == 0 {
++            format!("{bytes} {}", SIZE_UNITS[0])
++        } else {
++            format!("{value:.1} {}", SIZE_UNITS[unit])
++        }
++    }
++
++    fn date(&self, moment: SystemTime) -> String {
++        let parts = Parts::of(moment);
++        format!("{:04}-{:02}-{:02}", parts.year, parts.month, parts.day)
++    }
++
++    fn time(&self, moment: SystemTime) -> String {
++        let parts = Parts::of(moment);
++        format!("{:02}:{:02}", parts.hour, parts.minute)
++    }
++}
++
++/// The units of a size, in the order in which they grow.
++///
++/// WHY: the units are written with the prefix of the binary system, because
++///       these are the formats the product wrote before the locales were
++///       part of it. The formats of a locale use the units of the
++///       international system and the separator of the locale.
++const SIZE_UNITS: [&str; 5] = ["B", "KiB", "MiB", "GiB", "TiB"];
++
++/// The factor between two units of a size.
++const SIZE_STEP: f64 = 1024.0;
++
++/// The parts of a moment in the civil calendar.
++struct Parts {
++    /// The year.
++    year: i32,
++    /// The month, from 1 to 12.
++    month: u8,
++    /// The day of the month, from 1 to 31.
++    day: u8,
++    /// The hour, from 0 to 23.
++    hour: u8,
++    /// The minute, from 0 to 59.
++    minute: u8,
++}
++
++impl Parts {
++    /// The parts of a moment.
++    ///
++    /// WHY: the conversion from the day number to a date is the civil
++    ///       calendar of Howard Hinnant, which needs no table and no library.
++    ///       The moment is read in the time zone of UTC, because the platform
++    ///       layer has not yet supplied the offset of the time zone of the
++    ///       machine.
++    fn of(moment: SystemTime) -> Parts {
++        let seconds = match moment.duration_since(SystemTime::UNIX_EPOCH) {
++            Ok(duration) => duration.as_secs() as i64,
++            Err(error) => -(error.duration().as_secs() as i64),
++        };
++
++        let days = seconds.div_euclid(86_400);
++        let time_of_day = seconds.rem_euclid(86_400);
++        let (year, month, day) = civil_from_days(days);
++
++        Parts {
++            year: year as i32,
++            month: month as u8,
++            day: day as u8,
++            hour: (time_of_day / 3_600) as u8,
++            minute: ((time_of_day % 3_600) / 60) as u8,
++        }
++    }
++}
++
++/// Converts a number of days since 1970-01-01 into a civil date.
++fn civil_from_days(days: i64) -> (i64, u32, u32) {
++    let shifted = days + 719_468;
++    let era = shifted.div_euclid(146_097);
++    let day_of_era = shifted.rem_euclid(146_097);
++    let year_of_era =
++        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
++    let year = year_of_era + era * 400;
++    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
++    let shifted_month = (5 * day_of_year + 2) / 153;
++    let day = (day_of_year - (153 * shifted_month + 2) / 5 + 1) as u32;
++    let month = if shifted_month < 10 {
++        shifted_month + 3
++    } else {
++        shifted_month - 9
++    } as u32;
++    let year = if month <= 2 { year + 1 } else { year };
++    (year, month, day)
++}
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests {
++    use super::*;
++    use std::time::Duration;
++
++    /// The moment of 2024-05-17, 14:30:00 in the time zone of UTC.
++    fn moment() -> SystemTime {
++        SystemTime::UNIX_EPOCH + Duration::from_secs(1_715_956_200)
++    }
++
++    #[test]
++    fn writes_a_size_the_way_a_file_manager_wrote_it() {
++        // act
++        let sizes = [
++            PlainFormats.size(0),
++            PlainFormats.size(512),
++            PlainFormats.size(2_048),
++            PlainFormats.size(5_368_709_120),
++        ];
++
++        // assert
++        assert_eq!(sizes[0], "0 B");
++        assert_eq!(sizes[1], "512 B");
++        assert_eq!(sizes[2], "2.0 KiB");
++        assert_eq!(sizes[3], "5.0 GiB");
++    }
++
++    #[test]
++    fn writes_a_date_and_a_time_the_way_the_product_wrote_it() {
++        // act
++        let date = PlainFormats.date(moment());
++        let time = PlainFormats.time(moment());
++        let both = PlainFormats.date_time(moment());
++
++        // assert
++        assert_eq!(date, "2024-05-17");
++        assert_eq!(time, "14:30");
++        assert_eq!(both, "2024-05-17 14:30");
++    }
++
++    #[test]
++    fn writes_a_number_without_a_separator() {
++        // act
++        let text = PlainFormats.number(1_234_567);
++
++        // assert
++        assert_eq!(text, "1234567");
++    }
++}
+diff --git a/crates/phocommander-ui/src/lib.rs b/crates/phocommander-ui/src/lib.rs
+index f5c7a76..2f41050 100644
+--- a/crates/phocommander-ui/src/lib.rs
++++ b/crates/phocommander-ui/src/lib.rs
+@@ -29,6 +29,7 @@ pub mod commands;
+ pub mod context;
+ pub mod draw;
+ pub mod filter;
++pub mod format;
+ pub mod i18n;
+ pub mod input;
+ pub mod jobs;
+@@ -48,6 +49,7 @@ pub use app::WorkSurfaceApp;
+ pub use commands::{Command, Request};
+ pub use context::Context;
+ pub use filter::{Filter, FilterDepth, FilterField, FilterKind, FilterPattern};
++pub use format::{Formats, PlainFormats};
+ pub use i18n::{Argument, Catalogue, TextKey, Texts};
+ pub use input::PrimaryModifier;
+ pub use jobs::{JobKind, JobSource, JobState, JobSummary};
+diff --git a/crates/phocommander-ui/src/listing.rs b/crates/phocommander-ui/src/listing.rs
+index 9922dca..a59347a 100644
+--- a/crates/phocommander-ui/src/listing.rs
++++ b/crates/phocommander-ui/src/listing.rs
+@@ -8,7 +8,9 @@
+ //!       not live in the drawing code — it lives in this state object, and
+ //!       only the visible slice of it is handed to the widgets (FR-106,
+ //!       NFR-01). The state object is therefore the answer to "what is in
+-//!       this directory", and it knows nothing about pixels.
++//!       this directory", and it knows nothing about pixels. The sizes and
++//!       the dates of the rows are written by the formats of the interface
++//!       (FR-123), so that the locale of the user decides how they look.
+ //! EXAMPLE:
+ //! ```no_run
+ //! use phocommander_ui::listing::{Entry, EntryKind, ListingState};
+@@ -23,6 +25,7 @@ use std::cell::Cell;
+ use std::path::{Path, PathBuf};
+ use std::time::SystemTime;
+ 
++use crate::format::Formats;
+ use crate::i18n::TextKey;
+ 
+ /// The kind of an entry of a directory listing.
+@@ -466,23 +469,28 @@ impl<'a> Row<'a> {
+         self.entry.kind
+     }
+ 
+-    /// The size of the entry, written the way a file manager writes it.
+-    pub fn size_text(&self) -> String {
++    /// The size of the entry, written the way the locale of the interface
++    /// writes sizes.
++    ///
++    /// WHY: the format of a size follows the locale of the user (FR-123).
++    ///       The row therefore asks the formats of the interface and knows
++    ///       no rule of a locale itself.
++    pub fn size_text(&self, formats: &dyn Formats) -> String {
+         match self.entry.size {
+-            Some(size) => format_size(size),
++            Some(size) => formats.size(size),
+             None => String::new(),
+         }
+     }
+ 
+-    /// The time of the last change, written the way a file manager writes
+-    /// it.
++    /// The time of the last change, written the way the locale of the
++    /// interface writes dates and times.
+     ///
+-    /// WHY: the format is fixed and unambiguous in this milestone. The
+-    /// format that follows the locale of the system belongs to the
+-    /// localisation module and arrives with it (FR-123).
+-    pub fn date_text(&self) -> String {
++    /// WHY: the format of a date follows the locale of the user (FR-123).
++    ///       The column of the date carries the date and the time together,
++    ///       so the row asks for both at once.
++    pub fn date_text(&self, formats: &dyn Formats) -> String {
+         match self.entry.modified {
+-            Some(modified) => format_time(modified),
++            Some(modified) => formats.date_time(modified),
+             None => String::new(),
+         }
+     }
+@@ -502,60 +510,6 @@ impl<'a> Row<'a> {
+     }
+ }
+ 
+-/// Writes a size in bytes the way a file manager writes it.
+-fn format_size(size: u64) -> String {
+-    const UNITS: [&str; 5] = ["B", "KiB", "MiB", "GiB", "TiB"];
+-    let mut value = size as f64;
+-    let mut unit = 0;
+-    while value >= 1024.0 && unit + 1 < UNITS.len() {
+-        value /= 1024.0;
+-        unit += 1;
+-    }
+-    if unit == 0 {
+-        format!("{size} {}", UNITS[0])
+-    } else {
+-        format!("{value:.1} {}", UNITS[unit])
+-    }
+-}
+-
+-/// Writes the time of a change as `YYYY-MM-DD HH:MM`.
+-fn format_time(time: SystemTime) -> String {
+-    let seconds = match time.duration_since(SystemTime::UNIX_EPOCH) {
+-        Ok(duration) => duration.as_secs() as i64,
+-        Err(error) => -(error.duration().as_secs() as i64),
+-    };
+-
+-    let days = seconds.div_euclid(86_400);
+-    let time_of_day = seconds.rem_euclid(86_400);
+-    let hour = time_of_day / 3_600;
+-    let minute = (time_of_day % 3_600) / 60;
+-
+-    // WHY: the conversion from the day number to a date is the civil
+-    // calendar of Howard Hinnant, which needs no table and no library.
+-    let (year, month, day) = civil_from_days(days);
+-    format!("{year:04}-{month:02}-{day:02} {hour:02}:{minute:02}")
+-}
+-
+-/// Converts a number of days since 1970-01-01 into a civil date.
+-fn civil_from_days(days: i64) -> (i64, u32, u32) {
+-    let shifted = days + 719_468;
+-    let era = shifted.div_euclid(146_097);
+-    let day_of_era = shifted.rem_euclid(146_097);
+-    let year_of_era =
+-        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+-    let year = year_of_era + era * 400;
+-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+-    let shifted_month = (5 * day_of_year + 2) / 153;
+-    let day = (day_of_year - (153 * shifted_month + 2) / 5 + 1) as u32;
+-    let month = if shifted_month < 10 {
+-        shifted_month + 3
+-    } else {
+-        shifted_month - 9
+-    } as u32;
+-    let year = if month <= 2 { year + 1 } else { year };
+-    (year, month, day)
+-}
+-
+ #[cfg(test)]
+ // WHY: a test may fail loudly when its arrangement is wrong. The rule
+ // that forbids a panic applies to the production code, and it is enforced
+diff --git a/crates/phocommander-ui/src/listing/tests.rs b/crates/phocommander-ui/src/listing/tests.rs
+index 67d4b6f..165b22c 100644
+--- a/crates/phocommander-ui/src/listing/tests.rs
++++ b/crates/phocommander-ui/src/listing/tests.rs
+@@ -8,6 +8,7 @@
+ #![allow(clippy::unwrap_used, clippy::expect_used)]
+ 
+ use super::*;
++use crate::format::PlainFormats;
+ use crate::listing::EntryKind;
+ 
+ /// Builds a listing with the given number of entries.
+@@ -129,13 +130,13 @@ fn the_order_by_name_is_the_order_of_the_names() {
+ }
+ 
+ #[test]
+-fn writes_a_size_the_way_a_file_manager_writes_it() {
++fn writes_a_size_the_way_the_plain_formats_write_it() {
+     // act
+     let sizes = [
+-        format_size(0),
+-        format_size(512),
+-        format_size(2_048),
+-        format_size(5_368_709_120),
++        PlainFormats.size(0),
++        PlainFormats.size(512),
++        PlainFormats.size(2_048),
++        PlainFormats.size(5_368_709_120),
+     ];
+ 
+     // assert
+@@ -146,14 +147,61 @@ fn writes_a_size_the_way_a_file_manager_writes_it() {
+ }
+ 
+ #[test]
+-fn writes_a_date_the_way_a_file_manager_writes_it() {
++fn the_size_of_a_row_follows_the_formats_of_the_interface() {
++    // WHY: FR-123 — the size of a row is written the way the locale of the
++    //       user writes it. The row therefore asks the formats and knows no
++    //       rule of a locale itself.
++    // arrange
++    let mut listing = ListingState::new(PathBuf::from("/tmp"));
++    listing.set_entries(vec![Entry::new("notes.txt", EntryKind::File).with_size(1_200_000)]);
++
++    // act
++    let rows: Vec<Row<'_>> = listing.visible_rows(0, 1).collect();
++
++    // assert
++    assert_eq!(rows[0].size_text(&PlainFormats), "1.1 MiB");
++    assert_eq!(rows[0].size_text(&German), "1,2 MB");
++}
++
++#[test]
++fn writes_a_date_the_way_the_plain_formats_write_it() {
+     // arrange
+     let moment = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_772_000_000);
+ 
+     // act
+-    let text = format_time(moment);
++    let text = PlainFormats.date_time(moment);
+ 
+     // assert
+     assert_eq!(text.len(), 16);
+     assert!(text.starts_with("2026-"));
+ }
++
++/// The formats of a German interface.
++///
++/// WHY: the formats are the seam of the interface. A test that wants a
++///       German size writes one itself and does not need the crate of the
++///       localisation — the crate rule forbids the dependency.
++struct German;
++
++impl Formats for German {
++    fn number(&self, value: u64) -> String {
++        value.to_string()
++    }
++
++    fn size(&self, bytes: u64) -> String {
++        let megabytes = bytes as f64 / 1_000_000.0;
++        // WHY: the German locale writes the separator of the decimals with a
++        //       comma. The rule belongs to the implementation of the locale
++        //       and not to the interface, so the test writes it here.
++        let number = format!("{megabytes:.1}").replace('.', ",");
++        format!("{number} MB")
++    }
++
++    fn date(&self, _moment: SystemTime) -> String {
++        String::new()
++    }
++
++    fn time(&self, _moment: SystemTime) -> String {
++        String::new()
++    }
++}
+diff --git a/docs/ARCHITECTURE.md b/docs/ARCHITECTURE.md
+index eb80558..e8af5d2 100644
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -377,6 +377,7 @@ The short answer for a contributor who is about to change something.
+ | The panels of the interface | `crates/phocommander-ui/src/panel.rs` | Presentation |
+ | The file list | `crates/phocommander-ui/src/listing.rs` | Presentation |
+ | The colours and the metrics | `crates/phocommander-ui/src/theme.rs` | Presentation |
++| The formats of the numbers, the sizes, the dates and the times | `crates/phocommander-ui/src/format.rs` | Presentation |
+ | A translated text | `crates/phocommander-i18n/locales/*/*.ftl` | Localisation |
+ | The native menu | `platform/phocommander-platform/src/` | Platform |
+ | A new archive format | a new file in `crates/phocommander-archive/src/formats/` | Archive |
+diff --git a/docs/WHERE_TO_CHANGE.md b/docs/WHERE_TO_CHANGE.md
+index c27fbba..d0cda3a 100644
+--- a/docs/WHERE_TO_CHANGE.md
++++ b/docs/WHERE_TO_CHANGE.md
+@@ -33,8 +33,10 @@ the meantime. Files that already exist are linked.
+ | Network sources | `crates/phocommander-remote/src/` | `phocommander-remote` | SFTP, FTP, SMB, WebDAV, S3. Each protocol is a *source* behind the filesystem abstraction, not a separate feature area. Credentials go to the system keychain, never into the configuration file. |
+ | egui user interface, panels, theme | `crates/phocommander-ui/src/` | `phocommander-ui` | Widgets, the two-panel layout, the tab bar, the theme. The directory content lives in a state object outside the egui context; only the visible slice is drawn. |
+ | UI strings and translation keys | `crates/phocommander-ui/src/i18n/` | `phocommander-ui` | Every visible string goes through a translation key. German and English are both fully covered; dates, numbers and sizes follow the system language. |
++| Formats of the values (numbers, sizes, dates, times) | `crates/phocommander-ui/src/format.rs` | `phocommander-ui` | The seam between the interface and the rules of a locale. The trait `Formats` is implemented by the composition root — the interface crate may not depend on the crate of the localisation (ADR-0001, option B). The formats themselves live in `crates/phocommander-i18n/src/format.rs`. |
+ | Native menu, file dialogs, trash, permissions | `platform/phocommander-platform/src/` | `phocommander-platform` | The OS boundary: native menu via `muda`, native dialogs via `rfd`, trash integration, permission handling per platform. Everything OS-specific that is not a window lives here. |
+ | Desktop binary | `apps/phocommander-desktop/` | `phocommander-desktop` | The macOS, Windows, Linux and BSD application. The binary wires the UI crate to the platform crate and starts the event loop. |
++| Catalogue, formats and language of the desktop build | `apps/phocommander-desktop/src/catalogue.rs`, `apps/phocommander-desktop/src/language.rs` | `phocommander-desktop` | The adapters between the crate of the localisation and the interface: the catalogue of the texts, the formats of a locale and the language of the running program. The language can be changed while the program runs (FR-124). |
+ | Android packaging | `apps/phocommander-android/` | `phocommander-android` | Gradle project, Rust `cdylib`, SAF mode, optional full access, touch and keyboard operation. |
+ | iOS packaging | `apps/phocommander-ios/` | `phocommander-ios` | Xcode project, document picker, security-scoped bookmarks, split view. |
+ | Unit tests | `crates/<crate>/tests/`, `#[cfg(test)] mod tests` | per crate | One unit test per public function, at least. Integration tests cover the crate boundaries. |
