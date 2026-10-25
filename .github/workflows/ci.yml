@@ -63,6 +63,36 @@ jobs:
       - name: Dateigrößen prüfen
         run: ./scripts/check-file-size.sh
 
+      - name: Telemetrie prüfen
+        run: ./scripts/check-no-telemetry.sh
+
+      - name: Anforderungskennzeichen prüfen
+        run: python3 scripts/check-requirement-ids.py
+
+      - name: Aktionskennzeichen prüfen
+        run: python3 scripts/check-action-ids.py
+
+      - name: Tastenbelegungen prüfen
+        run: python3 scripts/check-keymap-consistency.py
+
+      - name: Konfigurationsschema prüfen
+        run: python3 scripts/check-config-schema.py
+
+      - name: Oberflächenprofile prüfen
+        run: python3 scripts/check-interface-profiles.py
+
+      - name: Abnahmekriterien prüfen
+        run: python3 scripts/check-acceptance-ids.py
+
+      - name: Sprachkataloge prüfen
+        run: python3 scripts/check-i18n-keys.py
+
+      - name: Hartkodierte Texte prüfen
+        run: python3 scripts/check-i18n-hardcoded.py
+
+      - name: Links der Dokumentation prüfen
+        run: python3 scripts/check-docs-links.py
+
       - name: cargo-deny installieren
         run: cargo install cargo-deny --version "$CARGO_DENY_VERSION" --locked
 
