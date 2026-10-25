@@ -13,7 +13,10 @@
 //!       dispatch of the action and the drawing belong to the same flow,
 //!       and a split would hide the order of the three steps. The ways in
 //!       which the shell takes a language live in a module of their own, so
-//!       that the shell itself stays readable.
+//!       that the shell itself stays readable. The dialog of the multiple
+//!       rename lives in a module of its own as well: it has a state, a
+//!       drawing and a set of keys, and none of them belongs to the flow of
+//!       the surface.
 //!
 //! EXAMPLE:
 //! ```no_run
@@ -37,6 +40,7 @@
 
 mod input;
 mod language;
+mod rename;
 
 use std::path::PathBuf;
 
@@ -53,6 +57,7 @@ use crate::layout::{LayoutProfile, PanelStructure};
 use crate::metrics::{Metrics, Platform};
 use crate::preview::PreviewSource;
 use crate::refresh::RefreshPolicy;
+use crate::rename::{RenameDialog, RenameEngine, TemplateStore};
 use crate::surface::{TransferRequest, WorkSurface};
 use crate::theme::{Palette, Theme};
 use crate::undo::UndoAvailability;
@@ -76,6 +81,20 @@ pub struct WorkSurfaceApp {
     job_source: Option<Box<dyn JobSource>>,
     pending_transfer: Option<PendingTransfer>,
     undo: UndoAvailability,
+    /// The dialog of the multiple rename, if it is open.
+    ///
+    /// WHY: the dialog is a part of the surface. It belongs to the panel
+    ///       that has the focus, it holds the rule the user is editing and
+    ///       the preview of the new names (FR-34).
+    rename: Option<RenameDialog>,
+    /// The engine that forms the new names.
+    ///
+    /// WHY: the engine lives in the crate of the operations and the
+    ///       interface crate may not depend on a sibling crate. The
+    ///       composition root hands the implementation over.
+    rename_engine: Option<Box<dyn RenameEngine>>,
+    /// The store of the named templates.
+    template_store: Option<Box<dyn TemplateStore>>,
     /// The context of the last frame.
     ///
     /// WHY: a change of the language of the interface has to reach the screen
@@ -134,6 +153,9 @@ impl WorkSurfaceApp {
             job_source: None,
             pending_transfer: None,
             undo: UndoAvailability::Unavailable,
+            rename: None,
+            rename_engine: None,
+            template_store: None,
             egui_context: None,
         }
     }
@@ -395,9 +417,10 @@ impl WorkSurfaceApp {
                 self.commands.push(Command::Delete { side, entries });
             }
             "panel.rename" => {
-                let side = self.surface.active_side();
-                let entries = self.marked_paths();
-                self.commands.push(Command::Rename { side, entries });
+                // WHY: the rename of more than one file runs through the
+                //       dialog of the multiple rename. The dialog shows the
+                //       new names before the rename runs (FR-34).
+                self.open_rename_dialog();
             }
             "panel.mkdir" => {
                 let side = self.surface.active_side();
@@ -682,6 +705,10 @@ impl WorkSurfaceApp {
         for request in requested {
             self.handle_request(request);
         }
+
+        // WHY: the dialog is drawn above the surface. It reads the state of
+        //       the rename and never changes it.
+        self.draw_rename_dialog(ui);
     }
 
     /// The colours of the work surface.

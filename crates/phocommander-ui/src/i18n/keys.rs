@@ -230,6 +230,50 @@ pub enum TextKey {
     PaletteSearch,
     /// The text of an action palette without a match.
     PaletteEmpty,
+    /// The title of the dialog of the multiple rename.
+    RenameTitle,
+    /// The label of the field with the format of the new name.
+    RenameFormat,
+    /// The label of the field with the text that is searched.
+    RenameSearch,
+    /// The label of the field with the text that replaces it.
+    RenameReplacement,
+    /// The label of the switch that turns the search into a pattern.
+    RenameRegex,
+    /// The label of the field with the first number of the counter.
+    RenameCounterStart,
+    /// The label of the field with the step of the counter.
+    RenameCounterStep,
+    /// The label of the field with the width of the counter.
+    RenameCounterWidth,
+    /// The label of the field with the name of the series.
+    RenameSeries,
+    /// The label of the field with the name of a new template.
+    RenameTemplateName,
+    /// The label of the list of the stored templates.
+    RenameTemplates,
+    /// The label of the list of the preview.
+    RenamePreview,
+    /// The text of the dialog without files and without templates.
+    RenameEmpty,
+    /// The line with the keys of the dialog.
+    RenameHint,
+    /// The reason why a rule without a format names no file.
+    RenameProblemEmptyFormat,
+    /// The reason why the value of a placeholder is not known.
+    RenameProblemUnknownValue,
+    /// The reason why a pattern is not a valid regular expression.
+    RenameProblemInvalidPattern,
+    /// The reason why a name cannot be used as a file name.
+    RenameProblemInvalidName,
+    /// The reason why the target of a rename is occupied.
+    RenameConflictTargetExists,
+    /// The reason why two files of a selection want the same name.
+    RenameConflictDuplicateTarget,
+    /// The reason why the file that is to be renamed is missing.
+    RenameConflictMissingSource,
+    /// The reason why a template could not be stored.
+    RenameTemplateStoreFailed,
 }
 
 impl TextKey {
@@ -350,6 +394,28 @@ impl TextKey {
             TextKey::PaletteTitle => "palette-title",
             TextKey::PaletteSearch => "palette-search",
             TextKey::PaletteEmpty => "palette-empty",
+            TextKey::RenameTitle => "rename-title",
+            TextKey::RenameFormat => "rename-format",
+            TextKey::RenameSearch => "rename-search",
+            TextKey::RenameReplacement => "rename-replacement",
+            TextKey::RenameRegex => "rename-regex",
+            TextKey::RenameCounterStart => "rename-counter-start",
+            TextKey::RenameCounterStep => "rename-counter-step",
+            TextKey::RenameCounterWidth => "rename-counter-width",
+            TextKey::RenameSeries => "rename-series",
+            TextKey::RenameTemplateName => "rename-template-name",
+            TextKey::RenameTemplates => "rename-templates",
+            TextKey::RenamePreview => "rename-preview",
+            TextKey::RenameEmpty => "rename-empty",
+            TextKey::RenameHint => "rename-hint",
+            TextKey::RenameProblemEmptyFormat => "rename-problem-empty-format",
+            TextKey::RenameProblemUnknownValue => "rename-problem-unknown-value",
+            TextKey::RenameProblemInvalidPattern => "rename-problem-invalid-pattern",
+            TextKey::RenameProblemInvalidName => "rename-problem-invalid-name",
+            TextKey::RenameConflictTargetExists => "rename-conflict-target-exists",
+            TextKey::RenameConflictDuplicateTarget => "rename-conflict-duplicate-target",
+            TextKey::RenameConflictMissingSource => "rename-conflict-missing-source",
+            TextKey::RenameTemplateStoreFailed => "rename-template-store-failed",
         }
     }
 
@@ -364,7 +430,7 @@ impl TextKey {
 /// WHY: the list is the contract between the code and the catalogue. The
 /// gate of the workspace compares it with the key sets of the catalogues, so
 /// that a key cannot be used without a translation.
-const KEYS: [TextKey; 107] = [
+const KEYS: [TextKey; 129] = [
     TextKey::ActionAppMenu,
     TextKey::ActionAppQuit,
     TextKey::ActionPaletteOpen,
@@ -472,4 +538,26 @@ const KEYS: [TextKey; 107] = [
     TextKey::PaletteTitle,
     TextKey::PaletteSearch,
     TextKey::PaletteEmpty,
+    TextKey::RenameTitle,
+    TextKey::RenameFormat,
+    TextKey::RenameSearch,
+    TextKey::RenameReplacement,
+    TextKey::RenameRegex,
+    TextKey::RenameCounterStart,
+    TextKey::RenameCounterStep,
+    TextKey::RenameCounterWidth,
+    TextKey::RenameSeries,
+    TextKey::RenameTemplateName,
+    TextKey::RenameTemplates,
+    TextKey::RenamePreview,
+    TextKey::RenameEmpty,
+    TextKey::RenameHint,
+    TextKey::RenameProblemEmptyFormat,
+    TextKey::RenameProblemUnknownValue,
+    TextKey::RenameProblemInvalidPattern,
+    TextKey::RenameProblemInvalidName,
+    TextKey::RenameConflictTargetExists,
+    TextKey::RenameConflictDuplicateTarget,
+    TextKey::RenameConflictMissingSource,
+    TextKey::RenameTemplateStoreFailed,
 ];
