@@ -91,8 +91,17 @@ impl ArchiveReader for SevenZArchiveReader {
                 }
 
                 let archive_entry = convert_entry(entry);
-                let content: &mut dyn Read = content;
-                match visitor.visit(&archive_entry, Some(content)) {
+                // WHY: a directory carries no content. The ZIP and the TAR
+                //       adapter hand over nothing for a directory, and the
+                //       three adapters behave the same way. The extraction
+                //       checks the kind of the entry anyway, but a visitor
+                //       that reads the content of a directory would read
+                //       bytes that do not belong to it.
+                let content: Option<&mut dyn Read> = match archive_entry.kind {
+                    EntryKind::Directory => None,
+                    _ => Some(content),
+                };
+                match visitor.visit(&archive_entry, content) {
                     Ok(VisitDecision::Continue) => Ok(true),
                     Ok(VisitDecision::Stop) => Ok(false),
                     Err(error) => {
@@ -230,5 +239,187 @@ impl ArchiveWriter for SevenZArchiveWriter {
             .finish()
             .map_err(|source| ArchiveError::io(format!("the archive {path:?}"), source))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+mod tests {
+    use super::*;
+    use crate::crc32::Crc32;
+    use crate::formats::test_support::{CollectedEntry, TempDir, collect};
+    use std::io::Cursor;
+
+    /// The content that the tests write and read.
+    const CONTENT: &[u8] = b"the quick brown fox";
+
+    /// The name of the file that the tests write.
+    const FILE_NAME: &str = "docs/readme.md";
+
+    /// Writes a 7z container with one file.
+    fn write_container(path: &Path) {
+        let mut writer = SevenZArchiveWriter::create(path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+    }
+
+    /// Reads a 7z container and returns its entries.
+    fn read_container(path: &Path) -> Vec<CollectedEntry> {
+        let mut reader = SevenZArchiveReader::open(path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be opened: {error}"));
+        collect(&mut reader)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be read: {error}"))
+    }
+
+    /// Returns the entry with the given name, or fails with the whole list.
+    fn entry<'a>(entries: &'a [CollectedEntry], name: &str) -> &'a CollectedEntry {
+        entries
+            .iter()
+            .find(|candidate| candidate.name == name)
+            .unwrap_or_else(|| panic!("the entry {name:?} is missing in {entries:?}"))
+    }
+
+    #[test]
+    fn the_reader_returns_the_entries_that_were_written() {
+        // arrange
+        let directory = TempDir::new("sevenz-entries");
+        let path = directory.join("archive.7z");
+        write_container(&path);
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        assert_eq!(entries.len(), 1, "{entries:?}");
+        let file = entry(&entries, FILE_NAME);
+        assert_eq!(file.kind, EntryKind::File);
+        assert_eq!(file.size, CONTENT.len() as u64);
+    }
+
+    #[test]
+    fn the_reader_returns_the_content_that_were_written() {
+        // arrange
+        let directory = TempDir::new("sevenz-content");
+        let path = directory.join("archive.7z");
+        write_container(&path);
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        let file = entry(&entries, FILE_NAME);
+        assert_eq!(file.content.as_deref(), Some(CONTENT));
+    }
+
+    #[test]
+    fn the_container_keeps_the_structure_of_the_directories() {
+        // arrange
+        let directory = TempDir::new("sevenz-directories");
+        let path = directory.join("archive.7z");
+        let mut writer = SevenZArchiveWriter::create(&path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        writer
+            .add_directory("docs")
+            .unwrap_or_else(|error| panic!("the directory could not be written: {error}"));
+        let mut content = Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        assert_eq!(entry(&entries, "docs").kind, EntryKind::Directory);
+        assert_eq!(entry(&entries, FILE_NAME).kind, EntryKind::File);
+    }
+
+    #[test]
+    fn the_reader_reports_the_checksum_that_the_container_stores() {
+        // arrange
+        let directory = TempDir::new("sevenz-checksum");
+        let path = directory.join("archive.7z");
+        write_container(&path);
+        let mut checksum = Crc32::new();
+        checksum.update(CONTENT);
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        let file = entry(&entries, FILE_NAME);
+        assert_eq!(file.stored_checksum, Some(u64::from(checksum.finish())));
+    }
+
+    #[test]
+    fn the_name_of_an_entry_is_never_lossy_because_the_format_carries_it_as_utf16() {
+        // WHY: the 7z format stores the name of an entry as UTF-16. A name
+        //      that is not valid UTF-8 cannot be carried by the format at
+        //      all, so the adapter never has to report a loss. The ZIP and
+        //      the TAR format carry the name as bytes and can therefore
+        //      carry such a name.
+        // arrange
+        let directory = TempDir::new("sevenz-lossy-name");
+        let path = directory.join("archive.7z");
+        write_container(&path);
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        let file = entry(&entries, FILE_NAME);
+        assert!(!file.name_is_lossy);
+    }
+
+    #[test]
+    fn the_writer_refuses_to_store_a_symbolic_link() {
+        // arrange
+        let directory = TempDir::new("sevenz-link");
+        let path = directory.join("archive.7z");
+        let mut writer = SevenZArchiveWriter::create(&path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+
+        // act
+        let result = writer.add_symlink("link", FILE_NAME);
+
+        // assert
+        assert!(
+            matches!(&result, Err(ArchiveError::Format { .. })),
+            "{result:?}"
+        );
+    }
+
+    #[test]
+    fn a_file_that_is_no_container_is_an_error_and_not_a_panic() {
+        // arrange
+        let directory = TempDir::new("sevenz-error");
+        let path = directory.write_file("notes.txt", b"this is not a container at all");
+
+        // act
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            SevenZArchiveReader::open(&path)
+        }));
+
+        // assert
+        let error = outcome
+            .unwrap_or_else(|_| panic!("the reader panicked on a file that is no container"))
+            .err()
+            .unwrap_or_else(|| panic!("the file was opened as a container"));
+        assert!(matches!(&error, ArchiveError::Format { .. }), "{error:?}");
     }
 }

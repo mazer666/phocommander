@@ -1,6 +1,6 @@
 # Der Stand des Projekts
 
-**Letzte Aktualisierung:** 25.10.2026 · **Stand auf GitHub:** `859e24d`
+**Letzte Aktualisierung:** 25.10.2026 · **Stand auf GitHub:** siehe `git log` — der letzte Commit trägt die Messung
 
 Dieses Dokument ist das **Statusboard**. Es sagt, wo das Projekt steht, was gerade läuft und
 was als Nächstes kommt. Die Roadmap sagt, *was* die Meilensteine enthalten; dieses Dokument
@@ -16,7 +16,7 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 | Meilenstein | Inhalt | Stand | Nachweis |
 |---|---|---|---|
 | **M0** — Foundation | Workspace, CI, Konfiguration, Bedrohungsmodell, Dokumentation | **abgenommen** | `docs/acceptance/M0-ACCEPTANCE.md` |
-| **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** — zwei Lücken offen | `docs/acceptance/M1-ACCEPTANCE.md` |
+| **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** — drei Lücken offen | `docs/acceptance/M1-ACCEPTANCE.md` |
 | **M2** — Maturity on macOS | Registerkarten, Profile, sichere Kopiermodi, Layouts je Kontext | **abgenommen** | `docs/acceptance/M2-ACCEPTANCE.md` |
 | **M2b** — Internationalisierung | Englisch und Deutsch vollständig, lokalisierte Formatierung, Sprachwechsel zur Laufzeit | **in Arbeit** | `docs/ACCEPTANCE-CRITERIA.md`, Block M2b |
 | **M3** — The other desktop platforms | Windows, Linux, BSD | offen | `docs/ROADMAP.md` |
@@ -26,15 +26,16 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 
 | Was | Stand |
 |---|---|
-| **Die Tests der Container-Adapter** (ZIP, TAR, 7z) | Der Core Engineer schreibt sie. Die Dateien `tar_tests.rs` und `test_support.rs` stehen, `zip.rs` und `sevenz.rs` sind angefasst. Es wird **nicht gebaut** — das Bauen macht die Leitende Instanz zentral, weil die Sandbox 3 GB RAM hat und parallele Builds sich gegenseitig abbrechen |
-| **Die Abnahme von M1** | Wird neu geschrieben, sobald die Container-Tests stehen. Das Dokument liegt in `docs/acceptance/M1-ACCEPTANCE.md` und nennt die offenen Punkte |
+| **Die Abnahme von M1** | Die dritte Messung ist geschrieben. Drei Gründe bleiben: das manuelle Protokoll auf einem macOS-Gerät, die Benchmarks der Spezifikation und der Eigenschaftstest der Umbenennung |
+| **Der Meilenstein M2b** | Die Kataloge sind synchron, das Gate gegen hartkodierte Texte steht, die Fehlermeldungen werden übersetzt. Offen: die lokalisierte Formatierung in der Oberfläche und der Sprachwechsel zur Laufzeit |
+| **Der Meilenstein M3** | Beginnt nach M2b — Windows, Linux und BSD |
 
 ## 3. Der gemessene Stand
 
 | Was | Zahl |
 |---|---|
-| Tests | **941 grün, 0 rot, 0 übersprungen** |
-| Testbinäre | 47 |
+| Tests | **974 grün, 0 rot, 0 übersprungen** |
+| Testbinäre | 48 |
 | Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
@@ -70,8 +71,10 @@ gefunden — im Code und in den Tests:
 **Lücken, die die Prüfung aufgedeckt hat**
 
 15. Die Warteschlange der Aufträge hatte **keinen einzigen Test** — das Wiederholen der fehlgeschlagenen Einträge war implementiert, aber nie gelaufen.
-16. Die Container-Adapter der Archive hatten **keinen einzigen Test**.
-17. Der Negativtest benutzte das zentrale Zielverzeichnis und verunreinigte die Binaries.
+16. Die Container-Adapter der Archive hatten **keinen einzigen Test** — jetzt haben sie 32.
+17. Die Erkennung des Formats kannte **kein komprimiertes TAR** — die vier Komprimierungen des Adapters waren über die öffentliche API unerreichbar.
+18. Die Datei `keymap_view.rs` war auf 999 Zeilen gewachsen und damit über dem Maximum von 900. Sie ist jetzt geteilt: die Eingabe in `keymap_view/stroke.rs`, die Belegung in `keymap_view.rs`.
+19. Der Negativtest benutzte das zentrale Zielverzeichnis und verunreinigte die Binaries.
 
 ## 5. Die Regeln, die aus diesem Meilenstein folgen
 
@@ -90,11 +93,11 @@ genauso leicht zu brechen sind:
 
 | # | Was | Warum |
 |---|---|---|
-| 1 | Die Container-Tests bauen und prüfen | Die letzte Lücke der M1-Abnahme |
-| 2 | Die Abnahme von M1 neu schreiben | Sie misst den Stand vor der Reparatur und nennt die alten Gründe |
-| 3 | Den Meilenstein M2b abschließen | Die Kataloge sind synchron, das Gate steht; offen sind die lokalisierte Formatierung in der Oberfläche und der Wechsel zur Laufzeit |
-| 4 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
-| 5 | Den Meilenstein M3 beginnen — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft |
+| 1 | Den Meilenstein M2b abschließen | Die Kataloge sind synchron, das Gate steht, die Fehlermeldungen werden übersetzt. Offen sind die lokalisierte Formatierung in der Oberfläche und der Wechsel zur Laufzeit |
+| 2 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
+| 3 | Den Eigenschaftstest der Umbenennung schreiben | FR-33 verlangt ihn ausdrücklich |
+| 4 | Den Meilenstein M3 beginnen — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft |
+| 5 | Das manuelle Protokoll von M1 auf einem macOS-Gerät | Die Sandbox hat ein Linux-System und keinen Bildschirm |
 
 ## 7. Die Fragen, die eine Entscheidung brauchen
 
@@ -103,6 +106,8 @@ genauso leicht zu brechen sind:
 | Wie läuft das manuelle Protokoll auf einem echten macOS-Gerät? | Die Sandbox hat ein Linux-System und keinen Bildschirm. Die Abnahme von M1 braucht dieses Protokoll. |
 | Welche Zertifikate tragen die Binaries? | Windows braucht ein Code-Signing-Zertifikat, macOS einen Developer ID. Beides kostet Geld und braucht eine Entscheidung des Eigentümers. |
 | Das Zielverzeichnis der Tests liegt auf einem NAS-Volume | Jeder Build zahlt die Latenz des Volumes. Eine lokale Ablage wäre schneller — wenn die Sandbox sie anbietet. |
+| Soll die Dateiendung ein Merkmal sein? | **Nein**, entschieden am 25.10.2026: die Endung bleibt ein Hinweis. Die Magic Bytes entscheiden. Eine Datei, die `.zip` heißt und kein ZIP ist, soll als das erkannt werden, was sie ist. |
+| Verschlüsselte Container (FR-68) | Nicht angefasst. Der Meilenstein M1 umfasst die unverschlüsselten Formate; die verschlüsselten kommen mit dem Umgang mit den Passwörtern. |
 
 ---
 
