@@ -377,6 +377,7 @@ The short answer for a contributor who is about to change something.
 | The panels of the interface | `crates/phocommander-ui/src/panel.rs` | Presentation |
 | The file list | `crates/phocommander-ui/src/listing.rs` | Presentation |
 | The colours and the metrics | `crates/phocommander-ui/src/theme.rs` | Presentation |
+| The formats of the numbers, the sizes, the dates and the times | `crates/phocommander-ui/src/format.rs` | Presentation |
 | A translated text | `crates/phocommander-i18n/locales/*/*.ftl` | Localisation |
 | The native menu | `platform/phocommander-platform/src/` | Platform |
 | A new archive format | a new file in `crates/phocommander-archive/src/formats/` | Archive |
