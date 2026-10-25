@@ -395,6 +395,35 @@ pub enum PanelError {
     },
 }
 
+impl PanelError {
+    /// The key of the catalogue that carries the message of this error.
+    ///
+    /// WHY: the message of an error reaches the user through the status line
+    ///       of the surface. A message that is written down in the source
+    ///       stays English in a German interface (FR-05, section 8.4).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::panel::PanelSide;
+    /// use phocommander_ui::surface::PanelError;
+    ///
+    /// let error = PanelError::SamePanel { side: PanelSide::Left };
+    /// assert_eq!(error.message_key(), "error-transfer-same-panel");
+    /// ```
+    pub fn message_key(&self) -> &'static str {
+        match self {
+            Self::SamePanel { .. } => "error-transfer-same-panel",
+        }
+    }
+
+    /// The values that the message of this error carries.
+    pub fn message_arguments(&self) -> Vec<String> {
+        match self {
+            Self::SamePanel { side } => vec![side.as_str().to_string()],
+        }
+    }
+}
+
 /// The path of a panel as it is shown in the interface.
 pub fn panel_path(panel: &PanelState) -> &Path {
     panel.path()
