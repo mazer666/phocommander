@@ -306,16 +306,26 @@ Three more things that cost an afternoon:
   binary carries the path of the repository it was built in. A binary that was
   built in the copy of the negative test looks for the configuration of the
   copy — and the copy is gone when the script ends.
-- **Give every command an empty standard input.** The standard input of the
-  shell carries the *output of the previous command*. `rustc -` reads it as
-  Rust source and dies with "unterminated character literal"; a build that
-  fails that way looks like a broken toolchain and like a full disk. Write
-  `cargo … < /dev/null` — for every cargo call, including `cargo fmt`.
+- **Never call `cargo` directly — call `./scripts/cargo.sh`.** The standard
+  input of the shell carries the *output of the previous command*. Cargo asks
+  the compiler for the target information with "rustc - --print=file-names",
+  and the "-" means that the compiler reads its source from the standard
+  input. The compiler reads the output of the previous command as Rust source
+  and dies with "unknown start of token"; the build then fails with "failed
+  to run rustc to learn about target-specific information", which looks like a
+  broken toolchain and like a full disk.
+
+  The wrapper empties the standard input and points cargo at the real driver
+  of the toolchain instead of the proxy of rustup. A `< /dev/null` on the
+  command line does **not** help: the shell of this environment replaces the
+  descriptor after the redirection, so the poison reaches the compiler
+  anyway.
 
   This one cost the most: the workers waited for results that never came,
   because the commands were killed by their own standard input and not by the
   memory. The "operation aborted" in the log had nothing to do with the
-  sandbox.
+  sandbox. `cargo clippy` was broken the same way for hours, and it looked
+  as if the code were clean.
 
 ---
 
