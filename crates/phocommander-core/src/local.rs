@@ -40,6 +40,7 @@ use crate::source::{MutableSource, Source};
 pub struct LocalSource {
     root: Option<PathBuf>,
     case: CaseSensitivity,
+    follow_symlinks: bool,
 }
 
 impl LocalSource {
@@ -59,6 +60,7 @@ impl LocalSource {
         Self {
             root: None,
             case: CaseSensitivity::Sensitive,
+            follow_symlinks: false,
         }
     }
 
@@ -81,7 +83,41 @@ impl LocalSource {
         Self {
             root: Some(root.into()),
             case: CaseSensitivity::Sensitive,
+            follow_symlinks: false,
         }
+    }
+
+    /// Sets whether a symbolic link is dereferenced during a copy.
+    ///
+    /// WHY: the rule of the specification (section 9.7) is that a symbolic
+    /// link is copied as a link and is never dereferenced: a copy that
+    /// dereferences the link would copy a file the user never selected. The
+    /// switch is named after the deviation from that rule, and the safe
+    /// value is therefore `false`. The composition root builds the source
+    /// from the rules that are in force.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    ///
+    /// let source = LocalSource::new().with_follow_symlinks(true);
+    /// assert!(source.follows_symlinks());
+    /// ```
+    pub fn with_follow_symlinks(mut self, follow_symlinks: bool) -> Self {
+        self.follow_symlinks = follow_symlinks;
+        self
+    }
+
+    /// Whether a symbolic link is dereferenced during a copy.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_core::local::LocalSource;
+    ///
+    /// assert!(!LocalSource::new().follows_symlinks());
+    /// ```
+    pub fn follows_symlinks(&self) -> bool {
+        self.follow_symlinks
     }
 
     /// Sets the way the source compares names that differ only in their case.
@@ -230,10 +266,13 @@ impl MutableSource for LocalSource {
         let destination = self.resolve(to)?;
 
         let metadata = fs::symlink_metadata(&source).map_err(|error| Error::io(&source, error))?;
-        if metadata.file_type().is_symlink() {
+        if metadata.file_type().is_symlink() && !self.follow_symlinks {
             return copy_link(&source, &destination);
         }
 
+        // WHY: the file is copied with its content. A symbolic link is only
+        // dereferenced when the rules allow it; the rule of the
+        // specification is that a link is never dereferenced.
         fs::copy(&source, &destination).map_err(|error| Error::write(&destination, error))?;
         Ok(())
     }
