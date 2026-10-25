@@ -273,3 +273,267 @@ impl ArchiveWriter for ZipArchiveWriter {
         Ok(())
     }
 }
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+mod tests {
+    use super::*;
+    use crate::crc32::Crc32;
+    use crate::entry_name::EntryNameError;
+    use crate::error::RefusalReason;
+    use crate::formats::test_support::{CollectedEntry, TempDir, collect};
+    use std::fs;
+
+    /// The content that the tests write and read.
+    const CONTENT: &[u8] = b"the quick brown fox";
+
+    /// The name of the file that the tests write.
+    const FILE_NAME: &str = "docs/readme.md";
+
+    /// Writes a ZIP container with one file.
+    fn write_container(path: &Path) {
+        let mut writer = ZipArchiveWriter::create(path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = io::Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+    }
+
+    /// Reads a ZIP container and returns its entries.
+    fn read_container(path: &Path) -> Vec<CollectedEntry> {
+        let mut reader = ZipArchiveReader::open(path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be opened: {error}"));
+        collect(&mut reader)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be read: {error}"))
+    }
+
+    /// Returns the entry with the given name, or fails with the whole list.
+    fn entry<'a>(entries: &'a [CollectedEntry], name: &str) -> &'a CollectedEntry {
+        entries
+            .iter()
+            .find(|candidate| candidate.name == name)
+            .unwrap_or_else(|| panic!("the entry {name:?} is missing in {entries:?}"))
+    }
+
+    /// Replaces every occurrence of `from` with `to` and counts them.
+    ///
+    /// WHY: the name of an entry stands in the header of the entry and in the
+    ///       directory of the container. Every occurrence has to be replaced,
+    ///       or the reader refuses the container as inconsistent.
+    fn replace_bytes(data: &mut [u8], from: &[u8], to: &[u8]) -> usize {
+        assert_eq!(
+            from.len(),
+            to.len(),
+            "the replacement has to keep the length of the name"
+        );
+        let mut count = 0;
+        let mut index = 0;
+        while index + from.len() <= data.len() {
+            if &data[index..index + from.len()] == from {
+                data[index..index + from.len()].copy_from_slice(to);
+                count += 1;
+                index += from.len();
+                continue;
+            }
+            index += 1;
+        }
+        count
+    }
+
+    #[test]
+    fn the_reader_returns_the_entries_that_were_written() {
+        // arrange
+        let directory = TempDir::new("zip-entries");
+        let path = directory.join("archive.zip");
+        write_container(&path);
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        assert_eq!(entries.len(), 1, "{entries:?}");
+        let file = entry(&entries, FILE_NAME);
+        assert_eq!(file.kind, EntryKind::File);
+        assert_eq!(file.size, CONTENT.len() as u64);
+        assert!(!file.name_is_lossy);
+    }
+
+    #[test]
+    fn the_reader_returns_the_content_that_were_written() {
+        // arrange
+        let directory = TempDir::new("zip-content");
+        let path = directory.join("archive.zip");
+        write_container(&path);
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        let file = entry(&entries, FILE_NAME);
+        assert_eq!(file.content.as_deref(), Some(CONTENT));
+    }
+
+    #[test]
+    fn the_container_keeps_the_structure_of_the_directories() {
+        // arrange
+        let directory = TempDir::new("zip-directories");
+        let path = directory.join("archive.zip");
+        let mut writer = ZipArchiveWriter::create(&path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        writer
+            .add_directory("docs")
+            .unwrap_or_else(|error| panic!("the directory could not be written: {error}"));
+        let mut content = io::Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        // WHY: the ZIP format marks a directory with a slash at the end of
+        //      the name, and the writer of the container crate adds it.
+        assert_eq!(entry(&entries, "docs/").kind, EntryKind::Directory);
+        assert_eq!(entry(&entries, FILE_NAME).kind, EntryKind::File);
+    }
+
+    #[test]
+    fn the_reader_reports_a_link_as_a_link_and_not_as_its_target() {
+        // arrange
+        let directory = TempDir::new("zip-link");
+        let path = directory.join("archive.zip");
+        let mut writer = ZipArchiveWriter::create(&path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = io::Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        writer
+            .add_symlink("link", FILE_NAME)
+            .unwrap_or_else(|error| panic!("the link could not be written: {error}"));
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        let link = entry(&entries, "link");
+        assert_eq!(link.kind, EntryKind::Symlink);
+        assert_eq!(link.link_target.as_deref(), Some(FILE_NAME));
+        assert_eq!(link.content, None);
+    }
+
+    #[test]
+    fn the_reader_reports_the_checksum_that_the_container_stores() {
+        // arrange
+        let directory = TempDir::new("zip-checksum");
+        let path = directory.join("archive.zip");
+        write_container(&path);
+        let mut checksum = Crc32::new();
+        checksum.update(CONTENT);
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        let file = entry(&entries, FILE_NAME);
+        assert_eq!(file.stored_checksum, Some(u64::from(checksum.finish())));
+    }
+
+    #[test]
+    fn a_file_that_is_no_container_is_an_error_and_not_a_panic() {
+        // arrange
+        let directory = TempDir::new("zip-error");
+        let path = directory.write_file("notes.txt", b"this is not a container at all");
+
+        // act
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ZipArchiveReader::open(&path)
+        }));
+
+        // assert
+        let error = outcome
+            .unwrap_or_else(|_| panic!("the reader panicked on a file that is no container"))
+            .err()
+            .unwrap_or_else(|| panic!("the file was opened as a container"));
+        assert!(matches!(&error, ArchiveError::Format { .. }), "{error:?}");
+    }
+
+    #[test]
+    fn the_writer_refuses_a_name_that_leaves_the_destination() {
+        // arrange
+        let directory = TempDir::new("zip-refused-name");
+        let path = directory.join("archive.zip");
+        let mut writer = ZipArchiveWriter::create(&path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = io::Cursor::new(CONTENT.to_vec());
+
+        // act
+        let result = writer.add_file("../escape.txt", CONTENT.len() as u64, &mut content);
+
+        // assert
+        assert!(
+            matches!(
+                &result,
+                Err(ArchiveError::Refused {
+                    reason: RefusalReason::Name(EntryNameError::Traversal { .. }),
+                    ..
+                })
+            ),
+            "{result:?}"
+        );
+    }
+
+    #[test]
+    fn a_name_that_is_not_valid_utf8_is_reported_as_lossy_and_is_not_cut_short() {
+        // arrange: the name of the entry is patched after the container was
+        // written, because the writer of the container crate takes the name
+        // as a string and cannot carry a name that is not valid UTF-8. A
+        // patched container is what a foreign producer writes.
+        let directory = TempDir::new("zip-lossy-name");
+        let path = directory.join("archive.zip");
+        let mut writer = ZipArchiveWriter::create(&path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = io::Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file("notes.txt", CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| panic!("the entry could not be written: {error}"));
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+
+        let mut data = fs::read(&path)
+            .unwrap_or_else(|error| panic!("the container could not be read: {error}"));
+        let occurrences = replace_bytes(&mut data, b"notes.txt", b"no\xffes.txt");
+        assert!(occurrences > 0, "the name was not found in the container");
+        fs::write(&path, &data)
+            .unwrap_or_else(|error| panic!("the container could not be written: {error}"));
+
+        // act
+        let entries = read_container(&path);
+
+        // assert
+        assert_eq!(entries.len(), 1, "{entries:?}");
+        let file = &entries[0];
+        assert!(file.name_is_lossy, "the name was not marked as lossy");
+        assert_eq!(file.name, "no\u{fffd}es.txt");
+    }
+}

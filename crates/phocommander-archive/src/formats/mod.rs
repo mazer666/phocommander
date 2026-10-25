@@ -222,9 +222,30 @@ pub fn detect_format(path: &Path) -> Result<ContainerFormat, ArchiveError> {
     if is_tar(&signature) {
         return Ok(ContainerFormat::Tar);
     }
+    // WHY: a compressed stream can carry a TAR container. The bytes at the
+    //       beginning of the file are then the bytes of the compression and
+    //       not the bytes of the TAR, and the marker of the TAR lies further
+    //       down inside the compressed stream. The container is therefore a
+    //       TAR container — the compression only says how the entries are
+    //       packed, and `detect_tar_compression` reads it.
+    if is_compressed_stream(&signature) {
+        return Ok(ContainerFormat::Tar);
+    }
     Err(ArchiveError::Format {
         reason: format!("the format of {path:?} is not one of ZIP, TAR or 7z"),
     })
+}
+
+/// Whether the signature belongs to a compressed stream.
+///
+/// WHY: the four compressions of the TAR adapter are recognised by their
+///       first bytes. The TAR container lies inside the compressed stream,
+///       and the format of the file is therefore the format of the TAR.
+fn is_compressed_stream(signature: &[u8]) -> bool {
+    signature.starts_with(&signature::GZIP)
+        || signature.starts_with(&signature::BZIP2)
+        || signature.starts_with(&signature::XZ)
+        || signature.starts_with(&signature::ZSTD)
 }
 
 /// Detects the compression of a TAR container.
@@ -289,5 +310,259 @@ pub fn open_archive(path: &Path) -> Result<Box<dyn ArchiveReader>, ArchiveError>
             Ok(Box::new(tar::TarArchiveReader::open(path, compression)?))
         }
         ContainerFormat::SevenZ => Ok(Box::new(sevenz::SevenZArchiveReader::open(path)?)),
+    }
+}
+
+#[cfg(test)]
+// WHY: the helpers that collect the entries of a container exist only for
+// the tests. They are not part of the crate that the application uses, so
+// that the production code carries no weight it does not need.
+mod test_support;
+
+#[cfg(test)]
+// WHY: the tests of the TAR adapter live in a file of their own, because
+// the adapter and its tests together would be more than six hundred lines.
+// The file keeps the same name as the adapter, so that a reader finds the
+// tests of an adapter next to the adapter.
+mod tar_tests;
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+mod tests {
+    use super::{
+        ContainerFormat, TarCompression, detect_format, detect_tar_compression, open_archive,
+    };
+    use crate::error::ArchiveError;
+    use crate::formats::ArchiveWriter;
+    use crate::formats::sevenz::SevenZArchiveWriter;
+    use crate::formats::tar::TarArchiveWriter;
+    use crate::formats::test_support::{TempDir, collect};
+    use crate::formats::zip::ZipArchiveWriter;
+    use std::io::Cursor;
+    use std::path::Path;
+
+    /// The content that the tests write and read.
+    const CONTENT: &[u8] = b"the quick brown fox";
+
+    /// The name of the file that the tests write.
+    const FILE_NAME: &str = "docs/readme.md";
+
+    /// Writes a ZIP container with one file.
+    fn write_zip(path: &Path) {
+        let mut writer = ZipArchiveWriter::create(path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+    }
+
+    /// Writes a TAR container with one file.
+    fn write_tar(path: &Path, compression: TarCompression) {
+        let mut writer = TarArchiveWriter::create(path, compression)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+    }
+
+    /// Writes a 7z container with one file.
+    fn write_sevenz(path: &Path) {
+        let mut writer = SevenZArchiveWriter::create(path)
+            .unwrap_or_else(|error| panic!("the container {path:?} could not be created: {error}"));
+        let mut content = Cursor::new(CONTENT.to_vec());
+        writer
+            .add_file(FILE_NAME, CONTENT.len() as u64, &mut content)
+            .unwrap_or_else(|error| {
+                panic!("the entry {FILE_NAME:?} could not be written: {error}")
+            });
+        Box::new(writer).finish().unwrap_or_else(|error| {
+            panic!("the container {path:?} could not be finished: {error}")
+        });
+    }
+
+    #[test]
+    fn a_zip_container_is_recognised_by_its_magic_bytes() {
+        // arrange
+        let directory = TempDir::new("detect-zip");
+        let path = directory.join("archive.zip");
+        write_zip(&path);
+
+        // act
+        let format = detect_format(&path)
+            .unwrap_or_else(|error| panic!("the format could not be detected: {error}"));
+
+        // assert
+        assert_eq!(format, ContainerFormat::Zip);
+    }
+
+    #[test]
+    fn a_tar_container_is_recognised_by_its_magic_bytes() {
+        // arrange
+        let directory = TempDir::new("detect-tar");
+        let path = directory.join("archive.tar");
+        write_tar(&path, TarCompression::None);
+
+        // act
+        let format = detect_format(&path)
+            .unwrap_or_else(|error| panic!("the format could not be detected: {error}"));
+
+        // assert
+        assert_eq!(format, ContainerFormat::Tar);
+    }
+
+    #[test]
+    fn a_7z_container_is_recognised_by_its_magic_bytes() {
+        // arrange
+        let directory = TempDir::new("detect-sevenz");
+        let path = directory.join("archive.7z");
+        write_sevenz(&path);
+
+        // act
+        let format = detect_format(&path)
+            .unwrap_or_else(|error| panic!("the format could not be detected: {error}"));
+
+        // assert
+        assert_eq!(format, ContainerFormat::SevenZ);
+    }
+
+    #[test]
+    fn a_container_with_a_wrong_extension_is_recognised_by_its_content() {
+        // WHY: the name of a file is chosen by whoever sends it. A ZIP
+        //      container that is called ".tar" is still a ZIP container, and
+        //      the panel has to show it as one.
+        // arrange
+        let directory = TempDir::new("detect-wrong-extension");
+        let path = directory.join("archive.tar");
+        write_zip(&path);
+
+        // act
+        let format = detect_format(&path)
+            .unwrap_or_else(|error| panic!("the format could not be detected: {error}"));
+
+        // assert
+        assert_eq!(format, ContainerFormat::Zip);
+    }
+
+    #[test]
+    fn a_compressed_tar_container_is_recognised_as_a_tar_container() {
+        // WHY: FR-67 demands that a TAR container with GZip, BZip2, XZ or
+        // Zstd can be opened. The detection has to know that a compressed
+        // stream can carry a TAR container — otherwise `open_archive`
+        // refuses every compressed TAR container, and the four compressions
+        // of the adapter can never be reached.
+        //
+        //      This test states that requirement. It fails as long as
+        //      `detect_format` knows nothing but the plain TAR marker.
+        // arrange
+        let directory = TempDir::new("detect-compressed-tar");
+        let path = directory.join("archive.tar.gz");
+        write_tar(&path, TarCompression::Gzip);
+
+        // act
+        let format = detect_format(&path);
+
+        // assert
+        assert!(
+            matches!(&format, Ok(ContainerFormat::Tar)),
+            "the compressed TAR container was not recognised: {format:?}"
+        );
+    }
+
+    #[test]
+    fn the_extension_of_the_file_does_not_decide_the_format() {
+        // WHY: the extension is a hint that whoever sends the file chose;
+        //      the magic bytes are the fact. A file that is called ".zip"
+        //      but carries no container is therefore reported as an unknown
+        //      format and not as a broken ZIP container.
+        // arrange
+        let directory = TempDir::new("detect-extension");
+        let path = directory.write_file("holiday.zip", b"this is not a container at all");
+
+        // act
+        let format = detect_format(&path);
+
+        // assert
+        assert!(
+            matches!(&format, Err(ArchiveError::Format { .. })),
+            "{format:?}"
+        );
+    }
+
+    #[test]
+    fn a_file_that_is_no_container_is_an_error_and_not_a_panic() {
+        // arrange
+        let directory = TempDir::new("detect-error");
+        let path = directory.write_file("notes.txt", b"this is not a container at all");
+
+        // act
+        let outcome =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| detect_format(&path)));
+
+        // assert
+        let format = outcome
+            .unwrap_or_else(|_| panic!("the detection panicked on a file that is no container"));
+        assert!(
+            matches!(&format, Err(ArchiveError::Format { .. })),
+            "{format:?}"
+        );
+    }
+
+    #[test]
+    fn the_compression_of_a_tar_container_is_recognised_by_its_magic_bytes() {
+        // arrange, act, assert
+        for (compression, name) in [
+            (TarCompression::None, "archive.tar"),
+            (TarCompression::Gzip, "archive.tar.gz"),
+            (TarCompression::BZip2, "archive.tar.bz2"),
+            (TarCompression::Xz, "archive.tar.xz"),
+            (TarCompression::Zstd, "archive.tar.zst"),
+        ] {
+            let directory = TempDir::new("detect-compression");
+            let path = directory.join(name);
+            write_tar(&path, compression);
+
+            let detected = detect_tar_compression(&path)
+                .unwrap_or_else(|error| panic!("the compression could not be detected: {error}"));
+
+            assert_eq!(detected, compression, "{name}");
+        }
+    }
+
+    #[test]
+    fn open_archive_opens_a_container_of_every_format() {
+        // arrange
+        let directory = TempDir::new("detect-open");
+        let zip = directory.join("archive.zip");
+        let tar = directory.join("archive.tar");
+        let sevenz = directory.join("archive.7z");
+        write_zip(&zip);
+        write_tar(&tar, TarCompression::None);
+        write_sevenz(&sevenz);
+
+        // act, assert
+        for path in [zip, tar, sevenz] {
+            let mut reader = open_archive(&path).unwrap_or_else(|error| {
+                panic!("the container {path:?} could not be opened: {error}")
+            });
+            let entries = collect(reader.as_mut()).unwrap_or_else(|error| {
+                panic!("the container {path:?} could not be read: {error}")
+            });
+            assert_eq!(entries.len(), 1, "{path:?}");
+            assert_eq!(entries[0].content.as_deref(), Some(CONTENT), "{path:?}");
+        }
     }
 }
