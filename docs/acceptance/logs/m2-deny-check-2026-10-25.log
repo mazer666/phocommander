@@ -1,0 +1,3631 @@
+warning[duplicate]: found 2 duplicate entries for crate 'bitflags'
+   ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:46:1
+   │  
+46 │ ╭ bitflags 1.3.2 registry+https://github.com/rust-lang/crates.io-index
+47 │ │ bitflags 2.13.2 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ bitflags v1.3.2
+     ├── core-graphics v0.23.2
+     │   └── winit v0.30.13
+     │       ├── accesskit_winit v0.34.1
+     │       │   └── egui-winit v0.37.0
+     │       │       └── eframe v0.37.0
+     │       │           ├── phocommander-desktop v0.1.0
+     │       │           └── phocommander-ui v0.1.0
+     │       │               ├── phocommander-desktop v0.1.0 (*)
+     │       │               └── (dev) phocommander-integration-tests v0.1.0
+     │       ├── eframe v0.37.0 (*)
+     │       ├── egui-wgpu v0.37.0
+     │       │   └── eframe v0.37.0 (*)
+     │       └── egui-winit v0.37.0 (*)
+     ├── core-graphics-types v0.1.3
+     │   └── core-graphics v0.23.2 (*)
+     └── redox_syscall v0.4.1
+         └── winit v0.30.13 (*)
+   ├ bitflags v2.13.2
+     ├── android-activity v0.6.1
+     │   └── winit v0.30.13
+     │       ├── accesskit_winit v0.34.1
+     │       │   └── egui-winit v0.37.0
+     │       │       └── eframe v0.37.0
+     │       │           ├── phocommander-desktop v0.1.0
+     │       │           └── phocommander-ui v0.1.0
+     │       │               ├── phocommander-desktop v0.1.0 (*)
+     │       │               └── (dev) phocommander-integration-tests v0.1.0
+     │       ├── eframe v0.37.0 (*)
+     │       ├── egui-wgpu v0.37.0
+     │       │   └── eframe v0.37.0 (*)
+     │       └── egui-winit v0.37.0 (*)
+     ├── calloop v0.13.0
+     │   ├── calloop-wayland-source v0.3.0
+     │   │   └── smithay-client-toolkit v0.19.2
+     │   │       ├── sctk-adwaita v0.10.1
+     │   │       │   └── winit v0.30.13 (*)
+     │   │       └── winit v0.30.13 (*)
+     │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   └── winit v0.30.13 (*)
+     ├── calloop v0.14.5
+     │   ├── calloop-wayland-source v0.4.1
+     │   │   └── smithay-client-toolkit v0.20.0
+     │   │       └── smithay-clipboard v0.7.3
+     │   │           └── egui-winit v0.37.0 (*)
+     │   └── smithay-client-toolkit v0.20.0 (*)
+     ├── egui v0.37.0
+     │   ├── eframe v0.37.0 (*)
+     │   ├── egui-wgpu v0.37.0 (*)
+     │   ├── egui-winit v0.37.0 (*)
+     │   ├── egui_kittest v0.37.0
+     │   │   └── (dev) phocommander-ui v0.1.0 (*)
+     │   ├── phocommander-desktop v0.1.0 (*)
+     │   └── phocommander-ui v0.1.0 (*)
+     ├── harfrust v0.12.0
+     │   └── epaint v0.37.0
+     │       ├── egui v0.37.0 (*)
+     │       ├── egui-wgpu v0.37.0 (*)
+     │       └── egui_system_font_provider v0.37.0
+     │           └── eframe v0.37.0 (*)
+     ├── libredox v0.1.25
+     │   ├── orbclient v0.3.55
+     │   │   └── winit v0.30.13 (*)
+     │   └── redox_users v0.5.3
+     │       └── dirs-sys v0.5.0
+     │           └── dirs v7.0.0
+     │               └── phocommander-platform v0.1.0
+     │                   └── phocommander-desktop v0.1.0 (*)
+     ├── naga v30.0.1
+     │   ├── wgpu-core v30.0.1
+     │   │   └── wgpu v30.0.1
+     │   │       ├── eframe v0.37.0 (*)
+     │   │       └── egui-wgpu v0.37.0 (*)
+     │   ├── wgpu-hal v30.0.1
+     │   │   ├── wgpu v30.0.1 (*)
+     │   │   ├── wgpu-core v30.0.1 (*)
+     │   │   ├── wgpu-core-deps-apple v30.0.1
+     │   │   │   └── wgpu-core v30.0.1 (*)
+     │   │   ├── wgpu-core-deps-emscripten v30.0.1
+     │   │   │   └── wgpu-core v30.0.1 (*)
+     │   │   ├── wgpu-core-deps-wasm v30.0.1
+     │   │   │   └── wgpu-core v30.0.1 (*)
+     │   │   └── wgpu-core-deps-windows-linux-android v30.0.1
+     │   │       └── wgpu-core v30.0.1 (*)
+     │   └── wgpu-naga-bridge v30.0.1
+     │       ├── wgpu-core v30.0.1 (*)
+     │       └── wgpu-hal v30.0.1 (*)
+     ├── ndk v0.9.0
+     │   ├── android-activity v0.6.1 (*)
+     │   └── winit v0.30.13 (*)
+     ├── nix v0.31.3
+     │   └── zip v9.1.0
+     │       ├── phocommander-archive v0.1.0
+     │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+     │       └── (dev) phocommander-integration-tests v0.1.0 (*)
+     ├── objc2-app-kit v0.2.2
+     │   ├── accesskit_macos v0.27.1
+     │   │   └── accesskit_winit v0.34.1 (*)
+     │   └── winit v0.30.13 (*)
+     ├── objc2-app-kit v0.3.2
+     │   ├── arboard v3.7.0
+     │   │   └── egui-winit v0.37.0 (*)
+     │   ├── eframe v0.37.0 (*)
+     │   ├── egui-winit v0.37.0 (*)
+     │   └── webbrowser v1.2.5
+     │       └── egui-winit v0.37.0 (*)
+     ├── objc2-core-foundation v0.3.2
+     │   ├── arboard v3.7.0 (*)
+     │   ├── fontique v0.11.1
+     │   │   └── egui_system_font_provider v0.37.0 (*)
+     │   ├── objc2-core-graphics v0.3.2
+     │   │   ├── arboard v3.7.0 (*)
+     │   │   ├── objc2-app-kit v0.3.2 (*)
+     │   │   ├── objc2-quartz-core v0.3.2
+     │   │   │   ├── raw-window-metal v1.1.0
+     │   │   │   │   └── wgpu-hal v30.0.1 (*)
+     │   │   │   └── wgpu-hal v30.0.1 (*)
+     │   │   └── wgpu-hal v30.0.1 (*)
+     │   ├── objc2-core-text v0.3.2
+     │   │   └── fontique v0.11.1 (*)
+     │   ├── objc2-foundation v0.3.2
+     │   │   ├── arboard v3.7.0 (*)
+     │   │   ├── eframe v0.37.0 (*)
+     │   │   ├── egui-winit v0.37.0 (*)
+     │   │   ├── fontique v0.11.1 (*)
+     │   │   ├── objc2-app-kit v0.3.2 (*)
+     │   │   ├── objc2-metal v0.3.2
+     │   │   │   ├── objc2-quartz-core v0.3.2 (*)
+     │   │   │   └── wgpu-hal v30.0.1 (*)
+     │   │   ├── objc2-quartz-core v0.3.2 (*)
+     │   │   ├── objc2-ui-kit v0.3.2
+     │   │   │   └── egui-winit v0.37.0 (*)
+     │   │   ├── raw-window-metal v1.1.0 (*)
+     │   │   ├── webbrowser v1.2.5 (*)
+     │   │   └── wgpu-hal v30.0.1 (*)
+     │   ├── objc2-quartz-core v0.3.2 (*)
+     │   ├── objc2-ui-kit v0.3.2 (*)
+     │   ├── raw-window-metal v1.1.0 (*)
+     │   └── wgpu-hal v30.0.1 (*)
+     ├── objc2-core-graphics v0.3.2 (*)
+     ├── objc2-core-text v0.3.2 (*)
+     ├── objc2-foundation v0.2.2
+     │   ├── accesskit_ios v0.2.1
+     │   │   └── accesskit_winit v0.34.1 (*)
+     │   ├── accesskit_macos v0.27.1 (*)
+     │   ├── objc2-app-kit v0.2.2 (*)
+     │   ├── objc2-ui-kit v0.2.2
+     │   │   ├── accesskit_ios v0.2.1 (*)
+     │   │   └── winit v0.30.13 (*)
+     │   └── winit v0.30.13 (*)
+     ├── objc2-foundation v0.3.2 (*)
+     ├── objc2-metal v0.3.2 (*)
+     ├── objc2-quartz-core v0.3.2 (*)
+     ├── objc2-ui-kit v0.2.2 (*)
+     ├── objc2-ui-kit v0.3.2 (*)
+     ├── png v0.18.1
+     │   ├── glifo v0.3.0
+     │   │   └── vello_cpu v0.2.0
+     │   │       └── epaint v0.37.0 (*)
+     │   ├── image v0.25.10
+     │   │   ├── arboard v3.7.0 (*)
+     │   │   └── eframe v0.37.0 (*)
+     │   ├── vello_common v0.2.0
+     │   │   ├── glifo v0.3.0 (*)
+     │   │   └── vello_cpu v0.2.0 (*)
+     │   └── vello_cpu v0.2.0 (*)
+     ├── proptest v1.12.0
+     │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+     │   └── (dev) phocommander-ui v0.1.0 (*)
+     ├── redox_syscall v0.5.18
+     │   └── parking_lot_core v0.9.12
+     │       └── parking_lot v0.12.5
+     │           ├── arboard v3.7.0 (*)
+     │           ├── eframe v0.37.0 (*)
+     │           ├── epaint v0.37.0 (*)
+     │           ├── wgpu v30.0.1 (*)
+     │           ├── wgpu-core v30.0.1 (*)
+     │           └── wgpu-hal v30.0.1 (*)
+     ├── redox_syscall v0.9.5
+     │   └── libredox v0.1.25 (*)
+     ├── rustix v0.38.44
+     │   ├── calloop v0.13.0 (*)
+     │   ├── calloop-wayland-source v0.3.0 (*)
+     │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   └── winit v0.30.13 (*)
+     ├── rustix v1.1.5
+     │   ├── async-io v2.6.0
+     │   │   ├── async-process v2.5.0
+     │   │   │   └── zbus v5.19.0
+     │   │   │       ├── accesskit_unix v0.24.0
+     │   │   │       │   └── accesskit_winit v0.34.1 (*)
+     │   │   │       ├── atspi-common v0.13.0
+     │   │   │       │   ├── accesskit_atspi_common v0.21.0
+     │   │   │       │   │   └── accesskit_unix v0.24.0 (*)
+     │   │   │       │   ├── atspi v0.29.0
+     │   │   │       │   │   └── accesskit_unix v0.24.0 (*)
+     │   │   │       │   └── atspi-proxies v0.13.0
+     │   │   │       │       └── atspi v0.29.0 (*)
+     │   │   │       └── atspi-proxies v0.13.0 (*)
+     │   │   ├── async-signal v0.2.14
+     │   │   │   └── async-process v2.5.0 (*)
+     │   │   └── zbus v5.19.0 (*)
+     │   ├── async-process v2.5.0 (*)
+     │   ├── async-signal v0.2.14 (*)
+     │   ├── calloop v0.14.5 (*)
+     │   ├── calloop-wayland-source v0.4.1 (*)
+     │   ├── cap-primitives v4.0.3
+     │   │   └── cap-std v4.0.3
+     │   │       └── phocommander-archive v0.1.0 (*)
+     │   ├── cap-std v4.0.3 (*)
+     │   ├── fs-set-times v0.20.3
+     │   │   └── cap-primitives v4.0.3 (*)
+     │   ├── gethostname v1.1.0
+     │   │   └── x11rb v0.13.2
+     │   │       ├── arboard v3.7.0 (*)
+     │   │       └── winit v0.30.13 (*)
+     │   ├── polling v3.11.0
+     │   │   ├── async-io v2.6.0 (*)
+     │   │   ├── calloop v0.13.0 (*)
+     │   │   └── calloop v0.14.5 (*)
+     │   ├── rustix-linux-procfs v0.1.1
+     │   │   └── cap-primitives v4.0.3 (*)
+     │   ├── smithay-client-toolkit v0.20.0 (*)
+     │   ├── tempfile v3.27.0
+     │   │   ├── proptest v1.12.0 (*)
+     │   │   ├── rusty-fork v0.3.1
+     │   │   │   └── proptest v1.12.0 (*)
+     │   │   └── uds_windows v1.2.1
+     │   │       └── zbus v5.19.0 (*)
+     │   ├── wayland-backend v0.3.17
+     │   │   ├── calloop-wayland-source v0.3.0 (*)
+     │   │   ├── calloop-wayland-source v0.4.1 (*)
+     │   │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   │   ├── smithay-client-toolkit v0.20.0 (*)
+     │   │   ├── smithay-clipboard v0.7.3 (*)
+     │   │   ├── wayland-client v0.31.15
+     │   │   │   ├── calloop-wayland-source v0.3.0 (*)
+     │   │   │   ├── calloop-wayland-source v0.4.1 (*)
+     │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+     │   │   │   ├── wayland-cursor v0.31.14
+     │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+     │   │   │   ├── wayland-protocols v0.32.13
+     │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+     │   │   │   │   ├── wayland-protocols-experimental v20250721.0.1
+     │   │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+     │   │   │   │   ├── wayland-protocols-misc v0.3.12
+     │   │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+     │   │   │   │   ├── wayland-protocols-plasma v0.3.12
+     │   │   │   │   │   └── winit v0.30.13 (*)
+     │   │   │   │   ├── wayland-protocols-wlr v0.3.12
+     │   │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+     │   │   │   │   │   └── wl-clipboard-rs v0.9.4
+     │   │   │   │   │       └── arboard v3.7.0 (*)
+     │   │   │   │   ├── winit v0.30.13 (*)
+     │   │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+     │   │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+     │   │   │   ├── wayland-protocols-misc v0.3.12 (*)
+     │   │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+     │   │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+     │   │   │   ├── winit v0.30.13 (*)
+     │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+     │   │   ├── wayland-csd-frame v0.3.0
+     │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+     │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+     │   │   ├── wayland-protocols v0.32.13 (*)
+     │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+     │   │   ├── wayland-protocols-misc v0.3.12 (*)
+     │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+     │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+     │   │   ├── winit v0.30.13 (*)
+     │   │   └── wl-clipboard-rs v0.9.4 (*)
+     │   ├── wayland-client v0.31.15 (*)
+     │   ├── wayland-cursor v0.31.14 (*)
+     │   ├── wl-clipboard-rs v0.9.4 (*)
+     │   ├── x11rb v0.13.2 (*)
+     │   ├── xattr v1.6.1
+     │   │   └── tar v0.4.46
+     │   │       └── phocommander-archive v0.1.0 (*)
+     │   └── zbus v5.19.0 (*)
+     ├── smithay-client-toolkit v0.19.2 (*)
+     ├── smithay-client-toolkit v0.20.0 (*)
+     ├── spirv v0.4.0+sdk-1.4.341.0
+     │   └── naga v30.0.1 (*)
+     ├── wayland-client v0.31.15 (*)
+     ├── wayland-csd-frame v0.3.0 (*)
+     ├── wayland-protocols v0.32.13 (*)
+     ├── wayland-protocols-experimental v20250721.0.1 (*)
+     ├── wayland-protocols-misc v0.3.12 (*)
+     ├── wayland-protocols-plasma v0.3.12 (*)
+     ├── wayland-protocols-wlr v0.3.12 (*)
+     ├── wgpu v30.0.1 (*)
+     ├── wgpu-core v30.0.1 (*)
+     ├── wgpu-hal v30.0.1 (*)
+     ├── wgpu-types v30.0.1
+     │   ├── wgpu v30.0.1 (*)
+     │   ├── wgpu-core v30.0.1 (*)
+     │   ├── wgpu-hal v30.0.1 (*)
+     │   └── wgpu-naga-bridge v30.0.1 (*)
+     ├── winit v0.30.13 (*)
+     ├── winx v0.36.4
+     │   └── cap-primitives v4.0.3 (*)
+     └── xkbcommon-dl v0.4.2
+         └── winit v0.30.13 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'block2'
+   ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:50:1
+   │  
+50 │ ╭ block2 0.5.1 registry+https://github.com/rust-lang/crates.io-index
+51 │ │ block2 0.6.2 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ block2 v0.5.1
+     ├── objc2-foundation v0.2.2
+     │   ├── accesskit_ios v0.2.1
+     │   │   └── accesskit_winit v0.34.1
+     │   │       └── egui-winit v0.37.0
+     │   │           └── eframe v0.37.0
+     │   │               ├── phocommander-desktop v0.1.0
+     │   │               └── phocommander-ui v0.1.0
+     │   │                   ├── phocommander-desktop v0.1.0 (*)
+     │   │                   └── (dev) phocommander-integration-tests v0.1.0
+     │   ├── accesskit_macos v0.27.1
+     │   │   └── accesskit_winit v0.34.1 (*)
+     │   ├── objc2-app-kit v0.2.2
+     │   │   ├── accesskit_macos v0.27.1 (*)
+     │   │   └── winit v0.30.13
+     │   │       ├── accesskit_winit v0.34.1 (*)
+     │   │       ├── eframe v0.37.0 (*)
+     │   │       ├── egui-wgpu v0.37.0
+     │   │       │   └── eframe v0.37.0 (*)
+     │   │       └── egui-winit v0.37.0 (*)
+     │   ├── objc2-ui-kit v0.2.2
+     │   │   ├── accesskit_ios v0.2.1 (*)
+     │   │   └── winit v0.30.13 (*)
+     │   └── winit v0.30.13 (*)
+     └── winit v0.30.13 (*)
+   ├ block2 v0.6.2
+     ├── egui-winit v0.37.0
+     │   └── eframe v0.37.0
+     │       ├── phocommander-desktop v0.1.0
+     │       └── phocommander-ui v0.1.0
+     │           ├── phocommander-desktop v0.1.0 (*)
+     │           └── (dev) phocommander-integration-tests v0.1.0
+     ├── objc2-app-kit v0.3.2
+     │   ├── arboard v3.7.0
+     │   │   └── egui-winit v0.37.0 (*)
+     │   ├── eframe v0.37.0 (*)
+     │   ├── egui-winit v0.37.0 (*)
+     │   └── webbrowser v1.2.5
+     │       └── egui-winit v0.37.0 (*)
+     ├── objc2-foundation v0.3.2
+     │   ├── arboard v3.7.0 (*)
+     │   ├── eframe v0.37.0 (*)
+     │   ├── egui-winit v0.37.0 (*)
+     │   ├── fontique v0.11.1
+     │   │   └── egui_system_font_provider v0.37.0
+     │   │       └── eframe v0.37.0 (*)
+     │   ├── objc2-app-kit v0.3.2 (*)
+     │   ├── objc2-metal v0.3.2
+     │   │   ├── objc2-quartz-core v0.3.2
+     │   │   │   ├── raw-window-metal v1.1.0
+     │   │   │   │   └── wgpu-hal v30.0.1
+     │   │   │   │       ├── wgpu v30.0.1
+     │   │   │   │       │   ├── eframe v0.37.0 (*)
+     │   │   │   │       │   └── egui-wgpu v0.37.0
+     │   │   │   │       │       └── eframe v0.37.0 (*)
+     │   │   │   │       ├── wgpu-core v30.0.1
+     │   │   │   │       │   └── wgpu v30.0.1 (*)
+     │   │   │   │       ├── wgpu-core-deps-apple v30.0.1
+     │   │   │   │       │   └── wgpu-core v30.0.1 (*)
+     │   │   │   │       ├── wgpu-core-deps-emscripten v30.0.1
+     │   │   │   │       │   └── wgpu-core v30.0.1 (*)
+     │   │   │   │       ├── wgpu-core-deps-wasm v30.0.1
+     │   │   │   │       │   └── wgpu-core v30.0.1 (*)
+     │   │   │   │       └── wgpu-core-deps-windows-linux-android v30.0.1
+     │   │   │   │           └── wgpu-core v30.0.1 (*)
+     │   │   │   └── wgpu-hal v30.0.1 (*)
+     │   │   └── wgpu-hal v30.0.1 (*)
+     │   ├── objc2-quartz-core v0.3.2 (*)
+     │   ├── objc2-ui-kit v0.3.2
+     │   │   └── egui-winit v0.37.0 (*)
+     │   ├── raw-window-metal v1.1.0 (*)
+     │   ├── webbrowser v1.2.5 (*)
+     │   └── wgpu-hal v30.0.1 (*)
+     ├── objc2-metal v0.3.2 (*)
+     └── wgpu-hal v30.0.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'calloop'
+   ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:60:1
+   │  
+60 │ ╭ calloop 0.13.0 registry+https://github.com/rust-lang/crates.io-index
+61 │ │ calloop 0.14.5 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ calloop v0.13.0
+     ├── calloop-wayland-source v0.3.0
+     │   └── smithay-client-toolkit v0.19.2
+     │       ├── sctk-adwaita v0.10.1
+     │       │   └── winit v0.30.13
+     │       │       ├── accesskit_winit v0.34.1
+     │       │       │   └── egui-winit v0.37.0
+     │       │       │       └── eframe v0.37.0
+     │       │       │           ├── phocommander-desktop v0.1.0
+     │       │       │           └── phocommander-ui v0.1.0
+     │       │       │               ├── phocommander-desktop v0.1.0 (*)
+     │       │       │               └── (dev) phocommander-integration-tests v0.1.0
+     │       │       ├── eframe v0.37.0 (*)
+     │       │       ├── egui-wgpu v0.37.0
+     │       │       │   └── eframe v0.37.0 (*)
+     │       │       └── egui-winit v0.37.0 (*)
+     │       └── winit v0.30.13 (*)
+     ├── smithay-client-toolkit v0.19.2 (*)
+     └── winit v0.30.13 (*)
+   ├ calloop v0.14.5
+     ├── calloop-wayland-source v0.4.1
+     │   └── smithay-client-toolkit v0.20.0
+     │       └── smithay-clipboard v0.7.3
+     │           └── egui-winit v0.37.0
+     │               └── eframe v0.37.0
+     │                   ├── phocommander-desktop v0.1.0
+     │                   └── phocommander-ui v0.1.0
+     │                       ├── phocommander-desktop v0.1.0 (*)
+     │                       └── (dev) phocommander-integration-tests v0.1.0
+     └── smithay-client-toolkit v0.20.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'calloop-wayland-source'
+   ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:62:1
+   │  
+62 │ ╭ calloop-wayland-source 0.3.0 registry+https://github.com/rust-lang/crates.io-index
+63 │ │ calloop-wayland-source 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ calloop-wayland-source v0.3.0
+     └── smithay-client-toolkit v0.19.2
+         ├── sctk-adwaita v0.10.1
+         │   └── winit v0.30.13
+         │       ├── accesskit_winit v0.34.1
+         │       │   └── egui-winit v0.37.0
+         │       │       └── eframe v0.37.0
+         │       │           ├── phocommander-desktop v0.1.0
+         │       │           └── phocommander-ui v0.1.0
+         │       │               ├── phocommander-desktop v0.1.0 (*)
+         │       │               └── (dev) phocommander-integration-tests v0.1.0
+         │       ├── eframe v0.37.0 (*)
+         │       ├── egui-wgpu v0.37.0
+         │       │   └── eframe v0.37.0 (*)
+         │       └── egui-winit v0.37.0 (*)
+         └── winit v0.30.13 (*)
+   ├ calloop-wayland-source v0.4.1
+     └── smithay-client-toolkit v0.20.0
+         └── smithay-clipboard v0.7.3
+             └── egui-winit v0.37.0
+                 └── eframe v0.37.0
+                     ├── phocommander-desktop v0.1.0
+                     └── phocommander-ui v0.1.0
+                         ├── phocommander-desktop v0.1.0 (*)
+                         └── (dev) phocommander-integration-tests v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'foldhash'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:150:1
+    │  
+150 │ ╭ foldhash 0.1.5 registry+https://github.com/rust-lang/crates.io-index
+151 │ │ foldhash 0.2.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ foldhash v0.1.5
+      └── hashbrown v0.15.5
+          └── petgraph v0.8.3
+              └── tree_magic_mini v3.2.2
+                  └── wl-clipboard-rs v0.9.4
+                      └── arboard v3.7.0
+                          └── egui-winit v0.37.0
+                              └── eframe v0.37.0
+                                  ├── phocommander-desktop v0.1.0
+                                  └── phocommander-ui v0.1.0
+                                      ├── phocommander-desktop v0.1.0 (*)
+                                      └── (dev) phocommander-integration-tests v0.1.0
+    ├ foldhash v0.2.0
+      ├── glifo v0.3.0
+      │   └── vello_cpu v0.2.0
+      │       └── epaint v0.37.0
+      │           ├── egui v0.37.0
+      │           │   ├── eframe v0.37.0
+      │           │   │   ├── phocommander-desktop v0.1.0
+      │           │   │   └── phocommander-ui v0.1.0
+      │           │   │       ├── phocommander-desktop v0.1.0 (*)
+      │           │   │       └── (dev) phocommander-integration-tests v0.1.0
+      │           │   ├── egui-wgpu v0.37.0
+      │           │   │   └── eframe v0.37.0 (*)
+      │           │   ├── egui-winit v0.37.0
+      │           │   │   └── eframe v0.37.0 (*)
+      │           │   ├── egui_kittest v0.37.0
+      │           │   │   └── (dev) phocommander-ui v0.1.0 (*)
+      │           │   ├── phocommander-desktop v0.1.0 (*)
+      │           │   └── phocommander-ui v0.1.0 (*)
+      │           ├── egui-wgpu v0.37.0 (*)
+      │           └── egui_system_font_provider v0.37.0
+      │               └── eframe v0.37.0 (*)
+      ├── hashbrown v0.16.1
+      │   └── gpu-allocator v0.28.0
+      │       └── wgpu-hal v30.0.1
+      │           ├── wgpu v30.0.1
+      │           │   ├── eframe v0.37.0 (*)
+      │           │   └── egui-wgpu v0.37.0 (*)
+      │           ├── wgpu-core v30.0.1
+      │           │   └── wgpu v30.0.1 (*)
+      │           ├── wgpu-core-deps-apple v30.0.1
+      │           │   └── wgpu-core v30.0.1 (*)
+      │           ├── wgpu-core-deps-emscripten v30.0.1
+      │           │   └── wgpu-core v30.0.1 (*)
+      │           ├── wgpu-core-deps-wasm v30.0.1
+      │           │   └── wgpu-core v30.0.1 (*)
+      │           └── wgpu-core-deps-windows-linux-android v30.0.1
+      │               └── wgpu-core v30.0.1 (*)
+      └── hashbrown v0.17.1
+          ├── accesskit_consumer v0.39.1
+          │   ├── accesskit_atspi_common v0.21.0
+          │   │   └── accesskit_unix v0.24.0
+          │   │       └── accesskit_winit v0.34.1
+          │   │           └── egui-winit v0.37.0 (*)
+          │   ├── accesskit_ios v0.2.1
+          │   │   └── accesskit_winit v0.34.1 (*)
+          │   ├── accesskit_macos v0.27.1
+          │   │   └── accesskit_winit v0.34.1 (*)
+          │   ├── accesskit_windows v0.35.1
+          │   │   └── accesskit_winit v0.34.1 (*)
+          │   └── kittest v0.5.0
+          │       └── egui_kittest v0.37.0 (*)
+          ├── accesskit_ios v0.2.1 (*)
+          ├── accesskit_macos v0.27.1 (*)
+          ├── accesskit_windows v0.35.1 (*)
+          ├── fontique v0.11.1
+          │   └── egui_system_font_provider v0.37.0 (*)
+          ├── glifo v0.3.0 (*)
+          ├── indexmap v2.14.2
+          │   ├── naga v30.0.1
+          │   │   ├── wgpu-core v30.0.1 (*)
+          │   │   ├── wgpu-hal v30.0.1 (*)
+          │   │   └── wgpu-naga-bridge v30.0.1
+          │   │       ├── wgpu-core v30.0.1 (*)
+          │   │       └── wgpu-hal v30.0.1 (*)
+          │   ├── naga-types v30.0.1
+          │   │   ├── naga v30.0.1 (*)
+          │   │   ├── wgpu-core v30.0.1 (*)
+          │   │   ├── wgpu-hal v30.0.1 (*)
+          │   │   └── wgpu-types v30.0.1
+          │   │       ├── wgpu v30.0.1 (*)
+          │   │       ├── wgpu-core v30.0.1 (*)
+          │   │       ├── wgpu-hal v30.0.1 (*)
+          │   │       └── wgpu-naga-bridge v30.0.1 (*)
+          │   ├── petgraph v0.8.3
+          │   │   └── tree_magic_mini v3.2.2
+          │   │       └── wl-clipboard-rs v0.9.4
+          │   │           └── arboard v3.7.0
+          │   │               └── egui-winit v0.37.0 (*)
+          │   ├── toml_edit v0.25.17+spec-1.1.0
+          │   │   └── proc-macro-crate v3.5.0
+          │   │       ├── num_enum_derive v0.7.6
+          │   │       │   └── num_enum v0.7.6
+          │   │       │       ├── android-activity v0.6.1
+          │   │       │       │   └── winit v0.30.13
+          │   │       │       │       ├── accesskit_winit v0.34.1 (*)
+          │   │       │       │       ├── eframe v0.37.0 (*)
+          │   │       │       │       ├── egui-wgpu v0.37.0 (*)
+          │   │       │       │       └── egui-winit v0.37.0 (*)
+          │   │       │       └── ndk v0.9.0
+          │   │       │           ├── android-activity v0.6.1 (*)
+          │   │       │           └── winit v0.30.13 (*)
+          │   │       ├── zbus_macros v5.19.0
+          │   │       │   └── zbus v5.19.0
+          │   │       │       ├── accesskit_unix v0.24.0 (*)
+          │   │       │       ├── atspi-common v0.13.0
+          │   │       │       │   ├── accesskit_atspi_common v0.21.0 (*)
+          │   │       │       │   ├── atspi v0.29.0
+          │   │       │       │   │   └── accesskit_unix v0.24.0 (*)
+          │   │       │       │   └── atspi-proxies v0.13.0
+          │   │       │       │       └── atspi v0.29.0 (*)
+          │   │       │       └── atspi-proxies v0.13.0 (*)
+          │   │       └── zvariant_derive v5.15.1
+          │   │           └── zvariant v5.15.1
+          │   │               ├── accesskit_atspi_common v0.21.0 (*)
+          │   │               ├── atspi-common v0.13.0 (*)
+          │   │               ├── zbus v5.19.0 (*)
+          │   │               ├── zbus-lockstep v0.5.2
+          │   │               │   ├── atspi-common v0.13.0 (*)
+          │   │               │   └── zbus-lockstep-macros v0.5.2
+          │   │               │       └── atspi-common v0.13.0 (*)
+          │   │               ├── zbus-lockstep-macros v0.5.2 (*)
+          │   │               ├── zbus_macros v5.19.0 (*)
+          │   │               ├── zbus_names v4.3.5
+          │   │               │   ├── atspi-common v0.13.0 (*)
+          │   │               │   ├── zbus v5.19.0 (*)
+          │   │               │   ├── zbus_macros v5.19.0 (*)
+          │   │               │   └── zbus_xml v5.2.1
+          │   │               │       ├── zbus-lockstep v0.5.2 (*)
+          │   │               │       └── zbus-lockstep-macros v0.5.2 (*)
+          │   │               └── zbus_xml v5.2.1 (*)
+          │   ├── wgpu-core v30.0.1 (*)
+          │   └── zip v9.1.0
+          │       ├── phocommander-archive v0.1.0
+          │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+          │       └── (dev) phocommander-integration-tests v0.1.0 (*)
+          ├── naga v30.0.1 (*)
+          ├── naga-types v30.0.1 (*)
+          ├── vello_cpu v0.2.0 (*)
+          ├── wgpu v30.0.1 (*)
+          ├── wgpu-core v30.0.1 (*)
+          └── wgpu-hal v30.0.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'getrandom'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:166:1
+    │  
+166 │ ╭ getrandom 0.3.4 registry+https://github.com/rust-lang/crates.io-index
+167 │ │ getrandom 0.4.3 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ getrandom v0.3.4
+      └── ahash v0.8.12
+          ├── eframe v0.37.0
+          │   ├── phocommander-desktop v0.1.0
+          │   └── phocommander-ui v0.1.0
+          │       ├── phocommander-desktop v0.1.0 (*)
+          │       └── (dev) phocommander-integration-tests v0.1.0
+          ├── egui v0.37.0
+          │   ├── eframe v0.37.0 (*)
+          │   ├── egui-wgpu v0.37.0
+          │   │   └── eframe v0.37.0 (*)
+          │   ├── egui-winit v0.37.0
+          │   │   └── eframe v0.37.0 (*)
+          │   ├── egui_kittest v0.37.0
+          │   │   └── (dev) phocommander-ui v0.1.0 (*)
+          │   ├── phocommander-desktop v0.1.0 (*)
+          │   └── phocommander-ui v0.1.0 (*)
+          ├── egui-wgpu v0.37.0 (*)
+          ├── epaint v0.37.0
+          │   ├── egui v0.37.0 (*)
+          │   ├── egui-wgpu v0.37.0 (*)
+          │   └── egui_system_font_provider v0.37.0
+          │       └── eframe v0.37.0 (*)
+          └── winit v0.30.13
+              ├── accesskit_winit v0.34.1
+              │   └── egui-winit v0.37.0 (*)
+              ├── eframe v0.37.0 (*)
+              ├── egui-wgpu v0.37.0 (*)
+              └── egui-winit v0.37.0 (*)
+    ├ getrandom v0.4.3
+      ├── jobserver v0.1.35
+      │   └── cc v1.10.0
+      │       ├── (build) alloca v0.4.0
+      │       │   └── criterion v0.8.2
+      │       │       └── (dev) phocommander-integration-tests v0.1.0
+      │       ├── (build) android-activity v0.6.1
+      │       │   └── winit v0.30.13
+      │       │       ├── accesskit_winit v0.34.1
+      │       │       │   └── egui-winit v0.37.0
+      │       │       │       └── eframe v0.37.0
+      │       │       │           ├── phocommander-desktop v0.1.0
+      │       │       │           └── phocommander-ui v0.1.0
+      │       │       │               ├── phocommander-desktop v0.1.0 (*)
+      │       │       │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       │       ├── eframe v0.37.0 (*)
+      │       │       ├── egui-wgpu v0.37.0
+      │       │       │   └── eframe v0.37.0 (*)
+      │       │       └── egui-winit v0.37.0 (*)
+      │       ├── (build) wayland-backend v0.3.17
+      │       │   ├── calloop-wayland-source v0.3.0
+      │       │   │   └── smithay-client-toolkit v0.19.2
+      │       │   │       ├── sctk-adwaita v0.10.1
+      │       │   │       │   └── winit v0.30.13 (*)
+      │       │   │       └── winit v0.30.13 (*)
+      │       │   ├── calloop-wayland-source v0.4.1
+      │       │   │   └── smithay-client-toolkit v0.20.0
+      │       │   │       └── smithay-clipboard v0.7.3
+      │       │   │           └── egui-winit v0.37.0 (*)
+      │       │   ├── smithay-client-toolkit v0.19.2 (*)
+      │       │   ├── smithay-client-toolkit v0.20.0 (*)
+      │       │   ├── smithay-clipboard v0.7.3 (*)
+      │       │   ├── wayland-client v0.31.15
+      │       │   │   ├── calloop-wayland-source v0.3.0 (*)
+      │       │   │   ├── calloop-wayland-source v0.4.1 (*)
+      │       │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │       │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │       │   │   ├── wayland-cursor v0.31.14
+      │       │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │       │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │       │   │   ├── wayland-protocols v0.32.13
+      │       │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │       │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │       │   │   │   ├── wayland-protocols-experimental v20250721.0.1
+      │       │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │       │   │   │   ├── wayland-protocols-misc v0.3.12
+      │       │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │       │   │   │   ├── wayland-protocols-plasma v0.3.12
+      │       │   │   │   │   └── winit v0.30.13 (*)
+      │       │   │   │   ├── wayland-protocols-wlr v0.3.12
+      │       │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │       │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │       │   │   │   │   └── wl-clipboard-rs v0.9.4
+      │       │   │   │   │       └── arboard v3.7.0
+      │       │   │   │   │           └── egui-winit v0.37.0 (*)
+      │       │   │   │   ├── winit v0.30.13 (*)
+      │       │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │       │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │       │   │   ├── wayland-protocols-misc v0.3.12 (*)
+      │       │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │       │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │       │   │   ├── winit v0.30.13 (*)
+      │       │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │       │   ├── wayland-csd-frame v0.3.0
+      │       │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │       │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │       │   ├── wayland-protocols v0.32.13 (*)
+      │       │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │       │   ├── wayland-protocols-misc v0.3.12 (*)
+      │       │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │       │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │       │   ├── winit v0.30.13 (*)
+      │       │   └── wl-clipboard-rs v0.9.4 (*)
+      │       └── (build) zstd-sys v2.1.2+zstd.1.5.7
+      │           └── zstd-safe v8.2.0
+      │               └── zstd v0.14.3
+      │                   ├── phocommander-archive v0.1.0
+      │                   │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │                   └── zip v9.1.0
+      │                       ├── phocommander-archive v0.1.0 (*)
+      │                       └── (dev) phocommander-integration-tests v0.1.0 (*)
+      ├── rand v0.10.3
+      │   └── proptest v1.12.0
+      │       ├── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       └── (dev) phocommander-ui v0.1.0 (*)
+      ├── sevenz-rust2 v0.24.1
+      │   └── phocommander-archive v0.1.0 (*)
+      ├── tempfile v3.27.0
+      │   ├── proptest v1.12.0 (*)
+      │   ├── rusty-fork v0.3.1
+      │   │   └── proptest v1.12.0 (*)
+      │   └── uds_windows v1.2.1
+      │       └── zbus v5.19.0
+      │           ├── accesskit_unix v0.24.0
+      │           │   └── accesskit_winit v0.34.1 (*)
+      │           ├── atspi-common v0.13.0
+      │           │   ├── accesskit_atspi_common v0.21.0
+      │           │   │   └── accesskit_unix v0.24.0 (*)
+      │           │   ├── atspi v0.29.0
+      │           │   │   └── accesskit_unix v0.24.0 (*)
+      │           │   └── atspi-proxies v0.13.0
+      │           │       └── atspi v0.29.0 (*)
+      │           └── atspi-proxies v0.13.0 (*)
+      └── zip v9.1.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'hashbrown'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:176:1
+    │  
+176 │ ╭ hashbrown 0.15.5 registry+https://github.com/rust-lang/crates.io-index
+177 │ │ hashbrown 0.16.1 registry+https://github.com/rust-lang/crates.io-index
+178 │ │ hashbrown 0.17.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ hashbrown v0.15.5
+      └── petgraph v0.8.3
+          └── tree_magic_mini v3.2.2
+              └── wl-clipboard-rs v0.9.4
+                  └── arboard v3.7.0
+                      └── egui-winit v0.37.0
+                          └── eframe v0.37.0
+                              ├── phocommander-desktop v0.1.0
+                              └── phocommander-ui v0.1.0
+                                  ├── phocommander-desktop v0.1.0 (*)
+                                  └── (dev) phocommander-integration-tests v0.1.0
+    ├ hashbrown v0.16.1
+      └── gpu-allocator v0.28.0
+          └── wgpu-hal v30.0.1
+              ├── wgpu v30.0.1
+              │   ├── eframe v0.37.0
+              │   │   ├── phocommander-desktop v0.1.0
+              │   │   └── phocommander-ui v0.1.0
+              │   │       ├── phocommander-desktop v0.1.0 (*)
+              │   │       └── (dev) phocommander-integration-tests v0.1.0
+              │   └── egui-wgpu v0.37.0
+              │       └── eframe v0.37.0 (*)
+              ├── wgpu-core v30.0.1
+              │   └── wgpu v30.0.1 (*)
+              ├── wgpu-core-deps-apple v30.0.1
+              │   └── wgpu-core v30.0.1 (*)
+              ├── wgpu-core-deps-emscripten v30.0.1
+              │   └── wgpu-core v30.0.1 (*)
+              ├── wgpu-core-deps-wasm v30.0.1
+              │   └── wgpu-core v30.0.1 (*)
+              └── wgpu-core-deps-windows-linux-android v30.0.1
+                  └── wgpu-core v30.0.1 (*)
+    ├ hashbrown v0.17.1
+      ├── accesskit_consumer v0.39.1
+      │   ├── accesskit_atspi_common v0.21.0
+      │   │   └── accesskit_unix v0.24.0
+      │   │       └── accesskit_winit v0.34.1
+      │   │           └── egui-winit v0.37.0
+      │   │               └── eframe v0.37.0
+      │   │                   ├── phocommander-desktop v0.1.0
+      │   │                   └── phocommander-ui v0.1.0
+      │   │                       ├── phocommander-desktop v0.1.0 (*)
+      │   │                       └── (dev) phocommander-integration-tests v0.1.0
+      │   ├── accesskit_ios v0.2.1
+      │   │   └── accesskit_winit v0.34.1 (*)
+      │   ├── accesskit_macos v0.27.1
+      │   │   └── accesskit_winit v0.34.1 (*)
+      │   ├── accesskit_windows v0.35.1
+      │   │   └── accesskit_winit v0.34.1 (*)
+      │   └── kittest v0.5.0
+      │       └── egui_kittest v0.37.0
+      │           └── (dev) phocommander-ui v0.1.0 (*)
+      ├── accesskit_ios v0.2.1 (*)
+      ├── accesskit_macos v0.27.1 (*)
+      ├── accesskit_windows v0.35.1 (*)
+      ├── fontique v0.11.1
+      │   └── egui_system_font_provider v0.37.0
+      │       └── eframe v0.37.0 (*)
+      ├── glifo v0.3.0
+      │   └── vello_cpu v0.2.0
+      │       └── epaint v0.37.0
+      │           ├── egui v0.37.0
+      │           │   ├── eframe v0.37.0 (*)
+      │           │   ├── egui-wgpu v0.37.0
+      │           │   │   └── eframe v0.37.0 (*)
+      │           │   ├── egui-winit v0.37.0 (*)
+      │           │   ├── egui_kittest v0.37.0 (*)
+      │           │   ├── phocommander-desktop v0.1.0 (*)
+      │           │   └── phocommander-ui v0.1.0 (*)
+      │           ├── egui-wgpu v0.37.0 (*)
+      │           └── egui_system_font_provider v0.37.0 (*)
+      ├── indexmap v2.14.2
+      │   ├── naga v30.0.1
+      │   │   ├── wgpu-core v30.0.1
+      │   │   │   └── wgpu v30.0.1
+      │   │   │       ├── eframe v0.37.0 (*)
+      │   │   │       └── egui-wgpu v0.37.0 (*)
+      │   │   ├── wgpu-hal v30.0.1
+      │   │   │   ├── wgpu v30.0.1 (*)
+      │   │   │   ├── wgpu-core v30.0.1 (*)
+      │   │   │   ├── wgpu-core-deps-apple v30.0.1
+      │   │   │   │   └── wgpu-core v30.0.1 (*)
+      │   │   │   ├── wgpu-core-deps-emscripten v30.0.1
+      │   │   │   │   └── wgpu-core v30.0.1 (*)
+      │   │   │   ├── wgpu-core-deps-wasm v30.0.1
+      │   │   │   │   └── wgpu-core v30.0.1 (*)
+      │   │   │   └── wgpu-core-deps-windows-linux-android v30.0.1
+      │   │   │       └── wgpu-core v30.0.1 (*)
+      │   │   └── wgpu-naga-bridge v30.0.1
+      │   │       ├── wgpu-core v30.0.1 (*)
+      │   │       └── wgpu-hal v30.0.1 (*)
+      │   ├── naga-types v30.0.1
+      │   │   ├── naga v30.0.1 (*)
+      │   │   ├── wgpu-core v30.0.1 (*)
+      │   │   ├── wgpu-hal v30.0.1 (*)
+      │   │   └── wgpu-types v30.0.1
+      │   │       ├── wgpu v30.0.1 (*)
+      │   │       ├── wgpu-core v30.0.1 (*)
+      │   │       ├── wgpu-hal v30.0.1 (*)
+      │   │       └── wgpu-naga-bridge v30.0.1 (*)
+      │   ├── petgraph v0.8.3
+      │   │   └── tree_magic_mini v3.2.2
+      │   │       └── wl-clipboard-rs v0.9.4
+      │   │           └── arboard v3.7.0
+      │   │               └── egui-winit v0.37.0 (*)
+      │   ├── toml_edit v0.25.17+spec-1.1.0
+      │   │   └── proc-macro-crate v3.5.0
+      │   │       ├── num_enum_derive v0.7.6
+      │   │       │   └── num_enum v0.7.6
+      │   │       │       ├── android-activity v0.6.1
+      │   │       │       │   └── winit v0.30.13
+      │   │       │       │       ├── accesskit_winit v0.34.1 (*)
+      │   │       │       │       ├── eframe v0.37.0 (*)
+      │   │       │       │       ├── egui-wgpu v0.37.0 (*)
+      │   │       │       │       └── egui-winit v0.37.0 (*)
+      │   │       │       └── ndk v0.9.0
+      │   │       │           ├── android-activity v0.6.1 (*)
+      │   │       │           └── winit v0.30.13 (*)
+      │   │       ├── zbus_macros v5.19.0
+      │   │       │   └── zbus v5.19.0
+      │   │       │       ├── accesskit_unix v0.24.0 (*)
+      │   │       │       ├── atspi-common v0.13.0
+      │   │       │       │   ├── accesskit_atspi_common v0.21.0 (*)
+      │   │       │       │   ├── atspi v0.29.0
+      │   │       │       │   │   └── accesskit_unix v0.24.0 (*)
+      │   │       │       │   └── atspi-proxies v0.13.0
+      │   │       │       │       └── atspi v0.29.0 (*)
+      │   │       │       └── atspi-proxies v0.13.0 (*)
+      │   │       └── zvariant_derive v5.15.1
+      │   │           └── zvariant v5.15.1
+      │   │               ├── accesskit_atspi_common v0.21.0 (*)
+      │   │               ├── atspi-common v0.13.0 (*)
+      │   │               ├── zbus v5.19.0 (*)
+      │   │               ├── zbus-lockstep v0.5.2
+      │   │               │   ├── atspi-common v0.13.0 (*)
+      │   │               │   └── zbus-lockstep-macros v0.5.2
+      │   │               │       └── atspi-common v0.13.0 (*)
+      │   │               ├── zbus-lockstep-macros v0.5.2 (*)
+      │   │               ├── zbus_macros v5.19.0 (*)
+      │   │               ├── zbus_names v4.3.5
+      │   │               │   ├── atspi-common v0.13.0 (*)
+      │   │               │   ├── zbus v5.19.0 (*)
+      │   │               │   ├── zbus_macros v5.19.0 (*)
+      │   │               │   └── zbus_xml v5.2.1
+      │   │               │       ├── zbus-lockstep v0.5.2 (*)
+      │   │               │       └── zbus-lockstep-macros v0.5.2 (*)
+      │   │               └── zbus_xml v5.2.1 (*)
+      │   ├── wgpu-core v30.0.1 (*)
+      │   └── zip v9.1.0
+      │       ├── phocommander-archive v0.1.0
+      │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       └── (dev) phocommander-integration-tests v0.1.0 (*)
+      ├── naga v30.0.1 (*)
+      ├── naga-types v30.0.1 (*)
+      ├── vello_cpu v0.2.0 (*)
+      ├── wgpu v30.0.1 (*)
+      ├── wgpu-core v30.0.1 (*)
+      └── wgpu-hal v30.0.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'io-lifetimes'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:222:1
+    │  
+222 │ ╭ io-lifetimes 2.0.4 registry+https://github.com/rust-lang/crates.io-index
+223 │ │ io-lifetimes 3.0.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ io-lifetimes v2.0.4
+      └── fs-set-times v0.20.3
+          └── cap-primitives v4.0.3
+              └── cap-std v4.0.3
+                  └── phocommander-archive v0.1.0
+                      └── (dev) phocommander-integration-tests v0.1.0
+    ├ io-lifetimes v3.0.1
+      ├── cap-primitives v4.0.3
+      │   └── cap-std v4.0.3
+      │       └── phocommander-archive v0.1.0
+      │           └── (dev) phocommander-integration-tests v0.1.0
+      ├── cap-std v4.0.3 (*)
+      └── io-extras v0.19.0
+          ├── cap-primitives v4.0.3 (*)
+          └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'jni-sys'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:231:1
+    │  
+231 │ ╭ jni-sys 0.3.1 registry+https://github.com/rust-lang/crates.io-index
+232 │ │ jni-sys 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ jni-sys v0.3.1
+      ├── ndk v0.9.0
+      │   ├── android-activity v0.6.1
+      │   │   └── winit v0.30.13
+      │   │       ├── accesskit_winit v0.34.1
+      │   │       │   └── egui-winit v0.37.0
+      │   │       │       └── eframe v0.37.0
+      │   │       │           ├── phocommander-desktop v0.1.0
+      │   │       │           └── phocommander-ui v0.1.0
+      │   │       │               ├── phocommander-desktop v0.1.0 (*)
+      │   │       │               └── (dev) phocommander-integration-tests v0.1.0
+      │   │       ├── eframe v0.37.0 (*)
+      │   │       ├── egui-wgpu v0.37.0
+      │   │       │   └── eframe v0.37.0 (*)
+      │   │       └── egui-winit v0.37.0 (*)
+      │   └── winit v0.30.13 (*)
+      └── ndk-sys v0.6.0+11769913
+          ├── android-activity v0.6.1 (*)
+          ├── ndk v0.9.0 (*)
+          └── wgpu-hal v30.0.1
+              ├── wgpu v30.0.1
+              │   ├── eframe v0.37.0 (*)
+              │   └── egui-wgpu v0.37.0 (*)
+              ├── wgpu-core v30.0.1
+              │   └── wgpu v30.0.1 (*)
+              ├── wgpu-core-deps-apple v30.0.1
+              │   └── wgpu-core v30.0.1 (*)
+              ├── wgpu-core-deps-emscripten v30.0.1
+              │   └── wgpu-core v30.0.1 (*)
+              ├── wgpu-core-deps-wasm v30.0.1
+              │   └── wgpu-core v30.0.1 (*)
+              └── wgpu-core-deps-windows-linux-android v30.0.1
+                  └── wgpu-core v30.0.1 (*)
+    ├ jni-sys v0.4.1
+      ├── jni v0.22.4
+      │   ├── android-activity v0.6.1
+      │   │   └── winit v0.30.13
+      │   │       ├── accesskit_winit v0.34.1
+      │   │       │   └── egui-winit v0.37.0
+      │   │       │       └── eframe v0.37.0
+      │   │       │           ├── phocommander-desktop v0.1.0
+      │   │       │           └── phocommander-ui v0.1.0
+      │   │       │               ├── phocommander-desktop v0.1.0 (*)
+      │   │       │               └── (dev) phocommander-integration-tests v0.1.0
+      │   │       ├── eframe v0.37.0 (*)
+      │   │       ├── egui-wgpu v0.37.0
+      │   │       │   └── eframe v0.37.0 (*)
+      │   │       └── egui-winit v0.37.0 (*)
+      │   └── webbrowser v1.2.5
+      │       └── egui-winit v0.37.0 (*)
+      └── jni-sys v0.3.1
+          ├── ndk v0.9.0
+          │   ├── android-activity v0.6.1 (*)
+          │   └── winit v0.30.13 (*)
+          └── ndk-sys v0.6.0+11769913
+              ├── android-activity v0.6.1 (*)
+              ├── ndk v0.9.0 (*)
+              └── wgpu-hal v30.0.1
+                  ├── wgpu v30.0.1
+                  │   ├── eframe v0.37.0 (*)
+                  │   └── egui-wgpu v0.37.0 (*)
+                  ├── wgpu-core v30.0.1
+                  │   └── wgpu v30.0.1 (*)
+                  ├── wgpu-core-deps-apple v30.0.1
+                  │   └── wgpu-core v30.0.1 (*)
+                  ├── wgpu-core-deps-emscripten v30.0.1
+                  │   └── wgpu-core v30.0.1 (*)
+                  ├── wgpu-core-deps-wasm v30.0.1
+                  │   └── wgpu-core v30.0.1 (*)
+                  └── wgpu-core-deps-windows-linux-android v30.0.1
+                      └── wgpu-core v30.0.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'linux-raw-sys'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:246:1
+    │  
+246 │ ╭ linux-raw-sys 0.4.15 registry+https://github.com/rust-lang/crates.io-index
+247 │ │ linux-raw-sys 0.12.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ linux-raw-sys v0.4.15
+      └── rustix v0.38.44
+          ├── calloop v0.13.0
+          │   ├── calloop-wayland-source v0.3.0
+          │   │   └── smithay-client-toolkit v0.19.2
+          │   │       ├── sctk-adwaita v0.10.1
+          │   │       │   └── winit v0.30.13
+          │   │       │       ├── accesskit_winit v0.34.1
+          │   │       │       │   └── egui-winit v0.37.0
+          │   │       │       │       └── eframe v0.37.0
+          │   │       │       │           ├── phocommander-desktop v0.1.0
+          │   │       │       │           └── phocommander-ui v0.1.0
+          │   │       │       │               ├── phocommander-desktop v0.1.0 (*)
+          │   │       │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │   │       │       ├── eframe v0.37.0 (*)
+          │   │       │       ├── egui-wgpu v0.37.0
+          │   │       │       │   └── eframe v0.37.0 (*)
+          │   │       │       └── egui-winit v0.37.0 (*)
+          │   │       └── winit v0.30.13 (*)
+          │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   └── winit v0.30.13 (*)
+          ├── calloop-wayland-source v0.3.0 (*)
+          ├── smithay-client-toolkit v0.19.2 (*)
+          └── winit v0.30.13 (*)
+    ├ linux-raw-sys v0.12.1
+      └── rustix v1.1.5
+          ├── async-io v2.6.0
+          │   ├── async-process v2.5.0
+          │   │   └── zbus v5.19.0
+          │   │       ├── accesskit_unix v0.24.0
+          │   │       │   └── accesskit_winit v0.34.1
+          │   │       │       └── egui-winit v0.37.0
+          │   │       │           └── eframe v0.37.0
+          │   │       │               ├── phocommander-desktop v0.1.0
+          │   │       │               └── phocommander-ui v0.1.0
+          │   │       │                   ├── phocommander-desktop v0.1.0 (*)
+          │   │       │                   └── (dev) phocommander-integration-tests v0.1.0
+          │   │       ├── atspi-common v0.13.0
+          │   │       │   ├── accesskit_atspi_common v0.21.0
+          │   │       │   │   └── accesskit_unix v0.24.0 (*)
+          │   │       │   ├── atspi v0.29.0
+          │   │       │   │   └── accesskit_unix v0.24.0 (*)
+          │   │       │   └── atspi-proxies v0.13.0
+          │   │       │       └── atspi v0.29.0 (*)
+          │   │       └── atspi-proxies v0.13.0 (*)
+          │   ├── async-signal v0.2.14
+          │   │   └── async-process v2.5.0 (*)
+          │   └── zbus v5.19.0 (*)
+          ├── async-process v2.5.0 (*)
+          ├── async-signal v0.2.14 (*)
+          ├── calloop v0.14.5
+          │   ├── calloop-wayland-source v0.4.1
+          │   │   └── smithay-client-toolkit v0.20.0
+          │   │       └── smithay-clipboard v0.7.3
+          │   │           └── egui-winit v0.37.0 (*)
+          │   └── smithay-client-toolkit v0.20.0 (*)
+          ├── calloop-wayland-source v0.4.1 (*)
+          ├── cap-primitives v4.0.3
+          │   └── cap-std v4.0.3
+          │       └── phocommander-archive v0.1.0
+          │           └── (dev) phocommander-integration-tests v0.1.0 (*)
+          ├── cap-std v4.0.3 (*)
+          ├── fs-set-times v0.20.3
+          │   └── cap-primitives v4.0.3 (*)
+          ├── gethostname v1.1.0
+          │   └── x11rb v0.13.2
+          │       ├── arboard v3.7.0
+          │       │   └── egui-winit v0.37.0 (*)
+          │       └── winit v0.30.13
+          │           ├── accesskit_winit v0.34.1 (*)
+          │           ├── eframe v0.37.0 (*)
+          │           ├── egui-wgpu v0.37.0
+          │           │   └── eframe v0.37.0 (*)
+          │           └── egui-winit v0.37.0 (*)
+          ├── polling v3.11.0
+          │   ├── async-io v2.6.0 (*)
+          │   ├── calloop v0.13.0
+          │   │   ├── calloop-wayland-source v0.3.0
+          │   │   │   └── smithay-client-toolkit v0.19.2
+          │   │   │       ├── sctk-adwaita v0.10.1
+          │   │   │       │   └── winit v0.30.13 (*)
+          │   │   │       └── winit v0.30.13 (*)
+          │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   │   └── winit v0.30.13 (*)
+          │   └── calloop v0.14.5 (*)
+          ├── rustix-linux-procfs v0.1.1
+          │   └── cap-primitives v4.0.3 (*)
+          ├── smithay-client-toolkit v0.20.0 (*)
+          ├── tempfile v3.27.0
+          │   ├── proptest v1.12.0
+          │   │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+          │   │   └── (dev) phocommander-ui v0.1.0 (*)
+          │   ├── rusty-fork v0.3.1
+          │   │   └── proptest v1.12.0 (*)
+          │   └── uds_windows v1.2.1
+          │       └── zbus v5.19.0 (*)
+          ├── wayland-backend v0.3.17
+          │   ├── calloop-wayland-source v0.3.0 (*)
+          │   ├── calloop-wayland-source v0.4.1 (*)
+          │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   ├── smithay-client-toolkit v0.20.0 (*)
+          │   ├── smithay-clipboard v0.7.3 (*)
+          │   ├── wayland-client v0.31.15
+          │   │   ├── calloop-wayland-source v0.3.0 (*)
+          │   │   ├── calloop-wayland-source v0.4.1 (*)
+          │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   │   ├── smithay-client-toolkit v0.20.0 (*)
+          │   │   ├── wayland-cursor v0.31.14
+          │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │   │   ├── wayland-protocols v0.32.13
+          │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+          │   │   │   ├── wayland-protocols-experimental v20250721.0.1
+          │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │   │   │   ├── wayland-protocols-misc v0.3.12
+          │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │   │   │   ├── wayland-protocols-plasma v0.3.12
+          │   │   │   │   └── winit v0.30.13 (*)
+          │   │   │   ├── wayland-protocols-wlr v0.3.12
+          │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+          │   │   │   │   └── wl-clipboard-rs v0.9.4
+          │   │   │   │       └── arboard v3.7.0 (*)
+          │   │   │   ├── winit v0.30.13 (*)
+          │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+          │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+          │   │   ├── wayland-protocols-misc v0.3.12 (*)
+          │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+          │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+          │   │   ├── winit v0.30.13 (*)
+          │   │   └── wl-clipboard-rs v0.9.4 (*)
+          │   ├── wayland-csd-frame v0.3.0
+          │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │   ├── wayland-protocols v0.32.13 (*)
+          │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+          │   ├── wayland-protocols-misc v0.3.12 (*)
+          │   ├── wayland-protocols-plasma v0.3.12 (*)
+          │   ├── wayland-protocols-wlr v0.3.12 (*)
+          │   ├── winit v0.30.13 (*)
+          │   └── wl-clipboard-rs v0.9.4 (*)
+          ├── wayland-client v0.31.15 (*)
+          ├── wayland-cursor v0.31.14 (*)
+          ├── wl-clipboard-rs v0.9.4 (*)
+          ├── x11rb v0.13.2 (*)
+          ├── xattr v1.6.1
+          │   └── tar v0.4.46
+          │       └── phocommander-archive v0.1.0 (*)
+          └── zbus v5.19.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'miniz_oxide'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:259:1
+    │  
+259 │ ╭ miniz_oxide 0.8.9 registry+https://github.com/rust-lang/crates.io-index
+260 │ │ miniz_oxide 0.9.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ miniz_oxide v0.8.9
+      └── png v0.18.1
+          ├── glifo v0.3.0
+          │   └── vello_cpu v0.2.0
+          │       └── epaint v0.37.0
+          │           ├── egui v0.37.0
+          │           │   ├── eframe v0.37.0
+          │           │   │   ├── phocommander-desktop v0.1.0
+          │           │   │   └── phocommander-ui v0.1.0
+          │           │   │       ├── phocommander-desktop v0.1.0 (*)
+          │           │   │       └── (dev) phocommander-integration-tests v0.1.0
+          │           │   ├── egui-wgpu v0.37.0
+          │           │   │   └── eframe v0.37.0 (*)
+          │           │   ├── egui-winit v0.37.0
+          │           │   │   └── eframe v0.37.0 (*)
+          │           │   ├── egui_kittest v0.37.0
+          │           │   │   └── (dev) phocommander-ui v0.1.0 (*)
+          │           │   ├── phocommander-desktop v0.1.0 (*)
+          │           │   └── phocommander-ui v0.1.0 (*)
+          │           ├── egui-wgpu v0.37.0 (*)
+          │           └── egui_system_font_provider v0.37.0
+          │               └── eframe v0.37.0 (*)
+          ├── image v0.25.10
+          │   ├── arboard v3.7.0
+          │   │   └── egui-winit v0.37.0 (*)
+          │   └── eframe v0.37.0 (*)
+          ├── vello_common v0.2.0
+          │   ├── glifo v0.3.0 (*)
+          │   └── vello_cpu v0.2.0 (*)
+          └── vello_cpu v0.2.0 (*)
+    ├ miniz_oxide v0.9.1
+      └── flate2 v1.1.10
+          ├── phocommander-archive v0.1.0
+          │   └── (dev) phocommander-integration-tests v0.1.0
+          ├── png v0.18.1
+          │   ├── glifo v0.3.0
+          │   │   └── vello_cpu v0.2.0
+          │   │       └── epaint v0.37.0
+          │   │           ├── egui v0.37.0
+          │   │           │   ├── eframe v0.37.0
+          │   │           │   │   ├── phocommander-desktop v0.1.0
+          │   │           │   │   └── phocommander-ui v0.1.0
+          │   │           │   │       ├── phocommander-desktop v0.1.0 (*)
+          │   │           │   │       └── (dev) phocommander-integration-tests v0.1.0 (*)
+          │   │           │   ├── egui-wgpu v0.37.0
+          │   │           │   │   └── eframe v0.37.0 (*)
+          │   │           │   ├── egui-winit v0.37.0
+          │   │           │   │   └── eframe v0.37.0 (*)
+          │   │           │   ├── egui_kittest v0.37.0
+          │   │           │   │   └── (dev) phocommander-ui v0.1.0 (*)
+          │   │           │   ├── phocommander-desktop v0.1.0 (*)
+          │   │           │   └── phocommander-ui v0.1.0 (*)
+          │   │           ├── egui-wgpu v0.37.0 (*)
+          │   │           └── egui_system_font_provider v0.37.0
+          │   │               └── eframe v0.37.0 (*)
+          │   ├── image v0.25.10
+          │   │   ├── arboard v3.7.0
+          │   │   │   └── egui-winit v0.37.0 (*)
+          │   │   └── eframe v0.37.0 (*)
+          │   ├── vello_common v0.2.0
+          │   │   ├── glifo v0.3.0 (*)
+          │   │   └── vello_cpu v0.2.0 (*)
+          │   └── vello_cpu v0.2.0 (*)
+          ├── tiff v0.11.3
+          │   └── image v0.25.10 (*)
+          └── zip v9.1.0
+              ├── phocommander-archive v0.1.0 (*)
+              └── (dev) phocommander-integration-tests v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'objc2'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:275:1
+    │  
+275 │ ╭ objc2 0.5.3 registry+https://github.com/rust-lang/crates.io-index
+276 │ │ objc2 0.6.5 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ objc2 v0.5.3
+      ├── accesskit_ios v0.2.1
+      │   └── accesskit_winit v0.34.1
+      │       └── egui-winit v0.37.0
+      │           └── eframe v0.37.0
+      │               ├── phocommander-desktop v0.1.0
+      │               └── phocommander-ui v0.1.0
+      │                   ├── phocommander-desktop v0.1.0 (*)
+      │                   └── (dev) phocommander-integration-tests v0.1.0
+      ├── accesskit_macos v0.27.1
+      │   └── accesskit_winit v0.34.1 (*)
+      ├── block2 v0.5.1
+      │   ├── objc2-foundation v0.2.2
+      │   │   ├── accesskit_ios v0.2.1 (*)
+      │   │   ├── accesskit_macos v0.27.1 (*)
+      │   │   ├── objc2-app-kit v0.2.2
+      │   │   │   ├── accesskit_macos v0.27.1 (*)
+      │   │   │   └── winit v0.30.13
+      │   │   │       ├── accesskit_winit v0.34.1 (*)
+      │   │   │       ├── eframe v0.37.0 (*)
+      │   │   │       ├── egui-wgpu v0.37.0
+      │   │   │       │   └── eframe v0.37.0 (*)
+      │   │   │       └── egui-winit v0.37.0 (*)
+      │   │   ├── objc2-ui-kit v0.2.2
+      │   │   │   ├── accesskit_ios v0.2.1 (*)
+      │   │   │   └── winit v0.30.13 (*)
+      │   │   └── winit v0.30.13 (*)
+      │   └── winit v0.30.13 (*)
+      ├── objc2-app-kit v0.2.2 (*)
+      ├── objc2-foundation v0.2.2 (*)
+      ├── objc2-ui-kit v0.2.2 (*)
+      └── winit v0.30.13 (*)
+    ├ objc2 v0.6.5
+      ├── arboard v3.7.0
+      │   └── egui-winit v0.37.0
+      │       └── eframe v0.37.0
+      │           ├── phocommander-desktop v0.1.0
+      │           └── phocommander-ui v0.1.0
+      │               ├── phocommander-desktop v0.1.0 (*)
+      │               └── (dev) phocommander-integration-tests v0.1.0
+      ├── block2 v0.6.2
+      │   ├── egui-winit v0.37.0 (*)
+      │   ├── objc2-app-kit v0.3.2
+      │   │   ├── arboard v3.7.0 (*)
+      │   │   ├── eframe v0.37.0 (*)
+      │   │   ├── egui-winit v0.37.0 (*)
+      │   │   └── webbrowser v1.2.5
+      │   │       └── egui-winit v0.37.0 (*)
+      │   ├── objc2-foundation v0.3.2
+      │   │   ├── arboard v3.7.0 (*)
+      │   │   ├── eframe v0.37.0 (*)
+      │   │   ├── egui-winit v0.37.0 (*)
+      │   │   ├── fontique v0.11.1
+      │   │   │   └── egui_system_font_provider v0.37.0
+      │   │   │       └── eframe v0.37.0 (*)
+      │   │   ├── objc2-app-kit v0.3.2 (*)
+      │   │   ├── objc2-metal v0.3.2
+      │   │   │   ├── objc2-quartz-core v0.3.2
+      │   │   │   │   ├── raw-window-metal v1.1.0
+      │   │   │   │   │   └── wgpu-hal v30.0.1
+      │   │   │   │   │       ├── wgpu v30.0.1
+      │   │   │   │   │       │   ├── eframe v0.37.0 (*)
+      │   │   │   │   │       │   └── egui-wgpu v0.37.0
+      │   │   │   │   │       │       └── eframe v0.37.0 (*)
+      │   │   │   │   │       ├── wgpu-core v30.0.1
+      │   │   │   │   │       │   └── wgpu v30.0.1 (*)
+      │   │   │   │   │       ├── wgpu-core-deps-apple v30.0.1
+      │   │   │   │   │       │   └── wgpu-core v30.0.1 (*)
+      │   │   │   │   │       ├── wgpu-core-deps-emscripten v30.0.1
+      │   │   │   │   │       │   └── wgpu-core v30.0.1 (*)
+      │   │   │   │   │       ├── wgpu-core-deps-wasm v30.0.1
+      │   │   │   │   │       │   └── wgpu-core v30.0.1 (*)
+      │   │   │   │   │       └── wgpu-core-deps-windows-linux-android v30.0.1
+      │   │   │   │   │           └── wgpu-core v30.0.1 (*)
+      │   │   │   │   └── wgpu-hal v30.0.1 (*)
+      │   │   │   └── wgpu-hal v30.0.1 (*)
+      │   │   ├── objc2-quartz-core v0.3.2 (*)
+      │   │   ├── objc2-ui-kit v0.3.2
+      │   │   │   └── egui-winit v0.37.0 (*)
+      │   │   ├── raw-window-metal v1.1.0 (*)
+      │   │   ├── webbrowser v1.2.5 (*)
+      │   │   └── wgpu-hal v30.0.1 (*)
+      │   ├── objc2-metal v0.3.2 (*)
+      │   └── wgpu-hal v30.0.1 (*)
+      ├── eframe v0.37.0 (*)
+      ├── egui-winit v0.37.0 (*)
+      ├── fontique v0.11.1 (*)
+      ├── objc2-app-kit v0.3.2 (*)
+      ├── objc2-core-foundation v0.3.2
+      │   ├── arboard v3.7.0 (*)
+      │   ├── fontique v0.11.1 (*)
+      │   ├── objc2-core-graphics v0.3.2
+      │   │   ├── arboard v3.7.0 (*)
+      │   │   ├── objc2-app-kit v0.3.2 (*)
+      │   │   ├── objc2-quartz-core v0.3.2 (*)
+      │   │   └── wgpu-hal v30.0.1 (*)
+      │   ├── objc2-core-text v0.3.2
+      │   │   └── fontique v0.11.1 (*)
+      │   ├── objc2-foundation v0.3.2 (*)
+      │   ├── objc2-quartz-core v0.3.2 (*)
+      │   ├── objc2-ui-kit v0.3.2 (*)
+      │   ├── raw-window-metal v1.1.0 (*)
+      │   └── wgpu-hal v30.0.1 (*)
+      ├── objc2-core-graphics v0.3.2 (*)
+      ├── objc2-foundation v0.3.2 (*)
+      ├── objc2-metal v0.3.2 (*)
+      ├── objc2-quartz-core v0.3.2 (*)
+      ├── objc2-ui-kit v0.3.2 (*)
+      ├── raw-window-metal v1.1.0 (*)
+      ├── webbrowser v1.2.5 (*)
+      └── wgpu-hal v30.0.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'objc2-app-kit'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:277:1
+    │  
+277 │ ╭ objc2-app-kit 0.2.2 registry+https://github.com/rust-lang/crates.io-index
+278 │ │ objc2-app-kit 0.3.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ objc2-app-kit v0.2.2
+      ├── accesskit_macos v0.27.1
+      │   └── accesskit_winit v0.34.1
+      │       └── egui-winit v0.37.0
+      │           └── eframe v0.37.0
+      │               ├── phocommander-desktop v0.1.0
+      │               └── phocommander-ui v0.1.0
+      │                   ├── phocommander-desktop v0.1.0 (*)
+      │                   └── (dev) phocommander-integration-tests v0.1.0
+      └── winit v0.30.13
+          ├── accesskit_winit v0.34.1 (*)
+          ├── eframe v0.37.0 (*)
+          ├── egui-wgpu v0.37.0
+          │   └── eframe v0.37.0 (*)
+          └── egui-winit v0.37.0 (*)
+    ├ objc2-app-kit v0.3.2
+      ├── arboard v3.7.0
+      │   └── egui-winit v0.37.0
+      │       └── eframe v0.37.0
+      │           ├── phocommander-desktop v0.1.0
+      │           └── phocommander-ui v0.1.0
+      │               ├── phocommander-desktop v0.1.0 (*)
+      │               └── (dev) phocommander-integration-tests v0.1.0
+      ├── eframe v0.37.0 (*)
+      ├── egui-winit v0.37.0 (*)
+      └── webbrowser v1.2.5
+          └── egui-winit v0.37.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'objc2-foundation'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:283:1
+    │  
+283 │ ╭ objc2-foundation 0.2.2 registry+https://github.com/rust-lang/crates.io-index
+284 │ │ objc2-foundation 0.3.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ objc2-foundation v0.2.2
+      ├── accesskit_ios v0.2.1
+      │   └── accesskit_winit v0.34.1
+      │       └── egui-winit v0.37.0
+      │           └── eframe v0.37.0
+      │               ├── phocommander-desktop v0.1.0
+      │               └── phocommander-ui v0.1.0
+      │                   ├── phocommander-desktop v0.1.0 (*)
+      │                   └── (dev) phocommander-integration-tests v0.1.0
+      ├── accesskit_macos v0.27.1
+      │   └── accesskit_winit v0.34.1 (*)
+      ├── objc2-app-kit v0.2.2
+      │   ├── accesskit_macos v0.27.1 (*)
+      │   └── winit v0.30.13
+      │       ├── accesskit_winit v0.34.1 (*)
+      │       ├── eframe v0.37.0 (*)
+      │       ├── egui-wgpu v0.37.0
+      │       │   └── eframe v0.37.0 (*)
+      │       └── egui-winit v0.37.0 (*)
+      ├── objc2-ui-kit v0.2.2
+      │   ├── accesskit_ios v0.2.1 (*)
+      │   └── winit v0.30.13 (*)
+      └── winit v0.30.13 (*)
+    ├ objc2-foundation v0.3.2
+      ├── arboard v3.7.0
+      │   └── egui-winit v0.37.0
+      │       └── eframe v0.37.0
+      │           ├── phocommander-desktop v0.1.0
+      │           └── phocommander-ui v0.1.0
+      │               ├── phocommander-desktop v0.1.0 (*)
+      │               └── (dev) phocommander-integration-tests v0.1.0
+      ├── eframe v0.37.0 (*)
+      ├── egui-winit v0.37.0 (*)
+      ├── fontique v0.11.1
+      │   └── egui_system_font_provider v0.37.0
+      │       └── eframe v0.37.0 (*)
+      ├── objc2-app-kit v0.3.2
+      │   ├── arboard v3.7.0 (*)
+      │   ├── eframe v0.37.0 (*)
+      │   ├── egui-winit v0.37.0 (*)
+      │   └── webbrowser v1.2.5
+      │       └── egui-winit v0.37.0 (*)
+      ├── objc2-metal v0.3.2
+      │   ├── objc2-quartz-core v0.3.2
+      │   │   ├── raw-window-metal v1.1.0
+      │   │   │   └── wgpu-hal v30.0.1
+      │   │   │       ├── wgpu v30.0.1
+      │   │   │       │   ├── eframe v0.37.0 (*)
+      │   │   │       │   └── egui-wgpu v0.37.0
+      │   │   │       │       └── eframe v0.37.0 (*)
+      │   │   │       ├── wgpu-core v30.0.1
+      │   │   │       │   └── wgpu v30.0.1 (*)
+      │   │   │       ├── wgpu-core-deps-apple v30.0.1
+      │   │   │       │   └── wgpu-core v30.0.1 (*)
+      │   │   │       ├── wgpu-core-deps-emscripten v30.0.1
+      │   │   │       │   └── wgpu-core v30.0.1 (*)
+      │   │   │       ├── wgpu-core-deps-wasm v30.0.1
+      │   │   │       │   └── wgpu-core v30.0.1 (*)
+      │   │   │       └── wgpu-core-deps-windows-linux-android v30.0.1
+      │   │   │           └── wgpu-core v30.0.1 (*)
+      │   │   └── wgpu-hal v30.0.1 (*)
+      │   └── wgpu-hal v30.0.1 (*)
+      ├── objc2-quartz-core v0.3.2 (*)
+      ├── objc2-ui-kit v0.3.2
+      │   └── egui-winit v0.37.0 (*)
+      ├── raw-window-metal v1.1.0 (*)
+      ├── webbrowser v1.2.5 (*)
+      └── wgpu-hal v30.0.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'objc2-ui-kit'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:287:1
+    │  
+287 │ ╭ objc2-ui-kit 0.2.2 registry+https://github.com/rust-lang/crates.io-index
+288 │ │ objc2-ui-kit 0.3.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ objc2-ui-kit v0.2.2
+      ├── accesskit_ios v0.2.1
+      │   └── accesskit_winit v0.34.1
+      │       └── egui-winit v0.37.0
+      │           └── eframe v0.37.0
+      │               ├── phocommander-desktop v0.1.0
+      │               └── phocommander-ui v0.1.0
+      │                   ├── phocommander-desktop v0.1.0 (*)
+      │                   └── (dev) phocommander-integration-tests v0.1.0
+      └── winit v0.30.13
+          ├── accesskit_winit v0.34.1 (*)
+          ├── eframe v0.37.0 (*)
+          ├── egui-wgpu v0.37.0
+          │   └── eframe v0.37.0 (*)
+          └── egui-winit v0.37.0 (*)
+    ├ objc2-ui-kit v0.3.2
+      └── egui-winit v0.37.0
+          └── eframe v0.37.0
+              ├── phocommander-desktop v0.1.0
+              └── phocommander-ui v0.1.0
+                  ├── phocommander-desktop v0.1.0 (*)
+                  └── (dev) phocommander-integration-tests v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'r-efi'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:353:1
+    │  
+353 │ ╭ r-efi 5.3.0 registry+https://github.com/rust-lang/crates.io-index
+354 │ │ r-efi 6.0.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ r-efi v5.3.0
+      └── getrandom v0.3.4
+          └── ahash v0.8.12
+              ├── eframe v0.37.0
+              │   ├── phocommander-desktop v0.1.0
+              │   └── phocommander-ui v0.1.0
+              │       ├── phocommander-desktop v0.1.0 (*)
+              │       └── (dev) phocommander-integration-tests v0.1.0
+              ├── egui v0.37.0
+              │   ├── eframe v0.37.0 (*)
+              │   ├── egui-wgpu v0.37.0
+              │   │   └── eframe v0.37.0 (*)
+              │   ├── egui-winit v0.37.0
+              │   │   └── eframe v0.37.0 (*)
+              │   ├── egui_kittest v0.37.0
+              │   │   └── (dev) phocommander-ui v0.1.0 (*)
+              │   ├── phocommander-desktop v0.1.0 (*)
+              │   └── phocommander-ui v0.1.0 (*)
+              ├── egui-wgpu v0.37.0 (*)
+              ├── epaint v0.37.0
+              │   ├── egui v0.37.0 (*)
+              │   ├── egui-wgpu v0.37.0 (*)
+              │   └── egui_system_font_provider v0.37.0
+              │       └── eframe v0.37.0 (*)
+              └── winit v0.30.13
+                  ├── accesskit_winit v0.34.1
+                  │   └── egui-winit v0.37.0 (*)
+                  ├── eframe v0.37.0 (*)
+                  ├── egui-wgpu v0.37.0 (*)
+                  └── egui-winit v0.37.0 (*)
+    ├ r-efi v6.0.0
+      └── getrandom v0.4.3
+          ├── jobserver v0.1.35
+          │   └── cc v1.10.0
+          │       ├── (build) alloca v0.4.0
+          │       │   └── criterion v0.8.2
+          │       │       └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── (build) android-activity v0.6.1
+          │       │   └── winit v0.30.13
+          │       │       ├── accesskit_winit v0.34.1
+          │       │       │   └── egui-winit v0.37.0
+          │       │       │       └── eframe v0.37.0
+          │       │       │           ├── phocommander-desktop v0.1.0
+          │       │       │           └── phocommander-ui v0.1.0
+          │       │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │       │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+          │       │       ├── eframe v0.37.0 (*)
+          │       │       ├── egui-wgpu v0.37.0
+          │       │       │   └── eframe v0.37.0 (*)
+          │       │       └── egui-winit v0.37.0 (*)
+          │       ├── (build) wayland-backend v0.3.17
+          │       │   ├── calloop-wayland-source v0.3.0
+          │       │   │   └── smithay-client-toolkit v0.19.2
+          │       │   │       ├── sctk-adwaita v0.10.1
+          │       │   │       │   └── winit v0.30.13 (*)
+          │       │   │       └── winit v0.30.13 (*)
+          │       │   ├── calloop-wayland-source v0.4.1
+          │       │   │   └── smithay-client-toolkit v0.20.0
+          │       │   │       └── smithay-clipboard v0.7.3
+          │       │   │           └── egui-winit v0.37.0 (*)
+          │       │   ├── smithay-client-toolkit v0.19.2 (*)
+          │       │   ├── smithay-client-toolkit v0.20.0 (*)
+          │       │   ├── smithay-clipboard v0.7.3 (*)
+          │       │   ├── wayland-client v0.31.15
+          │       │   │   ├── calloop-wayland-source v0.3.0 (*)
+          │       │   │   ├── calloop-wayland-source v0.4.1 (*)
+          │       │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │       │   │   ├── smithay-client-toolkit v0.20.0 (*)
+          │       │   │   ├── wayland-cursor v0.31.14
+          │       │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │       │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │       │   │   ├── wayland-protocols v0.32.13
+          │       │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │       │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+          │       │   │   │   ├── wayland-protocols-experimental v20250721.0.1
+          │       │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │       │   │   │   ├── wayland-protocols-misc v0.3.12
+          │       │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │       │   │   │   ├── wayland-protocols-plasma v0.3.12
+          │       │   │   │   │   └── winit v0.30.13 (*)
+          │       │   │   │   ├── wayland-protocols-wlr v0.3.12
+          │       │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │       │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+          │       │   │   │   │   └── wl-clipboard-rs v0.9.4
+          │       │   │   │   │       └── arboard v3.7.0
+          │       │   │   │   │           └── egui-winit v0.37.0 (*)
+          │       │   │   │   ├── winit v0.30.13 (*)
+          │       │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+          │       │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+          │       │   │   ├── wayland-protocols-misc v0.3.12 (*)
+          │       │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+          │       │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+          │       │   │   ├── winit v0.30.13 (*)
+          │       │   │   └── wl-clipboard-rs v0.9.4 (*)
+          │       │   ├── wayland-csd-frame v0.3.0
+          │       │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │       │   │   └── smithay-client-toolkit v0.20.0 (*)
+          │       │   ├── wayland-protocols v0.32.13 (*)
+          │       │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+          │       │   ├── wayland-protocols-misc v0.3.12 (*)
+          │       │   ├── wayland-protocols-plasma v0.3.12 (*)
+          │       │   ├── wayland-protocols-wlr v0.3.12 (*)
+          │       │   ├── winit v0.30.13 (*)
+          │       │   └── wl-clipboard-rs v0.9.4 (*)
+          │       └── (build) zstd-sys v2.1.2+zstd.1.5.7
+          │           └── zstd-safe v8.2.0
+          │               └── zstd v0.14.3
+          │                   ├── phocommander-archive v0.1.0
+          │                   │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+          │                   └── zip v9.1.0
+          │                       ├── phocommander-archive v0.1.0 (*)
+          │                       └── (dev) phocommander-integration-tests v0.1.0 (*)
+          ├── rand v0.10.3
+          │   └── proptest v1.12.0
+          │       ├── (dev) phocommander-integration-tests v0.1.0 (*)
+          │       └── (dev) phocommander-ui v0.1.0 (*)
+          ├── sevenz-rust2 v0.24.1
+          │   └── phocommander-archive v0.1.0 (*)
+          ├── tempfile v3.27.0
+          │   ├── proptest v1.12.0 (*)
+          │   ├── rusty-fork v0.3.1
+          │   │   └── proptest v1.12.0 (*)
+          │   └── uds_windows v1.2.1
+          │       └── zbus v5.19.0
+          │           ├── accesskit_unix v0.24.0
+          │           │   └── accesskit_winit v0.34.1 (*)
+          │           ├── atspi-common v0.13.0
+          │           │   ├── accesskit_atspi_common v0.21.0
+          │           │   │   └── accesskit_unix v0.24.0 (*)
+          │           │   ├── atspi v0.29.0
+          │           │   │   └── accesskit_unix v0.24.0 (*)
+          │           │   └── atspi-proxies v0.13.0
+          │           │       └── atspi v0.29.0 (*)
+          │           └── atspi-proxies v0.13.0 (*)
+          └── zip v9.1.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'redox_syscall'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:364:1
+    │  
+364 │ ╭ redox_syscall 0.4.1 registry+https://github.com/rust-lang/crates.io-index
+365 │ │ redox_syscall 0.5.18 registry+https://github.com/rust-lang/crates.io-index
+366 │ │ redox_syscall 0.9.5 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ redox_syscall v0.4.1
+      └── winit v0.30.13
+          ├── accesskit_winit v0.34.1
+          │   └── egui-winit v0.37.0
+          │       └── eframe v0.37.0
+          │           ├── phocommander-desktop v0.1.0
+          │           └── phocommander-ui v0.1.0
+          │               ├── phocommander-desktop v0.1.0 (*)
+          │               └── (dev) phocommander-integration-tests v0.1.0
+          ├── eframe v0.37.0 (*)
+          ├── egui-wgpu v0.37.0
+          │   └── eframe v0.37.0 (*)
+          └── egui-winit v0.37.0 (*)
+    ├ redox_syscall v0.5.18
+      └── parking_lot_core v0.9.12
+          └── parking_lot v0.12.5
+              ├── arboard v3.7.0
+              │   └── egui-winit v0.37.0
+              │       └── eframe v0.37.0
+              │           ├── phocommander-desktop v0.1.0
+              │           └── phocommander-ui v0.1.0
+              │               ├── phocommander-desktop v0.1.0 (*)
+              │               └── (dev) phocommander-integration-tests v0.1.0
+              ├── eframe v0.37.0 (*)
+              ├── epaint v0.37.0
+              │   ├── egui v0.37.0
+              │   │   ├── eframe v0.37.0 (*)
+              │   │   ├── egui-wgpu v0.37.0
+              │   │   │   └── eframe v0.37.0 (*)
+              │   │   ├── egui-winit v0.37.0 (*)
+              │   │   ├── egui_kittest v0.37.0
+              │   │   │   └── (dev) phocommander-ui v0.1.0 (*)
+              │   │   ├── phocommander-desktop v0.1.0 (*)
+              │   │   └── phocommander-ui v0.1.0 (*)
+              │   ├── egui-wgpu v0.37.0 (*)
+              │   └── egui_system_font_provider v0.37.0
+              │       └── eframe v0.37.0 (*)
+              ├── wgpu v30.0.1
+              │   ├── eframe v0.37.0 (*)
+              │   └── egui-wgpu v0.37.0 (*)
+              ├── wgpu-core v30.0.1
+              │   └── wgpu v30.0.1 (*)
+              └── wgpu-hal v30.0.1
+                  ├── wgpu v30.0.1 (*)
+                  ├── wgpu-core v30.0.1 (*)
+                  ├── wgpu-core-deps-apple v30.0.1
+                  │   └── wgpu-core v30.0.1 (*)
+                  ├── wgpu-core-deps-emscripten v30.0.1
+                  │   └── wgpu-core v30.0.1 (*)
+                  ├── wgpu-core-deps-wasm v30.0.1
+                  │   └── wgpu-core v30.0.1 (*)
+                  └── wgpu-core-deps-windows-linux-android v30.0.1
+                      └── wgpu-core v30.0.1 (*)
+    ├ redox_syscall v0.9.5
+      └── libredox v0.1.25
+          ├── orbclient v0.3.55
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── redox_users v0.5.3
+              └── dirs-sys v0.5.0
+                  └── dirs v7.0.0
+                      └── phocommander-platform v0.1.0
+                          └── phocommander-desktop v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'rustc-hash'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:376:1
+    │  
+376 │ ╭ rustc-hash 1.1.0 registry+https://github.com/rust-lang/crates.io-index
+377 │ │ rustc-hash 2.1.3 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rustc-hash v1.1.0
+      ├── naga v30.0.1
+      │   ├── wgpu-core v30.0.1
+      │   │   └── wgpu v30.0.1
+      │   │       ├── eframe v0.37.0
+      │   │       │   ├── phocommander-desktop v0.1.0
+      │   │       │   └── phocommander-ui v0.1.0
+      │   │       │       ├── phocommander-desktop v0.1.0 (*)
+      │   │       │       └── (dev) phocommander-integration-tests v0.1.0
+      │   │       └── egui-wgpu v0.37.0
+      │   │           └── eframe v0.37.0 (*)
+      │   ├── wgpu-hal v30.0.1
+      │   │   ├── wgpu v30.0.1 (*)
+      │   │   ├── wgpu-core v30.0.1 (*)
+      │   │   ├── wgpu-core-deps-apple v30.0.1
+      │   │   │   └── wgpu-core v30.0.1 (*)
+      │   │   ├── wgpu-core-deps-emscripten v30.0.1
+      │   │   │   └── wgpu-core v30.0.1 (*)
+      │   │   ├── wgpu-core-deps-wasm v30.0.1
+      │   │   │   └── wgpu-core v30.0.1 (*)
+      │   │   └── wgpu-core-deps-windows-linux-android v30.0.1
+      │   │       └── wgpu-core v30.0.1 (*)
+      │   └── wgpu-naga-bridge v30.0.1
+      │       ├── wgpu-core v30.0.1 (*)
+      │       └── wgpu-hal v30.0.1 (*)
+      ├── naga-types v30.0.1
+      │   ├── naga v30.0.1 (*)
+      │   ├── wgpu-core v30.0.1 (*)
+      │   ├── wgpu-hal v30.0.1 (*)
+      │   └── wgpu-types v30.0.1
+      │       ├── wgpu v30.0.1 (*)
+      │       ├── wgpu-core v30.0.1 (*)
+      │       ├── wgpu-hal v30.0.1 (*)
+      │       └── wgpu-naga-bridge v30.0.1 (*)
+      └── wgpu-core v30.0.1 (*)
+    ├ rustc-hash v2.1.3
+      ├── fluent-bundle v0.16.0
+      │   └── fluent v0.17.0
+      │       └── phocommander-i18n v0.1.0
+      │           └── phocommander-desktop v0.1.0
+      └── type-map v0.5.1
+          ├── egui-wgpu v0.37.0
+          │   └── eframe v0.37.0
+          │       ├── phocommander-desktop v0.1.0 (*)
+          │       └── phocommander-ui v0.1.0
+          │           ├── phocommander-desktop v0.1.0 (*)
+          │           └── (dev) phocommander-integration-tests v0.1.0
+          └── intl-memoizer v0.5.3
+              └── fluent-bundle v0.16.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'rustix'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:379:1
+    │  
+379 │ ╭ rustix 0.38.44 registry+https://github.com/rust-lang/crates.io-index
+380 │ │ rustix 1.1.5 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rustix v0.38.44
+      ├── calloop v0.13.0
+      │   ├── calloop-wayland-source v0.3.0
+      │   │   └── smithay-client-toolkit v0.19.2
+      │   │       ├── sctk-adwaita v0.10.1
+      │   │       │   └── winit v0.30.13
+      │   │       │       ├── accesskit_winit v0.34.1
+      │   │       │       │   └── egui-winit v0.37.0
+      │   │       │       │       └── eframe v0.37.0
+      │   │       │       │           ├── phocommander-desktop v0.1.0
+      │   │       │       │           └── phocommander-ui v0.1.0
+      │   │       │       │               ├── phocommander-desktop v0.1.0 (*)
+      │   │       │       │               └── (dev) phocommander-integration-tests v0.1.0
+      │   │       │       ├── eframe v0.37.0 (*)
+      │   │       │       ├── egui-wgpu v0.37.0
+      │   │       │       │   └── eframe v0.37.0 (*)
+      │   │       │       └── egui-winit v0.37.0 (*)
+      │   │       └── winit v0.30.13 (*)
+      │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   └── winit v0.30.13 (*)
+      ├── calloop-wayland-source v0.3.0 (*)
+      ├── smithay-client-toolkit v0.19.2 (*)
+      └── winit v0.30.13 (*)
+    ├ rustix v1.1.5
+      ├── async-io v2.6.0
+      │   ├── async-process v2.5.0
+      │   │   └── zbus v5.19.0
+      │   │       ├── accesskit_unix v0.24.0
+      │   │       │   └── accesskit_winit v0.34.1
+      │   │       │       └── egui-winit v0.37.0
+      │   │       │           └── eframe v0.37.0
+      │   │       │               ├── phocommander-desktop v0.1.0
+      │   │       │               └── phocommander-ui v0.1.0
+      │   │       │                   ├── phocommander-desktop v0.1.0 (*)
+      │   │       │                   └── (dev) phocommander-integration-tests v0.1.0
+      │   │       ├── atspi-common v0.13.0
+      │   │       │   ├── accesskit_atspi_common v0.21.0
+      │   │       │   │   └── accesskit_unix v0.24.0 (*)
+      │   │       │   ├── atspi v0.29.0
+      │   │       │   │   └── accesskit_unix v0.24.0 (*)
+      │   │       │   └── atspi-proxies v0.13.0
+      │   │       │       └── atspi v0.29.0 (*)
+      │   │       └── atspi-proxies v0.13.0 (*)
+      │   ├── async-signal v0.2.14
+      │   │   └── async-process v2.5.0 (*)
+      │   └── zbus v5.19.0 (*)
+      ├── async-process v2.5.0 (*)
+      ├── async-signal v0.2.14 (*)
+      ├── calloop v0.14.5
+      │   ├── calloop-wayland-source v0.4.1
+      │   │   └── smithay-client-toolkit v0.20.0
+      │   │       └── smithay-clipboard v0.7.3
+      │   │           └── egui-winit v0.37.0 (*)
+      │   └── smithay-client-toolkit v0.20.0 (*)
+      ├── calloop-wayland-source v0.4.1 (*)
+      ├── cap-primitives v4.0.3
+      │   └── cap-std v4.0.3
+      │       └── phocommander-archive v0.1.0
+      │           └── (dev) phocommander-integration-tests v0.1.0 (*)
+      ├── cap-std v4.0.3 (*)
+      ├── fs-set-times v0.20.3
+      │   └── cap-primitives v4.0.3 (*)
+      ├── gethostname v1.1.0
+      │   └── x11rb v0.13.2
+      │       ├── arboard v3.7.0
+      │       │   └── egui-winit v0.37.0 (*)
+      │       └── winit v0.30.13
+      │           ├── accesskit_winit v0.34.1 (*)
+      │           ├── eframe v0.37.0 (*)
+      │           ├── egui-wgpu v0.37.0
+      │           │   └── eframe v0.37.0 (*)
+      │           └── egui-winit v0.37.0 (*)
+      ├── polling v3.11.0
+      │   ├── async-io v2.6.0 (*)
+      │   ├── calloop v0.13.0
+      │   │   ├── calloop-wayland-source v0.3.0
+      │   │   │   └── smithay-client-toolkit v0.19.2
+      │   │   │       ├── sctk-adwaita v0.10.1
+      │   │   │       │   └── winit v0.30.13 (*)
+      │   │   │       └── winit v0.30.13 (*)
+      │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   └── winit v0.30.13 (*)
+      │   └── calloop v0.14.5 (*)
+      ├── rustix-linux-procfs v0.1.1
+      │   └── cap-primitives v4.0.3 (*)
+      ├── smithay-client-toolkit v0.20.0 (*)
+      ├── tempfile v3.27.0
+      │   ├── proptest v1.12.0
+      │   │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+      │   │   └── (dev) phocommander-ui v0.1.0 (*)
+      │   ├── rusty-fork v0.3.1
+      │   │   └── proptest v1.12.0 (*)
+      │   └── uds_windows v1.2.1
+      │       └── zbus v5.19.0 (*)
+      ├── wayland-backend v0.3.17
+      │   ├── calloop-wayland-source v0.3.0 (*)
+      │   ├── calloop-wayland-source v0.4.1 (*)
+      │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   ├── smithay-clipboard v0.7.3 (*)
+      │   ├── wayland-client v0.31.15
+      │   │   ├── calloop-wayland-source v0.3.0 (*)
+      │   │   ├── calloop-wayland-source v0.4.1 (*)
+      │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   ├── wayland-cursor v0.31.14
+      │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   ├── wayland-protocols v0.32.13
+      │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   ├── wayland-protocols-experimental v20250721.0.1
+      │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   ├── wayland-protocols-misc v0.3.12
+      │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   ├── wayland-protocols-plasma v0.3.12
+      │   │   │   │   └── winit v0.30.13 (*)
+      │   │   │   ├── wayland-protocols-wlr v0.3.12
+      │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   │   └── wl-clipboard-rs v0.9.4
+      │   │   │   │       └── arboard v3.7.0 (*)
+      │   │   │   ├── winit v0.30.13 (*)
+      │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │   │   ├── wayland-protocols-misc v0.3.12 (*)
+      │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │   │   ├── winit v0.30.13 (*)
+      │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │   ├── wayland-csd-frame v0.3.0
+      │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   ├── wayland-protocols v0.32.13 (*)
+      │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │   ├── wayland-protocols-misc v0.3.12 (*)
+      │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │   ├── winit v0.30.13 (*)
+      │   └── wl-clipboard-rs v0.9.4 (*)
+      ├── wayland-client v0.31.15 (*)
+      ├── wayland-cursor v0.31.14 (*)
+      ├── wl-clipboard-rs v0.9.4 (*)
+      ├── x11rb v0.13.2 (*)
+      ├── xattr v1.6.1
+      │   └── tar v0.4.46
+      │       └── phocommander-archive v0.1.0 (*)
+      └── zbus v5.19.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'smithay-client-toolkit'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:410:1
+    │  
+410 │ ╭ smithay-client-toolkit 0.19.2 registry+https://github.com/rust-lang/crates.io-index
+411 │ │ smithay-client-toolkit 0.20.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ smithay-client-toolkit v0.19.2
+      ├── sctk-adwaita v0.10.1
+      │   └── winit v0.30.13
+      │       ├── accesskit_winit v0.34.1
+      │       │   └── egui-winit v0.37.0
+      │       │       └── eframe v0.37.0
+      │       │           ├── phocommander-desktop v0.1.0
+      │       │           └── phocommander-ui v0.1.0
+      │       │               ├── phocommander-desktop v0.1.0 (*)
+      │       │               └── (dev) phocommander-integration-tests v0.1.0
+      │       ├── eframe v0.37.0 (*)
+      │       ├── egui-wgpu v0.37.0
+      │       │   └── eframe v0.37.0 (*)
+      │       └── egui-winit v0.37.0 (*)
+      └── winit v0.30.13 (*)
+    ├ smithay-client-toolkit v0.20.0
+      └── smithay-clipboard v0.7.3
+          └── egui-winit v0.37.0
+              └── eframe v0.37.0
+                  ├── phocommander-desktop v0.1.0
+                  └── phocommander-ui v0.1.0
+                      ├── phocommander-desktop v0.1.0 (*)
+                      └── (dev) phocommander-integration-tests v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'syn'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:418:1
+    │  
+418 │ ╭ syn 2.0.119 registry+https://github.com/rust-lang/crates.io-index
+419 │ │ syn 3.0.9 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ syn v2.0.119
+      ├── enumflags2_derive v0.7.12
+      │   └── enumflags2 v0.7.12
+      │       ├── atspi-common v0.13.0
+      │       │   ├── accesskit_atspi_common v0.21.0
+      │       │   │   └── accesskit_unix v0.24.0
+      │       │   │       └── accesskit_winit v0.34.1
+      │       │   │           └── egui-winit v0.37.0
+      │       │   │               └── eframe v0.37.0
+      │       │   │                   ├── phocommander-desktop v0.1.0
+      │       │   │                   └── phocommander-ui v0.1.0
+      │       │   │                       ├── phocommander-desktop v0.1.0 (*)
+      │       │   │                       └── (dev) phocommander-integration-tests v0.1.0
+      │       │   ├── atspi v0.29.0
+      │       │   │   └── accesskit_unix v0.24.0 (*)
+      │       │   └── atspi-proxies v0.13.0
+      │       │       └── atspi v0.29.0 (*)
+      │       ├── zbus v5.19.0
+      │       │   ├── accesskit_unix v0.24.0 (*)
+      │       │   ├── atspi-common v0.13.0 (*)
+      │       │   └── atspi-proxies v0.13.0 (*)
+      │       └── zvariant v5.15.1
+      │           ├── accesskit_atspi_common v0.21.0 (*)
+      │           ├── atspi-common v0.13.0 (*)
+      │           ├── zbus v5.19.0 (*)
+      │           ├── zbus-lockstep v0.5.2
+      │           │   ├── atspi-common v0.13.0 (*)
+      │           │   └── zbus-lockstep-macros v0.5.2
+      │           │       └── atspi-common v0.13.0 (*)
+      │           ├── zbus-lockstep-macros v0.5.2 (*)
+      │           ├── zbus_macros v5.19.0
+      │           │   └── zbus v5.19.0 (*)
+      │           ├── zbus_names v4.3.5
+      │           │   ├── atspi-common v0.13.0 (*)
+      │           │   ├── zbus v5.19.0 (*)
+      │           │   ├── zbus_macros v5.19.0 (*)
+      │           │   └── zbus_xml v5.2.1
+      │           │       ├── zbus-lockstep v0.5.2 (*)
+      │           │       └── zbus-lockstep-macros v0.5.2 (*)
+      │           └── zbus_xml v5.2.1 (*)
+      ├── jni-macros v0.22.4
+      │   └── jni v0.22.4
+      │       ├── android-activity v0.6.1
+      │       │   └── winit v0.30.13
+      │       │       ├── accesskit_winit v0.34.1 (*)
+      │       │       ├── eframe v0.37.0 (*)
+      │       │       ├── egui-wgpu v0.37.0
+      │       │       │   └── eframe v0.37.0 (*)
+      │       │       └── egui-winit v0.37.0 (*)
+      │       └── webbrowser v1.2.5
+      │           └── egui-winit v0.37.0 (*)
+      ├── jni-sys-macros v0.4.1
+      │   └── jni-sys v0.4.1
+      │       ├── jni v0.22.4 (*)
+      │       └── jni-sys v0.3.1
+      │           ├── ndk v0.9.0
+      │           │   ├── android-activity v0.6.1 (*)
+      │           │   └── winit v0.30.13 (*)
+      │           └── ndk-sys v0.6.0+11769913
+      │               ├── android-activity v0.6.1 (*)
+      │               ├── ndk v0.9.0 (*)
+      │               └── wgpu-hal v30.0.1
+      │                   ├── wgpu v30.0.1
+      │                   │   ├── eframe v0.37.0 (*)
+      │                   │   └── egui-wgpu v0.37.0 (*)
+      │                   ├── wgpu-core v30.0.1
+      │                   │   └── wgpu v30.0.1 (*)
+      │                   ├── wgpu-core-deps-apple v30.0.1
+      │                   │   └── wgpu-core v30.0.1 (*)
+      │                   ├── wgpu-core-deps-emscripten v30.0.1
+      │                   │   └── wgpu-core v30.0.1 (*)
+      │                   ├── wgpu-core-deps-wasm v30.0.1
+      │                   │   └── wgpu-core v30.0.1 (*)
+      │                   └── wgpu-core-deps-windows-linux-android v30.0.1
+      │                       └── wgpu-core v30.0.1 (*)
+      ├── num_enum_derive v0.7.6
+      │   └── num_enum v0.7.6
+      │       ├── android-activity v0.6.1 (*)
+      │       └── ndk v0.9.0 (*)
+      ├── phf_macros v0.14.0
+      │   └── phf v0.14.0
+      │       └── accesskit_atspi_common v0.21.0 (*)
+      ├── pin-project-internal v1.1.13
+      │   └── pin-project v1.1.13
+      │       └── winit v0.30.13 (*)
+      ├── rust-embed-impl v8.13.0
+      │   └── rust-embed v8.13.0
+      │       └── phocommander-i18n v0.1.0
+      │           └── phocommander-desktop v0.1.0 (*)
+      ├── thiserror-impl v1.0.69
+      │   └── thiserror v1.0.69
+      │       ├── calloop v0.13.0
+      │       │   ├── calloop-wayland-source v0.3.0
+      │       │   │   └── smithay-client-toolkit v0.19.2
+      │       │   │       ├── sctk-adwaita v0.10.1
+      │       │   │       │   └── winit v0.30.13 (*)
+      │       │   │       └── winit v0.30.13 (*)
+      │       │   ├── smithay-client-toolkit v0.19.2 (*)
+      │       │   └── winit v0.30.13 (*)
+      │       ├── ndk v0.9.0 (*)
+      │       └── smithay-client-toolkit v0.19.2 (*)
+      ├── tracing-attributes v0.1.31
+      │   └── tracing v0.1.44
+      │       ├── calloop v0.14.5
+      │       │   ├── calloop-wayland-source v0.4.1
+      │       │   │   └── smithay-client-toolkit v0.20.0
+      │       │   │       └── smithay-clipboard v0.7.3
+      │       │   │           └── egui-winit v0.37.0 (*)
+      │       │   └── smithay-client-toolkit v0.20.0 (*)
+      │       ├── winit v0.30.13 (*)
+      │       └── zbus v5.19.0 (*)
+      ├── windows-implement v0.60.2
+      │   └── windows-core v0.62.2
+      │       ├── accesskit_windows v0.35.1
+      │       │   └── accesskit_winit v0.34.1 (*)
+      │       ├── fontique v0.11.1
+      │       │   └── egui_system_font_provider v0.37.0
+      │       │       └── eframe v0.37.0 (*)
+      │       ├── wgpu-hal v30.0.1 (*)
+      │       ├── windows v0.62.2
+      │       │   ├── accesskit_windows v0.35.1 (*)
+      │       │   ├── fontique v0.11.1 (*)
+      │       │   ├── gpu-allocator v0.28.0
+      │       │   │   └── wgpu-hal v30.0.1 (*)
+      │       │   └── wgpu-hal v30.0.1 (*)
+      │       ├── windows-collections v0.3.2
+      │       │   └── windows v0.62.2 (*)
+      │       ├── windows-future v0.3.2
+      │       │   └── windows v0.62.2 (*)
+      │       └── windows-numerics v0.3.1
+      │           └── windows v0.62.2 (*)
+      ├── windows-interface v0.59.3
+      │   └── windows-core v0.62.2 (*)
+      ├── zbus-lockstep-macros v0.5.2 (*)
+      └── zerocopy-derive v0.8.63
+          └── zerocopy v0.8.63
+              ├── ahash v0.8.12
+              │   ├── eframe v0.37.0 (*)
+              │   ├── egui v0.37.0
+              │   │   ├── eframe v0.37.0 (*)
+              │   │   ├── egui-wgpu v0.37.0 (*)
+              │   │   ├── egui-winit v0.37.0 (*)
+              │   │   ├── egui_kittest v0.37.0
+              │   │   │   └── (dev) phocommander-ui v0.1.0 (*)
+              │   │   ├── phocommander-desktop v0.1.0 (*)
+              │   │   └── phocommander-ui v0.1.0 (*)
+              │   ├── egui-wgpu v0.37.0 (*)
+              │   ├── epaint v0.37.0
+              │   │   ├── egui v0.37.0 (*)
+              │   │   ├── egui-wgpu v0.37.0 (*)
+              │   │   └── egui_system_font_provider v0.37.0 (*)
+              │   └── winit v0.30.13 (*)
+              └── half v2.7.1
+                  ├── ciborium-ll v0.2.2
+                  │   └── ciborium v0.2.2
+                  │       └── criterion v0.8.2
+                  │           └── (dev) phocommander-integration-tests v0.1.0 (*)
+                  ├── naga v30.0.1
+                  │   ├── wgpu-core v30.0.1 (*)
+                  │   ├── wgpu-hal v30.0.1 (*)
+                  │   └── wgpu-naga-bridge v30.0.1
+                  │       ├── wgpu-core v30.0.1 (*)
+                  │       └── wgpu-hal v30.0.1 (*)
+                  └── tiff v0.11.3
+                      └── image v0.25.10
+                          ├── arboard v3.7.0
+                          │   └── egui-winit v0.37.0 (*)
+                          └── eframe v0.37.0 (*)
+    ├ syn v3.0.9
+      ├── async-recursion v1.2.0
+      │   └── zbus v5.19.0
+      │       ├── accesskit_unix v0.24.0
+      │       │   └── accesskit_winit v0.34.1
+      │       │       └── egui-winit v0.37.0
+      │       │           └── eframe v0.37.0
+      │       │               ├── phocommander-desktop v0.1.0
+      │       │               └── phocommander-ui v0.1.0
+      │       │                   ├── phocommander-desktop v0.1.0 (*)
+      │       │                   └── (dev) phocommander-integration-tests v0.1.0
+      │       ├── atspi-common v0.13.0
+      │       │   ├── accesskit_atspi_common v0.21.0
+      │       │   │   └── accesskit_unix v0.24.0 (*)
+      │       │   ├── atspi v0.29.0
+      │       │   │   └── accesskit_unix v0.24.0 (*)
+      │       │   └── atspi-proxies v0.13.0
+      │       │       └── atspi v0.29.0 (*)
+      │       └── atspi-proxies v0.13.0 (*)
+      ├── async-trait v0.1.92
+      │   └── zbus v5.19.0 (*)
+      ├── bytemuck_derive v1.12.1
+      │   └── bytemuck v1.25.2
+      │       ├── color v0.3.3
+      │       │   └── peniko v0.6.1
+      │       │       ├── glifo v0.3.0
+      │       │       │   └── vello_cpu v0.2.0
+      │       │       │       └── epaint v0.37.0
+      │       │       │           ├── egui v0.37.0
+      │       │       │           │   ├── eframe v0.37.0 (*)
+      │       │       │           │   ├── egui-wgpu v0.37.0
+      │       │       │           │   │   └── eframe v0.37.0 (*)
+      │       │       │           │   ├── egui-winit v0.37.0 (*)
+      │       │       │           │   ├── egui_kittest v0.37.0
+      │       │       │           │   │   └── (dev) phocommander-ui v0.1.0 (*)
+      │       │       │           │   ├── phocommander-desktop v0.1.0 (*)
+      │       │       │           │   └── phocommander-ui v0.1.0 (*)
+      │       │       │           ├── egui-wgpu v0.37.0 (*)
+      │       │       │           └── egui_system_font_provider v0.37.0
+      │       │       │               └── eframe v0.37.0 (*)
+      │       │       └── vello_common v0.2.0
+      │       │           ├── glifo v0.3.0 (*)
+      │       │           └── vello_cpu v0.2.0 (*)
+      │       ├── ecolor v0.37.0
+      │       │   └── epaint v0.37.0 (*)
+      │       ├── eframe v0.37.0 (*)
+      │       ├── egui-wgpu v0.37.0 (*)
+      │       ├── egui-winit v0.37.0 (*)
+      │       ├── emath v0.37.0
+      │       │   ├── ecolor v0.37.0 (*)
+      │       │   ├── egui v0.37.0 (*)
+      │       │   └── epaint v0.37.0 (*)
+      │       ├── epaint v0.37.0 (*)
+      │       ├── font-types v0.12.7
+      │       │   ├── epaint v0.37.0 (*)
+      │       │   └── read-fonts v0.41.0
+      │       │       ├── fontique v0.11.1
+      │       │       │   └── egui_system_font_provider v0.37.0 (*)
+      │       │       ├── harfrust v0.12.0
+      │       │       │   └── epaint v0.37.0 (*)
+      │       │       └── skrifa v0.44.0
+      │       │           ├── egui_system_font_provider v0.37.0 (*)
+      │       │           ├── epaint v0.37.0 (*)
+      │       │           └── glifo v0.3.0 (*)
+      │       ├── glifo v0.3.0 (*)
+      │       ├── harfrust v0.12.0 (*)
+      │       ├── image v0.25.10
+      │       │   ├── arboard v3.7.0
+      │       │   │   └── egui-winit v0.37.0 (*)
+      │       │   └── eframe v0.37.0 (*)
+      │       ├── peniko v0.6.1 (*)
+      │       ├── read-fonts v0.41.0 (*)
+      │       ├── skrifa v0.44.0 (*)
+      │       ├── tiny-skia v0.11.4
+      │       │   └── sctk-adwaita v0.10.1
+      │       │       └── winit v0.30.13
+      │       │           ├── accesskit_winit v0.34.1 (*)
+      │       │           ├── eframe v0.37.0 (*)
+      │       │           ├── egui-wgpu v0.37.0 (*)
+      │       │           └── egui-winit v0.37.0 (*)
+      │       ├── tiny-skia-path v0.11.4
+      │       │   └── tiny-skia v0.11.4 (*)
+      │       ├── vello_common v0.2.0 (*)
+      │       ├── vello_cpu v0.2.0 (*)
+      │       ├── wgpu v30.0.1
+      │       │   ├── eframe v0.37.0 (*)
+      │       │   └── egui-wgpu v0.37.0 (*)
+      │       ├── wgpu-core v30.0.1
+      │       │   └── wgpu v30.0.1 (*)
+      │       ├── wgpu-hal v30.0.1
+      │       │   ├── wgpu v30.0.1 (*)
+      │       │   ├── wgpu-core v30.0.1 (*)
+      │       │   ├── wgpu-core-deps-apple v30.0.1
+      │       │   │   └── wgpu-core v30.0.1 (*)
+      │       │   ├── wgpu-core-deps-emscripten v30.0.1
+      │       │   │   └── wgpu-core v30.0.1 (*)
+      │       │   ├── wgpu-core-deps-wasm v30.0.1
+      │       │   │   └── wgpu-core v30.0.1 (*)
+      │       │   └── wgpu-core-deps-windows-linux-android v30.0.1
+      │       │       └── wgpu-core v30.0.1 (*)
+      │       ├── wgpu-types v30.0.1
+      │       │   ├── wgpu v30.0.1 (*)
+      │       │   ├── wgpu-core v30.0.1 (*)
+      │       │   ├── wgpu-hal v30.0.1 (*)
+      │       │   └── wgpu-naga-bridge v30.0.1
+      │       │       ├── wgpu-core v30.0.1 (*)
+      │       │       └── wgpu-hal v30.0.1 (*)
+      │       └── winit v0.30.13 (*)
+      ├── displaydoc v0.2.7
+      │   ├── calendrical_calculations v0.2.4
+      │   │   ├── icu_calendar v2.4.0
+      │   │   │   ├── icu v2.4.0
+      │   │   │   │   └── phocommander-i18n v0.1.0
+      │   │   │   │       └── phocommander-desktop v0.1.0 (*)
+      │   │   │   ├── icu_datetime v2.4.0
+      │   │   │   │   └── icu v2.4.0 (*)
+      │   │   │   └── icu_time v2.4.0
+      │   │   │       ├── icu v2.4.0 (*)
+      │   │   │       └── icu_datetime v2.4.0 (*)
+      │   │   └── icu_time v2.4.0 (*)
+      │   ├── fixed_decimal v0.7.3
+      │   │   ├── icu_datetime v2.4.0 (*)
+      │   │   ├── icu_decimal v2.4.0
+      │   │   │   ├── icu v2.4.0 (*)
+      │   │   │   └── icu_datetime v2.4.0 (*)
+      │   │   └── icu_plurals v2.4.0
+      │   │       ├── icu v2.4.0 (*)
+      │   │       └── icu_datetime v2.4.0 (*)
+      │   ├── icu_calendar v2.4.0 (*)
+      │   ├── icu_collections v2.4.0
+      │   │   ├── icu v2.4.0 (*)
+      │   │   ├── icu_casemap v2.4.0
+      │   │   │   └── icu v2.4.0 (*)
+      │   │   ├── icu_collator v2.4.0
+      │   │   │   └── icu v2.4.0 (*)
+      │   │   ├── icu_locale v2.4.0
+      │   │   │   └── icu v2.4.0 (*)
+      │   │   ├── icu_normalizer v2.4.0
+      │   │   │   ├── icu v2.4.0 (*)
+      │   │   │   ├── icu_collator v2.4.0 (*)
+      │   │   │   └── idna_adapter v1.2.2
+      │   │   │       └── idna v1.1.0
+      │   │   │           └── url v2.5.8
+      │   │   │               └── webbrowser v1.2.5
+      │   │   │                   └── egui-winit v0.37.0 (*)
+      │   │   ├── icu_properties v2.4.0
+      │   │   │   ├── icu v2.4.0 (*)
+      │   │   │   ├── icu_casemap v2.4.0 (*)
+      │   │   │   ├── icu_collator v2.4.0 (*)
+      │   │   │   └── idna_adapter v1.2.2 (*)
+      │   │   └── icu_segmenter v2.4.0
+      │   │       └── icu v2.4.0 (*)
+      │   ├── icu_datetime v2.4.0 (*)
+      │   ├── icu_decimal v2.4.0 (*)
+      │   ├── icu_locale_core v2.4.0
+      │   │   ├── icu_calendar v2.4.0 (*)
+      │   │   ├── icu_casemap v2.4.0 (*)
+      │   │   ├── icu_collator v2.4.0 (*)
+      │   │   ├── icu_datetime v2.4.0 (*)
+      │   │   ├── icu_decimal v2.4.0 (*)
+      │   │   ├── icu_locale v2.4.0 (*)
+      │   │   ├── icu_locale_fallback v2.4.0
+      │   │   │   ├── icu_calendar v2.4.0 (*)
+      │   │   │   ├── icu_collator v2.4.0 (*)
+      │   │   │   ├── icu_datetime v2.4.0 (*)
+      │   │   │   ├── icu_decimal v2.4.0 (*)
+      │   │   │   ├── icu_list v2.4.0
+      │   │   │   │   └── icu v2.4.0 (*)
+      │   │   │   ├── icu_locale v2.4.0 (*)
+      │   │   │   ├── icu_plurals v2.4.0 (*)
+      │   │   │   └── icu_segmenter v2.4.0 (*)
+      │   │   ├── icu_properties v2.4.0 (*)
+      │   │   ├── icu_provider v2.4.0
+      │   │   │   ├── icu v2.4.0 (*)
+      │   │   │   ├── icu_calendar v2.4.0 (*)
+      │   │   │   ├── icu_casemap v2.4.0 (*)
+      │   │   │   ├── icu_collator v2.4.0 (*)
+      │   │   │   ├── icu_datetime v2.4.0 (*)
+      │   │   │   ├── icu_decimal v2.4.0 (*)
+      │   │   │   ├── icu_list v2.4.0 (*)
+      │   │   │   ├── icu_locale v2.4.0 (*)
+      │   │   │   ├── icu_locale_fallback v2.4.0 (*)
+      │   │   │   ├── icu_normalizer v2.4.0 (*)
+      │   │   │   ├── icu_plurals v2.4.0 (*)
+      │   │   │   ├── icu_properties v2.4.0 (*)
+      │   │   │   ├── icu_segmenter v2.4.0 (*)
+      │   │   │   └── icu_time v2.4.0 (*)
+      │   │   └── icu_time v2.4.0 (*)
+      │   ├── icu_pattern v0.5.1
+      │   │   └── icu_datetime v2.4.0 (*)
+      │   ├── icu_properties v2.4.0 (*)
+      │   ├── icu_provider v2.4.0 (*)
+      │   ├── icu_time v2.4.0 (*)
+      │   ├── tinystr v0.8.5
+      │   │   ├── icu_calendar v2.4.0 (*)
+      │   │   ├── icu_datetime v2.4.0 (*)
+      │   │   ├── icu_locale v2.4.0 (*)
+      │   │   ├── icu_locale_core v2.4.0 (*)
+      │   │   ├── icu_locale_fallback v2.4.0 (*)
+      │   │   └── unic-langid-impl v0.9.6
+      │   │       └── unic-langid v0.9.6
+      │   │           ├── fluent v0.17.0
+      │   │           │   └── phocommander-i18n v0.1.0 (*)
+      │   │           ├── fluent-bundle v0.16.0
+      │   │           │   └── fluent v0.17.0 (*)
+      │   │           ├── fluent-langneg v0.13.1
+      │   │           │   └── fluent-bundle v0.16.0 (*)
+      │   │           ├── intl-memoizer v0.5.3
+      │   │           │   └── fluent-bundle v0.16.0 (*)
+      │   │           ├── intl_pluralrules v7.0.2
+      │   │           │   └── fluent-bundle v0.16.0 (*)
+      │   │           └── phocommander-i18n v0.1.0 (*)
+      │   └── zerotrie v0.2.5
+      │       ├── icu_properties v2.4.0 (*)
+      │       ├── icu_provider v2.4.0 (*)
+      │       ├── icu_segmenter v2.4.0 (*)
+      │       └── icu_time v2.4.0 (*)
+      ├── foreign-types-macros v0.2.4
+      │   └── foreign-types v0.5.0
+      │       └── core-graphics v0.23.2
+      │           └── winit v0.30.13 (*)
+      ├── futures-macro v0.3.34
+      │   └── futures-util v0.3.34
+      │       ├── accesskit_unix v0.24.0 (*)
+      │       └── js-sys v0.3.106
+      │           ├── eframe v0.37.0 (*)
+      │           ├── getrandom v0.4.3
+      │           │   ├── jobserver v0.1.35
+      │           │   │   └── cc v1.10.0
+      │           │   │       ├── (build) alloca v0.4.0
+      │           │   │       │   └── criterion v0.8.2
+      │           │   │       │       └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │           │   │       ├── (build) android-activity v0.6.1
+      │           │   │       │   └── winit v0.30.13 (*)
+      │           │   │       ├── (build) wayland-backend v0.3.17
+      │           │   │       │   ├── calloop-wayland-source v0.3.0
+      │           │   │       │   │   └── smithay-client-toolkit v0.19.2
+      │           │   │       │   │       ├── sctk-adwaita v0.10.1 (*)
+      │           │   │       │   │       └── winit v0.30.13 (*)
+      │           │   │       │   ├── calloop-wayland-source v0.4.1
+      │           │   │       │   │   └── smithay-client-toolkit v0.20.0
+      │           │   │       │   │       └── smithay-clipboard v0.7.3
+      │           │   │       │   │           └── egui-winit v0.37.0 (*)
+      │           │   │       │   ├── smithay-client-toolkit v0.19.2 (*)
+      │           │   │       │   ├── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   ├── smithay-clipboard v0.7.3 (*)
+      │           │   │       │   ├── wayland-client v0.31.15
+      │           │   │       │   │   ├── calloop-wayland-source v0.3.0 (*)
+      │           │   │       │   │   ├── calloop-wayland-source v0.4.1 (*)
+      │           │   │       │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │           │   │       │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   │   ├── wayland-cursor v0.31.14
+      │           │   │       │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │           │   │       │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   │   ├── wayland-protocols v0.32.13
+      │           │   │       │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │           │   │       │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   │   │   ├── wayland-protocols-experimental v20250721.0.1
+      │           │   │       │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   │   │   ├── wayland-protocols-misc v0.3.12
+      │           │   │       │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   │   │   ├── wayland-protocols-plasma v0.3.12
+      │           │   │       │   │   │   │   └── winit v0.30.13 (*)
+      │           │   │       │   │   │   ├── wayland-protocols-wlr v0.3.12
+      │           │   │       │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │           │   │       │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   │   │   │   └── wl-clipboard-rs v0.9.4
+      │           │   │       │   │   │   │       └── arboard v3.7.0 (*)
+      │           │   │       │   │   │   ├── winit v0.30.13 (*)
+      │           │   │       │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │           │   │       │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │           │   │       │   │   ├── wayland-protocols-misc v0.3.12 (*)
+      │           │   │       │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │           │   │       │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │           │   │       │   │   ├── winit v0.30.13 (*)
+      │           │   │       │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │           │   │       │   ├── wayland-csd-frame v0.3.0
+      │           │   │       │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │           │   │       │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │           │   │       │   ├── wayland-protocols v0.32.13 (*)
+      │           │   │       │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │           │   │       │   ├── wayland-protocols-misc v0.3.12 (*)
+      │           │   │       │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │           │   │       │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │           │   │       │   ├── winit v0.30.13 (*)
+      │           │   │       │   └── wl-clipboard-rs v0.9.4 (*)
+      │           │   │       └── (build) zstd-sys v2.1.2+zstd.1.5.7
+      │           │   │           └── zstd-safe v8.2.0
+      │           │   │               └── zstd v0.14.3
+      │           │   │                   ├── phocommander-archive v0.1.0
+      │           │   │                   │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │           │   │                   └── zip v9.1.0
+      │           │   │                       ├── phocommander-archive v0.1.0 (*)
+      │           │   │                       └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │           │   ├── rand v0.10.3
+      │           │   │   └── proptest v1.12.0
+      │           │   │       ├── (dev) phocommander-integration-tests v0.1.0 (*)
+      │           │   │       └── (dev) phocommander-ui v0.1.0 (*)
+      │           │   ├── sevenz-rust2 v0.24.1
+      │           │   │   └── phocommander-archive v0.1.0 (*)
+      │           │   ├── tempfile v3.27.0
+      │           │   │   ├── proptest v1.12.0 (*)
+      │           │   │   ├── rusty-fork v0.3.1
+      │           │   │   │   └── proptest v1.12.0 (*)
+      │           │   │   └── uds_windows v1.2.1
+      │           │   │       └── zbus v5.19.0 (*)
+      │           │   └── zip v9.1.0 (*)
+      │           ├── glow v0.17.0
+      │           │   └── wgpu-hal v30.0.1 (*)
+      │           ├── sevenz-rust2 v0.24.1 (*)
+      │           ├── time v0.3.55
+      │           │   └── zip v9.1.0 (*)
+      │           ├── wasm-bindgen-futures v0.4.79
+      │           │   ├── wgpu v30.0.1 (*)
+      │           │   └── winit v0.30.13 (*)
+      │           ├── web-sys v0.3.106
+      │           │   ├── eframe v0.37.0 (*)
+      │           │   ├── egui v0.37.0 (*)
+      │           │   ├── glow v0.17.0 (*)
+      │           │   ├── plotters v0.3.7
+      │           │   │   └── criterion v0.8.2 (*)
+      │           │   ├── webbrowser v1.2.5 (*)
+      │           │   ├── wgpu v30.0.1 (*)
+      │           │   ├── wgpu-hal v30.0.1 (*)
+      │           │   ├── wgpu-types v30.0.1 (*)
+      │           │   └── winit v0.30.13 (*)
+      │           ├── web-time v1.1.0
+      │           │   ├── eframe v0.37.0 (*)
+      │           │   ├── egui-wgpu v0.37.0 (*)
+      │           │   ├── egui-winit v0.37.0 (*)
+      │           │   └── winit v0.30.13 (*)
+      │           ├── wgpu v30.0.1 (*)
+      │           ├── wgpu-hal v30.0.1 (*)
+      │           ├── wgpu-types v30.0.1 (*)
+      │           └── winit v0.30.13 (*)
+      ├── serde_derive v1.0.229
+      │   └── serde v1.0.229
+      │       ├── accesskit_atspi_common v0.21.0 (*)
+      │       ├── accesskit_unix v0.24.0 (*)
+      │       ├── atspi-common v0.13.0 (*)
+      │       ├── atspi-proxies v0.13.0 (*)
+      │       ├── ciborium v0.2.2
+      │       │   └── criterion v0.8.2 (*)
+      │       ├── criterion v0.8.2 (*)
+      │       ├── egui_kittest v0.37.0 (*)
+      │       ├── enumflags2 v0.7.12
+      │       │   ├── atspi-common v0.13.0 (*)
+      │       │   ├── zbus v5.19.0 (*)
+      │       │   └── zvariant v5.15.1
+      │       │       ├── accesskit_atspi_common v0.21.0 (*)
+      │       │       ├── atspi-common v0.13.0 (*)
+      │       │       ├── zbus v5.19.0 (*)
+      │       │       ├── zbus-lockstep v0.5.2
+      │       │       │   ├── atspi-common v0.13.0 (*)
+      │       │       │   └── zbus-lockstep-macros v0.5.2
+      │       │       │       └── atspi-common v0.13.0 (*)
+      │       │       ├── zbus-lockstep-macros v0.5.2 (*)
+      │       │       ├── zbus_macros v5.19.0
+      │       │       │   └── zbus v5.19.0 (*)
+      │       │       ├── zbus_names v4.3.5
+      │       │       │   ├── atspi-common v0.13.0 (*)
+      │       │       │   ├── zbus v5.19.0 (*)
+      │       │       │   ├── zbus_macros v5.19.0 (*)
+      │       │       │   └── zbus_xml v5.2.1
+      │       │       │       ├── zbus-lockstep v0.5.2 (*)
+      │       │       │       └── zbus-lockstep-macros v0.5.2 (*)
+      │       │       └── zbus_xml v5.2.1 (*)
+      │       ├── phocommander-config v0.1.0
+      │       │   ├── phocommander-desktop v0.1.0 (*)
+      │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       ├── phocommander-keymap v0.1.0
+      │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       ├── tinytemplate v1.2.1
+      │       │   └── criterion v0.8.2 (*)
+      │       ├── zbus v5.19.0 (*)
+      │       ├── zbus_names v4.3.5 (*)
+      │       ├── zbus_xml v5.2.1 (*)
+      │       ├── zcheapstr v1.1.0
+      │       │   └── zvariant v5.15.1 (*)
+      │       ├── zvariant v5.15.1 (*)
+      │       └── zvariant_utils v4.2.0
+      │           ├── zbus_macros v5.19.0 (*)
+      │           ├── zvariant v5.15.1 (*)
+      │           └── zvariant_derive v5.15.1
+      │               └── zvariant v5.15.1 (*)
+      ├── serde_repr v0.1.21
+      │   └── zbus v5.19.0 (*)
+      ├── synstructure v0.14.0
+      │   ├── yoke-derive v0.8.4
+      │   │   └── yoke v0.8.4
+      │   │       ├── icu_collections v2.4.0 (*)
+      │   │       ├── icu_provider v2.4.0 (*)
+      │   │       ├── zerotrie v0.2.5 (*)
+      │   │       └── zerovec v0.11.9
+      │   │           ├── icu_calendar v2.4.0 (*)
+      │   │           ├── icu_casemap v2.4.0 (*)
+      │   │           ├── icu_collator v2.4.0 (*)
+      │   │           ├── icu_collections v2.4.0 (*)
+      │   │           ├── icu_datetime v2.4.0 (*)
+      │   │           ├── icu_decimal v2.4.0 (*)
+      │   │           ├── icu_list v2.4.0 (*)
+      │   │           ├── icu_locale v2.4.0 (*)
+      │   │           ├── icu_locale_core v2.4.0 (*)
+      │   │           ├── icu_locale_fallback v2.4.0 (*)
+      │   │           ├── icu_normalizer v2.4.0 (*)
+      │   │           ├── icu_pattern v0.5.1 (*)
+      │   │           ├── icu_plurals v2.4.0 (*)
+      │   │           ├── icu_properties v2.4.0 (*)
+      │   │           ├── icu_provider v2.4.0 (*)
+      │   │           ├── icu_segmenter v2.4.0 (*)
+      │   │           ├── icu_time v2.4.0 (*)
+      │   │           ├── potential_utf v0.1.6
+      │   │           │   ├── icu_casemap v2.4.0 (*)
+      │   │           │   ├── icu_collections v2.4.0 (*)
+      │   │           │   ├── icu_datetime v2.4.0 (*)
+      │   │           │   ├── icu_locale_fallback v2.4.0 (*)
+      │   │           │   └── icu_segmenter v2.4.0 (*)
+      │   │           └── tinystr v0.8.5 (*)
+      │   └── zerofrom-derive v0.1.8
+      │       └── zerofrom v0.1.8
+      │           ├── icu_collections v2.4.0 (*)
+      │           ├── icu_provider v2.4.0 (*)
+      │           ├── yoke v0.8.4 (*)
+      │           ├── zerotrie v0.2.5 (*)
+      │           └── zerovec v0.11.9 (*)
+      ├── thiserror-impl v2.0.21
+      │   └── thiserror v2.0.21
+      │       ├── android-activity v0.6.1 (*)
+      │       ├── egui-wgpu v0.37.0 (*)
+      │       ├── fluent-syntax v0.12.0
+      │       │   ├── fluent-bundle v0.16.0 (*)
+      │       │   └── phocommander-i18n v0.1.0 (*)
+      │       ├── gpu-allocator v0.28.0
+      │       │   └── wgpu-hal v30.0.1 (*)
+      │       ├── jni v0.22.4
+      │       │   ├── android-activity v0.6.1 (*)
+      │       │   └── webbrowser v1.2.5 (*)
+      │       ├── naga v30.0.1
+      │       │   ├── wgpu-core v30.0.1 (*)
+      │       │   ├── wgpu-hal v30.0.1 (*)
+      │       │   └── wgpu-naga-bridge v30.0.1 (*)
+      │       ├── naga-types v30.0.1
+      │       │   ├── naga v30.0.1 (*)
+      │       │   ├── wgpu-core v30.0.1 (*)
+      │       │   ├── wgpu-hal v30.0.1 (*)
+      │       │   └── wgpu-types v30.0.1 (*)
+      │       ├── phocommander-archive v0.1.0 (*)
+      │       ├── phocommander-config v0.1.0 (*)
+      │       ├── phocommander-core v0.1.0
+      │       │   ├── phocommander-desktop v0.1.0 (*)
+      │       │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+      │       │   └── phocommander-platform v0.1.0
+      │       │       └── phocommander-desktop v0.1.0 (*)
+      │       ├── phocommander-i18n v0.1.0 (*)
+      │       ├── phocommander-keymap v0.1.0 (*)
+      │       ├── phocommander-ops v0.1.0
+      │       │   └── phocommander-desktop v0.1.0 (*)
+      │       ├── phocommander-ui v0.1.0 (*)
+      │       ├── phocommander-viewer v0.1.0
+      │       │   └── phocommander-desktop v0.1.0 (*)
+      │       ├── redox_users v0.5.3
+      │       │   └── dirs-sys v0.5.0
+      │       │       └── dirs v7.0.0
+      │       │           └── phocommander-platform v0.1.0 (*)
+      │       ├── smithay-client-toolkit v0.20.0 (*)
+      │       ├── vello_common v0.2.0 (*)
+      │       ├── wgpu-core v30.0.1 (*)
+      │       ├── wgpu-hal v30.0.1 (*)
+      │       └── wl-clipboard-rs v0.9.4 (*)
+      ├── wasm-bindgen-macro-support v0.2.129
+      │   └── wasm-bindgen-macro v0.2.129
+      │       └── wasm-bindgen v0.2.129
+      │           ├── eframe v0.37.0 (*)
+      │           ├── getrandom v0.4.3 (*)
+      │           ├── glow v0.17.0 (*)
+      │           ├── js-sys v0.3.106 (*)
+      │           ├── plotters v0.3.7 (*)
+      │           ├── sevenz-rust2 v0.24.1 (*)
+      │           ├── wasm-bindgen-futures v0.4.79 (*)
+      │           ├── web-sys v0.3.106 (*)
+      │           ├── web-time v1.1.0 (*)
+      │           ├── wgpu v30.0.1 (*)
+      │           ├── wgpu-hal v30.0.1 (*)
+      │           └── winit v0.30.13 (*)
+      ├── yoke-derive v0.8.4 (*)
+      ├── zbus_macros v5.19.0 (*)
+      ├── zerofrom-derive v0.1.8 (*)
+      ├── zerovec-derive v0.11.7
+      │   └── zerovec v0.11.9 (*)
+      ├── zvariant_derive v5.15.1 (*)
+      └── zvariant_utils v4.2.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'thiserror'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:424:1
+    │  
+424 │ ╭ thiserror 1.0.69 registry+https://github.com/rust-lang/crates.io-index
+425 │ │ thiserror 2.0.21 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ thiserror v1.0.69
+      ├── calloop v0.13.0
+      │   ├── calloop-wayland-source v0.3.0
+      │   │   └── smithay-client-toolkit v0.19.2
+      │   │       ├── sctk-adwaita v0.10.1
+      │   │       │   └── winit v0.30.13
+      │   │       │       ├── accesskit_winit v0.34.1
+      │   │       │       │   └── egui-winit v0.37.0
+      │   │       │       │       └── eframe v0.37.0
+      │   │       │       │           ├── phocommander-desktop v0.1.0
+      │   │       │       │           └── phocommander-ui v0.1.0
+      │   │       │       │               ├── phocommander-desktop v0.1.0 (*)
+      │   │       │       │               └── (dev) phocommander-integration-tests v0.1.0
+      │   │       │       ├── eframe v0.37.0 (*)
+      │   │       │       ├── egui-wgpu v0.37.0
+      │   │       │       │   └── eframe v0.37.0 (*)
+      │   │       │       └── egui-winit v0.37.0 (*)
+      │   │       └── winit v0.30.13 (*)
+      │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   └── winit v0.30.13 (*)
+      ├── ndk v0.9.0
+      │   ├── android-activity v0.6.1
+      │   │   └── winit v0.30.13 (*)
+      │   └── winit v0.30.13 (*)
+      └── smithay-client-toolkit v0.19.2 (*)
+    ├ thiserror v2.0.21
+      ├── android-activity v0.6.1
+      │   └── winit v0.30.13
+      │       ├── accesskit_winit v0.34.1
+      │       │   └── egui-winit v0.37.0
+      │       │       └── eframe v0.37.0
+      │       │           ├── phocommander-desktop v0.1.0
+      │       │           └── phocommander-ui v0.1.0
+      │       │               ├── phocommander-desktop v0.1.0 (*)
+      │       │               └── (dev) phocommander-integration-tests v0.1.0
+      │       ├── eframe v0.37.0 (*)
+      │       ├── egui-wgpu v0.37.0
+      │       │   └── eframe v0.37.0 (*)
+      │       └── egui-winit v0.37.0 (*)
+      ├── egui-wgpu v0.37.0 (*)
+      ├── fluent-syntax v0.12.0
+      │   ├── fluent-bundle v0.16.0
+      │   │   └── fluent v0.17.0
+      │   │       └── phocommander-i18n v0.1.0
+      │   │           └── phocommander-desktop v0.1.0 (*)
+      │   └── phocommander-i18n v0.1.0 (*)
+      ├── gpu-allocator v0.28.0
+      │   └── wgpu-hal v30.0.1
+      │       ├── wgpu v30.0.1
+      │       │   ├── eframe v0.37.0 (*)
+      │       │   └── egui-wgpu v0.37.0 (*)
+      │       ├── wgpu-core v30.0.1
+      │       │   └── wgpu v30.0.1 (*)
+      │       ├── wgpu-core-deps-apple v30.0.1
+      │       │   └── wgpu-core v30.0.1 (*)
+      │       ├── wgpu-core-deps-emscripten v30.0.1
+      │       │   └── wgpu-core v30.0.1 (*)
+      │       ├── wgpu-core-deps-wasm v30.0.1
+      │       │   └── wgpu-core v30.0.1 (*)
+      │       └── wgpu-core-deps-windows-linux-android v30.0.1
+      │           └── wgpu-core v30.0.1 (*)
+      ├── jni v0.22.4
+      │   ├── android-activity v0.6.1 (*)
+      │   └── webbrowser v1.2.5
+      │       └── egui-winit v0.37.0 (*)
+      ├── naga v30.0.1
+      │   ├── wgpu-core v30.0.1 (*)
+      │   ├── wgpu-hal v30.0.1 (*)
+      │   └── wgpu-naga-bridge v30.0.1
+      │       ├── wgpu-core v30.0.1 (*)
+      │       └── wgpu-hal v30.0.1 (*)
+      ├── naga-types v30.0.1
+      │   ├── naga v30.0.1 (*)
+      │   ├── wgpu-core v30.0.1 (*)
+      │   ├── wgpu-hal v30.0.1 (*)
+      │   └── wgpu-types v30.0.1
+      │       ├── wgpu v30.0.1 (*)
+      │       ├── wgpu-core v30.0.1 (*)
+      │       ├── wgpu-hal v30.0.1 (*)
+      │       └── wgpu-naga-bridge v30.0.1 (*)
+      ├── phocommander-archive v0.1.0
+      │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      ├── phocommander-config v0.1.0
+      │   ├── phocommander-desktop v0.1.0 (*)
+      │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      ├── phocommander-core v0.1.0
+      │   ├── phocommander-desktop v0.1.0 (*)
+      │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+      │   └── phocommander-platform v0.1.0
+      │       └── phocommander-desktop v0.1.0 (*)
+      ├── phocommander-i18n v0.1.0 (*)
+      ├── phocommander-keymap v0.1.0
+      │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      ├── phocommander-ops v0.1.0
+      │   └── phocommander-desktop v0.1.0 (*)
+      ├── phocommander-ui v0.1.0 (*)
+      ├── phocommander-viewer v0.1.0
+      │   └── phocommander-desktop v0.1.0 (*)
+      ├── redox_users v0.5.3
+      │   └── dirs-sys v0.5.0
+      │       └── dirs v7.0.0
+      │           └── phocommander-platform v0.1.0 (*)
+      ├── smithay-client-toolkit v0.20.0
+      │   └── smithay-clipboard v0.7.3
+      │       └── egui-winit v0.37.0 (*)
+      ├── vello_common v0.2.0
+      │   ├── glifo v0.3.0
+      │   │   └── vello_cpu v0.2.0
+      │   │       └── epaint v0.37.0
+      │   │           ├── egui v0.37.0
+      │   │           │   ├── eframe v0.37.0 (*)
+      │   │           │   ├── egui-wgpu v0.37.0 (*)
+      │   │           │   ├── egui-winit v0.37.0 (*)
+      │   │           │   ├── egui_kittest v0.37.0
+      │   │           │   │   └── (dev) phocommander-ui v0.1.0 (*)
+      │   │           │   ├── phocommander-desktop v0.1.0 (*)
+      │   │           │   └── phocommander-ui v0.1.0 (*)
+      │   │           ├── egui-wgpu v0.37.0 (*)
+      │   │           └── egui_system_font_provider v0.37.0
+      │   │               └── eframe v0.37.0 (*)
+      │   └── vello_cpu v0.2.0 (*)
+      ├── wgpu-core v30.0.1 (*)
+      ├── wgpu-hal v30.0.1 (*)
+      └── wl-clipboard-rs v0.9.4
+          └── arboard v3.7.0
+              └── egui-winit v0.37.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'thiserror-impl'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:426:1
+    │  
+426 │ ╭ thiserror-impl 1.0.69 registry+https://github.com/rust-lang/crates.io-index
+427 │ │ thiserror-impl 2.0.21 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ thiserror-impl v1.0.69
+      └── thiserror v1.0.69
+          ├── calloop v0.13.0
+          │   ├── calloop-wayland-source v0.3.0
+          │   │   └── smithay-client-toolkit v0.19.2
+          │   │       ├── sctk-adwaita v0.10.1
+          │   │       │   └── winit v0.30.13
+          │   │       │       ├── accesskit_winit v0.34.1
+          │   │       │       │   └── egui-winit v0.37.0
+          │   │       │       │       └── eframe v0.37.0
+          │   │       │       │           ├── phocommander-desktop v0.1.0
+          │   │       │       │           └── phocommander-ui v0.1.0
+          │   │       │       │               ├── phocommander-desktop v0.1.0 (*)
+          │   │       │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │   │       │       ├── eframe v0.37.0 (*)
+          │   │       │       ├── egui-wgpu v0.37.0
+          │   │       │       │   └── eframe v0.37.0 (*)
+          │   │       │       └── egui-winit v0.37.0 (*)
+          │   │       └── winit v0.30.13 (*)
+          │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   └── winit v0.30.13 (*)
+          ├── ndk v0.9.0
+          │   ├── android-activity v0.6.1
+          │   │   └── winit v0.30.13 (*)
+          │   └── winit v0.30.13 (*)
+          └── smithay-client-toolkit v0.19.2 (*)
+    ├ thiserror-impl v2.0.21
+      └── thiserror v2.0.21
+          ├── android-activity v0.6.1
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          ├── egui-wgpu v0.37.0 (*)
+          ├── fluent-syntax v0.12.0
+          │   ├── fluent-bundle v0.16.0
+          │   │   └── fluent v0.17.0
+          │   │       └── phocommander-i18n v0.1.0
+          │   │           └── phocommander-desktop v0.1.0 (*)
+          │   └── phocommander-i18n v0.1.0 (*)
+          ├── gpu-allocator v0.28.0
+          │   └── wgpu-hal v30.0.1
+          │       ├── wgpu v30.0.1
+          │       │   ├── eframe v0.37.0 (*)
+          │       │   └── egui-wgpu v0.37.0 (*)
+          │       ├── wgpu-core v30.0.1
+          │       │   └── wgpu v30.0.1 (*)
+          │       ├── wgpu-core-deps-apple v30.0.1
+          │       │   └── wgpu-core v30.0.1 (*)
+          │       ├── wgpu-core-deps-emscripten v30.0.1
+          │       │   └── wgpu-core v30.0.1 (*)
+          │       ├── wgpu-core-deps-wasm v30.0.1
+          │       │   └── wgpu-core v30.0.1 (*)
+          │       └── wgpu-core-deps-windows-linux-android v30.0.1
+          │           └── wgpu-core v30.0.1 (*)
+          ├── jni v0.22.4
+          │   ├── android-activity v0.6.1 (*)
+          │   └── webbrowser v1.2.5
+          │       └── egui-winit v0.37.0 (*)
+          ├── naga v30.0.1
+          │   ├── wgpu-core v30.0.1 (*)
+          │   ├── wgpu-hal v30.0.1 (*)
+          │   └── wgpu-naga-bridge v30.0.1
+          │       ├── wgpu-core v30.0.1 (*)
+          │       └── wgpu-hal v30.0.1 (*)
+          ├── naga-types v30.0.1
+          │   ├── naga v30.0.1 (*)
+          │   ├── wgpu-core v30.0.1 (*)
+          │   ├── wgpu-hal v30.0.1 (*)
+          │   └── wgpu-types v30.0.1
+          │       ├── wgpu v30.0.1 (*)
+          │       ├── wgpu-core v30.0.1 (*)
+          │       ├── wgpu-hal v30.0.1 (*)
+          │       └── wgpu-naga-bridge v30.0.1 (*)
+          ├── phocommander-archive v0.1.0
+          │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+          ├── phocommander-config v0.1.0
+          │   ├── phocommander-desktop v0.1.0 (*)
+          │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+          ├── phocommander-core v0.1.0
+          │   ├── phocommander-desktop v0.1.0 (*)
+          │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+          │   └── phocommander-platform v0.1.0
+          │       └── phocommander-desktop v0.1.0 (*)
+          ├── phocommander-i18n v0.1.0 (*)
+          ├── phocommander-keymap v0.1.0
+          │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+          ├── phocommander-ops v0.1.0
+          │   └── phocommander-desktop v0.1.0 (*)
+          ├── phocommander-ui v0.1.0 (*)
+          ├── phocommander-viewer v0.1.0
+          │   └── phocommander-desktop v0.1.0 (*)
+          ├── redox_users v0.5.3
+          │   └── dirs-sys v0.5.0
+          │       └── dirs v7.0.0
+          │           └── phocommander-platform v0.1.0 (*)
+          ├── smithay-client-toolkit v0.20.0
+          │   └── smithay-clipboard v0.7.3
+          │       └── egui-winit v0.37.0 (*)
+          ├── vello_common v0.2.0
+          │   ├── glifo v0.3.0
+          │   │   └── vello_cpu v0.2.0
+          │   │       └── epaint v0.37.0
+          │   │           ├── egui v0.37.0
+          │   │           │   ├── eframe v0.37.0 (*)
+          │   │           │   ├── egui-wgpu v0.37.0 (*)
+          │   │           │   ├── egui-winit v0.37.0 (*)
+          │   │           │   ├── egui_kittest v0.37.0
+          │   │           │   │   └── (dev) phocommander-ui v0.1.0 (*)
+          │   │           │   ├── phocommander-desktop v0.1.0 (*)
+          │   │           │   └── phocommander-ui v0.1.0 (*)
+          │   │           ├── egui-wgpu v0.37.0 (*)
+          │   │           └── egui_system_font_provider v0.37.0
+          │   │               └── eframe v0.37.0 (*)
+          │   └── vello_cpu v0.2.0 (*)
+          ├── wgpu-core v30.0.1 (*)
+          ├── wgpu-hal v30.0.1 (*)
+          └── wl-clipboard-rs v0.9.4
+              └── arboard v3.7.0
+                  └── egui-winit v0.37.0 (*)
+
+warning[duplicate]: found 4 duplicate entries for crate 'windows-sys'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:513:1
+    │  
+513 │ ╭ windows-sys 0.52.0 registry+https://github.com/rust-lang/crates.io-index
+514 │ │ windows-sys 0.59.0 registry+https://github.com/rust-lang/crates.io-index
+515 │ │ windows-sys 0.60.2 registry+https://github.com/rust-lang/crates.io-index
+516 │ │ windows-sys 0.61.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-sys v0.52.0
+      └── winit v0.30.13
+          ├── accesskit_winit v0.34.1
+          │   └── egui-winit v0.37.0
+          │       └── eframe v0.37.0
+          │           ├── phocommander-desktop v0.1.0
+          │           └── phocommander-ui v0.1.0
+          │               ├── phocommander-desktop v0.1.0 (*)
+          │               └── (dev) phocommander-integration-tests v0.1.0
+          ├── eframe v0.37.0 (*)
+          ├── egui-wgpu v0.37.0
+          │   └── eframe v0.37.0 (*)
+          └── egui-winit v0.37.0 (*)
+    ├ windows-sys v0.59.0
+      ├── fs-set-times v0.20.3
+      │   └── cap-primitives v4.0.3
+      │       └── cap-std v4.0.3
+      │           └── phocommander-archive v0.1.0
+      │               └── (dev) phocommander-integration-tests v0.1.0
+      ├── rustix v0.38.44
+      │   ├── calloop v0.13.0
+      │   │   ├── calloop-wayland-source v0.3.0
+      │   │   │   └── smithay-client-toolkit v0.19.2
+      │   │   │       ├── sctk-adwaita v0.10.1
+      │   │   │       │   └── winit v0.30.13
+      │   │   │       │       ├── accesskit_winit v0.34.1
+      │   │   │       │       │   └── egui-winit v0.37.0
+      │   │   │       │       │       └── eframe v0.37.0
+      │   │   │       │       │           ├── phocommander-desktop v0.1.0
+      │   │   │       │       │           └── phocommander-ui v0.1.0
+      │   │   │       │       │               ├── phocommander-desktop v0.1.0 (*)
+      │   │   │       │       │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │   │   │       │       ├── eframe v0.37.0 (*)
+      │   │   │       │       ├── egui-wgpu v0.37.0
+      │   │   │       │       │   └── eframe v0.37.0 (*)
+      │   │   │       │       └── egui-winit v0.37.0 (*)
+      │   │   │       └── winit v0.30.13 (*)
+      │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   └── winit v0.30.13 (*)
+      │   ├── calloop-wayland-source v0.3.0 (*)
+      │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   └── winit v0.30.13 (*)
+      └── winx v0.36.4
+          └── cap-primitives v4.0.3 (*)
+    ├ windows-sys v0.60.2
+      └── io-extras v0.19.0
+          ├── cap-primitives v4.0.3
+          │   └── cap-std v4.0.3
+          │       └── phocommander-archive v0.1.0
+          │           └── (dev) phocommander-integration-tests v0.1.0
+          └── cap-std v4.0.3 (*)
+    ├ windows-sys v0.61.2
+      ├── arboard v3.7.0
+      │   └── egui-winit v0.37.0
+      │       └── eframe v0.37.0
+      │           ├── phocommander-desktop v0.1.0
+      │           └── phocommander-ui v0.1.0
+      │               ├── phocommander-desktop v0.1.0 (*)
+      │               └── (dev) phocommander-integration-tests v0.1.0
+      ├── async-io v2.6.0
+      │   ├── async-process v2.5.0
+      │   │   └── zbus v5.19.0
+      │   │       ├── accesskit_unix v0.24.0
+      │   │       │   └── accesskit_winit v0.34.1
+      │   │       │       └── egui-winit v0.37.0 (*)
+      │   │       ├── atspi-common v0.13.0
+      │   │       │   ├── accesskit_atspi_common v0.21.0
+      │   │       │   │   └── accesskit_unix v0.24.0 (*)
+      │   │       │   ├── atspi v0.29.0
+      │   │       │   │   └── accesskit_unix v0.24.0 (*)
+      │   │       │   └── atspi-proxies v0.13.0
+      │   │       │       └── atspi v0.29.0 (*)
+      │   │       └── atspi-proxies v0.13.0 (*)
+      │   ├── async-signal v0.2.14
+      │   │   └── async-process v2.5.0 (*)
+      │   └── zbus v5.19.0 (*)
+      ├── async-signal v0.2.14 (*)
+      ├── cap-primitives v4.0.3
+      │   └── cap-std v4.0.3
+      │       └── phocommander-archive v0.1.0
+      │           └── (dev) phocommander-integration-tests v0.1.0 (*)
+      ├── dirs-sys v0.5.0
+      │   └── dirs v7.0.0
+      │       └── phocommander-platform v0.1.0
+      │           └── phocommander-desktop v0.1.0 (*)
+      ├── eframe v0.37.0 (*)
+      ├── egui-winit v0.37.0 (*)
+      ├── errno v0.3.14
+      │   ├── rustix v0.38.44
+      │   │   ├── calloop v0.13.0
+      │   │   │   ├── calloop-wayland-source v0.3.0
+      │   │   │   │   └── smithay-client-toolkit v0.19.2
+      │   │   │   │       ├── sctk-adwaita v0.10.1
+      │   │   │   │       │   └── winit v0.30.13
+      │   │   │   │       │       ├── accesskit_winit v0.34.1 (*)
+      │   │   │   │       │       ├── eframe v0.37.0 (*)
+      │   │   │   │       │       ├── egui-wgpu v0.37.0
+      │   │   │   │       │       │   └── eframe v0.37.0 (*)
+      │   │   │   │       │       └── egui-winit v0.37.0 (*)
+      │   │   │   │       └── winit v0.30.13 (*)
+      │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   └── winit v0.30.13 (*)
+      │   │   ├── calloop-wayland-source v0.3.0 (*)
+      │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   └── winit v0.30.13 (*)
+      │   ├── rustix v1.1.5
+      │   │   ├── async-io v2.6.0 (*)
+      │   │   ├── async-process v2.5.0 (*)
+      │   │   ├── async-signal v0.2.14 (*)
+      │   │   ├── calloop v0.14.5
+      │   │   │   ├── calloop-wayland-source v0.4.1
+      │   │   │   │   └── smithay-client-toolkit v0.20.0
+      │   │   │   │       └── smithay-clipboard v0.7.3
+      │   │   │   │           └── egui-winit v0.37.0 (*)
+      │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   ├── calloop-wayland-source v0.4.1 (*)
+      │   │   ├── cap-primitives v4.0.3 (*)
+      │   │   ├── cap-std v4.0.3 (*)
+      │   │   ├── fs-set-times v0.20.3
+      │   │   │   └── cap-primitives v4.0.3 (*)
+      │   │   ├── gethostname v1.1.0
+      │   │   │   └── x11rb v0.13.2
+      │   │   │       ├── arboard v3.7.0 (*)
+      │   │   │       └── winit v0.30.13 (*)
+      │   │   ├── polling v3.11.0
+      │   │   │   ├── async-io v2.6.0 (*)
+      │   │   │   ├── calloop v0.13.0 (*)
+      │   │   │   └── calloop v0.14.5 (*)
+      │   │   ├── rustix-linux-procfs v0.1.1
+      │   │   │   └── cap-primitives v4.0.3 (*)
+      │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   ├── tempfile v3.27.0
+      │   │   │   ├── proptest v1.12.0
+      │   │   │   │   ├── (dev) phocommander-integration-tests v0.1.0 (*)
+      │   │   │   │   └── (dev) phocommander-ui v0.1.0 (*)
+      │   │   │   ├── rusty-fork v0.3.1
+      │   │   │   │   └── proptest v1.12.0 (*)
+      │   │   │   └── uds_windows v1.2.1
+      │   │   │       └── zbus v5.19.0 (*)
+      │   │   ├── wayland-backend v0.3.17
+      │   │   │   ├── calloop-wayland-source v0.3.0 (*)
+      │   │   │   ├── calloop-wayland-source v0.4.1 (*)
+      │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   ├── smithay-clipboard v0.7.3 (*)
+      │   │   │   ├── wayland-client v0.31.15
+      │   │   │   │   ├── calloop-wayland-source v0.3.0 (*)
+      │   │   │   │   ├── calloop-wayland-source v0.4.1 (*)
+      │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   │   ├── wayland-cursor v0.31.14
+      │   │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   │   ├── wayland-protocols v0.32.13
+      │   │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   │   │   ├── wayland-protocols-experimental v20250721.0.1
+      │   │   │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   │   │   ├── wayland-protocols-misc v0.3.12
+      │   │   │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   │   │   ├── wayland-protocols-plasma v0.3.12
+      │   │   │   │   │   │   └── winit v0.30.13 (*)
+      │   │   │   │   │   ├── wayland-protocols-wlr v0.3.12
+      │   │   │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   │   │   │   ├── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   │   │   │   └── wl-clipboard-rs v0.9.4
+      │   │   │   │   │   │       └── arboard v3.7.0 (*)
+      │   │   │   │   │   ├── winit v0.30.13 (*)
+      │   │   │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │   │   │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │   │   │   │   ├── wayland-protocols-misc v0.3.12 (*)
+      │   │   │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │   │   │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │   │   │   │   ├── winit v0.30.13 (*)
+      │   │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │   │   │   ├── wayland-csd-frame v0.3.0
+      │   │   │   │   ├── smithay-client-toolkit v0.19.2 (*)
+      │   │   │   │   └── smithay-client-toolkit v0.20.0 (*)
+      │   │   │   ├── wayland-protocols v0.32.13 (*)
+      │   │   │   ├── wayland-protocols-experimental v20250721.0.1 (*)
+      │   │   │   ├── wayland-protocols-misc v0.3.12 (*)
+      │   │   │   ├── wayland-protocols-plasma v0.3.12 (*)
+      │   │   │   ├── wayland-protocols-wlr v0.3.12 (*)
+      │   │   │   ├── winit v0.30.13 (*)
+      │   │   │   └── wl-clipboard-rs v0.9.4 (*)
+      │   │   ├── wayland-client v0.31.15 (*)
+      │   │   ├── wayland-cursor v0.31.14 (*)
+      │   │   ├── wl-clipboard-rs v0.9.4 (*)
+      │   │   ├── x11rb v0.13.2 (*)
+      │   │   ├── xattr v1.6.1
+      │   │   │   └── tar v0.4.46
+      │   │   │       └── phocommander-archive v0.1.0 (*)
+      │   │   └── zbus v5.19.0 (*)
+      │   └── signal-hook-registry v1.4.8
+      │       └── async-signal v0.2.14 (*)
+      ├── os_pipe v1.2.3
+      │   └── wl-clipboard-rs v0.9.4 (*)
+      ├── polling v3.11.0 (*)
+      ├── rustix v1.1.5 (*)
+      ├── tempfile v3.27.0 (*)
+      ├── uds_windows v1.2.1 (*)
+      ├── winapi-util v0.1.11
+      │   ├── same-file v1.0.6
+      │   │   └── walkdir v2.5.0
+      │   │       ├── criterion v0.8.2
+      │   │       │   └── (dev) phocommander-integration-tests v0.1.0 (*)
+      │   │       ├── (build) jni v0.22.4
+      │   │       │   ├── android-activity v0.6.1
+      │   │       │   │   └── winit v0.30.13 (*)
+      │   │       │   └── webbrowser v1.2.5
+      │   │       │       └── egui-winit v0.37.0 (*)
+      │   │       ├── rust-embed v8.13.0
+      │   │       │   └── phocommander-i18n v0.1.0
+      │   │       │       └── phocommander-desktop v0.1.0 (*)
+      │   │       ├── rust-embed-impl v8.13.0
+      │   │       │   └── rust-embed v8.13.0 (*)
+      │   │       └── rust-embed-utils v8.13.0
+      │   │           ├── rust-embed v8.13.0 (*)
+      │   │           └── rust-embed-impl v8.13.0 (*)
+      │   └── walkdir v2.5.0 (*)
+      ├── zbus v5.19.0 (*)
+      └── zip v9.1.0
+          ├── phocommander-archive v0.1.0 (*)
+          └── (dev) phocommander-integration-tests v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows-targets'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:517:1
+    │  
+517 │ ╭ windows-targets 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+518 │ │ windows-targets 0.53.5 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows-targets v0.52.6
+      ├── windows-sys v0.52.0
+      │   └── winit v0.30.13
+      │       ├── accesskit_winit v0.34.1
+      │       │   └── egui-winit v0.37.0
+      │       │       └── eframe v0.37.0
+      │       │           ├── phocommander-desktop v0.1.0
+      │       │           └── phocommander-ui v0.1.0
+      │       │               ├── phocommander-desktop v0.1.0 (*)
+      │       │               └── (dev) phocommander-integration-tests v0.1.0
+      │       ├── eframe v0.37.0 (*)
+      │       ├── egui-wgpu v0.37.0
+      │       │   └── eframe v0.37.0 (*)
+      │       └── egui-winit v0.37.0 (*)
+      └── windows-sys v0.59.0
+          ├── fs-set-times v0.20.3
+          │   └── cap-primitives v4.0.3
+          │       └── cap-std v4.0.3
+          │           └── phocommander-archive v0.1.0
+          │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+          ├── rustix v0.38.44
+          │   ├── calloop v0.13.0
+          │   │   ├── calloop-wayland-source v0.3.0
+          │   │   │   └── smithay-client-toolkit v0.19.2
+          │   │   │       ├── sctk-adwaita v0.10.1
+          │   │   │       │   └── winit v0.30.13 (*)
+          │   │   │       └── winit v0.30.13 (*)
+          │   │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   │   └── winit v0.30.13 (*)
+          │   ├── calloop-wayland-source v0.3.0 (*)
+          │   ├── smithay-client-toolkit v0.19.2 (*)
+          │   └── winit v0.30.13 (*)
+          └── winx v0.36.4
+              └── cap-primitives v4.0.3 (*)
+    ├ windows-targets v0.53.5
+      └── windows-sys v0.60.2
+          └── io-extras v0.19.0
+              ├── cap-primitives v4.0.3
+              │   └── cap-std v4.0.3
+              │       └── phocommander-archive v0.1.0
+              │           └── (dev) phocommander-integration-tests v0.1.0
+              └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_aarch64_gnullvm'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:520:1
+    │  
+520 │ ╭ windows_aarch64_gnullvm 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+521 │ │ windows_aarch64_gnullvm 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_aarch64_gnullvm v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_aarch64_gnullvm v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_aarch64_msvc'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:522:1
+    │  
+522 │ ╭ windows_aarch64_msvc 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+523 │ │ windows_aarch64_msvc 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_aarch64_msvc v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_aarch64_msvc v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_i686_gnu'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:524:1
+    │  
+524 │ ╭ windows_i686_gnu 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+525 │ │ windows_i686_gnu 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_i686_gnu v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_i686_gnu v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_i686_gnullvm'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:526:1
+    │  
+526 │ ╭ windows_i686_gnullvm 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+527 │ │ windows_i686_gnullvm 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_i686_gnullvm v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_i686_gnullvm v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_i686_msvc'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:528:1
+    │  
+528 │ ╭ windows_i686_msvc 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+529 │ │ windows_i686_msvc 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_i686_msvc v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_i686_msvc v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_x86_64_gnu'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:530:1
+    │  
+530 │ ╭ windows_x86_64_gnu 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+531 │ │ windows_x86_64_gnu 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_x86_64_gnu v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_x86_64_gnu v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_x86_64_gnullvm'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:532:1
+    │  
+532 │ ╭ windows_x86_64_gnullvm 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+533 │ │ windows_x86_64_gnullvm 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_x86_64_gnullvm v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_x86_64_gnullvm v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'windows_x86_64_msvc'
+    ┌─ /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/Cargo.lock:534:1
+    │  
+534 │ ╭ windows_x86_64_msvc 0.52.6 registry+https://github.com/rust-lang/crates.io-index
+535 │ │ windows_x86_64_msvc 0.53.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ windows_x86_64_msvc v0.52.6
+      └── windows-targets v0.52.6
+          ├── windows-sys v0.52.0
+          │   └── winit v0.30.13
+          │       ├── accesskit_winit v0.34.1
+          │       │   └── egui-winit v0.37.0
+          │       │       └── eframe v0.37.0
+          │       │           ├── phocommander-desktop v0.1.0
+          │       │           └── phocommander-ui v0.1.0
+          │       │               ├── phocommander-desktop v0.1.0 (*)
+          │       │               └── (dev) phocommander-integration-tests v0.1.0
+          │       ├── eframe v0.37.0 (*)
+          │       ├── egui-wgpu v0.37.0
+          │       │   └── eframe v0.37.0 (*)
+          │       └── egui-winit v0.37.0 (*)
+          └── windows-sys v0.59.0
+              ├── fs-set-times v0.20.3
+              │   └── cap-primitives v4.0.3
+              │       └── cap-std v4.0.3
+              │           └── phocommander-archive v0.1.0
+              │               └── (dev) phocommander-integration-tests v0.1.0 (*)
+              ├── rustix v0.38.44
+              │   ├── calloop v0.13.0
+              │   │   ├── calloop-wayland-source v0.3.0
+              │   │   │   └── smithay-client-toolkit v0.19.2
+              │   │   │       ├── sctk-adwaita v0.10.1
+              │   │   │       │   └── winit v0.30.13 (*)
+              │   │   │       └── winit v0.30.13 (*)
+              │   │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   │   └── winit v0.30.13 (*)
+              │   ├── calloop-wayland-source v0.3.0 (*)
+              │   ├── smithay-client-toolkit v0.19.2 (*)
+              │   └── winit v0.30.13 (*)
+              └── winx v0.36.4
+                  └── cap-primitives v4.0.3 (*)
+    ├ windows_x86_64_msvc v0.53.1
+      └── windows-targets v0.53.5
+          └── windows-sys v0.60.2
+              └── io-extras v0.19.0
+                  ├── cap-primitives v4.0.3
+                  │   └── cap-std v4.0.3
+                  │       └── phocommander-archive v0.1.0
+                  │           └── (dev) phocommander-integration-tests v0.1.0
+                  └── cap-std v4.0.3 (*)
+
+advisories ok, bans ok, licenses ok, sources ok
