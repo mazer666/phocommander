@@ -69,7 +69,15 @@ for argument in "$@"; do
 done
 
 export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
-export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$SCRATCH/target}"
+
+# WHY: the target directory is always the one of this run and never the one
+#       of the environment. The script builds a copy of the repository, and a
+#       test binary carries the path of the repository it was built in — the
+#       constant of cargo. A binary that was built in the copy would look for
+#       the configuration file of the copy, and the copy is gone when the
+#       script ends. The test would then fail for a reason that has nothing
+#       to do with the gate.
+export CARGO_TARGET_DIR="$SCRATCH/target"
 
 cleanup() {
   rm -rf "$SCRATCH"
@@ -671,6 +679,78 @@ echo "15.1 positive run (the dependency graph of the repository):"
 positive=$?
 show "vulnerabilities|^error" "$SCRATCH/audit-positive.log"
 report "the gate is green on the dependency graph of the repository" 0 "$positive"
+echo
+
+echo "=============================================================="
+echo "Gate 16 — localisation: scripts/check-i18n-keys.py"
+echo "=============================================================="
+echo "16.1 negative run (a key is missing in the French catalogue):"
+cp "$COPY/crates/phocommander-i18n/locales/fr/panel.ftl" "$SCRATCH/fr-panel.ftl"
+printf '\n# The key that is missing for the test.\n' >> "$COPY/crates/phocommander-i18n/locales/fr/panel.ftl"
+python3 - "$COPY/crates/phocommander-i18n/locales/fr/panel.ftl" <<'PYTHON'
+import sys, pathlib
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+# Ein Schluessel wird aus dem franzosischen Katalog entfernt.
+text = "\n".join(
+    line for line in text.split("\n")
+    if not line.startswith("panel-column-name =")
+)
+path.write_text(text, encoding="utf-8")
+PYTHON
+(cd "$COPY" && python3 scripts/check-i18n-keys.py) > "$SCRATCH/i18n-keys-negative.log" 2>&1
+negative=$?
+show "fr|missing|FAIL" "$SCRATCH/i18n-keys-negative.log"
+report "the gate is red on a missing translation" "nonzero" "$negative"
+echo
+cp "$SCRATCH/fr-panel.ftl" "$COPY/crates/phocommander-i18n/locales/fr/panel.ftl"
+echo "16.2 positive run (the catalogues are complete again):"
+(cd "$COPY" && python3 scripts/check-i18n-keys.py) > "$SCRATCH/i18n-keys-positive.log" 2>&1
+positive=$?
+show "RESULT: PASS|same" "$SCRATCH/i18n-keys-positive.log"
+report "the gate is green again" 0 "$positive"
+echo
+
+echo "=============================================================="
+echo "Gate 17 — hardcoded texts: scripts/check-i18n-hardcoded.py"
+echo "=============================================================="
+echo "17.1 negative run (a text is written down in the source):"
+cp "$COPY/crates/phocommander-ui/src/preview.rs" "$SCRATCH/preview.rs"
+python3 - "$COPY/crates/phocommander-ui/src/preview.rs" <<'PYTHON'
+import sys, pathlib
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+# Ein Text wird eingebaut, wie es ein Entwickler tun wuerde.
+text = text.replace(
+    "pub struct Preview {",
+    "pub struct Preview {\n    /// A text that was written down by accident.\n    _untranslated: String,",
+    1,
+)
+# Der Text selbst steht als Literal in der Datei — so, wie es ein
+# Entwickler tun wuerde, der den Katalog nicht kennt.
+zeilen = text.split("\n")
+for num, zeile in enumerate(zeilen):
+    if zeile.startswith("use "):
+        zeilen[num:num] = [
+            "",
+            "/// The text that was written down by accident.",
+            'const UNTRANSLATED: &str = "The file could not be read.";',
+        ]
+        break
+text = "\n".join(zeilen)
+path.write_text(text, encoding="utf-8")
+PYTHON
+(cd "$COPY" && python3 scripts/check-i18n-hardcoded.py) > "$SCRATCH/i18n-hardcoded-negative.log" 2>&1
+negative=$?
+show "Visible texts|FAIL" "$SCRATCH/i18n-hardcoded-negative.log"
+report "the gate is red on a text that is written down in the source" "nonzero" "$negative"
+echo
+cp "$SCRATCH/preview.rs" "$COPY/crates/phocommander-ui/src/preview.rs"
+echo "17.2 positive run (the text is removed again):"
+(cd "$COPY" && python3 scripts/check-i18n-hardcoded.py) > "$SCRATCH/i18n-hardcoded-positive.log" 2>&1
+positive=$?
+show "RESULT: PASS|Visible texts" "$SCRATCH/i18n-hardcoded-positive.log"
+report "the gate is green again" 0 "$positive"
 echo
 
 echo "=============================================================="
