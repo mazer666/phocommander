@@ -1,9 +1,10 @@
 //! The copy: the modes of the specification and the comparison of two trees.
 //!
-//! WHAT: the modes of a copy ([{CopyMode}]), the request of a copy
-//!       ([{CopyRequest}]), what a copy did ([{CopyOutcome}]), the execution
-//!       of a copy ([{execute_copy}]) and the comparison of two directory
-//!       trees ([{compare_trees}]).
+//! WHAT: the execution of a copy ([{execute_copy}]) and the comparison of two
+//!       directory trees ([{compare_trees}]). The vocabulary of the copy —
+//!       the mode, the request, the outcome, the item of a tree — lives in
+//!       the file `types.rs` of this directory, the rules of the security
+//!       section in the file `policy.rs`.
 //! WHY: a copy is not one operation but a family of them, and the difference
 //!       between them is the difference between a fast copy and a copy that
 //!       can be trusted (section 6.9 of the specification). The user chooses
@@ -29,7 +30,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::edit::ConflictPolicy;
 use crate::error::{JobError, OpError};
 use crate::progress::JobContext;
 use crate::sync::{SyncAction, SyncPlanEntry, SyncState};
@@ -37,213 +37,15 @@ use crate::sync::{SyncAction, SyncPlanEntry, SyncState};
 /// The counter that makes the name of a temporary file unique.
 static TEMPORARY_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-/// The mode of a copy.
-///
-/// WHY: the modes are the ones of the specification: quick, verified,
-/// atomic, sync-mirror, sync-update, sync-two-way and sync-preview. The
-/// default of a copy is {verified} and the default of a synchronisation is
-/// 'sync-preview', so that the destructive case always requires an explicit
-/// act.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum CopyMode {
-/// Byte copy, no verification.
-    Quick,
+mod policy;
+mod types;
 
-/// Byte copy, then a checksum of source and destination compared.
-    #[default]
-    Verified,
-
-/// Write to a temporary file next to the destination, verify it, then
-/// rename it into place.
-    Atomic,
-
-/// The destination becomes an exact copy of the source.
-    SyncMirror,
-
-/// The destination is brought up to date with the source, nothing is
-/// deleted.
-    SyncUpdate,
-
-/// The newer version wins in both directions.
-    SyncTwoWay,
-
-/// No data is moved. The comparison produces a plan.
-    SyncPreview,
-}
-
-impl CopyMode {
-/// The name of the mode, as the configuration file writes it.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::CopyMode;
-///
-/// assert_eq!(CopyMode::SyncMirror.as_str(), "sync-mirror");
-/// ```
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            CopyMode::Quick => "quick",
-            CopyMode::Verified => "verified",
-            CopyMode::Atomic => "atomic",
-            CopyMode::SyncMirror => "sync-mirror",
-            CopyMode::SyncUpdate => "sync-update",
-            CopyMode::SyncTwoWay => "sync-two-way",
-            CopyMode::SyncPreview => "sync-preview",
-        }
-    }
-
-/// Whether the mode belongs to a synchronisation.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::CopyMode;
-///
-/// assert!(CopyMode::SyncPreview.is_sync());
-/// assert!(!CopyMode::Verified.is_sync());
-/// ```
-    pub fn is_sync(&self) -> bool {
-        matches!(
-            self,
-            CopyMode::SyncMirror | CopyMode::SyncUpdate | CopyMode::SyncTwoWay | CopyMode::SyncPreview
-        )
-    }
-
-/// Whether the mode deletes anything.
-///
-/// WHY: 'sync-mirror' is the only mode that deletes. The answer decides
-/// whether the operation may be started without a confirmation.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::CopyMode;
-///
-/// assert!(CopyMode::SyncMirror.deletes());
-/// assert!(!CopyMode::SyncUpdate.deletes());
-/// ```
-    pub fn deletes(&self) -> bool {
-        matches!(self, CopyMode::SyncMirror)
-    }
-
-/// Whether the mode compares the source and the destination after the
-/// copy.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::CopyMode;
-///
-/// assert!(CopyMode::Verified.verifies());
-/// assert!(CopyMode::Atomic.verifies());
-/// assert!(!CopyMode::Quick.verifies());
-/// ```
-    pub fn verifies(&self) -> bool {
-        matches!(self, CopyMode::Verified | CopyMode::Atomic)
-    }
-}
-
-/// The request of a copy.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CopyRequest {
-/// The directory or the file that is copied.
-    pub source: PathBuf,
-
-/// The directory or the file that receives the copy.
-    pub destination: PathBuf,
-
-/// The mode of the copy.
-    pub mode: CopyMode,
-
-/// The policy for a file that exists already.
-    pub policy: ConflictPolicy,
-}
-
-impl CopyRequest {
-/// Builds a request with the default mode and the default policy.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::{CopyMode, CopyRequest};
-/// use std::path::PathBuf;
-///
-/// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"));
-/// assert_eq!(request.mode, CopyMode::Verified);
-/// ```
-    pub fn new(source: impl Into<PathBuf>, destination: impl Into<PathBuf>) -> Self {
-        Self {
-            source: source.into(),
-            destination: destination.into(),
-            mode: CopyMode::default(),
-            policy: ConflictPolicy::default(),
-        }
-    }
-
-/// Sets the mode of the copy.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::{CopyMode, CopyRequest};
-/// use std::path::PathBuf;
-///
-/// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"))
-///     .with_mode(CopyMode::Quick);
-/// assert_eq!(request.mode, CopyMode::Quick);
-/// ```
-    pub fn with_mode(mut self, mode: CopyMode) -> Self {
-        self.mode = mode;
-        self
-    }
-
-/// Sets the policy for a file that exists already.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::CopyRequest;
-/// use phocommander_ops::edit::ConflictPolicy;
-/// use std::path::PathBuf;
-///
-/// let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"))
-///     .with_policy(ConflictPolicy::KeepBoth);
-/// assert_eq!(request.policy, ConflictPolicy::KeepBoth);
-/// ```
-    pub fn with_policy(mut self, policy: ConflictPolicy) -> Self {
-        self.policy = policy;
-        self
-    }
-}
-
-/// What a copy did.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct CopyOutcome {
-/// The number of files that were copied.
-    pub files_copied: u64,
-
-/// The number of bytes that were copied.
-    pub bytes_copied: u64,
-
-/// The number of files that were left alone.
-    pub files_skipped: u64,
-
-/// The failures the copy collected.
-    pub errors: Vec<JobError>,
-}
-
-/// One file of a tree, as the copy sees it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TreeItem {
-/// The path of the file, relative to the root of the tree.
-    pub relative_path: PathBuf,
-
-/// The path of the file.
-    pub path: PathBuf,
-
-/// The size of the file in bytes.
-    pub size: u64,
-
-/// The time of the last change of the file.
-    pub modified: Option<std::time::SystemTime>,
-
-/// Whether the item is a directory.
-    pub is_directory: bool,
-}
+pub use policy::CopyPolicy;
+// WHY: the policy of the conflicts belongs to the copy, but it is defined
+// with the other rules of a job. It is re-exported here so that the copy
+// can be used without knowing where the rule lives.
+pub use crate::edit::ConflictPolicy;
+pub use types::{CopyMode, CopyOutcome, CopyRequest, TreeItem};
 
 /// Lists the files and the directories of a tree.
 ///
@@ -281,6 +83,7 @@ fn collect_below(
                 size: 0,
                 modified: entry.modified,
                 is_directory: true,
+                kind: entry.kind,
             });
             collect_below(fs, root, &relative_path, items)?;
             continue;
@@ -297,6 +100,7 @@ fn collect_below(
             size,
             modified: entry.modified,
             is_directory: false,
+            kind: entry.kind,
         });
     }
 
@@ -307,15 +111,46 @@ fn collect_below(
 ///
 /// WHY: the three modes differ in what happens after the bytes are written.
 /// The quick mode stops there, the verified mode compares the checksum of the
-/// source with the checksum of the destination, and the atomic mode writes
-/// into a temporary file, verifies that file and renames it into place — so
-/// that a program which reads the destination never sees a half-written
-/// file.
+/// source with the checksum of the destination — unless the rules switched
+/// that comparison off, in which case the destination is not read a second
+/// time at all — and the atomic mode writes into a temporary file, verifies
+/// that file and renames it into place, so that a program which reads the
+/// destination never sees a half-written file.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::copy::{CopyMode, CopyPolicy, copy_one_file};
+/// use phocommander_ops::edit::JobControl;
+/// use phocommander_ops::progress::{JobContext, ProgressSink, ProgressUpdate};
+/// use std::path::Path;
+/// use std::sync::Arc;
+///
+/// struct Silent;
+/// impl ProgressSink for Silent {
+///     fn report(&mut self, _update: ProgressUpdate) {}
+/// }
+///
+/// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+/// let control = Arc::new(JobControl::new());
+/// let mut context = JobContext::new(control, Box::new(Silent));
+/// let bytes = copy_one_file(
+///     fs,
+///     Path::new("/photos/a.txt"),
+///     Path::new("/backup/a.txt"),
+///     CopyMode::Verified,
+///     &CopyPolicy::strict(),
+///     &mut context,
+/// )?;
+/// assert!(bytes > 0);
+/// # Ok(())
+/// # }
+/// ```
 pub fn copy_one_file(
     fs: &dyn crate::port::FileSystem,
     source: &Path,
     target: &Path,
     mode: CopyMode,
+    rules: &CopyPolicy,
     context: &mut JobContext,
 ) -> Result<u64, OpError> {
     match mode {
@@ -325,6 +160,13 @@ pub fn copy_one_file(
         }
         CopyMode::Verified => {
             let result = fs.copy_file(source, target)?;
+            if !rules.verifies_checksums() {
+                // WHY: the rule "checksum_on_copy" is switched off, so the
+                // comparison is not executed. The destination is not read a
+                // second time, and the read volume of the copy stays at the
+                // volume that was copied.
+                return Ok(result.bytes);
+            }
             let destination_checksum = fs.checksum(target)?;
             if destination_checksum != result.checksum {
                 context.begin_verification(1, result.bytes);
@@ -336,6 +178,10 @@ pub fn copy_one_file(
             Ok(result.bytes)
         }
         CopyMode::Atomic => {
+            // WHY: the atomic mode always verifies the temporary file. The
+            // promise of the mode is that a program never reads a
+            // half-written file, and that promise does not belong to the
+            // switch of the verified mode.
             let temporary = temporary_path(target);
             let result = fs.copy_file(source, &temporary)?;
             let temporary_checksum = fs.checksum(&temporary)?;
@@ -377,10 +223,7 @@ fn temporary_path(target: &Path) -> PathBuf {
 /// WHY: the policy "keep both" has to produce a name that is free, and the
 /// name has to be found without asking the user — the operation runs in the
 /// background.
-pub fn free_name(
-    fs: &dyn crate::port::FileSystem,
-    target: &Path,
-) -> Result<PathBuf, OpError> {
+pub fn free_name(fs: &dyn crate::port::FileSystem, target: &Path) -> Result<PathBuf, OpError> {
     if fs.metadata(target).is_err() {
         return Ok(target.to_path_buf());
     }
@@ -453,12 +296,13 @@ pub fn execute_copy(
     let mut outcome = CopyOutcome::default();
     let mut destination = request.destination.clone();
     let mut mode = request.mode;
+    let rules = request.rules;
 
     for item in items {
         match context.checkpoint() {
             Ok(Some(edit)) => {
-                if let crate::edit::Edit::Destination(path) = edit {
-                    destination = path;
+                if let crate::edit::Edit::Destination(ref path) = edit {
+                    destination = path.to_path_buf();
                 }
                 if let crate::edit::Edit::VerificationMode(new_mode) = edit {
                     mode = new_mode;
@@ -479,9 +323,12 @@ pub fn execute_copy(
 
         if item.is_directory {
             if let Err(error) = fs.create_dir_all(&target) {
-                outcome
-                    .errors
-                    .push(JobError::new(target.clone(), error.code(), error.to_string(), true));
+                outcome.errors.push(JobError::new(
+                    target.clone(),
+                    error.code(),
+                    error.to_string(),
+                    true,
+                ));
             }
             context.finish_item();
             context.report();
@@ -506,7 +353,30 @@ pub fn execute_copy(
             ConflictPolicy::Always => target,
         };
 
-        match copy_one_file(fs, &item.path, &target, mode, context) {
+        // WHY: a symbolic link is copied as a link, unless the rules allow
+        // the copy to dereference it. A copy that dereferences the link
+        // would copy a file the user never selected and would lose the link
+        // itself.
+        if item.kind.is_symlink() && !rules.follows_symlinks() {
+            match fs.copy_symlink(&item.path, &target) {
+                Ok(()) => {
+                    outcome.files_copied += 1;
+                }
+                Err(error) => {
+                    outcome.errors.push(JobError::new(
+                        item.path.clone(),
+                        error.code(),
+                        error.to_string(),
+                        true,
+                    ));
+                }
+            }
+            context.finish_item();
+            context.report();
+            continue;
+        }
+
+        match copy_one_file(fs, &item.path, &target, mode, &rules, context) {
             Ok(bytes) => {
                 outcome.files_copied += 1;
                 outcome.bytes_copied += bytes;
@@ -660,69 +530,4 @@ fn newer(first: Option<std::time::SystemTime>, second: Option<std::time::SystemT
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_default_of_a_copy_is_the_verified_mode() {
-        // act
-        let mode = CopyMode::default();
-
-        // assert
-        assert_eq!(mode, CopyMode::Verified);
-        assert!(mode.verifies());
-    }
-
-    #[test]
-    fn only_the_mirror_mode_deletes() {
-        // act, assert
-        assert!(CopyMode::SyncMirror.deletes());
-        assert!(!CopyMode::SyncUpdate.deletes());
-        assert!(!CopyMode::SyncTwoWay.deletes());
-        assert!(!CopyMode::SyncPreview.deletes());
-        assert!(!CopyMode::Quick.deletes());
-    }
-
-    #[test]
-    fn the_modes_know_which_of_them_are_synchronisations() {
-        // act, assert
-        assert!(CopyMode::SyncMirror.is_sync());
-        assert!(CopyMode::SyncUpdate.is_sync());
-        assert!(CopyMode::SyncTwoWay.is_sync());
-        assert!(CopyMode::SyncPreview.is_sync());
-        assert!(!CopyMode::Quick.is_sync());
-        assert!(!CopyMode::Verified.is_sync());
-        assert!(!CopyMode::Atomic.is_sync());
-    }
-
-    #[test]
-    fn the_modes_have_the_names_the_configuration_uses() {
-        // act, assert
-        assert_eq!(CopyMode::Quick.as_str(), "quick");
-        assert_eq!(CopyMode::Verified.as_str(), "verified");
-        assert_eq!(CopyMode::Atomic.as_str(), "atomic");
-        assert_eq!(CopyMode::SyncMirror.as_str(), "sync-mirror");
-        assert_eq!(CopyMode::SyncUpdate.as_str(), "sync-update");
-        assert_eq!(CopyMode::SyncTwoWay.as_str(), "sync-two-way");
-        assert_eq!(CopyMode::SyncPreview.as_str(), "sync-preview");
-    }
-
-    #[test]
-    fn the_temporary_file_of_the_atomic_mode_sits_next_to_the_target() {
-        // arrange
-        let target = Path::new("/backup/photos/sunset.jpg");
-
-        // act
-        let temporary = temporary_path(target);
-
-        // assert
-        assert_eq!(temporary.parent(), target.parent());
-        let name = temporary
-            .file_name()
-            .map(|name| name.to_string_lossy().to_string())
-            .unwrap_or_default();
-        assert!(name.starts_with(".sunset.jpg."), "{name}");
-        assert!(name.ends_with(".part"), "{name}");
-    }
-}
+mod tests;

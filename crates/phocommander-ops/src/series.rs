@@ -16,7 +16,7 @@
 //! use phocommander_ops::series::detect_series_numbers;
 //!
 //! let numbers = detect_series_numbers("The.Expanse.S01E03.1080p.mkv");
-/// assert_eq!(numbers.map(|numbers| numbers.season), Some(1));
+//! assert_eq!(numbers.map(|numbers| numbers.season), Some(1));
 //! assert_eq!(numbers.map(|numbers| numbers.episode), Some(3));
 //! ```
 
@@ -25,10 +25,10 @@ use std::path::Path;
 /// The season and the episode number of a series.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SeriesNumbers {
-/// The number of the season.
+    /// The number of the season.
     pub season: u64,
 
-/// The number of the episode.
+    /// The number of the episode.
     pub episode: u64,
 }
 
@@ -49,20 +49,52 @@ pub fn detect_series_numbers(name: &str) -> Option<SeriesNumbers> {
     let characters: Vec<char> = name.chars().collect();
     let mut index = 0;
 
-    while index + 3 < characters.len() {
-        if characters[index].eq_ignore_ascii_case(&'S')
-            && characters[index + 1].is_ascii_digit()
-            && characters[index + 2].eq_ignore_ascii_case(&'E')
-            && characters[index + 3].is_ascii_digit()
-        {
-            let season = read_number(&characters, index + 1);
-            let episode = read_number(&characters, index + 3);
-            return Some(SeriesNumbers { season, episode });
+    while index < characters.len() {
+        if !characters[index].eq_ignore_ascii_case(&'S') {
+            index += 1;
+            continue;
         }
+
+        // WHY: the season may have more than one digit, so the number is
+        // read first and the `E` is looked for behind it. The pattern of the
+        // specification is `SxxEyy`, and a season of two or three digits is
+        // as common as a two digit episode.
+        let season_start = index + 1;
+        let season_end = end_of_number(&characters, season_start);
+        if season_end == season_start {
+            // No digit follows the `S`, so this is not a season marker.
+            index += 1;
+            continue;
+        }
+
+        if season_end < characters.len() && characters[season_end].eq_ignore_ascii_case(&'E') {
+            let episode_start = season_end + 1;
+            let episode_end = end_of_number(&characters, episode_start);
+            if episode_end > episode_start {
+                return Some(SeriesNumbers {
+                    season: read_number(&characters, season_start),
+                    episode: read_number(&characters, episode_start),
+                });
+            }
+        }
+
         index += 1;
     }
 
     None
+}
+
+/// Returns the position behind the number that starts at {start}.
+///
+/// WHY: the recognition has to know where the season number ends, because
+/// the `E` of the pattern follows it. The number may have two or three
+/// digits, so its end cannot be assumed.
+fn end_of_number(characters: &[char], start: usize) -> usize {
+    let mut index = start;
+    while index < characters.len() && characters[index].is_ascii_digit() {
+        index += 1;
+    }
+    index
 }
 
 /// Reads the number that starts at {start}.
@@ -70,9 +102,9 @@ fn read_number(characters: &[char], start: usize) -> u64 {
     let mut number = 0u64;
     let mut index = start;
     while index < characters.len() && characters[index].is_ascii_digit() {
-        number = number.saturating_mul(10).saturating_add(
-            u64::from(characters[index].to_digit(10).unwrap_or(0)),
-        );
+        number = number
+            .saturating_mul(10)
+            .saturating_add(u64::from(characters[index].to_digit(10).unwrap_or(0)));
         index += 1;
     }
     number
@@ -107,7 +139,6 @@ pub fn series_name_from_parent(path: &Path) -> Option<String> {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -122,6 +153,23 @@ mod tests {
             None => panic!("the pattern should have been recognised"),
         };
         assert_eq!(numbers.season, 1);
+        assert_eq!(numbers.episode, 3);
+    }
+
+    #[test]
+    fn a_two_digit_season_is_recognised() {
+        // WHY: the season may have two digits, so the `E` of the pattern
+        // follows the number and not the `S`. This case was found by the
+        // test above.
+        // act
+        let numbers = detect_series_numbers("Show.S12E03.mkv");
+
+        // assert
+        let numbers = match numbers {
+            Some(numbers) => numbers,
+            None => panic!("the pattern should have been recognised"),
+        };
+        assert_eq!(numbers.season, 12);
         assert_eq!(numbers.episode, 3);
     }
 

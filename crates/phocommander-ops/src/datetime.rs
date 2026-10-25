@@ -76,7 +76,11 @@ fn days_since_epoch(time: SystemTime) -> i64 {
 /// the machine that renames it.
 fn civil_from_days(days: i64) -> (i64, u32, u32) {
     let shifted = days + 719_468;
-    let era = if shifted >= 0 { shifted } else { shifted - 146_096 } / 146_097;
+    let era = if shifted >= 0 {
+        shifted
+    } else {
+        shifted - 146_096
+    } / 146_097;
     let day_of_era = (shifted - era * 146_097) as u64;
     let year_of_era =
         (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
@@ -98,7 +102,6 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

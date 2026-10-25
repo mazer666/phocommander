@@ -36,41 +36,41 @@ use crate::job::{JobState, Priority};
 /// What the user may change in a job.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Edit {
-/// The job moves within the queue.
+    /// The job moves within the queue.
     Priority(Priority),
 
-/// The job copies into another directory.
+    /// The job copies into another directory.
     Destination(PathBuf),
 
-/// The job resolves a conflict in another way.
+    /// The job resolves a conflict in another way.
     ConflictPolicy(ConflictPolicy),
 
-/// The job copies in another mode.
+    /// The job copies in another mode.
     VerificationMode(CopyMode),
 
-/// The job stops at the next item boundary.
+    /// The job stops at the next item boundary.
     Pause,
 
-/// The job continues at the item it stopped at.
+    /// The job continues at the item it stopped at.
     Resume,
 
-/// The job ends. What it has done already stays done.
+    /// The job ends. What it has done already stays done.
     Cancel,
 
-/// Only the failed items of the job run again.
+    /// Only the failed items of the job run again.
     RetryFailed,
 }
 
 impl Edit {
-/// The name of the edit, for the history of the job.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::Edit;
-/// use phocommander_ops::job::Priority;
-///
-/// assert_eq!(Edit::Priority(Priority::High).as_str(), "priority");
-/// ```
+    /// The name of the edit, for the history of the job.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::Edit;
+    /// use phocommander_ops::job::Priority;
+    ///
+    /// assert_eq!(Edit::Priority(Priority::High).as_str(), "priority");
+    /// ```
     pub fn as_str(&self) -> &'static str {
         match self {
             Edit::Priority(_) => "priority",
@@ -92,29 +92,29 @@ impl Edit {
 /// the dialog is gone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum ConflictPolicy {
-/// The user decides.
+    /// The user decides.
     #[default]
     Ask,
 
-/// An existing file is never overwritten.
+    /// An existing file is never overwritten.
     Never,
 
-/// An existing file is always overwritten.
+    /// An existing file is always overwritten.
     Always,
 
-/// The copy receives a name that does not exist yet.
+    /// The copy receives a name that does not exist yet.
     KeepBoth,
 }
 
 impl ConflictPolicy {
-/// The name of the policy.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::ConflictPolicy;
-///
-/// assert_eq!(ConflictPolicy::KeepBoth.as_str(), "keep_both");
-/// ```
+    /// The name of the policy.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::ConflictPolicy;
+    ///
+    /// assert_eq!(ConflictPolicy::KeepBoth.as_str(), "keep_both");
+    /// ```
     pub fn as_str(&self) -> &'static str {
         match self {
             ConflictPolicy::Ask => "ask",
@@ -128,28 +128,28 @@ impl ConflictPolicy {
 /// The reason why a change was refused.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum EditError {
-/// The job does not exist.
+    /// The job does not exist.
     #[error("there is no job with the identifier {id}")]
     UnknownJob {
-/// The identifier that was asked for.
+        /// The identifier that was asked for.
         id: u64,
     },
 
-/// The change is not allowed in the state the job is in.
+    /// The change is not allowed in the state the job is in.
     #[error("the change {edit} is not allowed while the job is {state}")]
     WrongState {
-/// The name of the change.
+        /// The name of the change.
         edit: &'static str,
-/// The state of the job.
+        /// The state of the job.
         state: JobState,
     },
 
-/// The change cannot be carried out.
+    /// The change cannot be carried out.
     #[error("the change {edit} cannot be carried out: {reason}")]
     NotPossible {
-/// The name of the change.
+        /// The name of the change.
         edit: &'static str,
-/// The reason why the change cannot be carried out.
+        /// The reason why the change cannot be carried out.
         reason: String,
     },
 }
@@ -157,7 +157,7 @@ pub enum EditError {
 /// Decides whether a change is allowed in the state the job is in.
 ///
 /// WHY: the table of the specification says which change is allowed while:
-//! the target, the priority, the conflict policy and the verification mode
+/// the target, the priority, the conflict policy and the verification mode
 /// while the job is queued, the pause and the resume while it runs, the
 /// cancellation while it is queued or running, and the retry while it has
 /// failed. Writing the rule down once keeps the job list and the queue from
@@ -174,9 +174,10 @@ pub enum EditError {
 /// ```
 pub fn check_edit(state: &JobState, edit: &Edit) -> Result<(), EditError> {
     let allowed = match edit {
-        Edit::Priority(_) | Edit::Destination(_) | Edit::ConflictPolicy(_) | Edit::VerificationMode(_) => {
-            *state == JobState::Queued
-        }
+        Edit::Priority(_)
+        | Edit::Destination(_)
+        | Edit::ConflictPolicy(_)
+        | Edit::VerificationMode(_) => *state == JobState::Queued,
         Edit::Pause => *state == JobState::Running || *state == JobState::Waiting,
         Edit::Resume => *state == JobState::Running || *state == JobState::Waiting,
         Edit::Cancel => *state == JobState::Queued || *state == JobState::Running,
@@ -209,16 +210,16 @@ pub struct JobControl {
 }
 
 impl JobControl {
-/// Builds the flags of a job.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::JobControl;
-///
-/// let control = JobControl::new();
-/// assert!(!control.is_cancelled());
-/// assert!(!control.is_paused());
-/// ```
+    /// Builds the flags of a job.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::JobControl;
+    ///
+    /// let control = JobControl::new();
+    /// assert!(!control.is_cancelled());
+    /// assert!(!control.is_paused());
+    /// ```
     pub fn new() -> Self {
         Self {
             cancelled: AtomicBool::new(false),
@@ -227,123 +228,132 @@ impl JobControl {
         }
     }
 
-/// Ends the job.
-///
-/// WHY: the flag is set, never taken. A cancellation that a worker
-/// notices late still ends the job, and the work that was done already
-/// stays done.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::JobControl;
-///
-/// let control = JobControl::new();
-/// control.cancel();
-/// assert!(control.is_cancelled());
-/// ```
+    /// Ends the job.
+    ///
+    /// WHY: the flag is set, never taken. A cancellation that a worker
+    /// notices late still ends the job, and the work that was done already
+    /// stays done.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::JobControl;
+    ///
+    /// let control = JobControl::new();
+    /// control.cancel();
+    /// assert!(control.is_cancelled());
+    /// ```
     pub fn cancel(&self) {
         self.cancelled.store(true, Ordering::SeqCst);
     }
 
-/// Whether the job was cancelled.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::JobControl;
-///
-/// assert!(!JobControl::new().is_cancelled());
-/// ```
+    /// Whether the job was cancelled.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::JobControl;
+    ///
+    /// assert!(!JobControl::new().is_cancelled());
+    /// ```
     pub fn is_cancelled(&self) -> bool {
         self.cancelled.load(Ordering::SeqCst)
     }
 
-/// Stops the job at the next item boundary.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::JobControl;
-///
-/// let control = JobControl::new();
-/// control.pause();
-/// assert!(control.is_paused());
-/// ```
+    /// Stops the job at the next item boundary.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::JobControl;
+    ///
+    /// let control = JobControl::new();
+    /// control.pause();
+    /// assert!(control.is_paused());
+    /// ```
     pub fn pause(&self) {
         self.paused.store(true, Ordering::SeqCst);
     }
 
-/// Lets the job continue.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::JobControl;
-///
-/// let control = JobControl::new();
-/// control.pause();
-/// control.resume();
-/// assert!(!control.is_paused());
-/// ```
+    /// Lets the job continue.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::JobControl;
+    ///
+    /// let control = JobControl::new();
+    /// control.pause();
+    /// control.resume();
+    /// assert!(!control.is_paused());
+    /// ```
     pub fn resume(&self) {
         self.paused.store(false, Ordering::SeqCst);
     }
 
-/// Whether the job is paused.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::JobControl;
-///
-/// assert!(!JobControl::new().is_paused());
-/// ```
+    /// Whether the job is paused.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::JobControl;
+    ///
+    /// assert!(!JobControl::new().is_paused());
+    /// ```
     pub fn is_paused(&self) -> bool {
         self.paused.load(Ordering::SeqCst)
     }
 
-/// Stores a change that a running job takes over at its next boundary.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::{Edit, JobControl};
-/// use phocommander_ops::job::Priority;
-///
-/// let control = JobControl::new();
-/// control.request(Edit::Priority(Priority::High));
-/// assert!(control.pending().is_some());
-/// ```
+    /// Stores a change that a running job takes over at its next boundary.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::{Edit, JobControl};
+    /// use phocommander_ops::job::Priority;
+    ///
+    /// let control = JobControl::new();
+    /// control.request(Edit::Priority(Priority::High));
+    /// assert!(control.pending().is_some());
+    /// ```
     pub fn request(&self, edit: Edit) {
-        let mut slot = self.pending.lock().unwrap_or_else(|error| error.into_inner());
+        let mut slot = self
+            .pending
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         *slot = Some(edit);
     }
 
-/// The change that waits for the next item boundary.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::{Edit, JobControl};
-/// use phocommander_ops::job::Priority;
-///
-/// let control = JobControl::new();
-/// control.request(Edit::Priority(Priority::High));
-/// assert!(control.pending().is_some());
-/// ```
+    /// The change that waits for the next item boundary.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::{Edit, JobControl};
+    /// use phocommander_ops::job::Priority;
+    ///
+    /// let control = JobControl::new();
+    /// control.request(Edit::Priority(Priority::High));
+    /// assert!(control.pending().is_some());
+    /// ```
     pub fn pending(&self) -> Option<Edit> {
-        let slot = self.pending.lock().unwrap_or_else(|error| error.into_inner());
+        let slot = self
+            .pending
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         slot.clone()
     }
 
-/// Takes the waiting change and hands it to the worker.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::edit::{Edit, JobControl};
-/// use phocommander_ops::job::Priority;
-///
-/// let control = JobControl::new();
-/// control.request(Edit::Priority(Priority::High));
-/// assert!(control.take_pending().is_some());
-/// assert!(control.take_pending().is_none());
-/// ```
+    /// Takes the waiting change and hands it to the worker.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::{Edit, JobControl};
+    /// use phocommander_ops::job::Priority;
+    ///
+    /// let control = JobControl::new();
+    /// control.request(Edit::Priority(Priority::High));
+    /// assert!(control.take_pending().is_some());
+    /// assert!(control.take_pending().is_none());
+    /// ```
     pub fn take_pending(&self) -> Option<Edit> {
-        let mut slot = self.pending.lock().unwrap_or_else(|error| error.into_inner());
+        let mut slot = self
+            .pending
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         slot.take()
     }
 }
@@ -352,7 +362,6 @@ impl JobControl {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -361,14 +370,20 @@ mod tests {
         // act, assert
         assert!(check_edit(&JobState::Queued, &Edit::Priority(Priority::High)).is_ok());
         assert!(
-            check_edit(&JobState::Queued, &Edit::Destination(PathBuf::from("/other"))).is_ok()
+            check_edit(
+                &JobState::Queued,
+                &Edit::Destination(PathBuf::from("/other"))
+            )
+            .is_ok()
         );
         assert!(
-            check_edit(&JobState::Queued, &Edit::ConflictPolicy(ConflictPolicy::Never)).is_ok()
+            check_edit(
+                &JobState::Queued,
+                &Edit::ConflictPolicy(ConflictPolicy::Never)
+            )
+            .is_ok()
         );
-        assert!(
-            check_edit(&JobState::Queued, &Edit::VerificationMode(CopyMode::Atomic)).is_ok()
-        );
+        assert!(check_edit(&JobState::Queued, &Edit::VerificationMode(CopyMode::Atomic)).is_ok());
     }
 
     #[test]
@@ -377,7 +392,10 @@ mod tests {
         let result = check_edit(&JobState::Running, &Edit::Priority(Priority::High));
 
         // assert
-        assert!(matches!(result, Err(EditError::WrongState { .. })), "{result:?}");
+        assert!(
+            matches!(result, Err(EditError::WrongState { .. })),
+            "{result:?}"
+        );
     }
 
     #[test]

@@ -37,7 +37,7 @@
 
 use std::path::Path;
 
-use crate::copy::{CopyMode, CopyRequest, execute_copy};
+use crate::copy::{CopyRequest, execute_copy};
 use crate::error::{JobError, OpError};
 use crate::job::{Job, JobKind, JobState};
 use crate::port::FileSystem;
@@ -47,16 +47,16 @@ use crate::sync::{Approval, SyncPlan, execute_sync};
 /// What the execution of a job produced.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JobResult {
-/// The state the job ends in.
+    /// The state the job ends in.
     pub state: JobState,
 
-/// The failures the job collected.
+    /// The failures the job collected.
     pub errors: Vec<JobError>,
 
-/// The number of items that are done.
+    /// The number of items that are done.
     pub items_done: u64,
 
-/// The number of bytes that are done.
+    /// The number of bytes that are done.
     pub bytes_done: u64,
 }
 
@@ -116,15 +116,15 @@ pub fn execute(
             let request = CopyRequest::new(source.clone(), destination.clone()).with_mode(*mode);
             let outcome = execute_copy(fs, &request, context)?;
             let mut errors = outcome.errors;
-            if errors.is_empty() {
-                if let Err(error) = remove_tree(fs, source) {
-                    errors.push(JobError::new(
-                        source.clone(),
-                        error.code(),
-                        error.to_string(),
-                        false,
-                    ));
-                }
+            if errors.is_empty()
+                && let Err(error) = remove_tree(fs, source)
+            {
+                errors.push(JobError::new(
+                    source.clone(),
+                    error.code(),
+                    error.to_string(),
+                    false,
+                ));
             }
             Ok(JobResult {
                 state: state_of(&errors),
@@ -142,27 +142,28 @@ pub fn execute(
                 bytes_done: context.bytes_done(),
             })
         }
-        JobKind::Rename { source, destination } => {
-            match fs.rename(source, destination) {
-                Ok(()) => Ok(JobResult {
-                    state: JobState::Done,
-                    errors: Vec::new(),
-                    items_done: context.items_done(),
-                    bytes_done: context.bytes_done(),
-                }),
-                Err(error) => Ok(JobResult {
-                    state: JobState::Failed,
-                    errors: vec![JobError::new(
-                        source.clone(),
-                        error.code(),
-                        error.to_string(),
-                        false,
-                    )],
-                    items_done: context.items_done(),
-                    bytes_done: context.bytes_done(),
-                }),
-            }
-        }
+        JobKind::Rename {
+            source,
+            destination,
+        } => match fs.rename(source, destination) {
+            Ok(()) => Ok(JobResult {
+                state: JobState::Done,
+                errors: Vec::new(),
+                items_done: context.items_done(),
+                bytes_done: context.bytes_done(),
+            }),
+            Err(error) => Ok(JobResult {
+                state: JobState::Failed,
+                errors: vec![JobError::new(
+                    source.clone(),
+                    error.code(),
+                    error.to_string(),
+                    false,
+                )],
+                items_done: context.items_done(),
+                bytes_done: context.bytes_done(),
+            }),
+        },
         JobKind::Delete { paths } => {
             let mut errors = Vec::new();
             for path in paths {
@@ -262,10 +263,11 @@ fn remove_tree(fs: &dyn FileSystem, root: &Path) -> Result<(), OpError> {
 /// EXAMPLE:
 /// ```no_run
 /// use phocommander_ops::copy::CopyMode;
+/// use phocommander_ops::executor::confirmed_job;
 /// use phocommander_ops::job::Priority;
-/// use phocommander_ops::sync::{Approval, SyncPlan, confirmed_job};
+/// use phocommander_ops::sync::{Approval, SyncPlan};
 ///
-/// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+/// # fn run() -> Result<(), phocommander_ops::error::OpError> {
 /// let plan = SyncPlan {
 ///     mode: CopyMode::SyncMirror,
 ///     source: "/photos".into(),
@@ -275,7 +277,7 @@ fn remove_tree(fs: &dyn FileSystem, root: &Path) -> Result<(), OpError> {
 /// let refused = confirmed_job(plan.clone(), Approval::Withheld, Priority::Normal);
 /// assert!(refused.is_err());
 /// let job = confirmed_job(plan, Approval::Granted, Priority::Normal)?;
-/// assert!(job.is_ok());
+/// assert_eq!(job.id().get(), 1);
 /// # Ok(())
 /// # }
 /// ```

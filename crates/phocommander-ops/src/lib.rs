@@ -1,7 +1,11 @@
 //! The file operations of Phocommander.
 //!
 //! WHAT: the crate that owns copying, moving, renaming and deleting files
-//!       and the job queue that runs them in the background.
+//!       ([{copy}]), the conflict behaviour of a copy ([{edit}]), the errors
+//!       ([{error}]), the execution of a job ([{executor}]), the file system
+//!       the operations work on ([{port}]), the progress of a job
+//!       ([{progress}]), the queue that runs the jobs ([{queue}]) and the
+//!       comparison of two trees ([{sync}]).
 //! WHY: every operation that can take longer than a frame belongs into the
 //!       job queue, so that the user interface stays usable while a copy is
 //!       running. The conflict behaviour — overwrite, skip, keep both, ask —
@@ -9,14 +13,42 @@
 //!       not of the dialog that asks the user.
 //! BOUNDARY: this crate knows the file system and nothing else. It draws
 //!       nothing, asks no question and knows no platform.
-//!
-//! MILESTONE: the crate is created in M0 so that the boundary exists from the
-//! first day. The job queue, the operations and the conflict behaviour arrive
-//! in M1, together with their unit tests.
-//!
 //! EXAMPLE:
 //! ```no_run
-//! // Milestone M1 will look like this:
-//! // let job = phocommander_ops::Job::copy(source, destination);
-//! // queue.enqueue(job)?;
+//! use phocommander_ops::copy::{ConflictPolicy, CopyMode, CopyRequest};
+//! use std::path::PathBuf;
+//!
+//! // The default of a copy is the mode that verifies.
+//! assert_eq!(CopyMode::default(), CopyMode::Verified);
+//!
+//! let request = CopyRequest::new(PathBuf::from("/photos"), PathBuf::from("/backup"))
+//!     .with_policy(ConflictPolicy::Never);
+//! assert_eq!(request.policy, ConflictPolicy::Never);
+//! assert_eq!(request.mode, CopyMode::Verified);
 //! ```
+
+pub mod copy;
+pub mod datetime;
+pub mod edit;
+pub mod error;
+pub mod executor;
+pub mod fake_fs;
+pub mod job;
+pub mod names;
+pub mod port;
+pub mod progress;
+pub mod queue;
+pub mod series;
+pub mod sync;
+
+pub use copy::{
+    CopyMode, CopyOutcome, CopyPolicy, CopyRequest, TreeItem, collect_items, compare_trees,
+    copy_one_file, execute_copy, free_name,
+};
+pub use edit::{ConflictPolicy, Edit, EditError, JobControl};
+pub use error::{JobError, JobErrorCode, NameProblem, OpError};
+pub use job::{Job, JobId, JobKind, JobSnapshot, JobState, Priority};
+pub use port::{CopyResult, DirEntry, EntryKind, FileInfo, FileSystem};
+pub use progress::{JobContext, ProgressSink, ProgressUpdate};
+pub use queue::JobQueue;
+pub use sync::{Approval, SyncAction, SyncPlan, SyncPlanEntry, SyncState};

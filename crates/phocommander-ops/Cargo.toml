@@ -17,6 +17,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# The error type of the crate derives its `Display` and its `Error` from
+# `thiserror`, so that a failure of a job carries the path of the item and
+# the code of the reason.
+thiserror = { workspace = true }
 
 [lints]
 workspace = true

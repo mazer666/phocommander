@@ -28,8 +28,7 @@
 /// WHY: a name that Windows refuses cannot be created there, and a
 /// synchronisation between a Linux disk and a Windows disk has to notice
 /// that before it starts, not after it copied a thousand files.
-pub const WINDOWS_FORBIDDEN_CHARACTERS: [char; 9] =
-    ['<', '>', ':', '"', '/', '\\', '?', '*', '|'];
+pub const WINDOWS_FORBIDDEN_CHARACTERS: [char; 9] = ['<', '>', ':', '"', '/', '\\', '?', '*', '|'];
 
 /// The characters that no file system allows in a file name.
 ///
@@ -126,7 +125,6 @@ pub fn is_reserved_device_name(name: &str) -> bool {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -168,7 +166,10 @@ mod tests {
         // assert
         assert_eq!(problems.len(), WINDOWS_FORBIDDEN_CHARACTERS.len());
         for (character, replacement) in problems {
-            assert!(!WINDOWS_FORBIDDEN_CHARACTERS.contains(&replacement), "{character}");
+            assert!(
+                !WINDOWS_FORBIDDEN_CHARACTERS.contains(&replacement),
+                "{character}"
+            );
             assert!(!replacement.is_control(), "{character}");
         }
     }

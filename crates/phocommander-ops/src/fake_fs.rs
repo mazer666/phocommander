@@ -24,6 +24,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::error::OpError;
@@ -41,18 +42,20 @@ struct FakeEntry {
 #[derive(Debug, Default)]
 pub struct FakeFileSystem {
     entries: Mutex<HashMap<PathBuf, FakeEntry>>,
+    checksums: AtomicU64,
 }
 
 impl FakeFileSystem {
-/// Builds a file system that is empty.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::fake_fs::FakeFileSystem;
-///
-/// let fs = FakeFileSystem::new();
-/// assert!(fs.read_dir(std::path::Path::new("/")).unwrap_or_default().is_empty());
-/// ```
+    /// Builds a file system that is empty.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use phocommander_ops::port::FileSystem;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// assert!(fs.read_dir(std::path::Path::new("/")).unwrap_or_default().is_empty());
+    /// ```
     pub fn new() -> Self {
         let mut entries = HashMap::new();
         entries.insert(
@@ -65,20 +68,21 @@ impl FakeFileSystem {
         );
         Self {
             entries: Mutex::new(entries),
+            checksums: AtomicU64::new(0),
         }
     }
 
-/// Writes a file and creates the directories above it.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::fake_fs::FakeFileSystem;
-/// use std::path::Path;
-///
-/// let fs = FakeFileSystem::new();
-/// fs.write_file(Path::new("/photos/a.txt"), b"payload").unwrap_or_default();
-/// assert_eq!(fs.read_file(Path::new("/photos/a.txt")).unwrap_or_default(), b"payload");
-/// ```
+    /// Writes a file and creates the directories above it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_file(Path::new("/photos/a.txt"), b"payload").unwrap_or_default();
+    /// assert_eq!(fs.read_file(Path::new("/photos/a.txt")).unwrap_or_default(), b"payload");
+    /// ```
     pub fn write_file(&self, path: &Path, content: &[u8]) -> Result<(), OpError> {
         let mut entries = self.lock();
         if let Some(parent) = path.parent() {
@@ -102,17 +106,17 @@ impl FakeFileSystem {
         Ok(())
     }
 
-/// The content of a file.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::fake_fs::FakeFileSystem;
-/// use std::path::Path;
-///
-/// let fs = FakeFileSystem::new();
-/// fs.write_file(Path::new("/a.txt"), b"payload").unwrap_or_default();
-/// assert_eq!(fs.read_file(Path::new("/a.txt")).unwrap_or_default(), b"payload");
-/// ```
+    /// The content of a file.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_file(Path::new("/a.txt"), b"payload").unwrap_or_default();
+    /// assert_eq!(fs.read_file(Path::new("/a.txt")).unwrap_or_default(), b"payload");
+    /// ```
     pub fn read_file(&self, path: &Path) -> Result<Vec<u8>, OpError> {
         let entries = self.lock();
         match entries.get(path) {
@@ -123,47 +127,143 @@ impl FakeFileSystem {
         }
     }
 
-/// Whether a path exists.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::fake_fs::FakeFileSystem;
-/// use std::path::Path;
-///
-/// let fs = FakeFileSystem::new();
-/// assert!(!fs.exists(Path::new("/a.txt")));
-/// ```
+    /// Creates a symbolic link that points at {target}.
+    ///
+    /// WHY: the fake has to know about links, because the rules of the
+    /// specification say that a link is copied as a link. The target is stored
+    /// as the content of the entry, which is what a link is on a file system.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_file(Path::new("/a.txt"), b"payload").unwrap_or_default();
+    /// fs.write_symlink(Path::new("/link.txt"), Path::new("/a.txt")).unwrap_or_default();
+    /// assert_eq!(fs.link_target(Path::new("/link.txt")).as_deref(), Some("/a.txt"));
+    /// ```
+    pub fn write_symlink(&self, path: &Path, target: &Path) -> Result<(), OpError> {
+        let mut entries = self.lock();
+        if let Some(parent) = path.parent() {
+            entries.insert(
+                parent.to_path_buf(),
+                FakeEntry {
+                    kind: EntryKind::Directory,
+                    content: Vec::new(),
+                    modified: UNIX_EPOCH,
+                },
+            );
+        }
+        entries.insert(
+            path.to_path_buf(),
+            FakeEntry {
+                kind: EntryKind::Symlink,
+                content: target.to_string_lossy().as_bytes().to_vec(),
+                modified: UNIX_EPOCH + Duration::from_secs(1),
+            },
+        );
+        Ok(())
+    }
+
+    /// The target of a symbolic link.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_symlink(Path::new("/link.txt"), Path::new("/a.txt")).unwrap_or_default();
+    /// assert_eq!(fs.link_target(Path::new("/link.txt")).as_deref(), Some("/a.txt"));
+    /// ```
+    pub fn link_target(&self, path: &Path) -> Option<String> {
+        let entries = self.lock();
+        let entry = entries.get(path)?;
+        if entry.kind != EntryKind::Symlink {
+            return None;
+        }
+        Some(String::from_utf8_lossy(&entry.content).to_string())
+    }
+
+    /// The kind of an entry.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use phocommander_ops::port::EntryKind;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_symlink(Path::new("/link.txt"), Path::new("/a.txt")).unwrap_or_default();
+    /// assert_eq!(fs.kind_of(Path::new("/link.txt")), Some(EntryKind::Symlink));
+    /// ```
+    pub fn kind_of(&self, path: &Path) -> Option<EntryKind> {
+        self.lock().get(path).map(|entry| entry.kind)
+    }
+
+    /// Whether a path exists.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// assert!(!fs.exists(Path::new("/a.txt")));
+    /// ```
     pub fn exists(&self, path: &Path) -> bool {
         self.lock().contains_key(path)
     }
 
-/// The number of entries the file system holds.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::fake_fs::FakeFileSystem;
-///
-/// let fs = FakeFileSystem::new();
-/// assert_eq!(fs.len(), 1);
-/// ```
+    /// The number of entries the file system holds.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// assert_eq!(fs.len(), 1);
+    /// ```
     pub fn len(&self) -> usize {
         self.lock().len()
     }
 
-/// Whether the file system is empty.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::fake_fs::FakeFileSystem;
-///
-/// let fs = FakeFileSystem::new();
-/// assert!(!fs.is_empty());
-/// ```
+    /// Whether the file system is empty.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// assert!(!fs.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-/// Locks the entries of the file system.
+    /// The number of times a checksum was computed.
+    ///
+    /// WHY: the rule "checksum_on_copy" decides whether the verified copy
+    /// compares the checksums of source and destination. A test has to see that
+    /// the comparison did not happen, and the counter is the only way to see it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use phocommander_ops::port::FileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_file(Path::new("/a.txt"), b"payload").unwrap_or_default();
+    /// let _ = fs.checksum(Path::new("/a.txt"));
+    /// assert_eq!(fs.checksum_calls(), 1);
+    /// ```
+    pub fn checksum_calls(&self) -> u64 {
+        self.checksums.load(Ordering::Relaxed)
+    }
+
+    /// Locks the entries of the file system.
     fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<PathBuf, FakeEntry>> {
         self.entries
             .lock()
@@ -222,6 +322,7 @@ impl FileSystem for FakeFileSystem {
         let entries = self.lock();
         match entries.get(path) {
             Some(entry) => Ok(FileInfo {
+                kind: entry.kind,
                 size: entry.content.len() as u64,
                 modified: Some(entry.modified),
             }),
@@ -233,20 +334,70 @@ impl FileSystem for FakeFileSystem {
 
     fn copy_file(&self, from: &Path, to: &Path) -> Result<crate::port::CopyResult, OpError> {
         let mut entries = self.lock();
-        let entry = entries.get(from).cloned().ok_or_else(|| OpError::NotFound {
-            path: from.to_path_buf(),
-        })?;
-        let bytes = entry.content.len() as u64;
-        let checksum = fake_checksum(&entry.content);
+        let entry = entries
+            .get(from)
+            .cloned()
+            .ok_or_else(|| OpError::NotFound {
+                path: from.to_path_buf(),
+            })?;
+
+        // WHY: a copy through the ordinary call dereferences a link, exactly
+        // as the file system does. The rule that a link is copied as a link
+        // uses the separate call.
+        let content = if entry.kind == EntryKind::Symlink {
+            let target = PathBuf::from(String::from_utf8_lossy(&entry.content).to_string());
+            let target_entry = entries
+                .get(&target)
+                .cloned()
+                .ok_or_else(|| OpError::NotFound {
+                    path: target.clone(),
+                })?;
+            target_entry.content
+        } else {
+            entry.content
+        };
+
+        let bytes = content.len() as u64;
+        let checksum = fake_checksum(&content);
         entries.insert(
             to.to_path_buf(),
             FakeEntry {
-                kind: entry.kind,
-                content: entry.content,
+                kind: EntryKind::File,
+                content,
                 modified: entry.modified,
             },
         );
         Ok(crate::port::CopyResult { bytes, checksum })
+    }
+
+    fn copy_symlink(&self, from: &Path, to: &Path) -> Result<(), OpError> {
+        let mut entries = self.lock();
+        let entry = entries
+            .get(from)
+            .cloned()
+            .ok_or_else(|| OpError::NotFound {
+                path: from.to_path_buf(),
+            })?;
+
+        if entry.kind != EntryKind::Symlink {
+            return Err(OpError::Io {
+                path: from.to_path_buf(),
+                source: std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "the source is not a symbolic link",
+                ),
+            });
+        }
+
+        entries.insert(
+            to.to_path_buf(),
+            FakeEntry {
+                kind: EntryKind::Symlink,
+                content: entry.content,
+                modified: entry.modified,
+            },
+        );
+        Ok(())
     }
 
     fn rename(&self, from: &Path, to: &Path) -> Result<(), OpError> {
@@ -288,6 +439,7 @@ impl FileSystem for FakeFileSystem {
     }
 
     fn checksum(&self, path: &Path) -> Result<u64, OpError> {
+        self.checksums.fetch_add(1, Ordering::Relaxed);
         let entries = self.lock();
         match entries.get(path) {
             Some(entry) => Ok(fake_checksum(&entry.content)),
@@ -302,7 +454,6 @@ impl FileSystem for FakeFileSystem {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -350,6 +501,9 @@ mod tests {
         let result = fs.read_file(Path::new("/missing.txt"));
 
         // assert
-        assert!(matches!(result, Err(OpError::NotFound { .. })), "{result:?}");
+        assert!(
+            matches!(result, Err(OpError::NotFound { .. })),
+            "{result:?}"
+        );
     }
 }
