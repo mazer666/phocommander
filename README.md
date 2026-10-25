@@ -15,9 +15,12 @@ It exists because the file managers people keep open all day either cost money, 
 
 > **Phocommander is under active development. It is not a finished file manager yet.**
 >
-> - **M0 — Foundation** (workspace, CI, configuration file, key resolution, panel skeleton, threat model, project documentation, licence check): *in progress*.
-> - **M1 — First usable release** (file operations with a job queue, multiple rename, viewer tier 1, ZIP/TAR/7z archives, hardened extraction): *the first release you can actually work with*.
-> - Everything in this repository today is specification, documentation, the workspace and the crate skeletons — not a finished file manager.
+> - **M0 — Foundation** (workspace, CI, configuration file, key resolution, threat model, project documentation, licence check): *accepted*.
+> - **M1 — The working file browser** (file operations with a job queue, multiple rename, the series template, viewer tier 1, ZIP/TAR/7z archives, hardened extraction, the filter of the current directory): *in acceptance*.
+> - **M2 — Maturity on macOS** (tabs, interface profiles, English and German, safe copy modes, the layouts per context): *in work*.
+>
+> The current state of every milestone, with the checklist that has to hold before it counts as
+> reached, is in **[`docs/ROADMAP.md`](docs/ROADMAP.md)**.
 >
 > The binding specification is **[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)**. When this page and the specification disagree, the specification wins — and the disagreement is a bug in this page, not in the specification.
 
@@ -124,7 +127,8 @@ On a remote control there are no function keys. The **action palette** replaces 
 
 | Document | What it is for |
 |---|---|
-| [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) | The binding specification: scope, architecture, security, performance gates, roadmap |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | **The roadmap and the tracking**: the milestone sequence, the checklist per milestone, what has to hold before a milestone counts as reached |
+| [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) | The binding specification: scope, architecture, security, performance gates, milestones |
 | [`docs/REQUIREMENTS-IDS.md`](docs/REQUIREMENTS-IDS.md) | Requirement identifiers and where each one comes from — the reference for acceptance evidence |
 | [`docs/KEYMAP.md`](docs/KEYMAP.md) | Complete keyboard reference, including per-platform variants and per-context bindings |
 | [`docs/user-guide/`](docs/user-guide/) | Task-oriented user guide, German and English |

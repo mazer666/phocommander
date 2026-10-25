@@ -1,6 +1,7 @@
 # Requirement catalogue — Phocommander
 
-This document is the index into [`docs/REQUIREMENTS.md`](REQUIREMENTS.md), the binding specification. Version 2.0 of the specification replaced version 1.1; this catalogue was rebuilt from it and carries exactly the requirement identifiers of section 4 of that document.
+This document is the index into [`docs/REQUIREMENTS.md`](REQUIREMENTS.md), the binding specification
+and into [`docs/ROADMAP.md`](ROADMAP.md), the roadmap that tracks the state of every milestone. Version 2.0 of the specification replaced version 1.1; this catalogue was rebuilt from it and carries exactly the requirement identifiers of section 4 of that document.
 
 Every row names the section **and the line** of the specification it was taken from, so a reviewer can check a row against the specification without searching for it.
 
