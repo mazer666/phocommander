@@ -19,8 +19,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use sevenz_rust2::{ArchiveEntry as SevenZEntry, EncoderConfiguration, EncoderMethod};
 use sevenz_rust2::ArchiveWriter as SevenZWriter;
+use sevenz_rust2::{ArchiveEntry as SevenZEntry, EncoderConfiguration, EncoderMethod};
 
 use crate::entry::{ArchiveEntry, EntryKind};
 use crate::entry_name::resolve_entry_name;
@@ -178,7 +178,12 @@ impl SevenZArchiveWriter {
 }
 
 impl ArchiveWriter for SevenZArchiveWriter {
-    fn add_file(&mut self, name: &str, _size: u64, content: &mut dyn Read) -> Result<(), ArchiveError> {
+    fn add_file(
+        &mut self,
+        name: &str,
+        _size: u64,
+        content: &mut dyn Read,
+    ) -> Result<(), ArchiveError> {
         let relative = resolve_entry_name(name).map_err(|source| ArchiveError::Refused {
             name: name.to_string(),
             reason: RefusalReason::Name(source),
