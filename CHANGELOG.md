@@ -14,6 +14,31 @@ The milestone column follows the roadmap of the binding specification,
 
 ### Added
 
+- **The release plan** in [`docs/ROADMAP.md`](docs/ROADMAP.md) — the schedule that
+  triggers the shipping of the binaries:
+  - The releases **Alpha 1** (0.1.0-alpha.1) through **Release 1.0** (1.0.0), each with the
+    version, the milestone that triggers it and the platforms it ships for.
+  - The conditions **T-01 to T-15** that have to hold before a release is built, measured and
+    signed: the acceptance of the milestone, the common rules R-01 to R-21, the tests, the
+    version in one place, the checksums, the signature, the notarisation for macOS, the
+    Authenticode signature for Windows, the store approval, the release notes, the
+    documentation, the security rules, the build on the target platform and the absence of
+    telemetry, advertising and account obligations.
+  - The path of every platform into the hands of the user: the website for macOS, Windows, Linux
+    and BSD, the Play Store for Android, Fire TV and Google TV, the App Store for iPadOS and the
+    Meta Horizon Store for the Quest.
+- **The milestone M2b for the internationalisation** — the languages are a milestone of their
+  own, between M2 and M3:
+  - The requirements FR-120 to FR-126 now point to M2b in the specification and in the
+    catalogue [`docs/REQUIREMENTS-IDS.md`](docs/REQUIREMENTS-IDS.md).
+  - The acceptance criteria AC-M2b-01 to AC-M2b-08 in
+    [`docs/ACCEPTANCE-CRITERIA.md`](docs/ACCEPTANCE-CRITERIA.md) name the gate that compares the
+    key sets, the fallback chain, the localised formats, the runtime change and the third
+    language.
+  - The reasoning: the completeness of the languages is a property of the product and not a
+    detail of the presentation. A release that is only half translated is worse than a release
+    in one language, and that has to be decided at the level of the milestone.
+
 - **Project documentation for M0** — the documentation set that completes the
   foundation milestone:
   - [`README.md`](README.md) — the landing page: status, the three product rules, the
