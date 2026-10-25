@@ -35,13 +35,30 @@ const SMALL: usize = 10_000;
 /// The number of entries of the larger panel.
 const LARGE: usize = 100_000;
 
-/// The gate for one drawn frame.
+/// The gate for one drawn frame in the release profile.
 ///
-/// WHY: the gate is the gate of the *development* profile, because that is
-/// the profile the test runs in. The profile of the release build is the
-/// one the CI measures; the number that the test prints is the number of
-/// the profile it ran in.
-const FRAME_GATE: Duration = Duration::from_millis(250);
+/// WHY: the release profile is the profile the user meets. The frame of a
+/// panel with a hundred thousand entries has to stay inside the budget of the
+/// specification (NFR-01). In the development profile the gate is not
+/// measured at all: egui lays out every text and prepares every texture
+/// there without the optimisations of the compiler, and the number depends
+/// on the load of the machine rather than on the program. The gate that the
+/// development profile measures is the one of the growth below — it says
+/// that the frame does not grow with the number of the entries, and that
+/// holds in every profile.
+#[cfg(not(debug_assertions))]
+const FRAME_GATE: Duration = Duration::from_millis(100);
+
+/// The factor the frame of the large panel may reach against the small one.
+///
+/// WHY: the gate that matters is the one of FR-106: the frame of a panel with
+/// a hundred thousand entries costs the same as the frame of a panel with
+/// thirty entries. The absolute number depends on the profile and on the
+/// noise of the machine, the relation does not. Ten times the entries may
+/// cost three times the frame — that is a constant work per frame and not a
+/// work per entry. A frame that grew with the entries would cost ten times
+/// as much.
+const GROWTH_FACTOR: f32 = 3.0;
 
 /// The gate for the work of a key stroke in the filter field.
 const FILTER_GATE: Duration = Duration::from_millis(1_000);
@@ -134,13 +151,29 @@ fn the_filter_holds_the_frame_rate() {
     // entries stays inside the budget, and so does the key stroke in the
     // filter field. The frame does not grow with the number of the entries
     // — the drawing asks for the visible slice and nothing else (FR-106).
+    // WHY: the absolute budget of the frame is a statement about the release
+    //       profile, because that is the profile the user meets. The
+    //       development profile measures the growth below.
+    #[cfg(not(debug_assertions))]
+    {
+        assert!(
+            small_frame <= FRAME_GATE,
+            "the frame of a panel with {SMALL} entries took {small_frame:?}"
+        );
+        assert!(
+            large_frame <= FRAME_GATE,
+            "the frame of a panel with {LARGE} entries took {large_frame:?}"
+        );
+    }
+
+    // WHY: the frame of the large panel may not cost the ten times of the
+    //       frame of the small one. The drawing asks for the visible slice
+    //       and nothing else, so the frame does not grow with the number of
+    //       the entries (FR-106).
+    let growth = large_frame.as_secs_f32() / small_frame.as_secs_f32().max(0.001);
     assert!(
-        small_frame <= FRAME_GATE,
-        "the frame of a panel with {SMALL} entries took {small_frame:?}"
-    );
-    assert!(
-        large_frame <= FRAME_GATE,
-        "the frame of a panel with {LARGE} entries took {large_frame:?}"
+        growth <= GROWTH_FACTOR,
+        "the frame grew by the factor {growth:.2} from {SMALL} to {LARGE} entries"
     );
     assert!(
         small_filter <= FILTER_GATE,
