@@ -40,18 +40,18 @@ panel-type-link = Verknüpfung
 panel-type-other = Sonstiges
 panel-empty = Das Verzeichnis ist leer
 panel-status-ready = Bereit
-panel-status-entries = { $count ->
+panel-status-entries = { $count_number ->
         [one] 1 Eintrag
        *[other] { $count } Einträge
     }
-panel-status-selected = { $count ->
+panel-status-selected = { $count_number ->
         [one] 1 ausgewählt
        *[other] { $count } ausgewählt
     }
 panel-status-filtered = { $count } von { $total } Einträgen
 panel-filter-label = Filter
 panel-filter-placeholder = Namensmuster
-panel-filter-matches = { $count ->
+panel-filter-matches = { $count_number ->
         [one] 1 Treffer
        *[other] { $count } Treffer
     }

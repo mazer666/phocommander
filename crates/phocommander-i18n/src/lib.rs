@@ -1,16 +1,19 @@
 //! The localisation layer of Phocommander.
 //!
 //! WHAT: the locales of the interface ([{Locale}]), the embedded Fluent
-//!       catalogues ([{Translator}]) and the reasons why a catalogue could
-//!       not be read ([{CatalogueError}]).
+//!       catalogues ([{Translator}]), the formats of a locale
+//!       ([{LocaleFormat}]) and the reasons why a catalogue could not be
+//!       read ([{CatalogueError}]).
 //! WHY: every visible string of the product is externalised, so that the
 //!       interface can be translated without touching the source code
 //!       (FR-125) and so that a missing translation can never produce an
 //!       empty label (FR-122). The lookup chain is fixed: requested locale →
-//!       English → the key itself.
-//! BOUNDARY: this crate owns the catalogue and the lookup. It knows nothing
-//!       about widgets, panels or the file system, and it opens no file at
-//!       run time — the catalogues are embedded into the binary.
+//!       English → the key itself. The numbers, the sizes, the dates and the
+//!       times follow the rules of the locale as well (FR-123), and those
+//!       rules live in the data of CLDR — not in the source code.
+//! BOUNDARY: this crate owns the catalogue, the lookup and the formats. It
+//!       knows nothing about widgets, panels or the file system, and it opens
+//!       no file at run time — the catalogues are embedded into the binary.
 //!
 //! EXAMPLE:
 //! ```no_run
@@ -29,12 +32,27 @@
 /// itself knows nothing about the application. That keeps the translations
 /// readable for a translator who does not read Rust.
 pub mod catalogue;
+
+/// The formats of a locale: numbers, sizes, dates and times.
+///
+/// WHAT: the formatter of a locale ([`format::LocaleFormat`]) and the reasons
+///       why it cannot be built ([`format::FormatError`]).
+/// WHY: the numbers, the sizes, the dates and the times of the interface
+///       follow the locale of the system (FR-123). The rules of a locale live
+///       in the data of CLDR, and this module reads them — the application
+///       therefore carries no table of separators of its own, and a language
+///       that is added needs no new rule either.
+/// BOUNDARY: this module formats values. It reads no file, it asks no
+///       operating system and it knows nothing about the interface.
+pub mod format;
+
 pub mod locale;
 
 pub use catalogue::{
-    CatalogueError, Translator, catalogue_directories, catalogue_keys,
+    CatalogueError, MessageValue, Translator, catalogue_directories, catalogue_keys,
     catalogue_keys_of_every_locale,
 };
+pub use format::{FormatError, LocaleFormat};
 pub use locale::{Locale, lookup_chain};
 
 #[cfg(test)]
@@ -151,10 +169,15 @@ mod tests {
             Ok(translator) => translator,
             Err(error) => panic!("the catalogue should be readable: {error}"),
         };
+        // WHY: the message carries two names for the same value. The raw
+        //       number selects the plural form, and the text shows the number
+        //       in the way the language writes it.
         let mut one = FluentArgs::new();
-        one.set("count", 1);
+        one.set("count", "1");
+        one.set("count_number", 1);
         let mut many = FluentArgs::new();
-        many.set("count", 7);
+        many.set("count", "7");
+        many.set("count_number", 7);
 
         // act
         let singular = translator.text_with_args("panel-status-entries", &one);

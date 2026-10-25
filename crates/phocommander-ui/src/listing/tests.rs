@@ -8,6 +8,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
+use crate::format::PlainFormats;
 use crate::listing::EntryKind;
 
 /// Builds a listing with the given number of entries.
@@ -129,13 +130,13 @@ fn the_order_by_name_is_the_order_of_the_names() {
 }
 
 #[test]
-fn writes_a_size_the_way_a_file_manager_writes_it() {
+fn writes_a_size_the_way_the_plain_formats_write_it() {
     // act
     let sizes = [
-        format_size(0),
-        format_size(512),
-        format_size(2_048),
-        format_size(5_368_709_120),
+        PlainFormats.size(0),
+        PlainFormats.size(512),
+        PlainFormats.size(2_048),
+        PlainFormats.size(5_368_709_120),
     ];
 
     // assert
@@ -146,14 +147,63 @@ fn writes_a_size_the_way_a_file_manager_writes_it() {
 }
 
 #[test]
-fn writes_a_date_the_way_a_file_manager_writes_it() {
+fn the_size_of_a_row_follows_the_formats_of_the_interface() {
+    // WHY: FR-123 — the size of a row is written the way the locale of the
+    //       user writes it. The row therefore asks the formats and knows no
+    //       rule of a locale itself.
+    // arrange
+    let mut listing = ListingState::new(PathBuf::from("/tmp"));
+    listing.set_entries(vec![
+        Entry::new("notes.txt", EntryKind::File).with_size(1_200_000),
+    ]);
+
+    // act
+    let rows: Vec<Row<'_>> = listing.visible_rows(0, 1).collect();
+
+    // assert
+    assert_eq!(rows[0].size_text(&PlainFormats), "1.1 MiB");
+    assert_eq!(rows[0].size_text(&German), "1,2 MB");
+}
+
+#[test]
+fn writes_a_date_the_way_the_plain_formats_write_it() {
     // arrange
     let moment = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_772_000_000);
 
     // act
-    let text = format_time(moment);
+    let text = PlainFormats.date_time(moment);
 
     // assert
     assert_eq!(text.len(), 16);
     assert!(text.starts_with("2026-"));
+}
+
+/// The formats of a German interface.
+///
+/// WHY: the formats are the seam of the interface. A test that wants a
+///       German size writes one itself and does not need the crate of the
+///       localisation — the crate rule forbids the dependency.
+struct German;
+
+impl Formats for German {
+    fn number(&self, value: u64) -> String {
+        value.to_string()
+    }
+
+    fn size(&self, bytes: u64) -> String {
+        let megabytes = bytes as f64 / 1_000_000.0;
+        // WHY: the German locale writes the separator of the decimals with a
+        //       comma. The rule belongs to the implementation of the locale
+        //       and not to the interface, so the test writes it here.
+        let number = format!("{megabytes:.1}").replace('.', ",");
+        format!("{number} MB")
+    }
+
+    fn date(&self, _moment: SystemTime) -> String {
+        String::new()
+    }
+
+    fn time(&self, _moment: SystemTime) -> String {
+        String::new()
+    }
 }

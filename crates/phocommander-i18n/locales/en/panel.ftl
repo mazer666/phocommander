@@ -40,18 +40,18 @@ panel-type-link = Link
 panel-type-other = Other
 panel-empty = The directory is empty
 panel-status-ready = Ready
-panel-status-entries = { $count ->
+panel-status-entries = { $count_number ->
         [one] 1 entry
        *[other] { $count } entries
     }
-panel-status-selected = { $count ->
+panel-status-selected = { $count_number ->
         [one] 1 selected
        *[other] { $count } selected
     }
 panel-status-filtered = { $count } of { $total } entries
 panel-filter-label = Filter
 panel-filter-placeholder = name pattern
-panel-filter-matches = { $count ->
+panel-filter-matches = { $count_number ->
         [one] 1 match
        *[other] { $count } matches
     }

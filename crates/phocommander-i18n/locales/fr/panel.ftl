@@ -12,18 +12,18 @@ panel-type-link = Lien
 panel-type-other = Autre
 panel-empty = Le dossier est vide
 panel-status-ready = Prêt
-panel-status-entries = { $count ->
+panel-status-entries = { $count_number ->
         [one] 1 entrée
        *[other] { $count } entrées
     }
-panel-status-selected = { $count ->
+panel-status-selected = { $count_number ->
         [one] 1 sélectionné
        *[other] { $count } sélectionnés
     }
 panel-status-filtered = { $count } sur { $total } entrées
 panel-filter-label = Filtre
 panel-filter-placeholder = motif de nom
-panel-filter-matches = { $count ->
+panel-filter-matches = { $count_number ->
         [one] 1 correspondance
        *[other] { $count } correspondances
     }

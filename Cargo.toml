@@ -63,6 +63,7 @@ toml = "1"
 # of `icu` into a string.
 # ---------------------------------------------------------------------------
 fluent = "0.17"
+fluent-bundle = "0.16"
 fluent-syntax = "0.12"
 rust-embed = { version = "8.13", features = ["debug-embed"] }
 sys-locale = "0.3"

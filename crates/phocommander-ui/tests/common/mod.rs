@@ -29,7 +29,7 @@ pub struct Names;
 impl Catalogue for Names {
     fn lookup_with(&self, key: &str, arguments: &[Argument<'_>]) -> Option<String> {
         let mut text = key.replace('-', " ");
-        if let Some(Argument::Number(count)) = arguments.first() {
+        if let Some(Argument::Number { value: count, .. }) = arguments.first() {
             text = format!("{text} {count}");
         }
         Some(text)

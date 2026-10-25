@@ -16,6 +16,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
+use phocommander_config::Language;
 
 #[test]
 fn the_parser_reads_the_bindings_of_every_context() {
@@ -89,19 +90,34 @@ fn the_application_is_built_from_the_safe_configuration() {
 }
 
 #[test]
-fn the_translator_follows_the_language_of_the_configuration() {
+fn the_locale_follows_the_language_of_the_configuration() {
     // arrange
     let mut config = Config::safe();
 
     // act
     config.general.language = Language::De;
-    let german = build_translator(&config);
+    let german = locale_of(config.general.language);
 
     // act
     config.general.language = Language::En;
-    let english = build_translator(&config);
+    let english = locale_of(config.general.language);
 
     // assert
-    assert_eq!(german.locale().as_str(), "de");
-    assert_eq!(english.locale().as_str(), "en");
+    assert_eq!(german.as_str(), "de");
+    assert_eq!(english.as_str(), "en");
+}
+
+#[test]
+fn the_application_of_the_desktop_build_is_built_from_the_configuration() {
+    // arrange
+    let config = Config::safe();
+
+    // act
+    let app = build_desktop_app(&config);
+
+    // assert
+    // WHY: the application exists and can be drawn. The test does not open
+    //       a window, because a window needs a screen and a test may run on
+    //       a machine without one.
+    let _ = app;
 }

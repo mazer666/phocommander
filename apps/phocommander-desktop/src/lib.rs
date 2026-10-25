@@ -1,7 +1,10 @@
 //! The desktop application of Phocommander.
 //!
 //! WHAT: the crate of the desktop build — the translation of the
-//!       configuration into the rules of the subsystems ([{security}]).
+//!       configuration into the rules of the subsystems ([{security}]), the
+//!       catalogue of the texts and the formats of the values
+//!       ([{catalogue}]) and the language of the interface at run time
+//!       ([{language}]).
 //! WHY: the application is the composition root of the workspace: it is the
 //!       only crate that may see the core crate, the configuration crate, the
 //!       operations crate, the viewer crate and the interface crate at the
@@ -19,6 +22,8 @@
 //! ```
 
 pub mod catalogue;
+pub mod desktop;
+pub mod language;
 pub mod security;
 
 pub use security::SecurityPlan;
