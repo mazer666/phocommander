@@ -71,7 +71,8 @@ werden bei jeder Abnahme geprüft.
 |---|---|---|
 | **M0** — Foundation | Workspace, CI, Konfiguration, Bedrohungsmodell, Dokumentation | **abgenommen** |
 | **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** |
-| **M2** — Maturity on macOS | Registerkarten, Profile, Sprachen, sichere Kopiermodi, Layouts je Kontext | **in Arbeit** |
+| **M2** — Maturity on macOS | Registerkarten, Profile, sichere Kopiermodi, Layouts je Kontext | **in Arbeit** |
+| **M2b** — Internationalisierung | Englisch und Deutsch vollständig, lokalisierte Formatierung, Sprachwechsel zur Laufzeit | offen |
 | **M3** — The other desktop platforms | Windows, Linux, BSD | offen |
 | **M4** — Android | SAF, Touch-Kontext, Store | offen |
 | **M5** — iPadOS | Dokumenten-Picker, Bookmarks | offen |
@@ -161,6 +162,34 @@ einem Interface, das sich der Kontext anpasst.
 | Ein Profil enthält nur Oberflächenentscheidungen | `scripts/check-interface-profiles.py` | in Arbeit |
 | Der About-Dialog nennt die Zahl der tatsächlich unterstützten Formate | `phocommander-viewer` | offen |
 | Die Leistungsziele NFR-01 bis NFR-08 sind gemessen | `benches/`, `docs/acceptance/logs/` | offen |
+
+## M2b — Internationalisierung
+
+**Ziel.** Die Oberfläche in **zwei Sprachen** — Englisch und Deutsch — mit derselben Qualität, mit
+lokalisierter Formatierung und ohne eine einzige hartkodierte Zeichenkette im Quelltext.
+
+Dieser Meilenstein ist **eigener Stand** und kein Teil von M2, weil die Sprachvollständigkeit eine
+Eigenschaft des Produkts ist, die man getrennt abnehmen und getrennt halten muss. Ein Release, das
+nur halb übersetzt ist, ist schlimmer als ein Release in einer Sprache.
+
+| Punkt | Nachweis | Status |
+|---|---|---|
+| Die elf gemeinsamen Regeln R-01 bis R-21 | alle Gates | offen — wird am Ende gemessen |
+| **Kein hartkodierter Text in der Oberfläche** — jedes sichtbare Wort läuft über einen Schlüssel | Prüfskript über die Oberflächen-Crates | offen |
+| Englisch und Deutsch sind vollständig, mit **identischem Schlüsselsatz** | `scripts/check-i18n-parity.py` | offen |
+| Die Kette der Sprachsuche: angefordert → Sprachkette → Englisch → **der Schlüssel selbst** | `phocommander-i18n`, Test je Stufe | offen |
+| Ein fehlender Schlüssel ergibt **nie** einen leeren Text | Test | offen |
+| Die Sprache ist zur Laufzeit umschaltbar, ohne Neustart; die Oberfläche aktualisiert sich sofort | Test | offen |
+| Zahlen, Größen, Datums- und Zeitangaben folgen dem System der Sprache | `phocommander-i18n`, `icu` | offen |
+| **Eine dritte Sprache kommt ohne Codeänderung aus** — nur ein Katalogverzeichnis | `locales/fr/` | offen |
+| Die Oberflächensprache und die Sprache der Dateinamen sind unabhängig | Test | offen |
+| Die Sprachdateien sind nach Themen getrennt, damit ein Übersetzer nicht den ganzen Code liest | `locales/<sprache>/*.ftl` | offen |
+| Die Benutzerdokumentation existiert in beiden Sprachen | `docs/user-guide/` | offen |
+| Die Screenshot- und Textdateien der Stores liegen in beiden Sprachen vor | `docs/guides/` | offen |
+
+**Ergebnis.** Eine Oberfläche, die auf Deutsch und Englisch gleichwertig ist, in der kein Text
+hartkodiert ist und in der eine neue Sprache nur eine Datei braucht.
+
 
 ---
 
@@ -274,6 +303,105 @@ einem Interface, das sich der Kontext anpasst.
 | Die Makros | `phocommander-ops` | offen |
 | Alles in beiden Sprachen dokumentiert | `docs/user-guide/` | offen |
 
+### Welcher Meilenstein welches Release auslöst
+
+| Meilenstein abgeschlossen | Release | Plattformen, die mit diesem Release ausgeliefert werden |
+|---|---|---|
+| M1 | **Alpha 1** (0.1.0-alpha.1) | macOS (Apple Silicon, Intel) |
+| M2 | **Alpha 2** (0.1.0-alpha.2) | zusätzlich Linux (x86_64, aarch64) |
+| M2b | **Beta 1** (0.2.0-beta.1) | zusätzlich Windows — beide Sprachen vollständig |
+| M3 | **Beta 2** (0.2.0-beta.2) | zusätzlich FreeBSD und NetBSD, Windows-Pakete, die portable Variante |
+| M4 und M5 | **Beta 3** (0.3.0-beta.3) | zusätzlich Android und iPadOS aus den Stores |
+| M6 und M7 | **Beta 4** (0.3.0-beta.4) | zusätzlich die Netzwerkquellen, der Cloud-Zugriff, der Controller-Kontext |
+| M8 | **Beta 5** (0.3.0-beta.5) | zusätzlich Fire TV und Google TV |
+| M9 | **Release 1.0** (1.0.0) | alle sechs Plattformen, alle obigen Wege |
+
+**Ein Meilenstein löst ein Release aus, aber ein Release ist nicht automatisch fällig.** Es
+gilt zusätzlich die Checkliste „Was ein Release auslöst" mit den Bedingungen T-01 bis T-15. Fehlt
+eine davon, wird das Release **verschoben**, nicht unvollständig ausgeliefert.
+
+---
+
+## Die Releases
+
+Ein **Release** ist nicht dasselbe wie ein Meilenstein. Der Meilenstein ist die Arbeit, das
+Release ist das **ausgelieferte Binary** für bestimmte Plattformen. Beide hängen zusammen, aber
+sie sind nicht identisch: Ein Meilenstein kann abgeschlossen sein, ohne dass ein Release
+ausgeliefert wird — zum Beispiel weil die Signaturzertifikate noch nicht vorliegen.
+
+Die Versionsfolge folgt der bewährten Regel: `0.x` ist die Arbeit am Produkt, `1.0` ist das
+Release, das jemand im Alltag benutzt.
+
+| Release | Version | Auslöser | Plattformen | Was ausgeliefert wird |
+|---|---|---|---|---|
+| **Alpha 1** | 0.1.0-alpha.1 | Ende von M1 | macOS (Apple Silicon, Intel) | Die erste lauffähige Anwendung: browsen, kopieren, umbenennen, ansehen, Archive öffnen. Ausdrücklich **Alpha**: Fehler sind zu erwarten |
+| **Alpha 2** | 0.1.0-alpha.2 | Ende von M2 | macOS, Linux (x86_64, aarch64) | Registerkarten, Profile, sichere Kopiermodi, die Oberfläche in beiden Layouts |
+| **Beta 1** | 0.2.0-beta.1 | Ende von M2b | macOS, Linux, Windows | **Beide Sprachen vollständig**, die Oberfläche ist an einem echten Tag benutzbar, keine Datenverluste |
+| **Beta 2** | 0.2.0-beta.2 | Ende von M3 | macOS, Linux, Windows, FreeBSD, NetBSD | Alle Desktop-Plattformen, Windows-Pakete, die portable Variante |
+| **Beta 3** | 0.3.0-beta.3 | Ende von M4 und M5 | zusätzlich Android und iPadOS | Die mobilen Versionen aus den Stores |
+| **Beta 4** | 0.3.0-beta.4 | Ende von M6 und M7 | zusätzlich alle obigen | Die Netzwerkquellen und der Cloud-Zugriff, der Controller-Kontext |
+| **Beta 5** | 0.3.0-beta.5 | Ende von M8 | zusätzlich Fire TV und Google TV | Die Fernseher-Version |
+| **Release 1.0** | 1.0.0 | Ende von M9 | alle sechs Plattformen | Das erste Release, das jemand im Alltag benutzt. Kein Alpha, kein Beta |
+
+### Was ein Release auslöst
+
+Ein Release wird **nicht** durch das Ende eines Meilensteins ausgelöst, sondern durch eine
+Checkliste. Sie ist die Bedingung, und sie wird bei jedem Release vollständig abgearbeitet.
+
+| Nr. | Bedingung | Nachweis |
+|---|---|---|
+| T-01 | Der zugehörige Meilenstein ist abgenommen | `docs/acceptance/` |
+| T-02 | Die elf gemeinsamen Regeln R-01 bis R-21 sind erfüllt | alle Gates |
+| T-03 | Alle Tests laufen durch, keiner wird übersprungen | `cargo test --workspace --locked` |
+| T-04 | **Die Version ist in genau einer Stelle geschrieben** und überall identisch | `Cargo.toml`, `CHANGELOG.md`, alle Shells |
+| T-05 | Die Version folgt der Regel `MAJOR.MINOR.PATCH` mit `0.x` vor `1.0` | `Cargo.toml` |
+| T-06 | Die Prüfsummen der Artefakte sind berechnet und im Release hinterlegt | `SHA256SUMS` |
+| T-07 | Jedes Artefakt ist **signiert** | Signatur des Herstellers |
+| T-08 | Bei macOS ist das Artefakt **notarisiert** und das Ticket angeheftet | `notarytool`, Ticket |
+| T-09 | Bei Windows ist das Artefakt **Authenticode-signiert** | Signatur des Herstellers |
+| T-10 | Bei den Stores ist die Einreichung angenommen, die Prüfung bestanden | Bestätigung des Stores |
+| T-11 | Die Release-Notizen nennen die Änderungen, die Bekannten Einschränkungen und die Auslöser | `CHANGELOG.md` |
+| T-12 | Die Dokumentation beschreibt den Stand dieses Releases | `docs/user-guide/` |
+| T-13 | Die Sicherheitsregeln sind erfüllt, inklusive der drei nicht schaltbaren Garantien | `docs/security/` |
+| T-14 | Die Binaries sind auf der Zielplattform **gebaut**, nicht nur auf einer | Artefakte des Release |
+| T-15 | Die Artefakte tragen **keine** Telemetrie, **keine** Werbung und **keinen** Account-Zwang | Prüfskript plus Sichtprüfung |
+
+### Die Plattformen und ihre Wege
+
+Jede Plattform hat ihren eigenen Weg in die Hand des Nutzers. Das bestimmt, was vor dem Release
+fertig sein muss.
+
+| Plattform | Weg | Was vorher fertig sein muss | Signatur |
+|---|---|---|---|
+| **macOS** | Über die eigene Website, als `.dmg` | Notarisierung mit dem Ticket, Hardened Runtime, Developer-ID-Signatur | Apple Developer ID, notarisiert |
+| **Windows** | Über die eigene Website, als `.msix` und als portable Variante | Authenticode-Signatur; die portable Variante ist **ein** Executable ohne Installer | Eigenes Code-Signing-Zertifikat |
+| **Linux** | Über die eigene Website, als Flatpak, AppImage und als Paket der Distributionen | Keine Signatur nötig, aber reproduzierbare Builds | Keine, Integrity über Prüfsummen |
+| **FreeBSD, NetBSD** | Über die eigene Website, als Paket | Ports-Paket, sofern ein Port existiert | Keine |
+| **Android** | Über den Play Store | Die Deklaration der Spezialberechtigung, die Datenschutzerklärung, die Altersfreigabe | Play App Signing |
+| **iPadOS** | Über den App Store | Datenschutzerklärung, Altersfreigabe, die Screenshots in beiden Sprachen | Apple Developer |
+| **Meta Quest** | Über den Meta Horizon Store, oder als APK von der Website | Die App laeuft als flaches Panel, kein immersiver VR-Port | Meta Store |
+| **Fire TV, Google TV** | Über den Play Store | Das Leanback-Manifest, die Erreichbarkeit mit dem D-Pad, das Banner | Play App Signing |
+
+### Was ein Release **nicht** ist
+
+- **Kein Alpha ohne Abnahme.** Eine Alpha ohne die Abnahme des Meilensteins ist eine
+  unkontrollierte Auslieferung. Der Auslöser ist der Meilenstein, nicht das Datum.
+- **Kein Release ohne Signatur.** Ein unsigniertes Binary erzeugt auf macOS die Gatekeeper-Warnung
+  und auf Windows die SmartScreen-Warnung. Beide sind für ein Werkzeug, das der Nutzer auf sein
+  Firmennotebook installiert, der Moment, in dem das Vertrauen verloren geht.
+- **Kein Release mit offenen Sicherheitsbefunden.** Ein offener Befund aus dem Bedrohungsmodell
+  blockiert das Release.
+- **Kein Release, das mehr verspricht als die Software kann.** Der Umfang eines Releases steht im
+  Changelog, und der Changelog nennt die bekannten Einschränkungen.
+
+### Die Version im Alltag
+
+Die Anwendungen zeigen ihre Version im About-Dialog an: Anwendung, Version, Commit und Bauplattform.
+Der Konfigurationsdatei trägt ihre eigene `schema_version` — das ist die Version des **Formats**
+der Datei, nicht die Version der Anwendung. Die beiden werden getrennt, weil sie sich zu
+verschiedenen Zeiten ändern.
+
+
 ---
 
 ## Die Reihenfolge und ihre Gründe
@@ -288,6 +416,12 @@ nicht begonnen.
 **Die netzwerkreichen Meilensteine kommen nach den lokalen.** Eine Quelle, die nicht funktioniert,
 ist reparierbar und sichtbar. Eine halbfertige Netzwerkschicht, die in M1 dazwischenhängt,
 gefährdet den Kern.
+
+**Die Internationalisierung ist ein eigener Meilenstein.** Sie steht zwischen M2 und M3, weil die
+Sprachvollständigkeit eine Eigenschaft des Produkts ist, die man getrennt abnehmen muss. Vor M2b
+darf die Oberfläche nur in einer Sprache existieren — für die Entwicklung ist das richtig, und für
+ein Release ist es falsch. Der Beta-1-Punkt der Roadmap setzt deshalb die Vollständigkeit beider
+Sprachen voraus, und ein Release, das nur halb übersetzt ist, ist keines.
 
 ## Die Offenen Punkte, die eine Entscheidung brauchen
 

@@ -43,7 +43,7 @@ IDENTIFIER = re.compile(r"^(FR|NFR)-(\d{2,})([a-z]?)$")
 SPEC_ROW = re.compile(
     r"^\|\s*(FR-\d+[a-z]?|NFR-\d+[a-z]?)\s*\|"
     r"(?P<requirement>[^|]*)\|"
-    r"\s*(?P<milestone>M\d)\s*\|"
+    r"\s*(?P<milestone>M\d[a-z]?)\s*\|"
     r"\s*(?P<priority>Must|Should|Could)\s*\|"
     r"\s*(?P<verification>[^|]*?)\s*\|\s*$"
 )
@@ -65,8 +65,9 @@ CLASSIFICATIONS = ("automated", "manual", "mixed")
 # The milestones that carry acceptance criteria today.
 COVERED_MILESTONES = ("M0", "M1", "M2")
 
-# The milestones that the specification knows.
-MILESTONES = tuple(f"M{index}" for index in range(10))
+# The milestones that the specification knows. M2b is the milestone of the
+# internationalisation; it stands between M2 and M3.
+MILESTONES = tuple(f"M{index}" for index in range(10)) + ("M2b",)
 
 # The priorities of the specification.
 PRIORITIES = ("Must", "Should", "Could")
@@ -347,13 +348,13 @@ def check_acceptance_column(rows: list[dict[str, str]], acceptance: Path) -> lis
     if not acceptance.exists():
         return [f"{acceptance} does not exist"]
     text = acceptance.read_text(encoding="utf-8")
-    known = set(re.findall(r"\bAC-M\d-\d{2}\b", text))
+    known = set(re.findall(r"\bAC-M\d[a-z]?-\d{2}\b", text))
     failures: list[str] = []
     for row in rows:
         cell = row["acceptance"]
         if cell == "not yet assigned":
             continue
-        if not re.fullmatch(r"AC-M\d-\d{2}", cell):
+        if not re.fullmatch(r"AC-M\d[a-z]?-\d{2}", cell):
             failures.append(
                 f"line {row['line']}: '{cell}' is neither an acceptance criterion nor "
                 "'not yet assigned'"

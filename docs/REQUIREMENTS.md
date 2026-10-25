@@ -189,7 +189,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-02 | The application starts without an account, a login or a network connection | M0 | Must | Start-up test that asserts no socket is opened |
 | FR-03 | No telemetry, analytics, advertising or crash reporting is collected | M0 | Must | Dependency check plus code review |
 | FR-04 | The start view contains no banner, no promotional area and no onboarding overlay | M0 | Must | Screenshot review in the acceptance document |
-| FR-05 | Every user-visible string is externalised and translatable | M2 | Must | Gate that fails on a literal string in the UI layer |
+| FR-05 | Every user-visible string is externalised and translatable | M2b | Must | Gate that fails on a literal string in the UI layer |
 | FR-06 | The product ships under `MIT OR Apache-2.0` with no proprietary component | M0 | Must | `cargo deny` plus licence review |
 
 ### 4.2 Dual-pane work surface
@@ -345,13 +345,13 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 
 | ID | Requirement | Milestone | Priority | Verification |
 |---|---|---|---|---|
-| FR-120 | English and German are complete at the release of M2 | M2 | Must | Gate that compares the key sets of both catalogues |
-| FR-121 | The catalogue key set is identical in every language | M2 | Must | Gate comparing the catalogues |
-| FR-122 | A missing translation falls back to English and then to the key, never to an empty string | M2 | Must | Unit test |
-| FR-123 | Numbers, sizes, dates and times follow the system locale | M2 | Must | Unit test |
-| FR-124 | The language can be changed at run time without a restart | M2 | Must | Manual test |
-| FR-125 | Adding a language requires no change to the source code | M2 | Must | Documentation review |
-| FR-126 | The interface language and the content language are independent | M2 | Should | Manual test |
+| FR-120 | English and German are complete at the release of M2 | M2b | Must | Gate that compares the key sets of both catalogues |
+| FR-121 | The catalogue key set is identical in every language | M2b | Must | Gate comparing the catalogues |
+| FR-122 | A missing translation falls back to English and then to the key, never to an empty string | M2b | Must | Unit test |
+| FR-123 | Numbers, sizes, dates and times follow the system locale | M2b | Must | Unit test |
+| FR-124 | The language can be changed at run time without a restart | M2b | Must | Manual test |
+| FR-125 | Adding a language requires no change to the source code | M2b | Must | Documentation review |
+| FR-126 | The interface language and the content language are independent | M2b | Should | Manual test |
 
 ### 4.12 Non-functional requirements
 
@@ -912,6 +912,9 @@ actually asks for.
 
 ## 8. Internationalisation Plan
 
+The internationalisation is the milestone **M2b** of the milestone plan. The roadmap lists the
+points that have to hold, and the release Beta 1 depends on it.
+
 ### 8.1 Languages and order
 
 English and German are the two languages of the first release. Both must be complete at the
@@ -1305,14 +1308,34 @@ extraction hardening exist and pass.
 **Work packages.** Tabs and the directory tree, the filter field, the command line and its
 history, the directory comparison, the favourites and the file container, viewer stage 2 with PDF
 and syntax highlighting, the native menu bar, the context menus, the interface profiles with the
-clean and the full variant, the localisation framework with English and German, the performance
-gates.
+clean and the full variant, the performance gates.
 
 **Definition of done.** Every action is reachable with the keyboard, the interface exists in a
-clean and a full variant, English and German are complete, and the performance targets of NFR-01
-to NFR-06 are measured and met.
+clean and a full variant, and the performance targets of NFR-01 to NFR-06 are measured and met.
 
 **Dependencies.** M1.
+
+#### M2b — Internationalisation
+
+**Goal.** The interface in two languages — English and German — of equal quality, with localised
+formatting and a change of the language at run time.
+
+**Why this is a milestone of its own.** The completeness of the languages is a property of the
+product and not a detail of the presentation. A release that is only half translated is worse than
+a release in one language, and that has to be decided at the level of the milestone and not at the
+level of the translation file.
+
+**Work packages.** The catalogue with an identical key set in both languages, the lookup chain,
+the run-time change of the language, the localised formatting of numbers, sizes, dates and times,
+the third language as the proof that no code change is needed, the user documentation in both
+languages, the store texts in both languages.
+
+**Definition of done.** No text is hard-coded in the interface layer, English and German have the
+same key set, a missing key never yields an empty text, the language can be changed at run time
+without a restart, the formats follow the system, a third language arrives without a change to the
+source, and the user documentation exists in both languages.
+
+**Dependencies.** M2.
 
 #### M3 — The other desktop platforms
 
@@ -1325,7 +1348,7 @@ packaging for the three platforms.
 **Definition of done.** The CI matrix builds and tests on all three, and the manual test protocol
 for the platform-specific behaviour has run.
 
-**Dependencies.** M2.
+**Dependencies.** M2b.
 
 #### M4 — Android
 

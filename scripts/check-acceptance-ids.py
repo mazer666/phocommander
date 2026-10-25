@@ -36,7 +36,9 @@ from pathlib import Path
 CELL_BOUNDARY = re.compile(r"(?<!\\)\|")
 
 # The milestones that carry acceptance criteria.
-COVERED_MILESTONES = ("M0", "M1", "M2")
+# The milestones that carry acceptance criteria today. M2b is the milestone
+# of the internationalisation and sits between M2 and M3.
+COVERED_MILESTONES = ("M0", "M1", "M2", "M2b")
 
 # The words that must not stand in for a measurable pass condition. The
 # patterns match whole words, so that "workspace" does not count as "works".
@@ -101,7 +103,7 @@ def read_criteria(path: Path) -> list[dict[str, str]]:
         if not line.strip().startswith("|"):
             continue
         cells = split_cells(line)
-        if len(cells) != 6 or not re.fullmatch(r"AC-M\d-\d{2}", cells[0]):
+        if len(cells) != 6 or not re.fullmatch(r"AC-M\d[a-z]?-\d{2}", cells[0]):
             continue
         criteria.append(
             {
