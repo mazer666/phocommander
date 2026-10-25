@@ -135,13 +135,16 @@ context = "auto"
 # Binding for the action "selection.toggle" in the controller context.
 "selection.toggle" = "Grip"
 
-# Behaviour of remote sources (SFTP, FTP, SMB, WebDAV, S3).
 # The security rules of the specification, section 9.7 and 9.8.
 [security]
 # The profile that decides which rules apply:
 #   "standard"  the rules of section 9.7 with the convenience switches
 #   "corporate" every rule of section 9.7, for a managed machine
 #   "custom"    exactly what the switches below say
+#
+# The profile decides. In the profiles "standard" and "corporate" the
+# switches below are read but not obeyed, and every difference is reported
+# in the log. The profile "custom" lets the switches decide.
 profile = "standard"
 
 # Read the content of a directory again before it is shown, so that a change
@@ -151,7 +154,9 @@ verify_directory_before_refresh = true
 
 # Keep no index. The application never reads a file that the user has not
 # opened. This is one of the three guarantees that cannot be switched off,
-# and the switch exists only so that the value is visible.
+# and the switch exists only so that the value is visible. A file that sets
+# the value to true is read, the value is ignored and the application writes
+# a message into its log.
 background_index = false
 
 # Write the last directories at the end of a session. Switching this off
@@ -164,9 +169,26 @@ read_only_on_demand = true
 # Compare the checksums of source and destination in the verified copy mode.
 checksum_on_copy = true
 
-# Copy a symbolic link as a symbolic link and never follow it.
+# Follow a symbolic link during a copy. The rule of the specification is
+# that a symbolic link is copied as a symbolic link and is never
+# dereferenced, so the safe value is false. The name of the key names the
+# deviation from the rule.
 follow_symlinks = false
 
+# The application sends no telemetry. There is nothing to switch off, because
+# there is nothing. The key exists so that the value is visible. A file that
+# sets the value to true is read, the value is ignored and the application
+# writes a message into its log.
+telemetry = false
+
+# The application never asks for administrator rights. A user who wants an
+# elevated operation runs the operation in a terminal. The key exists for the
+# same reason as the one above.
+elevation = false
+
+# Behaviour of remote sources (SFTP, FTP, SMB, WebDAV, S3).
+# The network sources arrive in M6; the settings below describe how the
+# application behaves when a remote source is used.
 [remote]
 # Behaviour on connection problems: "retry" tries again, "fail" aborts.
 # The timeouts apply per connection establishment.
