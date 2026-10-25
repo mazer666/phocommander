@@ -1,0 +1,23 @@
+==============================================================
+command : cargo build --workspace --all-targets --locked
+date    : 2026-10-25T01:08:23Z
+cargo   : cargo 1.99.1 (5f94df478 2026-08-27)
+rustc   : rustc 1.99.1 (58cf8f9c3 2026-10-13)
+CARGO_HOME=/tmp/qa2-cargo
+CARGO_TARGET_DIR=/tmp/qa2-target
+==============================================================
+   Compiling phocommander-ui v0.1.0 (/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/crates/phocommander-ui)
+error[E0277]: `egui_kittest::Node<'_>` doesn't implement `std::fmt::Display`
+  --> crates/phocommander-ui/tests/the_filter_matches_without_a_dialog.rs:66:20
+   |
+66 |     println!("{}", harness.root());
+   |               --   ^^^^^^^^^^^^^^ `egui_kittest::Node<'_>` cannot be formatted with the default formatter
+   |               |
+   |               required by this formatting parameter
+   |
+   = help: the trait `std::fmt::Display` is not implemented for `egui_kittest::Node<'_>`
+   = note: in format strings you may be able to use `{:?}` (or `{:#?}` for pretty-print) instead
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `phocommander-ui` (test "the_filter_matches_without_a_dialog") due to 1 previous error
+EXIT=101

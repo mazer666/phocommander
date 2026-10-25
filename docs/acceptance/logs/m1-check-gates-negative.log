@@ -1,0 +1,207 @@
+==============================================================
+command : ./scripts/check-gates-negative.sh --without-cargo
+date    : 2026-10-25T01:34:54Z
+note    : the ten gates that need no build were run in a snapshot of
+          the repository; the five gates that call cargo were skipped
+          because the sandbox has three gigabytes of memory and the
+          linker was killed by the OOM killer during the parallel
+          builds of the team.
+==============================================================
+==============================================================
+Phocommander — negative test of the QA gates
+==============================================================
+repository : /workspace/qa2/snapshot
+scratch    : /tmp/phocommander-gate-test-v2zDo2
+cargo home : /workspace/.home/.cargo
+target dir : /tmp/phocommander-gate-test-v2zDo2/target
+
+==============================================================
+Gate 1 — telemetry: scripts/check-no-telemetry.sh
+==============================================================
+1.1 negative run (a dependency of the forbidden category is simulated
+    by pointing the list of the script at a crate that IS in the tree):
+VIOLATION  ./Cargo.toml  references the forbidden crate 'egui'
+VIOLATION  ./Cargo.toml  references the forbidden crate 'zip'
+VIOLATION  ./crates/phocommander-archive/Cargo.toml  references the forbidden crate 'zip'
+VIOLATION  ./crates/phocommander-ui/Cargo.toml  references the forbidden crate 'egui'
+Violations            : 4
+RESULT: FAIL — a dependency of the telemetry category is referenced.
+  expected exit code 1, got 1 — the gate is red on a violating dependency
+  RESULT: PASS — the gate is effective
+
+1.2 positive run (the repository as it is):
+Violations            : 0
+RESULT: PASS — no dependency of the telemetry or analytics category is referenced.
+  expected exit code 0, got 0 — the gate is green on the repository
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 2 — file size: scripts/check-file-size.sh
+==============================================================
+2.1 negative run (a source file with 901 lines, above the hard limit of 900):
+MAX   901 lines  ./crates/demo/src/huge.rs
+Maximum violations    : 1
+RESULT: FAIL — a source file exceeds the hard limit of 900 lines. Split it.
+  expected exit code 1, got 1 — the gate is red above the hard limit
+  RESULT: PASS — the gate is effective
+
+2.2 positive run with a warning (a source file with 601 lines, above the target value of 600):
+OVER  601 lines  ./crates/demo/src/over.rs
+Target-value warnings : 1
+RESULT: PASS with warnings — 1 file(s) exceed the target value of 600 lines.
+  expected exit code 0, got 0 — the gate reports the target value as a warning and stays green
+  RESULT: PASS — the gate is effective
+
+2.3 positive run (the same file with 100 lines, below the target value of 600):
+Target-value warnings : 0
+Maximum violations    : 0
+RESULT: PASS — every source file stays at or below the target value of 600 lines.
+  expected exit code 0, got 0 — the gate is green below the target value
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 3 — link check: scripts/check-docs-links.py
+==============================================================
+3.1 negative run (a document with a link to a file that does not exist):
+docs/broken.md:3  does-not-exist.md  BROKEN  (create the file or fix the link)
+Broken links           : 1
+RESULT: FAIL — a dead link is a documentation defect.
+  expected exit code 1, got 1 — the gate is red on a dead link
+  RESULT: PASS — the gate is effective
+
+3.2 positive run (the same document with a link to a file that exists):
+Broken links           : 0
+RESULT: PASS — every repository link resolves.
+  expected exit code 0, got 0 — the gate is green on a live link
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 4 — crate boundaries: scripts/check-crate-boundaries.sh
+==============================================================
+4.1 negative run (a crate below crates/ gets a dependency on a sibling):
+12 path dependencies checked, 1 violations
+  expected exit code 1, got 1 — the gate is red on a dependency between two crates of the same level
+  RESULT: PASS — the gate is effective
+
+4.2 positive run (the dependency is removed again):
+12 path dependencies checked, 0 violations
+  expected exit code 0, got 0 — the gate is green again
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 5 — requirement identifiers: scripts/check-requirement-ids.py
+==============================================================
+5.1 negative run (a requirement of the catalogue is removed):
+        FR-22c is in the specification but not in the catalogue
+        FR-22c is in the specification but not in the catalogue
+RESULT: FAIL — 2 of 7 checks failed
+  expected exit code 1, got 1 — the gate is red when a requirement is missing
+  RESULT: PASS — the gate is effective
+
+5.2 negative run (a requirement of the catalogue is written twice):
+        duplicate id FR-22c on lines 63 and 253
+RESULT: FAIL — 1 of 7 checks failed
+  expected exit code 1, got 1 — the gate is red when a requirement is written twice
+  RESULT: PASS — the gate is effective
+
+5.3 positive run (the catalogue of the repository):
+RESULT: PASS — 7 of 7 checks passed
+  expected exit code 0, got 0 — the gate is green on the catalogue of the repository
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 6 — acceptance identifiers: scripts/check-acceptance-ids.py
+==============================================================
+6.1 negative run (the acceptance criterion of a requirement is removed):
+        FR-22c (M1) has no acceptance criterion
+        FR-22c names the criterion AC-M1-10 in the catalogue, but the acceptance document holds no criterion
+RESULT: FAIL — 3 of 6 checks failed
+  expected exit code 1, got 1 — the gate is red when a criterion is missing
+  RESULT: PASS — the gate is effective
+
+6.2 negative run (a criterion references a requirement that does not exist):
+        line 33: AC-M0-02 references FR-99, which is not in the catalogue
+RESULT: FAIL — 3 of 6 checks failed
+  expected exit code 1, got 1 — the gate is red on a criterion that points at nothing
+  RESULT: PASS — the gate is effective
+
+6.3 positive run (the acceptance document of the repository):
+RESULT: PASS — 6 of 6 checks passed
+  expected exit code 0, got 0 — the gate is green on the acceptance document of the repository
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 7 — action identifiers: scripts/check-action-ids.py
+==============================================================
+7.1 negative run (the binding of an action is removed from a context):
+        input.keyboard: the action panel.copy is missing
+        the action panel.copy occurs 2 times, expected 3
+        input.keyboard: panel.copy is bound to 'None', the specification names 'F5'
+        keymap: the override of 'panel.copy' names an unknown action
+RESULT: FAIL — 4 of 9 checks failed
+  expected exit code 1, got 1 — the gate is red when an action has no binding
+  RESULT: PASS — the gate is effective
+
+7.2 negative run (an action is bound to two keys in the same context):
+keymap    : /tmp/phocommander-gate-test-v2zDo2/keymap-conflict.toml
+RESULT: FAIL — 2 of 9 checks failed
+  expected exit code 1, got 1 — the gate is red when a key is bound to two actions
+  RESULT: PASS — the gate is effective
+
+7.3 positive run (the keymap of the repository):
+RESULT: PASS — 9 of 9 checks passed
+  expected exit code 0, got 0 — the gate is green on the keymap of the repository
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 8 — configuration schema: scripts/check-config-schema.py
+==============================================================
+8.1 negative run (the default of the conflict policy is changed):
+  expected exit code 1, got 1 — the gate is red when a default value is changed
+  RESULT: PASS — the gate is effective
+
+8.2 negative run (a key of the configuration file loses its comment):
+  expected exit code 1, got 1 — the gate is red when a key has no comment
+  RESULT: PASS — the gate is effective
+
+8.3 positive run (the configuration of the repository):
+RESULT: PASS — 7 of 7 checks passed
+  expected exit code 0, got 0 — the gate is green on the configuration of the repository
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 9 — keymap consistency: scripts/check-keymap-consistency.py
+==============================================================
+9.1 negative run (the binding of the copy action does not match the key table of the specification):
+  F5             panel.copy                 F9               DEVIATION
+RESULT: FAIL — the three descriptions do not agree.
+  expected exit code 1, got 1 — the gate is red when a binding differs from the specification
+  RESULT: PASS — the gate is effective
+
+9.2 positive run (the keymap of the repository):
+RESULT: PASS — specification, catalogue and reference agree.
+  expected exit code 0, got 0 — the gate is green on the keymap of the repository
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gate 10 — interface profiles: scripts/check-interface-profiles.py
+==============================================================
+10.1 negative run (the clean profile shows the toolbar):
+ValueError: '/tmp/phocommander-gate-test-v2zDo2/profiles-copy/clean.toml' is not in the subpath of '/run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/qa2/snapshot' OR one path is relative and the other is absolute.
+  expected exit code 1, got 1 — the gate is red when a profile does not hold the values of its name
+  RESULT: PASS — the gate is effective
+
+10.2 positive run (the profiles of the repository):
+RESULT: PASS — 4 of 4 checks passed
+  expected exit code 0, got 0 — the gate is green on the profiles of the repository
+  RESULT: PASS — the gate is effective
+
+==============================================================
+Gates 11 to 15 (formatting, static analysis, tests, licence,
+advisories) were SKIPPED — the run was started with --without-cargo.
+==============================================================
+
+==============================================================
+RESULT: PASS — every gate that ran turned red on a broken state and green again.
+Gates proved: 25
+EXIT=0

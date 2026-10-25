@@ -1,0 +1,15 @@
+==============================================================
+command : python3 scripts/check-interface-profiles.py
+date    : 2026-10-25T01:34:06Z
+==============================================================
+profiles  : /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/config/profiles
+            config/profiles/clean.toml
+            config/profiles/full.toml
+
+OK    all 2 profiles parse as TOML
+OK    every profile carries exactly the keys of the schema
+OK    every key and every section carries a comment
+OK    the shipped profiles hold the values of their names
+
+RESULT: PASS — 4 of 4 checks passed
+EXIT=0

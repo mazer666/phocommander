@@ -1,0 +1,40 @@
+==============================================================
+command : python3 scripts/check-keymap-consistency.py
+date    : 2026-10-25T01:34:06Z
+==============================================================
+=== A. The specification names the catalogue and the reference ===
+  section 6.1 names config/keymap.toml and docs/KEYMAP.md  ok
+
+=== B. The classic key set of the specification ===
+  F2             panel.rename               F2               ok
+  F3             panel.view                 F3               ok
+  F4             panel.edit                 F4               ok
+  F5             panel.copy                 F5               ok
+  F6             panel.move                 F6               ok
+  F7             panel.mkdir                F7               ok
+  F8             panel.delete               F8               ok
+  F9             app.menu                   F9               ok
+  F10            app.quit                   F10              ok
+  F3             viewer.find_next           F3               ok
+  F3             rename.conflict_next       F3               ok
+  Shift+F3       viewer.find_previous       Shift+F3         ok
+  Shift+F3       rename.conflict_previous   Shift+F3         ok
+
+=== C. Action catalogue -> reference table (docs/KEYMAP.md) ===
+
+=== D. The three contexts hold the same actions ===
+  keyboard / dpad / controller : ok
+
+=== E. Actions that no rule names ===
+  panel.prev_tab: config/keymap.toml and docs/KEYMAP.md mark Ctrl+Shift+Tab as the symmetric completion of Ctrl+Tab; the specification names only the forward direction
+
+Actions in the catalogue        : 36
+Actions documented in KEYMAP.md : 37
+
+Accepted deviations (documented in the repository): 3
+  - panel.prev_tab: config/keymap.toml and docs/KEYMAP.md mark Ctrl+Shift+Tab as the symmetric completion of Ctrl+Tab; the specification names only the forward direction
+  - panel.drives is bound to Alt+F1; config/keymap.toml documents Alt+F2 in the comment as the classic variant for the drive list of the other panel
+  - the action palette is opened with the Menu key, and with the Play/Pause key on a remote control that has no Menu key
+Undocumented deviations: 0
+RESULT: PASS — specification, catalogue and reference agree.
+EXIT=0

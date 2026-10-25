@@ -1,0 +1,20 @@
+==============================================================
+command : python3 scripts/check-action-ids.py
+date    : 2026-10-25T01:34:06Z
+==============================================================
+keymap    : /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/config/keymap.toml
+actions   : 36 action IDs, 1 surface action
+bindings  : 34 from the key table of the specification, 2 derived (panel.filter, panel.prev_tab)
+
+OK    all three context sections exist
+OK    the action catalogue is complete and free of unknown actions
+OK    every action occurs exactly once per context
+OK    the keyboard bindings match the key table of the specification
+OK    dpad and controller refer to the action palette
+OK    no key is bound to two actions of the same surface
+OK    every action ID is in dotted notation
+OK    every action is referenced in the acceptance criteria or the specification
+OK    the overrides in defaults.toml name known actions
+
+RESULT: PASS — 9 of 9 checks passed
+EXIT=0

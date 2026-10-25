@@ -1,0 +1,26 @@
+==============================================================
+command : python3 scripts/check-config-schema.py
+date    : 2026-10-25T01:34:06Z
+==============================================================
+config    : /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/config
+files     : 9
+           config/defaults.toml
+           config/keymap.toml
+           config/profiles/clean.toml
+           config/profiles/full.toml
+           config/templates/camera.toml
+           config/templates/invoice.toml
+           config/templates/music.toml
+           config/templates/podcast.toml
+           config/templates/series.toml
+
+OK    all 9 files under config/ parse as TOML
+OK    the configuration file carries every section of the specification
+OK    the default values match the specification
+OK    every key and every section carries a comment
+OK    the shipped rename templates are complete
+OK    the overrides match the action catalogue
+OK    the configuration file and the Rust schema agree
+
+RESULT: PASS — 7 of 7 checks passed
+EXIT=0

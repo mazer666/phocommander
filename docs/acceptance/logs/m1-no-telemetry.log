@@ -1,0 +1,11 @@
+==============================================================
+command : ./scripts/check-no-telemetry.sh
+date    : 2026-10-25T01:34:24Z
+==============================================================
+
+Manifests scanned     : 16
+Dependency names read : 80
+Forbidden crate names : 48
+Violations            : 0
+RESULT: PASS — no dependency of the telemetry or analytics category is referenced.
+EXIT=0

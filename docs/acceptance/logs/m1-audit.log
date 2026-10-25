@@ -1,0 +1,46 @@
+==============================================================
+command : cargo audit
+date    : 2026-10-25T01:19:59Z
+cargo   : cargo 1.99.1 (5f94df478 2026-08-27)
+rustc   : rustc 1.99.1 (58cf8f9c3 2026-10-13)
+CARGO_HOME=/tmp/qa2-cargo
+CARGO_TARGET_DIR=/tmp/qa2-target
+==============================================================
+    Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+      Loaded 1352 security advisories (from /tmp/qa2-cargo/advisory-db)
+    Updating crates.io index
+    Scanning Cargo.lock for vulnerabilities (574 crate dependencies)
+Crate:     ttf-parser
+Version:   0.25.1
+Warning:   unmaintained
+Title:     `ttf-parser` is unmaintained
+Date:      2026-06-28
+ID:        RUSTSEC-2026-0192
+URL:       https://rustsec.org/advisories/RUSTSEC-2026-0192
+
+Crate:     zbus_names
+Version:   4.3.5
+Warning:   unmaintained
+Title:     `zbus_names` is unmaintained
+Date:      2026-10-16
+ID:        RUSTSEC-2026-0371
+URL:       https://rustsec.org/advisories/RUSTSEC-2026-0371
+
+Crate:     zvariant
+Version:   5.15.1
+Warning:   unmaintained
+Title:     `zvariant` is unmaintained
+Date:      2026-10-16
+ID:        RUSTSEC-2026-0370
+URL:       https://rustsec.org/advisories/RUSTSEC-2026-0370
+
+Crate:     zvariant_derive
+Version:   5.15.1
+Warning:   unmaintained
+Title:     `zvariant_derive` is unmaintained
+Date:      2026-10-16
+ID:        RUSTSEC-2026-0372
+URL:       https://rustsec.org/advisories/RUSTSEC-2026-0372
+
+warning: 4 allowed warnings found
+EXIT=0

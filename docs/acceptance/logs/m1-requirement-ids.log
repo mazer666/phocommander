@@ -1,0 +1,19 @@
+==============================================================
+command : python3 scripts/check-requirement-ids.py
+date    : 2026-10-25T01:34:05Z
+==============================================================
+catalogue   : /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/docs/REQUIREMENTS-IDS.md
+specification: /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/phocommander/docs/REQUIREMENTS.md
+requirements in the specification : 154
+rows in the catalogue             : 154
+
+OK    the specification and the catalogue are readable
+OK    the identifier sets are equal
+OK    no identifier occurs twice
+OK    the numbering is gapless inside every block
+OK    every row carries the seven columns of the catalogue
+OK    every source names the line of the requirement
+OK    every acceptance criterion exists in the acceptance document
+
+RESULT: PASS — 7 of 7 checks passed
+EXIT=0

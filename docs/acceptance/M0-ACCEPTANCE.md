@@ -4,10 +4,11 @@
 |---|---|
 | Milestone | M0 — Foundation |
 | Acceptance date | 24.10.2026 |
-| Specification version | `docs/REQUIREMENTS.md` 1.1 (24.10.2026, 963 lines) |
-| Catalogue version | `docs/REQUIREMENTS-IDS.md` — FR-01…FR-167, NFR-01…NFR-41; acceptance catalogue `docs/ACCEPTANCE-CRITERIA.md` |
+| Specification version | `docs/REQUIREMENTS.md` **2.0** (24 October 2026, 1714 lines) — supersedes 1.1 (963 lines) |
+| Catalogue version | `docs/REQUIREMENTS-IDS.md` — the 154 requirements of section 4 of version 2.0: FR-01…FR-145 with the letter blocks FR-22a…FR-22q and FR-74a…FR-74g, NFR-01…NFR-32 with NFR-09a, NFR-09b and NFR-17a…NFR-17c; acceptance catalogue `docs/ACCEPTANCE-CRITERIA.md` with 121 criteria |
 | Decided by | *pending — the owner decides; this document is the evidence of the QA engineer* |
 | Result | **accepted with conditions** — every gate that could be measured is green; the conditions are listed in section 7 and section 8 |
+| Correction | 25.10.2026 — the identifiers, the line limits and the version references of this document were brought to version 2.0 of the specification. The measurements are the ones of 24.10.2026 and were not repeated; the statements that version 2.0 no longer covers were moved to section 7 with their evidence. |
 
 **Who wrote this document:** the QA engineer of the team. **What it is:** the measured evidence for
 the milestone M0 — the command outputs, the test names with their results and the exact reasons for
@@ -23,23 +24,28 @@ raw output is stored under [`docs/acceptance/logs/`](logs/).
 ## 1. Functionality
 
 Which functions of this milestone exist, and how do they behave? Every row names the requirement ID
-and an observed behaviour, never a claim.
+of **version 2.0** and an observed behaviour, never a claim. The rows whose subject version 2.0 does
+not cover with a requirement identifier are listed in section 7 with their evidence.
 
 | Requirement | Behaviour observed | Evidence |
 |---|---|---|
-| FR-121 | The shipped configuration file `config/defaults.toml` is read by `phocommander_config` without an error, and every value of the file matches the value the specification names. | `config_defaults::the_shipped_configuration_file_is_accepted`, `config_defaults::the_shipped_configuration_file_holds_the_values_of_the_specification` — green in `cargo test --workspace` |
-| FR-122 | A configuration file with an unknown field (`langauge`) is refused, and the message names the field. | `config_defaults::a_configuration_file_with_an_unknown_field_is_refused` — green |
-| FR-122 | A configuration file that cannot be read reports the path of the file. | `config_defaults::a_configuration_file_that_cannot_be_read_reports_the_path` — green |
-| FR-160 | The canonical limits of `phocommander-core` and the values of the shipped configuration file are equal: 2 147 483 648 bytes, 100 000 entries, 10 485 760 bytes, 4 194 304 bytes. | `core_limits::the_shipped_configuration_file_carries_the_canonical_archive_limits`, `core_limits::the_shipped_configuration_file_carries_the_canonical_viewer_limits` — green |
-| FR-162 | The shipped key binding file is free of conflicts — with the two exceptions that the specification itself names (`F3` and `Shift+F3`, which mean "find" in the viewer and "jump to the conflict" in the rename dialog). | `keymap_bindings::the_shipped_keymap_has_no_conflict_in_any_context` — green |
-| FR-163 | Every action of the keyboard context is reachable in the `dpad` context and in the `controller` context. | `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_dpad_context`, `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_controller_context` — green |
-| FR-163 | In the `dpad` and in the `controller` context every action is bound to the action palette (`palette:…`); the only exceptions are `palette.open` (Menu key) and `selection.toggle` (grip) in the controller context. | `keymap_bindings::the_dpad_and_the_controller_bind_their_actions_to_the_action_palette` — green |
-| FR-164 | Every action identifier of the shipped file is well formed. | `keymap_bindings::the_action_identifiers_of_the_shipped_file_are_well_formed` — green |
-| FR-117 | The dependency direction of the workspace holds: `apps/*` → `platform/*` → `crates/*`, no crate below `crates/` depends on a sibling. | `./scripts/check-crate-boundaries.sh` → `8 path dependencies checked, 0 violations` (`logs/check-crate-boundaries.log`) |
-| FR-117 | The gate has teeth: a dependency of `phocommander-core` on `phocommander-keymap` makes the gate red, removing it makes it green again. | `./scripts/check-gates-negative.sh`, gate 4 (`logs/check-gates-negative.log`) |
-| FR-140 | The integration tests of the crate boundaries exist and run: the copy through a temporary directory is NOT RUN (the file operations arrive in M1), the extraction of an archive with traversal entries is covered by `security_path_traversal`, the loading of a configuration file with an unknown field is covered by `config_defaults`. | `cargo test --workspace` → `129 passed; 0 failed` (`logs/cargo-test-workspace.log`) |
-| FR-146 | The repository builds, checks and tests itself on one operating system (Linux, x86_64). The other platforms are built by the CI matrix, not by this sandbox — see section 7. | `cargo build --workspace --release` → `EXIT=0` (`logs/cargo-build-release.log`) |
-| FR-139 | Every public function that exists today has at least one test. The workspace carries 129 tests in 33 test binaries; the unit tests of the crates cover their public functions, the integration tests of `tests/` cover the crate boundaries. | `cargo test --workspace` → `129 passed; 0 failed; 0 ignored` (`logs/cargo-test-workspace.log`) |
+| H-06, FR-55 | The canonical limits of `phocommander-core` and the values of the shipped configuration file are equal: 2 147 483 648 bytes, 100 000 entries, 10 485 760 bytes, 4 194 304 bytes. | `core_limits::the_shipped_configuration_file_carries_the_canonical_archive_limits`, `core_limits::the_shipped_configuration_file_carries_the_canonical_viewer_limits` — green in `cargo test --workspace` |
+| FR-101 | The shipped key binding file is free of conflicts — with the two exceptions that the specification itself names (`F3` and `Shift+F3`, which mean "find" in the viewer and "jump to the conflict" in the rename dialog). | `keymap_bindings::the_shipped_keymap_has_no_conflict_in_any_context` — green |
+| FR-101 | Every action of the keyboard context is reachable in the `dpad` context and in the `controller` context. | `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_dpad_context`, `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_controller_context` — green |
+| FR-101 | In the `dpad` and in the `controller` context every action is bound to the action palette (`palette:…`); the only exceptions are `palette.open` (Menu key) and `selection.toggle` (grip) in the controller context. | `keymap_bindings::the_dpad_and_the_controller_bind_their_actions_to_the_action_palette` — green |
+| FR-100 | Every action identifier of the shipped file is well formed. | `keymap_bindings::the_action_identifiers_of_the_shipped_file_are_well_formed` — green |
+| NFR-20 | The dependency direction of the workspace holds: `apps/*` → `platform/*` → `crates/*`, no crate below `crates/` depends on a sibling. | `./scripts/check-crate-boundaries.sh` → `8 path dependencies checked, 0 violations` (`logs/check-crate-boundaries.log`) |
+| NFR-20 | The gate has teeth: a dependency of `phocommander-core` on `phocommander-keymap` makes the gate red, removing it makes it green again. | `./scripts/check-gates-negative.sh`, gate 4 (`logs/check-gates-negative.log`) |
+| NFR-17 | The integration tests of the crate boundaries exist and run: the copy through a temporary directory is NOT RUN (the file operations arrive in M1), the extraction of an archive with traversal entries is covered by `security_path_traversal`, the loading of a configuration file with an unknown field is covered by `config_defaults`. | `cargo test --workspace` → `129 passed; 0 failed` (`logs/cargo-test-workspace.log`) |
+| NFR-21 | The repository builds, checks and tests itself on one operating system (Linux, x86_64). The other platforms are built by the CI matrix, not by this sandbox — see section 7. | `cargo build --workspace --release` → `EXIT=0` (`logs/cargo-build-release.log`) |
+| NFR-17 | Every public function that exists today has at least one test. The workspace carries 129 tests in 33 test binaries; the unit tests of the crates cover their public functions, the integration tests of `tests/` cover the crate boundaries. | `cargo test --workspace` → `129 passed; 0 failed; 0 ignored` (`logs/cargo-test-workspace.log`) |
+
+**What moved to section 7 and why.** Version 1.1 named the validity of the central configuration file
+with three identifiers of its own (FR-121, FR-122, FR-160). Version 2.0 numbers its requirements
+thematically and carries no identifier for the configuration file as such: the file belongs to the
+configuration module of section 5.2 and to the acceptance criteria of section 13. The three
+measurements therefore stay in the document — in section 7, with the names of the tests — and are no
+longer presented as the proof of an identifier that does not exist.
 
 ---
 
@@ -58,7 +64,7 @@ through?
 | Vulnerability check (`cargo audit`) | pass — 214 dependencies scanned, 0 vulnerabilities, exit code 0 | `logs/cargo-audit.log` |
 | Test run (`cargo test --workspace`) | pass — 129 passed, 0 failed, 0 ignored, 33 test binaries, exit code 0 | `logs/cargo-test-workspace.log` |
 | Release build (`cargo build --workspace --release`) | pass — exit code 0 | `logs/cargo-build-release.log` |
-| File size limit (400 soft / 550 hard) | pass — 0 files above the soft limit, 0 above the hard limit; the gate turns red on a file with 600 lines | `logs/check-file-size.log`, `logs/check-gates-negative.log` gate 2 |
+| File size limit (NFR-14: 600 target / 900 hard) | pass — 0 files above the target value, 0 above the hard limit; the gate turns red on a file with more than 900 lines | `logs/check-file-size.log`, `logs/check-gates-negative.log` gate 2 |
 | Telemetry gate (`scripts/check-no-telemetry.sh`) | pass — 15 manifests, 51 dependency names, 0 violations; the gate turns red on a forbidden crate | `logs/check-no-telemetry.log`, `logs/check-gates-negative.log` gate 1 |
 | Link gate (`scripts/check-docs-links.py`) | pass — 138 repository links checked, 0 broken; the gate turns red on a dead link | `logs/check-docs-links.log`, `logs/check-gates-negative.log` gate 3 |
 | Platform build | NOT RUN for macOS, Windows, FreeBSD, NetBSD, Android and iOS — the sandbox has no cross toolchain and no runner for those systems; the CI matrix of the owner builds them. Linux: pass (`cargo build --workspace --release`). | `logs/cargo-build-release.log`; the gate list of section 7 |
@@ -92,9 +98,9 @@ measured is reported as "not measured", never as "met".
 **What the measurement means.** The benchmark measures the raw access to the file system: it reads
 the directory, reads the metadata of every entry and sorts the result by name. That is the part no
 implementation can make faster, so it is the floor that the directory model of the core crate has to
-reach. The measurement of the product function itself — `phocommander_core::fs::list_directory` —
-is **not measured**, because that function does not exist yet. The benchmark fails when the threshold
-is exceeded, so it is a gate and not a report.
+reach. The measurement of the product function itself is **not measured** — it is part of the M1
+acceptance, because the directory model of the core crate arrives there. The benchmark fails when the
+threshold is exceeded, so it is a gate and not a report.
 
 ---
 
@@ -129,13 +135,13 @@ nothing about the defence.
 | Decompression bomb — the cost for the attacker | `security_decompression_bomb::the_bomb_archive_costs_the_attacker_almost_nothing` | pass — the archive weighs a few kilobytes and expands to gigabytes | `logs/cargo-test-workspace.log` |
 | Decompression bomb — the expansion ratio | `security_decompression_bomb::a_highly_compressible_entry_expands_far_beyond_its_own_size` | pass — the entry of 8 MiB expands by more than a factor of 1000 | `logs/cargo-test-workspace.log` |
 | Decompression bomb — the number of entries | `security_decompression_bomb::an_archive_with_too_many_entries_exceeds_the_entry_limit` | pass — 100 001 entries against the limit of 100 000 | `logs/cargo-test-workspace.log` |
-| Decompression bomb — the abort during the extraction | `aborts_when_total_size_limit_is_exceeded` | **NOT RUN** — the container readers arrive in M1; `phocommander-archive` exposes `resolve_entry_name` today and nothing else. The attack is built and measured, the enforcement point does not exist yet. | `tests/security/README.md`, status `planned` |
-| Symlink escape, SUID/SGID preservation, TOCTOU | `skips_symlink_entry_instead_of_creating_it`, `drops_suid_and_sgid_bits_from_extracted_file`, `checks_the_path_immediately_before_the_access` | **NOT RUN** — same reason: the reader and the file operations arrive in M1. The rules are fixed as H4, H5 and H9 in the threat model. | `docs/security/THREAT_MODEL.md` |
+| Decompression bomb — the abort during the extraction | `aborts_when_total_size_limit_is_exceeded` | **NOT RUN in M0** — the container readers arrive in M1; `phocommander-archive` exposes `resolve_entry_name` today and nothing else. The attack is built and measured, the enforcement point does not exist yet. The test exists since M1 — see `docs/acceptance/M1-ACCEPTANCE.md`. | `tests/security/README.md`, status `planned` |
+| Symlink escape, SUID/SGID preservation, TOCTOU | `skips_symlink_entry_instead_of_creating_it`, `drops_suid_and_sgid_bits_from_extracted_file`, `checks_the_path_immediately_before_the_access` | **NOT RUN in M0** — same reason: the reader and the file operations arrive in M1. The rules are fixed as H-04, H-05 and the residual risk of H-03 in the threat model. The tests exist since M1 — see `docs/acceptance/M1-ACCEPTANCE.md`. | `docs/security/THREAT_MODEL.md` |
 | Header overflow in the parsers | `fuzz_archive_header`, `fuzz_image_header`, `fuzz_charset_detection` | **NOT RUN** — the fuzz targets and the parsers arrive in M1; the nightly CI job that would run them exists in `.github/workflows/ci.yml`. | `.github/workflows/ci.yml`, job `nightly` |
 | No telemetry, no analytics, no tracking | `./scripts/check-no-telemetry.sh` — 15 manifests, 51 dependency names, 0 violations; the negative run proves that the gate turns red on a forbidden crate | pass | `logs/check-no-telemetry.log`, `logs/check-gates-negative.log` gate 1 |
 | Only permissive licences | `cargo deny check` — `licenses ok` | pass | `logs/cargo-deny-check.log` |
 | No known vulnerability in the dependency graph | `cargo audit` — 214 dependencies, 0 vulnerabilities | pass | `logs/cargo-audit.log` |
-| The process opens no network connection at the start | `process_start` | **NOT RUN** — the application does not exist yet; the test belongs to the desktop app of M1. | `docs/ACCEPTANCE-CRITERIA.md`, AC-M0-55 / NFR-40 |
+| The process opens no network connection at the start | `process_start` | **NOT RUN** — the application does not exist yet; the test belongs to the desktop app of M1. | `docs/ACCEPTANCE-CRITERIA.md`, AC-M0-02 / FR-02, NFR-25 |
 
 ---
 
@@ -161,7 +167,8 @@ something to list.
 
 | Limitation | Reason | Planned for |
 |---|---|---|
-| The negative test of the extraction layer (symlink escape, SUID/SGID, the abort of the bomb) does not exist | the container readers of `phocommander-archive` arrive in M1; the crate exposes `resolve_entry_name` today | M1 |
+| The validity of the central configuration file is not covered by a requirement identifier of version 2.0. The measurements of M0 exist and are green: `config_defaults::the_shipped_configuration_file_is_accepted`, `config_defaults::the_shipped_configuration_file_holds_the_values_of_the_specification`, `config_defaults::a_configuration_file_with_an_unknown_field_is_refused`, `config_defaults::a_configuration_file_that_cannot_be_read_reports_the_path`. | Version 1.1 named this subject with FR-121, FR-122 and FR-160. Version 2.0 numbers its requirements thematically and carries no identifier for it; the file belongs to the configuration module of section 5.2 of the specification. | The owner decides whether version 2.0 needs an identifier for it |
+| The negative test of the extraction layer (symlink escape, SUID/SGID, the abort of the bomb) does not exist in M0 | the container readers of `phocommander-archive` arrive in M1; the crate exposes `resolve_entry_name` today | M1 — closed, see `docs/acceptance/M1-ACCEPTANCE.md` |
 | The directory model of the core crate has no test that lists a directory | the file system model arrives in M1; the test is written against the expected API and waits in `tests/integration/directory_entries.rs` | M1 |
 | The property tests cover the path resolution only | the rename rule and the key resolution do not exist yet | M1 |
 | No fuzz target exists | the parsers arrive in M1; the nightly job of the CI is in place | M1 |
@@ -172,6 +179,14 @@ something to list.
 | The CI runs the matrix jobs without the six commands of the quality job | the workflow of the owner runs `cargo test` and `cargo build --release` on the matrix, but not `fmt`, `clippy`, `deny` and `audit`; the specification asks for these in **every** run. The cross-compilation job has `continue-on-error: true`, so the platform build can never turn the build red, and the target `aarch64-apple-ios` is missing. | owner of the workflow, before the end of M0 — the ready-to-use YAML blocks are in `deliverable.md` |
 | The cargo-deny lock file needs a writable `CARGO_HOME` outside an NFS mount | a property of the sandbox, not of the project; the CI runs on a normal file system | not a project defect |
 
+**Status of the conditions on 25.10.2026.** The workflow of the owner has changed since the evidence
+above was taken: `.github/workflows/ci.yml` now carries the jobs `quality`, `desktop` (Linux, macOS
+and Windows), `cross-compile` (Android, iOS, FreeBSD, NetBSD, Linux and the iOS simulator) without
+`continue-on-error`, `performance` and `nightly`, and the version of `cargo-deny` is verified in the
+run. The conditions themselves remain open: the telemetry gate and the link gate still run only in
+the `quality` job, not in the matrix job, and the version of `cargo-audit` is verified only in the
+matrix job. The measurements of the other platforms are still the business of the CI of the owner.
+
 ---
 
 ## 8. Decision
@@ -179,9 +194,9 @@ something to list.
 | Field | Value |
 |---|---|
 | Decision | **accepted with conditions** |
-| Conditions | 1. The owner closes the gaps of `.github/workflows/ci.yml` that are listed in section 7 and in `deliverable.md` (iOS target, `continue-on-error` on the cross-compilation, the six commands in every matrix run, the version check for cargo-audit, a job for the performance gate). The file belongs to the owner and was not changed. 2. The negative tests of the extraction layer are written with the readers of M1; the protocol table in `tests/security/README.md` names every test that is still missing. 3. The build for the five other platforms is measured by the CI matrix of the owner before the end of M0. |
+| Conditions | 1. The owner closes the gaps of `.github/workflows/ci.yml` that are listed in section 7 and in `deliverable.md` (the telemetry gate and the link gate in every matrix run, the version check for cargo-audit in the quality job, the negative tests of the extraction layer with the readers of M1, a job for the performance gate). The file belongs to the owner and was not changed by the QA engineer. 2. The build for the five other platforms is measured by the CI matrix of the owner before the end of M0. |
 | Decided by | *pending — the owner of the project decides; the QA engineer hands over the evidence* |
-| Date | 24.10.2026 (evidence date) |
+| Date | 24.10.2026 (evidence date), 25.10.2026 (correction to version 2.0 of the specification) |
 | Next milestone | M1 — file operations, job queue, viewer stage 1, archive adapters, hardened extraction |
 
 ---
@@ -207,5 +222,6 @@ Every command that was run for this acceptance, with its output in the repositor
 | 13 | `cargo deny --version`, `cargo audit --version` | `cargo-deny 0.20.2`, `cargo-audit-audit 0.22.2` | the versions the specification pins |
 | 14 | `rustfmt --edition 2024 --check tests/integration/directory_entries.rs` | exit code 0 — the waiting test is syntactically correct | run on 24.10.2026, see `deliverable.md` |
 
-*End of document. Every status reflects the state of the repository on 24.10.2026. No row is marked
-as proven without a command output or a green test name behind it.*
+*End of document. Every status reflects the state of the repository on 24.10.2026, corrected to the
+identifier system of version 2.0 of the specification on 25.10.2026. No row is marked as proven
+without a command output or a green test name behind it.*
