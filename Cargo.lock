@@ -3534,8 +3534,11 @@ dependencies = [
 name = "phocommander-desktop"
 version = "0.1.0"
 dependencies = [
+ "eframe",
+ "egui",
  "phocommander-config",
  "phocommander-core",
+ "phocommander-i18n",
  "phocommander-ops",
  "phocommander-platform",
  "phocommander-ui",
