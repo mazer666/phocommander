@@ -41,6 +41,7 @@ EXPECTED_SECTIONS = [
     "input.keyboard",
     "input.dpad",
     "input.controller",
+    "security",
     "remote",
 ]
 
@@ -79,6 +80,15 @@ EXPECTED_VALUES = {
     "input.dpad|palette.open": "Menu",
     "input.controller|panel.copy": "palette:file.copy",
     "input.controller|selection.toggle": "Grip",
+    "security|profile": "standard",
+    "security|verify_directory_before_refresh": True,
+    "security|background_index": False,
+    "security|remember_session": True,
+    "security|read_only_on_demand": True,
+    "security|checksum_on_copy": True,
+    "security|follow_symlinks": False,
+    "security|telemetry": False,
+    "security|elevation": False,
 }
 
 # The shipped rename templates of the specification.
@@ -106,6 +116,7 @@ SCHEMA_SECTIONS = {
     "privacy": "Privacy",
     "advanced": "Advanced",
     "input": "Input",
+    "security": "Security",
     "remote": "Remote",
 }
 
