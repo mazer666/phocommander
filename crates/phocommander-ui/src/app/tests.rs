@@ -48,6 +48,20 @@ fn app() -> WorkSurfaceApp {
     WorkSurfaceApp::new(surface, keymap, Box::new(Echo))
 }
 
+/// The shell with a catalogue of its own.
+fn app_with_catalogue(catalogue: Box<dyn Catalogue>) -> WorkSurfaceApp {
+    let surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
+    let mut keyboard = BTreeMap::new();
+    keyboard.insert("panel.copy".to_string(), "F5".to_string());
+    let mut tables = BTreeMap::new();
+    tables.insert(Context::Keyboard, keyboard);
+    let keymap = match KeymapView::from_context_tables(&tables) {
+        Ok(keymap) => keymap,
+        Err(error) => panic!("the tables should be valid: {error}"),
+    };
+    WorkSurfaceApp::new(surface, keymap, catalogue)
+}
+
 #[test]
 fn every_action_of_the_catalogue_does_something() {
     // WHY: an action that is added to the catalogue and carried out
@@ -227,4 +241,93 @@ fn the_enter_key_keeps_the_filter() {
     assert!(!app.surface().active().is_filter_editing());
     assert!(app.surface().active().is_filter_visible());
     assert_eq!(app.surface().active().matching_count(), 1);
+}
+
+/// A catalogue that answers the keys of the errors with a German text.
+struct German;
+
+impl Catalogue for German {
+    fn lookup_with(&self, key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
+        match key {
+            "error-transfer-same-panel" => {
+                Some("Das Panel darf nicht zweimal Ziel sein.".to_string())
+            }
+            _ => Some(key.to_string()),
+        }
+    }
+}
+
+#[test]
+fn the_message_of_an_error_comes_from_the_catalogue_and_not_from_the_source() {
+    // arrange
+    // WHY: the message of an error reaches the user through the status line.
+    //       A message that is written down in the source stays English in a
+    //       German interface (FR-05). The test therefore reads the text of
+    //       the status line and expects the German one.
+    let app = app_with_catalogue(Box::new(German));
+
+    // act
+    let text = app.message_of_error("error-transfer-same-panel", &["left".to_string()]);
+
+    // assert
+    assert_eq!(text, "Das Panel darf nicht zweimal Ziel sein.");
+}
+
+#[test]
+fn a_catalogue_that_does_not_know_the_key_leaves_a_visible_text() {
+    // arrange
+    // WHY: a message that is empty cannot be diagnosed. A catalogue that does
+    //       not know the key therefore leaves the key itself (FR-122).
+    let app = app();
+
+    // act
+    let text = app.message_of_error("error-transfer-same-panel", &[]);
+
+    // assert
+    assert_eq!(text, "error-transfer-same-panel");
+}
+
+#[test]
+fn the_error_of_a_transfer_names_the_key_of_its_message() {
+    // arrange
+    use crate::surface::TransferRequest;
+
+    // act
+    let result = TransferRequest::new(PanelSide::Left, PanelSide::Left, Vec::new());
+
+    // assert
+    // WHY: the error names the key of the catalogue and not a text of its
+    //       own, so that the surface can read the message in the language of
+    //       the interface (FR-05).
+    let error = match result {
+        Err(error) => error,
+        Ok(_) => panic!("the transfer into the same panel should be refused"),
+    };
+    assert_eq!(error.message_key(), "error-transfer-same-panel");
+}
+
+#[test]
+fn the_error_of_a_binding_names_the_key_of_its_message() {
+    // arrange
+    use crate::keymap_view::Binding;
+
+    // act
+    let result = Binding::parse("Ctrl+");
+
+    // assert
+    let error = match result {
+        Err(error) => error,
+        Ok(_) => panic!("the binding without a key should be refused"),
+    };
+    assert_eq!(error.message_key(), "error-binding-unknown-key");
+
+    // act
+    let result = Binding::parse("");
+
+    // assert
+    let error = match result {
+        Err(error) => error,
+        Ok(_) => panic!("the empty binding should be refused"),
+    };
+    assert_eq!(error.message_key(), "error-binding-empty");
 }
