@@ -61,3 +61,13 @@ panel-view-details = Details
 panel-view-compact = Kompakt
 panel-focus = Fokussiertes Panel
 panel-undo-notice = Rückgängig entfernt nur die Kopien; der vorherige Zustand wird nicht wiederhergestellt.
+
+# The messages of the errors of the surface.
+
+error-binding-empty = Die Belegung ist leer.
+error-binding-key-twice = Die Belegung nennt die Taste { $key } zweimal.
+error-binding-no-key = Die Belegung nennt keine Taste.
+error-binding-empty-palette-entry = Der Eintrag der Aktionspalette trägt keinen Namen.
+error-binding-unknown-action = Die Aktion { $identifier } gehört nicht zum Katalog.
+error-binding-unknown-key = Die Belegung { $binding } nennt die unbekannte Taste { $key }.
+error-transfer-same-panel = Das Panel { $side } kann nicht gleichzeitig Quelle und Ziel einer Übertragung sein.
