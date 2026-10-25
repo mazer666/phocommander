@@ -16,7 +16,7 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 | Meilenstein | Inhalt | Stand | Nachweis |
 |---|---|---|---|
 | **M0** — Foundation | Workspace, CI, Konfiguration, Bedrohungsmodell, Dokumentation | **abgenommen** | `docs/acceptance/M0-ACCEPTANCE.md` |
-| **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** — die Namensbildung der Mehrfachumbenennung fehlt | `docs/acceptance/M1-ACCEPTANCE.md` |
+| **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** — die *Engine* der Namensbildung ist fertig, der *Dialog* fehlt | `docs/acceptance/M1-ACCEPTANCE.md` |
 | **M2** — Maturity on macOS | Registerkarten, Profile, sichere Kopiermodi, Layouts je Kontext | **abgenommen** | `docs/acceptance/M2-ACCEPTANCE.md` |
 | **M2b** — Internationalisierung | Englisch und Deutsch vollständig, lokalisierte Formatierung, Sprachwechsel zur Laufzeit | **in Arbeit** | `docs/ACCEPTANCE-CRITERIA.md`, Block M2b |
 | **M3** — The other desktop platforms | Windows, Linux, BSD | offen | `docs/ROADMAP.md` |
@@ -34,9 +34,9 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 
 | Was | Zahl |
 |---|---|
-| Tests | **1025 grün, 0 rot, 0 übersprungen** |
-| Testbinäre | 49 |
-| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 25.10.2026: **PASS** |
+| Tests | **1123 grün, 0 rot, 0 übersprungen** |
+| Testbinäre | 54 |
+| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 25.10.2026 nach dem Meilenstein M2b: **PASS** |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
 | Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
@@ -77,7 +77,8 @@ gefunden — im Code und in den Tests:
 19. Der Negativtest benutzte das zentrale Zielverzeichnis und verunreinigte die Binaries.
 20. `AGENTS.md` nannte 400 und 550 Zeilen, wo die Spezifikation (NFR-14) und das Gate 600 und 900 sagen. Die Datei sagt selbst, dass die Spezifikation gewinnt.
 21. Drei Gate-Skripte hatten auf GitHub das Ausführungsbit verloren. Der Weg, der den Inhalt schreibt, trägt den Modus nicht — deshalb gibt es jetzt `scripts/restore-executable-bits.sh`.
-22. **Die Umbenennung von M1 war nur zur Hälfte vorhanden.** Die *Ausführung* existiert und ist getestet — atomar, mit Konflikterkennung und dem Zurücknehmen eines gescheiterten Umbenennens. Die *Bildung* des neuen Namens aus einer Vorlage fehlt: die Platzhalter, das Suchen und Ersetzen, der Zähler, die Determinismus, die Vorschau, die Konfliktliste, die gespeicherten Vorlagen und die Nullauffüllung. Ein Dateibrowser ohne Namensbildung kann nicht das, worum der Benutzer ihn bittet.
+22. **Die Umbenennung von M1 war nur zur Hälfte vorhanden.** Die *Ausführung* existiert und ist getestet — atomar, mit Konflikterkennung und dem Zurücknehmen eines gescheiterten Umbenennens. Die *Bildung* des neuen Namens aus einer Vorlage fehlte: die Platzhalter, das Suchen und Ersetzen, der Zähler, die Determinismus, die Vorschau, die Konfliktliste, die gespeicherten Vorlagen und die Nullauffüllung.
+26. Der **abgeleitete Zufallswert** wurde mit sechzehn Zeichen geschrieben statt mit acht: die Breite eines Formats ist ein *Minimum*, kein Maximum. Ein 64-Bit-Hash passt nicht in acht Stellen, ohne dass er gekürzt wird.
 23. Das Modul `format` des i18n-Crates war **nie kompiliert** — es war nicht deklariert. Der erste Build des Crates wäre rot gewesen.
 23. Fluent registriert seine eingebauten Funktionen **nicht** von selbst. `NUMBER($count)` war deshalb eine unbekannte Funktion, und die Nachricht fiel auf den Schlüssel zurück.
 24. Fluent 0.16 schreibt eine Zahl **ohne** die Trennzeichen der Sprache — das Feld `use_grouping` existiert, wird aber nicht benutzt. Die Zahlen der Oberfläche tragen die Trennzeichen jetzt, weil der i18n-Crate sie selbst mit den Regeln von CLDR formatiert.
@@ -101,9 +102,8 @@ genauso leicht zu brechen sind:
 
 | # | Was | Warum |
 |---|---|---|
-| 1 | Die Namensbildung der Mehrfachumbenennung | Der Core Engineer arbeitet daran: die Platzhalter, das Suchen und Ersetzen, der Zähler, die Determinismus mit dem Property-Test von FR-33, die Nullauffüllung |
+| 1 | Den Dialog der Mehrfachumbenennung bauen | Die *Engine* der Namensbildung ist fertig und getestet: die Platzhalter, das Suchen und Ersetzen mit regulären Ausdrücken, der Zähler, die Determinismus mit dem Property-Test von FR-33, die Nullauffüllung, deren Breite mitwächst. Offen sind die Live-Vorschau (FR-34), die Konflikt-Sprungliste (FR-35) und die gespeicherten Vorlagen (FR-36) |
 | 2 | Den Auslöser des Sprachwechsels festlegen | Der Desktop-Build liest die Konfigurationsdatei einmal pro Sekunde. Ein Eintrag in der nativen Menüleiste wäre die dauerhafte Lösung — `muda` kommt mit M3 |
-| 3 | Den Dialog der Mehrfachumbenennung bauen | FR-34 die Vorschau, FR-35 die Konfliktliste, FR-36 die gespeicherten Vorlagen. Er braucht die Namensbildung aus Punkt 1 |
 | 4 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
 | 5 | Den Meilenstein M3 beginnen — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft |
 | 6 | Das manuelle Protokoll von M1 auf einem macOS-Gerät | Die Sandbox hat ein Linux-System und keinen Bildschirm |

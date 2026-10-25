@@ -1,9 +1,10 @@
 //! The detection of a season and an episode number in an existing name.
 //!
-//! WHAT: the numbers of a series episode ([{SeriesNumbers}]), the function
-//!       that recognises them in a name ([{detect_series_numbers}]) and the
-//!       function that reads the series name from the parent directory
-//!       ([{series_name_from_parent}]).
+//! WHAT: the numbers of a series episode ([{SeriesNumbers}]), the pattern of a
+//!       series episode with the place it was found ([{SeriesPattern}]), the
+//!       function that recognises them in a name ([{detect_series_numbers}])
+//!       and the function that reads the series name from the parent
+//!       directory ([{series_name_from_parent}]).
 //! WHY: the template of a series names its files
 //!       {{serie} - S{staffel:02}E{episode:02} - {titel}.{format}}. When the
 //!       user renames a file that already carries such a number, the dialog
@@ -32,6 +33,28 @@ pub struct SeriesNumbers {
     pub episode: u64,
 }
 
+/// The season and the episode number of a series, with the place they were
+/// found in the name.
+///
+/// WHY: the place matters for the title of an episode: the name of an
+///       episode that is already filed carries the pattern between the parts
+///       of the name — "Show.S01E03.Title" — and the title is what is left
+///       of it when the pattern is cut out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SeriesPattern {
+    /// The number of the season.
+    pub season: u64,
+
+    /// The number of the episode.
+    pub episode: u64,
+
+    /// The first byte of the pattern in the name.
+    pub start: usize,
+
+    /// The byte behind the pattern in the name.
+    pub end: usize,
+}
+
 /// Recognises the pattern {SxxEyy} in a name.
 ///
 /// WHY: the pattern is the one the template of the specification uses. The
@@ -46,6 +69,28 @@ pub struct SeriesNumbers {
 /// assert!(detect_series_numbers("Show.mkv").is_none());
 /// ```
 pub fn detect_series_numbers(name: &str) -> Option<SeriesNumbers> {
+    detect_series_pattern(name).map(|pattern| SeriesNumbers {
+        season: pattern.season,
+        episode: pattern.episode,
+    })
+}
+
+/// Recognises the pattern {SxxEyy} in a name and reports where it is.
+///
+/// WHY: the place of the pattern is needed to cut the title of an episode out
+///       of a name that already carries the pattern. The numbers themselves
+///       are read by [{detect_series_numbers}], which is the same search
+///       without the place.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::series::detect_series_pattern;
+///
+/// let pattern = detect_series_pattern("Show.S01E03.Title");
+/// assert_eq!(pattern.map(|pattern| pattern.start), Some(5));
+/// assert_eq!(pattern.map(|pattern| pattern.end), Some(11));
+/// ```
+pub fn detect_series_pattern(name: &str) -> Option<SeriesPattern> {
     let characters: Vec<char> = name.chars().collect();
     let mut index = 0;
 
@@ -71,9 +116,11 @@ pub fn detect_series_numbers(name: &str) -> Option<SeriesNumbers> {
             let episode_start = season_end + 1;
             let episode_end = end_of_number(&characters, episode_start);
             if episode_end > episode_start {
-                return Some(SeriesNumbers {
+                return Some(SeriesPattern {
                     season: read_number(&characters, season_start),
                     episode: read_number(&characters, episode_start),
+                    start: byte_offset(&characters, index),
+                    end: byte_offset(&characters, episode_end),
                 });
             }
         }
@@ -82,6 +129,18 @@ pub fn detect_series_numbers(name: &str) -> Option<SeriesNumbers> {
     }
 
     None
+}
+
+/// The byte offset of the character at the given position.
+///
+/// WHY: the place of the pattern is given in bytes, because a name is cut
+///       with byte offsets. The characters before the place may be more than
+///       one byte long, and their length has to be added up.
+fn byte_offset(characters: &[char], index: usize) -> usize {
+    characters[..index]
+        .iter()
+        .map(|character| character.len_utf8())
+        .sum()
 }
 
 /// Returns the position behind the number that starts at {start}.
@@ -217,6 +276,29 @@ mod tests {
 
         // assert
         assert_eq!(name, Some("The Expanse".to_string()));
+    }
+
+    #[test]
+    fn the_pattern_reports_the_place_that_it_was_found() {
+        // act
+        let pattern = detect_series_pattern("Show.S01E03.Title");
+
+        // assert
+        let pattern = match pattern {
+            Some(pattern) => pattern,
+            None => panic!("the pattern should have been recognised"),
+        };
+        assert_eq!(pattern.season, 1);
+        assert_eq!(pattern.episode, 3);
+        assert_eq!(pattern.start, 5);
+        assert_eq!(pattern.end, 11);
+        assert_eq!(&"Show.S01E03.Title"[pattern.start..pattern.end], "S01E03");
+    }
+
+    #[test]
+    fn a_name_without_a_pattern_has_no_place() {
+        // act, assert
+        assert!(detect_series_pattern("Duldung.avi").is_none());
     }
 
     #[test]
