@@ -51,6 +51,7 @@ milestone.
 | Rename — also for multiple files — `panel.rename` | `F2` | `keyboard`, palette | — | With more than one entry selected, the multiple-rename dialog opens instead of the single rename field. M1 |
 | Open the viewer `panel.view` | `F3` | `keyboard`, palette | — | The viewer is read-only. M1 |
 | Open the editor `panel.edit` | `F4` | `keyboard`, palette | — | **Planned.** The editor is an M9 feature; the binding is reserved so that it does not move later. |
+| Filter the entries `panel.filter` | `Ctrl+F` | `keyboard`, palette | `Cmd+F` on macOS/iPadOS | Filters the entries of the active pane while the user types. The field is a line inside the pane and not a dialog, the list follows every key stroke, and the number of the entries that pass the filter is shown. The pattern language: `*` matches any number of characters, `?` exactly one, a leading `~` ignores the case, and a plain text matches anywhere in the name. The specification names the filter in FR-74a to FR-74f and names no key for it; this document and `config/keymap.toml` name `Ctrl+F`. M1 |
 | Copy `panel.copy` | `F5` | `keyboard`, palette | — | Copies into the *other* pane. Overwrite is never the default — the conflict policy decides. M1 |
 | Move `panel.move` | `F6` | `keyboard`, palette | — | Moves into the other pane. M1 |
 | Create directory `panel.mkdir` | `F7` | `keyboard`, palette | — | In the active pane. M1 |
