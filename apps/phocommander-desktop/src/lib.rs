@@ -4,7 +4,9 @@
 //!       configuration into the rules of the subsystems ([{security}]), the
 //!       catalogue of the texts and the formats of the values
 //!       ([{catalogue}]) and the language of the interface at run time
-//!       ([{language}]).
+//!       ([{language}]), the file system of the host machine ([{filesystem}])
+//!       and the adapters of the dialog of the multiple rename
+//!       ([{rename}]).
 //! WHY: the application is the composition root of the workspace: it is the
 //!       only crate that may see the core crate, the configuration crate, the
 //!       operations crate, the viewer crate and the interface crate at the
@@ -23,7 +25,9 @@
 
 pub mod catalogue;
 pub mod desktop;
+pub mod filesystem;
 pub mod language;
+pub mod rename;
 pub mod security;
 
 pub use security::SecurityPlan;

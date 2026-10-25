@@ -18,6 +18,7 @@ use std::path::PathBuf;
 
 use crate::actions::Action;
 use crate::panel::PanelSide;
+use crate::rename::RenamePair;
 use crate::surface::TransferRequest;
 
 /// A request of the drawing to the shell.
@@ -65,13 +66,21 @@ pub enum Command {
         entries: Vec<PathBuf>,
     },
 
-    /// Rename the marked entries of a panel.
+    /// Rename the files of a panel.
+    ///
+    /// WHY: the command carries the pairs and not only the paths of the
+    ///       files. The dialog has already shown the new names to the user
+    ///       (FR-34), and the application has to rename exactly the names
+    ///       that the user has seen. A command that carried only the paths
+    ///       would leave the application to form the names a second time —
+    ///       and a second answer can be a different one.
     Rename {
-        /// The panel the entries belong to.
+        /// The panel the files belong to.
         side: PanelSide,
 
-        /// The paths of the entries.
-        entries: Vec<PathBuf>,
+        /// The pairs of the rename: the path the file carries now and the
+        /// path it receives.
+        pairs: Vec<RenamePair>,
     },
 
     /// Create a directory in a panel.

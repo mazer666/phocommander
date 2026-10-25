@@ -42,7 +42,7 @@ TERM_PATTERN = re.compile(r"^-([A-Za-z][A-Za-z0-9_-]*)\s*=")
 ATTRIBUTE_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*\.")
 
 # The domains of the catalogue. Every locale holds exactly these files.
-DOMAINS = ("common", "actions", "panel", "viewer", "palette")
+DOMAINS = ("common", "actions", "panel", "viewer", "palette", "rename")
 
 
 def repository_root() -> Path:

@@ -40,6 +40,7 @@ pub mod metrics;
 pub mod panel;
 pub mod preview;
 pub mod refresh;
+pub mod rename;
 pub mod surface;
 pub mod theme;
 pub mod undo;
@@ -62,6 +63,11 @@ pub use panel::{
 };
 pub use preview::{Preview, PreviewSource, QuickView};
 pub use refresh::RefreshPolicy;
+pub use rename::{
+    Conflict, ConflictKind, NamedTemplate, PreviewProblem, PreviewRow, ProblemKind, RenameDialog,
+    RenameEngine, RenameFile, RenameFocus, RenamePair, RenamePreview, RenameRequest, RenameRule,
+    ReplaceRule, TemplateStore, TemplateStoreError,
+};
 pub use surface::{MarkedEntry, PanelError, PanelPair, TransferRequest, WorkSurface};
 pub use theme::{Palette, Theme, contrast_ratio, visuals};
 pub use undo::{UndoAvailability, UndoScope};
