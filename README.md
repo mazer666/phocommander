@@ -127,6 +127,7 @@ On a remote control there are no function keys. The **action palette** replaces 
 
 | Document | What it is for |
 |---|---|
+| [`docs/STATUS.md`](docs/STATUS.md) | **The status board**: where the project stands right now, what runs at the moment, what was found in the last milestone and the rules that came out of it |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | **The roadmap and the tracking**: the milestone sequence including the internationalisation as M2b, the checklist per milestone, the release plan with alpha, beta and the first release, the conditions T-01 to T-15 that trigger a release, and what has to hold before a milestone counts as reached |
 | [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) | The binding specification: scope, architecture, security, performance gates, milestones |
 | [`docs/REQUIREMENTS-IDS.md`](docs/REQUIREMENTS-IDS.md) | Requirement identifiers and where each one comes from — the reference for acceptance evidence |
