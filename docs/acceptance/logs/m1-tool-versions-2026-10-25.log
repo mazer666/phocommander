@@ -1,0 +1,6 @@
+start 2026-10-25T08:35:40
+tree: commit 514ca0b, extracted into /workspace/qa3/tree
+command: cargo deny --version
+cargo-deny 0.20.2
+EXIT=0
+end 2026-10-25T08:35:40

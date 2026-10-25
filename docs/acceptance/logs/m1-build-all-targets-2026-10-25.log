@@ -1,0 +1,6 @@
+start 2026-10-25T08:26:15
+tree: commit 514ca0b, extracted into /workspace/qa3/tree
+command: cargo build --workspace --all-targets --locked
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.42s
+EXIT=0
+end 2026-10-25T08:26:18

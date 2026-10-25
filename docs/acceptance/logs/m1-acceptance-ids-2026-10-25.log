@@ -1,0 +1,18 @@
+start 2026-10-25T08:35:25
+tree: commit 514ca0b, extracted into /workspace/qa3/tree
+command: python3 scripts/check-acceptance-ids.py
+acceptance   : /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/qa3/tree/docs/ACCEPTANCE-CRITERIA.md
+catalogue    : /run/csi/mount-root/nas/eab0d61a99b6696edb3d2aff87b585e8/qa3/tree/docs/REQUIREMENTS-IDS.md
+requirements in the catalogue : 154
+criteria in the document      : 121
+
+OK    the acceptance document and the catalogue are readable
+OK    the acceptance identifiers are unique and gapless
+OK    every criterion references a requirement of the catalogue
+OK    every requirement of M0, M1 and M2 has a criterion
+OK    the catalogue and the acceptance document name each other
+OK    every criterion is verifiable
+
+RESULT: PASS — 6 of 6 checks passed
+EXIT=0
+end 2026-10-25T08:35:25

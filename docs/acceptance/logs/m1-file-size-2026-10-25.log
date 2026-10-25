@@ -1,0 +1,17 @@
+start 2026-10-25T08:35:24
+tree: commit 514ca0b, extracted into /workspace/qa3/tree
+command: ./scripts/check-file-size.sh
+OVER  676 lines  ./crates/phocommander-archive/src/extract.rs
+OVER  609 lines  ./crates/phocommander-ops/src/progress.rs
+OVER  621 lines  ./crates/phocommander-ops/src/queue.rs
+OVER  874 lines  ./crates/phocommander-ui/src/keymap_view.rs
+
+Source files measured : 116 (extensions: rs)
+Target value          : 600 lines (warning)
+Absolute maximum      : 900 lines (failure)
+Target-value warnings : 4
+Maximum violations    : 0
+RESULT: PASS with warnings — 4 file(s) exceed the target value of 600 lines.
+        Each of them must name the reason in its module header.
+EXIT=0
+end 2026-10-25T08:35:24

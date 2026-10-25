@@ -1,0 +1,23 @@
+start 2026-10-25T08:35:24
+tree: commit 514ca0b, extracted into /workspace/qa3/tree
+command: ./scripts/check-crate-boundaries.sh
+Phocommander - crate boundary gate
+rule: apps/* -> platform/* -> crates/*, no crate below crates/ may depend
+      on another crate below crates/, registry dependencies are not checked
+
+OK    apps/phocommander-desktop -> crates/phocommander-config (apps -> crates)
+OK    apps/phocommander-desktop -> crates/phocommander-core (apps -> crates)
+OK    apps/phocommander-desktop -> crates/phocommander-ops (apps -> crates)
+OK    apps/phocommander-desktop -> platform/phocommander-platform (apps -> platform)
+OK    apps/phocommander-desktop -> crates/phocommander-ui (apps -> crates)
+OK    apps/phocommander-desktop -> crates/phocommander-viewer (apps -> crates)
+OK    platform/phocommander-platform -> crates/phocommander-core (platform -> crates)
+OK    tests -> crates/phocommander-archive (tests -> crates)
+OK    tests -> crates/phocommander-config (tests -> crates)
+OK    tests -> crates/phocommander-core (tests -> crates)
+OK    tests -> crates/phocommander-keymap (tests -> crates)
+OK    tests -> crates/phocommander-ui (tests -> crates)
+
+12 path dependencies checked, 0 violations
+EXIT=0
+end 2026-10-25T08:35:24
