@@ -245,8 +245,12 @@ fn the_counter_is_written_after_the_replacement() {
 }
 
 #[test]
-fn a_rule_without_a_counter_leaves_the_placeholder_in_the_name() {
+fn a_format_that_carries_the_counter_gets_the_standard_counter() {
     // arrange
+    // WHY: the user writes "[n]" and expects a number. A name that carries
+    //       the text "[n]" would be a surprise in every file of the
+    //       selection, and the standard counter is what the rule of the
+    //       camera template uses.
     let rule = RenameRule::new("[n] - [name]");
     let input = RenameInput::new("/photos/a.jpg");
 
@@ -258,7 +262,26 @@ fn a_rule_without_a_counter_leaves_the_placeholder_in_the_name() {
         Ok(formed) => formed,
         Err(error) => panic!("the name should have been formed: {error}"),
     };
-    assert_eq!(formed[0].name(), Some("[n] - a"));
+    assert_eq!(formed[0].name(), Some("001 - a"));
+}
+
+#[test]
+fn a_format_without_the_counter_placeholder_gets_no_counter() {
+    // arrange
+    // WHY: a format that does not ask for a number gets none. The counter
+    //       would only cost time.
+    let rule = RenameRule::new("[name].[ext]");
+    let input = RenameInput::new("/photos/a.jpg");
+
+    // act
+    let names = form_names(&rule, &[input], moment());
+
+    // assert
+    let formed = match names {
+        Ok(formed) => formed,
+        Err(error) => panic!("the name should have been formed: {error}"),
+    };
+    assert_eq!(formed[0].name(), Some("a.jpg"));
 }
 
 #[test]
