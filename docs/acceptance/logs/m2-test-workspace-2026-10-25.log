@@ -1,0 +1,1230 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.93s
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_android-2b6041ceada713e1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_archive-6d3836fb818d3474)
+
+running 21 tests
+test crc32::tests::a_changed_byte_changes_the_checksum ... ok
+test crc32::tests::the_checksum_does_not_depend_on_the_chunks_it_is_given_in ... ok
+test crc32::tests::the_checksum_of_an_empty_input_is_zero ... ok
+test crc32::tests::the_checksum_of_the_test_vector_is_the_one_of_the_standard ... ok
+test integrity::tests::an_archive_that_was_just_written_is_intact ... ok
+test integrity::tests::an_archive_with_a_wrong_checksum_is_reported_as_a_mismatch ... ok
+test integrity::tests::an_entry_whose_checksum_differs_is_a_mismatch ... ok
+test integrity::tests::an_entry_whose_checksum_matches_is_verified ... ok
+test integrity::tests::an_entry_without_a_stored_checksum_is_reported_as_such ... ok
+test integrity::tests::an_entry_without_content_carries_no_checksum_to_compare ... ok
+test integrity::tests::the_report_names_the_entries_that_are_not_intact ... ok
+test limits::tests::the_default_limits_are_the_ones_the_specification_fixes ... ok
+test limits::tests::the_permissions_carry_no_special_bit ... ok
+test limits::tests::the_single_entry_limit_is_half_of_the_total_limit ... ok
+test windows_name::tests::finds_the_first_forbidden_character ... ok
+test windows_name::tests::keeps_the_directories_of_the_name ... ok
+test windows_name::tests::recognises_the_forbidden_endings ... ok
+test windows_name::tests::suggests_a_name_for_a_segment_of_dots_only ... ok
+test windows_name::tests::suggests_a_name_without_the_forbidden_character ... ok
+test windows_name::tests::suggests_a_name_without_the_forbidden_ending ... ok
+test windows_name::tests::the_suggestion_is_the_same_for_the_same_name ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_config-32b20c151235e0d6)
+
+running 39 tests
+test loader::tests::a_broken_document_gives_the_safe_configuration ... ok
+test loader::tests::a_document_that_can_be_used_gives_no_notice ... ok
+test loader::tests::a_file_that_cannot_be_read_gives_the_safe_configuration ... ok
+test loader::tests::reads_an_empty_document_with_the_default_values ... ok
+test loader::tests::reads_every_section_of_the_shipped_file ... ok
+test loader::tests::refuses_a_connection_timeout_of_zero ... ok
+test loader::tests::refuses_a_limit_of_zero ... ok
+test loader::tests::refuses_a_schema_version_from_the_future ... ok
+test loader::tests::refuses_an_unknown_field ... ok
+test loader::tests::refuses_an_unknown_section ... ok
+test notice::tests::a_new_notice_is_an_information ... ok
+test notice::tests::a_warning_carries_the_severity_of_a_refused_setting ... ok
+test notice::tests::the_severities_have_a_name_for_the_log ... ok
+test rule::tests::a_rule_reports_its_own_title_and_explanation ... ok
+test rule::tests::a_switchable_rule_names_the_switch_that_decides_it ... ok
+test rule::tests::every_rule_carries_a_title_and_an_explanation ... ok
+test rule::tests::every_rule_has_a_name_that_is_not_empty ... ok
+test rule::tests::exactly_three_rules_cannot_be_switched ... ok
+test rule::tests::the_source_of_a_state_has_a_name_for_the_log ... ok
+test rule::tests::the_state_of_a_rule_answers_the_question_it_is_asked ... ok
+test security::tests::the_baseline_of_the_profile_standard_is_the_default_of_the_file ... ok
+test security::tests::the_guarantees_are_in_force_in_every_profile ... ok
+test security::tests::the_profile_corporate_enables_every_rule ... ok
+test security::tests::the_profile_custom_follows_the_switches_of_the_file ... ok
+test security::tests::the_profile_custom_still_refuses_to_break_a_guarantee ... ok
+test security::tests::the_profile_standard_keeps_the_convenience_switches_at_their_default ... ok
+test security::tests::the_profile_standard_reports_the_switches_that_it_overrules ... ok
+test security::tests::the_resolution_is_the_same_every_time ... ok
+test security::tests::the_rule_of_a_switch_that_is_inverted_reads_the_other_way_round ... ok
+test security::tests::the_safe_rules_are_the_rules_of_the_profile_corporate ... ok
+test security::tests::the_switch_of_the_background_index_has_no_effect ... ok
+test session::tests::a_directory_without_a_session_file_reports_no_state ... ok
+test session::tests::a_rule_that_keeps_no_session_writes_no_file ... ok
+test session::tests::a_state_that_is_written_can_be_read_back ... ok
+test session::tests::the_safe_rules_write_no_session ... ok
+test session::tests::the_state_of_two_panels_holds_the_two_directories ... ok
+test values::tests::defaults_match_the_shipped_default_file ... ok
+test values::tests::every_value_has_a_unique_spelling ... ok
+test values::tests::overwrite_is_never_the_default ... ok
+
+test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/shipped_defaults.rs (/tmp/target-central/debug/deps/shipped_defaults-e79c7b03f79746fe)
+
+running 3 tests
+test the_shipped_configuration_file_carries_the_viewer_and_archive_limits ... ok
+test the_shipped_configuration_file_holds_the_specified_values ... ok
+test the_shipped_configuration_file_is_accepted ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_core-dc89997fdc9ae613)
+
+running 57 tests
+test checksum::tests::a_changed_byte_changes_the_checksum ... ok
+test checksum::tests::a_reset_checksum_forgets_what_was_added ... ok
+test checksum::tests::the_checksum_does_not_depend_on_the_size_of_the_blocks ... ok
+test checksum::tests::the_checksum_of_a_file_is_the_checksum_of_its_content ... ok
+test checksum::tests::the_checksum_of_a_missing_file_is_an_error ... ok
+test checksum::tests::the_checksum_of_an_empty_input_is_known ... ok
+test checksum::tests::the_checksum_of_the_reference_text_is_known ... ok
+test checksum::tests::the_default_checksum_is_a_new_checksum ... ok
+test config::tests::archive_limits_leave_room_for_a_normal_archive ... ok
+test config::tests::every_limit_is_positive ... ok
+test config::tests::text_limit_is_smaller_than_the_file_limit ... ok
+test config::tests::the_limits_are_the_ones_the_specification_fixes ... ok
+test entry::tests::a_new_entry_knows_only_its_name_and_its_kind ... ok
+test entry::tests::the_kind_answers_the_questions_the_operations_ask ... ok
+test entry::tests::the_optional_fields_carry_the_answer_of_the_source ... ok
+test entry::tests::the_other_kind_is_neither_a_file_nor_a_directory ... ok
+test error::tests::a_failed_read_and_a_failed_write_carry_different_codes ... ok
+test error::tests::a_file_that_is_too_large_carries_the_limit_code ... ok
+test error::tests::a_missing_configuration_directory_carries_its_own_code ... ok
+test error::tests::a_refused_access_carries_the_permission_code ... ok
+test error::tests::a_refused_path_keeps_its_code ... ok
+test error::tests::every_code_has_a_name_and_a_number_that_no_other_code_uses ... ok
+test error::tests::io_error_names_the_path_and_keeps_the_source ... ok
+test error::tests::io_error_reports_the_original_error_as_source ... ok
+test error::tests::too_large_error_names_size_and_limit ... ok
+test local::tests::a_file_is_copied_byte_by_byte ... ok
+test local::tests::a_file_is_moved_and_renamed ... ok
+test local::tests::a_file_is_removed_and_a_directory_is_created ... ok
+test local::tests::a_link_is_copied_as_a_link ... ok
+test local::tests::a_link_is_dereferenced_when_the_rules_allow_it ... ok
+test local::tests::a_link_is_listed_as_a_link_and_without_a_size ... ok
+test local::tests::a_listing_names_the_entries_of_the_directory ... ok
+test local::tests::a_listing_of_a_missing_directory_is_an_error ... ok
+test local::tests::a_rooted_source_refuses_a_path_that_leaves_the_root ... ok
+test local::tests::a_rooted_source_resolves_a_path_inside_the_root ... ok
+test local::tests::a_source_follows_no_link_by_default ... ok
+test local::tests::the_checksum_of_a_file_is_computed_from_its_content ... ok
+test path::tests::a_link_that_is_the_target_itself_is_refused ... ok
+test path::tests::a_link_that_points_out_of_the_destination_is_refused ... ok
+test path::tests::a_name_that_is_reserved_on_windows_is_refused ... ok
+test path::tests::a_name_that_leaves_the_destination_is_refused ... ok
+test path::tests::a_name_with_a_drive_letter_is_refused ... ok
+test path::tests::a_name_with_a_forbidden_character_is_refused ... ok
+test path::tests::a_relative_name_stays_inside_the_destination ... ok
+test path::tests::a_shared_prefix_is_not_inside_the_destination ... ok
+test path::tests::an_absolute_name_is_refused ... ok
+test path::tests::every_path_failure_carries_its_code ... ok
+test path::tests::the_case_policy_decides_whether_a_path_is_inside ... ok
+test path::tests::the_device_names_of_windows_are_recognised ... ok
+test path::tests::the_normalisation_refuses_a_path_that_leaves_the_destination ... ok
+test path::tests::the_normalisation_refuses_an_absolute_path ... ok
+test path::tests::the_normalisation_removes_the_segments_that_carry_no_information ... ok
+test path::tests::two_names_that_differ_only_in_the_case_are_the_same_name_on_macos ... ok
+test source::tests::a_mutable_source_copies_the_file_it_is_given ... ok
+test source::tests::a_mutable_source_moves_and_renames_as_well ... ok
+test source::tests::a_mutable_source_removes_and_creates_directories ... ok
+test source::tests::a_source_answers_a_listing_with_its_entries ... ok
+
+test result: ok. 57 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_desktop-92d70aca141b3de6)
+
+running 4 tests
+test security::tests::a_relaxed_rule_reaches_the_copy ... ok
+test security::tests::a_relaxed_rule_reaches_the_interface ... ok
+test security::tests::a_relaxed_rule_reaches_the_viewer ... ok
+test security::tests::the_safe_rules_give_the_strict_plan ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/tmp/target-central/debug/deps/phocommander_desktop-b69b98cc6267b939)
+
+running 5 tests
+test tests::a_file_without_bindings_carries_no_table ... ok
+test tests::the_application_is_built_from_the_safe_configuration ... ok
+test tests::the_parser_leaves_the_comments_and_the_empty_lines_alone ... ok
+test tests::the_parser_reads_the_bindings_of_every_context ... ok
+test tests::the_translator_follows_the_language_of_the_configuration ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/core_limits.rs (/tmp/target-central/debug/deps/core_limits-a98ac3240b62b539)
+
+running 3 tests
+test the_shipped_configuration_file_carries_the_canonical_archive_limits ... ok
+test the_shipped_configuration_file_carries_the_canonical_viewer_limits ... ok
+test the_shipped_configuration_file_is_read_by_the_reader_of_the_crate ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_i18n-81884ed4066facf1)
+
+running 14 tests
+test locale::tests::accepts_a_regional_variant_of_a_known_language ... ok
+test locale::tests::every_locale_has_a_unique_spelling ... ok
+test locale::tests::reads_a_locale_by_its_spelling ... ok
+test locale::tests::the_chain_of_a_known_language_leads_to_english ... ok
+test locale::tests::the_chain_of_a_regional_variant_leads_to_the_language ... ok
+test locale::tests::the_chain_of_an_unknown_language_leads_to_english ... ok
+test locale::tests::the_chain_of_english_is_english ... ok
+test locale::tests::the_english_catalogue_is_always_part_of_the_product ... ok
+test locale::tests::the_system_locale_is_one_of_the_shipped_locales ... ok
+test tests::a_missing_key_falls_back_to_the_key_itself ... ok
+test tests::every_locale_carries_a_translation_for_every_key ... ok
+test tests::every_locale_holds_the_same_keys ... ok
+test tests::the_fallback_chain_reaches_the_english_text ... ok
+test tests::the_plural_form_follows_the_number ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests common/mod.rs (/tmp/target-central/debug/deps/phocommander_testkit-ab78d4c0ab69ef1e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running integration/config_defaults.rs (/tmp/target-central/debug/deps/config_defaults-ebfc3c21005df4d3)
+
+running 5 tests
+test a_configuration_file_that_cannot_be_read_reports_the_path ... ok
+test a_configuration_file_with_an_unknown_field_is_refused ... ok
+test a_configuration_file_written_by_the_user_is_read_from_the_disk ... ok
+test the_shipped_configuration_file_holds_the_values_of_the_specification ... ok
+test the_shipped_configuration_file_is_accepted ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running integration/core_limits.rs (/tmp/target-central/debug/deps/core_limits-674368faa9255e4e)
+
+running 3 tests
+test the_canonical_limits_leave_room_for_a_normal_workload ... ok
+test the_shipped_configuration_file_carries_the_canonical_archive_limits ... ok
+test the_shipped_configuration_file_carries_the_canonical_viewer_limits ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running integration/directory_entries.rs (/tmp/target-central/debug/deps/directory_entries-67b6fc7f8cc1ec4d)
+
+running 3 tests
+test a_directory_that_does_not_exist_is_an_error_and_not_a_panic ... ok
+test the_listing_holds_every_entry_of_the_directory ... ok
+test the_name_of_an_entry_carries_no_path ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running integration/keymap_bindings.rs (/tmp/target-central/debug/deps/keymap_bindings-2007969b0b057877)
+
+running 5 tests
+test every_action_of_the_keyboard_is_reachable_in_the_controller_context ... ok
+test every_action_of_the_keyboard_is_reachable_in_the_dpad_context ... ok
+test the_action_identifiers_of_the_shipped_file_are_well_formed ... ok
+test the_dpad_and_the_controller_bind_their_actions_to_the_action_palette ... ok
+test the_shipped_keymap_has_no_conflict_in_any_context ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running security/decompression_bomb.rs (/tmp/target-central/debug/deps/security_decompression_bomb-453322848c4f3220)
+
+running 4 tests
+test a_highly_compressible_entry_expands_far_beyond_its_own_size ... ok
+test an_archive_with_too_many_entries_exceeds_the_entry_limit ... ok
+test the_bomb_archive_costs_the_attacker_almost_nothing ... ok
+test the_bomb_archive_declares_more_bytes_than_the_budget_allows ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.79s
+
+     Running security/extraction_hardening.rs (/tmp/target-central/debug/deps/security_extraction_hardening-1e2ddfd20f712d23)
+
+running 8 tests
+test a_symbolic_link_cannot_redirect_a_later_entry ... ok
+test a_symbolic_link_is_skipped_instead_of_being_created ... ok
+test a_symbolic_link_with_a_refused_target_is_reported_as_such ... ok
+test an_entry_that_leaves_the_destination_is_refused ... ok
+test an_entry_written_through_an_existing_symbolic_link_is_refused ... ok
+test nothing_is_written_outside_of_the_destination_directory ... ok
+test the_archive_with_the_set_user_id_bit_really_carries_it ... ok
+test the_set_user_id_and_the_set_group_id_bits_never_reach_the_file_system ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running security/extraction_limits.rs (/tmp/target-central/debug/deps/security_extraction_limits-8b772058a11a6e89)
+
+running 4 tests
+test an_archive_within_the_limits_is_extracted_completely ... ok
+test the_extraction_aborts_when_the_number_of_entries_limit_is_exceeded ... ok
+test the_extraction_aborts_when_the_size_of_a_single_entry_limit_is_exceeded ... ok
+test the_extraction_aborts_when_the_total_size_limit_is_exceeded ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running security/path_traversal.rs (/tmp/target-central/debug/deps/security_path_traversal-3989660618f76efa)
+
+running 8 tests
+test a_name_that_is_too_long_is_refused ... ok
+test every_accepted_name_stays_inside_the_destination_directory ... ok
+test every_hostile_entry_name_is_refused ... ok
+test no_file_is_written_outside_of_the_destination_directory ... ok
+test the_attack_really_writes_outside_of_the_destination_without_the_hardening ... ok
+test the_harmless_entry_name_is_accepted ... ok
+test the_hostile_archive_really_carries_the_hostile_names ... ok
+test the_resolved_path_stays_inside ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running integration/security_profiles.rs (/tmp/target-central/debug/deps/security_profiles-ee32401ecf2eb12e)
+
+running 7 tests
+test a_broken_file_leaves_the_application_in_the_safe_mode ... ok
+test a_configuration_that_keeps_no_session_writes_no_file_at_all ... ok
+test a_configuration_that_remembers_the_session_writes_only_inside_the_configuration_directory ... ok
+test a_file_that_tries_to_break_a_guarantee_changes_nothing ... ok
+test the_profile_corporate_enables_every_rule_in_a_real_file ... ok
+test the_shipped_file_carries_the_security_section ... ok
+test the_shipped_file_produces_the_rules_of_the_profile_standard ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running integration/the_filter_searches_deeper.rs (/tmp/target-central/debug/deps/the_filter_searches_deeper-3c72f50f4e384552)
+
+running 1 test
+test the_filter_searches_deeper ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_ios-c832fbc20bf86e83)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_keymap-6a00b80b8b644316)
+
+running 18 tests
+test bindings::tests::an_empty_context_has_no_bindings ... ok
+test bindings::tests::finds_the_key_combinations_of_an_action ... ok
+test bindings::tests::reads_a_table_of_the_configuration_file ... ok
+test bindings::tests::refuses_a_malformed_action_identifier ... ok
+test bindings::tests::refuses_an_empty_key_combination ... ok
+test bindings::tests::reports_a_conflict_between_two_actions ... ok
+test catalog::tests::accepts_the_identifiers_the_specification_uses ... ok
+test catalog::tests::every_context_has_a_unique_configuration_name ... ok
+test catalog::tests::finds_a_context_by_its_configuration_name ... ok
+test catalog::tests::reads_itself_from_a_string ... ok
+test catalog::tests::refuses_a_forbidden_character ... ok
+test catalog::tests::refuses_an_empty_identifier ... ok
+test catalog::tests::refuses_an_empty_segment ... ok
+test catalog::tests::refuses_an_identifier_without_a_group ... ok
+test keymap::tests::an_empty_keymap_has_no_conflicts ... ok
+test keymap::tests::does_not_report_a_conflict_between_two_contexts ... ok
+test keymap::tests::finds_the_bindings_of_a_context ... ok
+test keymap::tests::reports_a_conflict_inside_one_context ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_ops-468df00ec76c7690)
+
+running 106 tests
+test compare::tests::a_file_that_is_missing_in_the_destination_is_reported_as_missing ... ok
+test compare::tests::a_file_that_is_only_in_the_destination_is_reported_as_extra ... ok
+test compare::tests::only_the_mirror_mode_deletes_the_extra_entries ... ok
+test compare::tests::the_comparison_of_two_directories_returns_the_plan_of_the_synchronisation ... ok
+test compare::tests::the_content_comparison_finds_two_files_with_the_same_size_and_time ... ok
+test compare::tests::the_metadata_comparison_calls_two_files_with_the_same_size_the_same ... ok
+test copy::atomic::tests::no_temporary_file_is_left_behind_after_a_successful_copy ... ok
+test copy::atomic::tests::the_target_carries_the_content_after_the_copy ... ok
+test copy::tests::a_copied_link_carries_no_bytes_of_its_own ... ok
+test copy::tests::a_symbolic_link_is_copied_as_a_link_when_the_rule_is_in_force ... ok
+test copy::tests::a_symbolic_link_is_dereferenced_when_the_rule_allows_it ... ok
+test copy::tests::only_the_mirror_mode_deletes ... ok
+test copy::tests::the_atomic_copy_always_verifies_the_temporary_file ... ok
+test copy::tests::the_atomic_copy_leaves_no_temporary_file_behind_when_the_comparison_fails ... ok
+test copy::tests::the_atomic_copy_never_writes_the_target_before_the_comparison ... ok
+test copy::tests::the_atomic_copy_replaces_the_target_only_after_the_comparison ... ok
+test copy::tests::the_copy_of_a_tree_can_be_limited_to_some_items ... ok
+test copy::tests::the_default_of_a_copy_is_the_verified_mode ... ok
+test copy::tests::the_default_policy_of_a_copy_verifies_and_never_follows_a_link ... ok
+test copy::tests::the_modes_have_the_names_the_configuration_uses ... ok
+test copy::tests::the_modes_know_which_of_them_are_synchronisations ... ok
+test copy::tests::the_policy_that_never_overwrites_leaves_an_existing_target_alone ... ok
+test copy::tests::the_quick_copy_never_compares_the_checksums ... ok
+test copy::tests::the_temporary_file_of_the_atomic_mode_sits_next_to_the_target ... ok
+test copy::tests::the_verified_copy_compares_the_checksums_when_the_rule_is_in_force ... ok
+test copy::tests::the_verified_copy_does_not_compare_the_checksums_when_the_rule_is_off ... ok
+test datetime::tests::a_known_moment_has_a_known_date ... ok
+test datetime::tests::a_leap_day_is_formatted_correctly ... ok
+test datetime::tests::the_epoch_is_the_first_of_january_1970 ... ok
+test datetime::tests::the_time_is_formatted_with_two_digits ... ok
+test edit::tests::a_queued_job_may_be_retargeted_and_reprioritised ... ok
+test edit::tests::a_resumed_job_is_not_paused_any_more ... ok
+test edit::tests::a_running_job_may_be_paused_resumed_and_cancelled ... ok
+test edit::tests::a_running_job_may_not_be_retargeted ... ok
+test edit::tests::a_waiting_change_is_handed_out_once ... ok
+test edit::tests::only_a_failed_job_may_retry_its_failed_items ... ok
+test edit::tests::the_flags_of_a_job_report_what_the_user_did ... ok
+test error::tests::a_collected_failure_names_the_item_and_the_code ... ok
+test error::tests::a_refused_access_carries_the_permission_code ... ok
+test error::tests::an_invalid_name_carries_the_reserved_code ... ok
+test error::tests::every_job_code_has_a_name_and_a_number ... ok
+test error::tests::the_failures_of_the_operations_carry_their_own_codes ... ok
+test fake_fs::tests::a_directory_lists_its_entries ... ok
+test fake_fs::tests::a_missing_path_is_an_error ... ok
+test fake_fs::tests::a_written_file_is_read_back ... ok
+test job::tests::a_job_can_be_limited_to_some_items ... ok
+test job::tests::a_job_remembers_the_items_that_failed ... ok
+test job::tests::a_new_job_is_queued_and_has_no_failures ... ok
+test job::tests::the_priority_orders_the_queue ... ok
+test job::tests::the_snapshot_carries_the_state_of_the_job ... ok
+test job::tests::the_states_have_the_names_the_job_cue_shows ... ok
+test job::tests::the_states_know_which_of_them_are_finished ... ok
+test names::tests::a_control_character_is_reported ... ok
+test names::tests::a_name_without_a_problem_reports_nothing ... ok
+test names::tests::every_forbidden_character_has_a_replacement_that_is_allowed ... ok
+test names::tests::the_device_names_of_windows_are_recognised ... ok
+test names::tests::the_forbidden_characters_are_reported_with_a_replacement ... ok
+test port::tests::a_new_entry_knows_only_its_name_and_its_kind ... ok
+test port::tests::the_kind_answers_the_questions_the_operations_ask ... ok
+test port::tests::the_kinds_have_the_names_the_plan_writes ... ok
+test progress::tests::a_cancelled_job_is_stopped_at_the_checkpoint ... ok
+test progress::tests::a_pending_edit_is_handed_out_at_the_checkpoint ... ok
+test progress::tests::the_context_counts_the_items_and_the_bytes ... ok
+test progress::tests::the_context_reports_the_progress_to_the_sink ... ok
+test progress::tests::the_verification_has_its_own_progress ... ok
+test queue::tests::a_job_that_fails_collects_the_failed_entries_and_carries_on ... ok
+test queue::tests::a_job_that_has_nothing_to_repeat_refuses_the_retry ... ok
+test queue::tests::a_job_that_was_given_to_the_queue_is_carried_out ... ok
+test queue::tests::an_edit_of_a_job_that_does_not_exist_is_refused ... ok
+test queue::tests::the_destination_of_a_job_can_be_changed_while_it_waits ... ok
+test queue::tests::the_jobs_of_the_queue_are_listed_with_their_state ... ok
+test queue::tests::the_priority_of_a_job_can_be_changed_while_it_waits ... ok
+test queue::tests::the_retry_of_a_failed_job_copies_only_the_failed_entries ... ok
+test queue::tests::the_unfinished_jobs_are_the_ones_that_are_not_finished ... ok
+test rename::tests::a_conflict_refuses_the_whole_rename ... ok
+test rename::tests::a_file_that_is_missing_is_a_conflict ... ok
+test rename::tests::a_name_that_another_file_of_the_selection_leaves_is_free ... ok
+test rename::tests::a_rename_without_a_conflict_renames_every_file ... ok
+test rename::tests::two_files_that_exchange_their_names_keep_their_content ... ok
+test rename::tests::two_files_that_would_receive_the_same_name_are_a_conflict ... ok
+test series::tests::a_name_without_a_parent_has_no_series_name ... ok
+test series::tests::a_name_without_the_pattern_is_not_recognised ... ok
+test series::tests::a_two_digit_season_is_recognised ... ok
+test series::tests::the_pattern_is_recognised_in_a_name ... ok
+test series::tests::the_pattern_is_recognised_with_two_and_three_digits ... ok
+test series::tests::the_pattern_is_recognised_without_the_case ... ok
+test series::tests::the_series_name_is_the_name_of_the_parent_directory ... ok
+test sync::document::tests::a_changed_entry_changes_the_fingerprint ... ok
+test sync::document::tests::a_path_with_a_space_does_not_break_the_document ... ok
+test sync::document::tests::the_document_names_the_plan_and_its_entries ... ok
+test sync::document::tests::the_hash_of_an_empty_body_is_the_offset_of_the_hash ... ok
+test sync::document::tests::the_same_plan_always_produces_the_same_document ... ok
+test sync::execute::tests::a_confirmed_mirror_plan_copies_and_deletes ... ok
+test sync::execute::tests::a_plan_that_was_not_confirmed_moves_nothing ... ok
+test sync::tests::a_plan_knows_which_entries_it_deletes ... ok
+test sync::tests::the_states_have_the_names_the_plan_shows ... ok
+test temporary::tests::the_guard_keeps_the_file_when_it_is_disarmed ... ok
+test temporary::tests::the_guard_removes_the_file_when_it_is_dropped ... ok
+test temporary::tests::the_seed_of_the_process_stays_the_same ... ok
+test temporary::tests::the_temporary_file_sits_next_to_the_target ... ok
+test temporary::tests::two_temporary_files_of_the_same_target_have_different_names ... ok
+test undo::tests::a_file_that_is_gone_does_not_fail_the_undo ... ok
+test undo::tests::an_empty_ledger_undoes_nothing ... ok
+test undo::tests::the_undo_names_its_limitation ... ok
+test undo::tests::the_undo_of_a_copy_removes_the_copy_and_restores_nothing ... ok
+test undo::tests::the_undo_removes_every_file_the_copy_created ... ok
+
+test result: ok. 106 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_platform-05df9496ad9cbdf0)
+
+running 9 tests
+test host::tests::every_other_platform_uses_the_control_key ... ok
+test host::tests::macos_and_ipados_use_the_command_key ... ok
+test host::tests::the_configuration_directory_is_absolute_when_it_exists ... ok
+test host::tests::the_host_platform_is_one_of_the_six_targets ... ok
+test portable::tests::a_directory_with_the_marker_is_portable ... ok
+test portable::tests::a_directory_without_the_marker_is_not_portable ... ok
+test portable::tests::the_marker_is_a_file_and_not_a_directory ... ok
+test portable::tests::the_portable_configuration_sits_beside_the_executable ... ok
+test portable::tests::the_portable_directory_is_inside_the_installation ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_remote-219f522b9b7b9495)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_ui-3bcaf11ba6a88724)
+
+running 117 tests
+test actions::tests::every_action_belongs_to_exactly_one_category ... ok
+test actions::tests::every_action_has_a_label_key ... ok
+test actions::tests::every_entry_of_the_menu_and_of_the_toolbar_names_an_action ... ok
+test actions::tests::every_identifier_is_unique ... ok
+test actions::tests::finds_an_action_by_its_identifier ... ok
+test actions::tests::the_catalogue_holds_the_actions_of_the_configuration_file ... ok
+test app::tests::every_action_of_the_catalogue_does_something ... ok
+test app::tests::the_copy_after_the_switch_names_the_right_panel_as_its_source ... ok
+test app::tests::the_copy_names_the_other_panel_as_its_destination ... ok
+test app::tests::the_enter_key_keeps_the_filter ... ok
+test app::tests::the_escape_key_empties_the_filter_and_hides_it ... ok
+test app::tests::the_filter_opens_in_the_panel_that_has_the_focus ... ok
+test app::tests::the_parent_of_a_path_is_the_directory_above_it ... ok
+test app::tests::the_parent_of_the_root_is_the_root ... ok
+test app::tests::the_switch_asks_for_the_directory_to_be_read_again ... ok
+test app::tests::the_switch_reads_nothing_again_when_the_rule_is_switched_off ... ok
+test context::tests::every_context_has_a_unique_configuration_name ... ok
+test context::tests::finds_a_context_by_its_configuration_name ... ok
+test context::tests::only_the_pointer_context_has_a_pointer ... ok
+test context::tests::the_television_and_the_tablet_show_one_panel ... ok
+test filter::property_tests::a_plain_text_is_searched_anywhere ... ok
+test filter::property_tests::an_empty_pattern_matches_every_name ... ok
+test filter::property_tests::the_evaluation_is_deterministic ... ok
+test filter::property_tests::the_index_is_deterministic ... ok
+test filter::property_tests::the_question_mark_matches_exactly_one_character ... ok
+test filter::property_tests::the_star_matches_every_name ... ok
+test filter::property_tests::the_tilde_ignores_the_case ... ok
+test filter::tests::a_pattern_with_several_stars_matches_the_general_case ... ok
+test filter::tests::a_plain_text_matches_anywhere_in_the_name ... ok
+test filter::tests::a_question_mark_matches_exactly_one_character ... ok
+test filter::tests::a_star_matches_any_number_of_characters ... ok
+test filter::tests::an_empty_pattern_lets_every_entry_through ... ok
+test filter::tests::the_depth_limits_the_filter_to_the_current_directory ... ok
+test filter::tests::the_field_cannot_leave_its_text ... ok
+test filter::tests::the_field_edits_the_text_at_the_caret ... ok
+test filter::tests::the_index_holds_the_entries_that_pass_the_filter ... ok
+test filter::tests::the_kind_limits_the_filter_to_files_or_to_directories ... ok
+test filter::tests::the_tilde_ignores_the_case ... ok
+test i18n::tests::a_missing_translation_falls_back_to_the_key ... ok
+test i18n::tests::an_empty_translation_falls_back_to_the_key ... ok
+test i18n::tests::every_key_has_a_unique_name ... ok
+test i18n::tests::the_catalogue_is_asked_with_the_arguments ... ok
+test i18n::tests::the_text_of_a_catalogue_is_used_as_it_is ... ok
+test jobs::tests::every_state_and_every_kind_has_a_translation_key ... ok
+test jobs::tests::the_share_of_a_job_never_leaves_the_range ... ok
+test jobs::tests::the_share_of_a_job_without_a_total_is_zero ... ok
+test keymap_view::tests::a_palette_entry_resolves_in_the_context_that_uses_it ... ok
+test keymap_view::tests::reads_a_key_stroke_from_the_notation_of_the_catalogue ... ok
+test keymap_view::tests::reads_a_palette_binding ... ok
+test keymap_view::tests::reads_the_keys_of_the_numeric_keypad ... ok
+test keymap_view::tests::refuses_a_binding_with_an_unknown_key ... ok
+test keymap_view::tests::refuses_a_binding_without_a_key ... ok
+test keymap_view::tests::refuses_an_action_that_is_not_part_of_the_catalogue ... ok
+test keymap_view::tests::the_resolution_is_deterministic ... ok
+test keymap_view::tests::the_same_event_resolves_differently_in_two_contexts ... ok
+test keymap_view::tests::the_spelling_of_a_stroke_is_the_notation_of_the_catalogue ... ok
+test layout::tests::only_the_layout_with_two_panels_allows_the_arrangement ... ok
+test layout::tests::the_controller_arranges_the_panels_in_space ... ok
+test layout::tests::the_desktop_shows_two_panels_and_every_area ... ok
+test layout::tests::the_tablet_stacks_the_panels_and_needs_a_tall_row ... ok
+test layout::tests::the_television_shows_one_panel_and_the_hints ... ok
+test listing::tests::a_visible_slice_beyond_the_end_is_shortened ... ok
+test listing::tests::an_empty_listing_has_no_entries ... ok
+test listing::tests::only_the_visible_slice_is_handed_to_the_widgets ... ok
+test listing::tests::the_order_by_name_is_the_order_of_the_names ... ok
+test listing::tests::the_order_of_the_screen_is_a_permutation_of_the_entries ... ok
+test listing::tests::the_position_of_an_entry_survives_a_change_of_the_order ... ok
+test listing::tests::the_visible_slice_starts_where_it_is_asked_to_start ... ok
+test listing::tests::writes_a_date_the_way_a_file_manager_writes_it ... ok
+test listing::tests::writes_a_size_the_way_a_file_manager_writes_it ... ok
+test metrics::tests::every_platform_has_a_unique_name ... ok
+test metrics::tests::the_desktop_keeps_its_metrics_in_the_keyboard_context ... ok
+test metrics::tests::the_television_needs_larger_type_and_a_stronger_frame ... ok
+test metrics::tests::the_touch_platforms_have_a_tall_row ... ok
+test panel::tests::a_tab_that_does_not_exist_is_refused ... ok
+test panel::tests::cancelling_the_filter_clears_the_text_and_the_line ... ok
+test panel::tests::confirming_the_filter_keeps_it ... ok
+test panel::tests::selecting_all_marks_every_entry ... ok
+test panel::tests::the_cursor_goes_to_the_first_entry_that_matches ... ok
+test panel::tests::the_cursor_moves_by_rows_and_not_by_positions ... ok
+test panel::tests::the_cursor_never_points_at_an_empty_list ... ok
+test panel::tests::the_cursor_stays_inside_the_list ... ok
+test panel::tests::the_depth_of_the_filter_decides_how_far_it_reaches ... ok
+test panel::tests::the_field_is_only_editing_while_it_has_the_focus ... ok
+test panel::tests::the_filter_hides_the_entries_that_do_not_match ... ok
+test panel::tests::the_filter_of_a_kind_limits_the_list ... ok
+test panel::tests::the_filter_survives_a_change_of_the_directory ... ok
+test panel::tests::the_marks_follow_the_filter ... ok
+test panel::tests::the_marks_hold_positions_and_not_paths ... ok
+test panel::tests::the_marks_survive_a_change_of_the_order ... ok
+test panel::tests::the_scroll_follows_the_cursor ... ok
+test panel::tree::tests::the_cursor_follows_the_path_that_is_shown ... ok
+test panel::tree::tests::the_cursor_never_leaves_the_tree ... ok
+test panel::tree::tests::the_tree_shows_the_ancestors_and_the_direct_children ... ok
+test preview::tests::the_quick_view_forgets_the_content_when_nothing_is_marked ... ok
+test preview::tests::the_quick_view_reads_the_file_again_when_the_marked_file_changes ... ok
+test preview::tests::the_quick_view_reads_the_file_only_once ... ok
+test refresh::tests::the_rule_can_be_switched_off ... ok
+test refresh::tests::the_strict_rule_reads_the_directory_again ... ok
+test surface::tests::a_tab_that_is_moved_keeps_its_state ... ok
+test surface::tests::a_transfer_into_the_panel_itself_is_refused ... ok
+test surface::tests::a_transfer_names_the_other_panel_as_its_destination ... ok
+test surface::tests::swapping_the_panels_exchanges_their_content ... ok
+test surface::tests::the_arrangement_is_switched_without_losing_the_state ... ok
+test surface::tests::the_focus_alternates_between_the_two_panels ... ok
+test surface::tests::the_pair_follows_the_focus ... ok
+test theme::tests::an_explicit_theme_ignores_the_platform ... ok
+test theme::tests::every_theme_has_a_unique_spelling ... ok
+test theme::tests::reads_a_theme_by_its_configuration_name ... ok
+test theme::tests::the_contrast_of_a_colour_with_itself_is_one ... ok
+test theme::tests::the_focus_frame_reaches_the_contrast_the_specification_names ... ok
+test theme::tests::the_system_theme_follows_the_platform ... ok
+test theme::tests::the_text_of_the_panels_reaches_the_contrast_the_specification_names ... ok
+test undo::tests::an_undo_that_is_on_offer_shows_its_limitation ... ok
+test undo::tests::the_notice_is_never_empty ... ok
+test undo::tests::the_scope_says_that_nothing_is_restored ... ok
+test undo::tests::without_an_undo_there_is_no_notice ... ok
+
+test result: ok. 117 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+     Running tests/the_filter_can_be_limited_to_a_kind.rs (/tmp/target-central/debug/deps/the_filter_can_be_limited_to_a_kind-3a522363469b5c1c)
+
+running 1 test
+test the_filter_can_be_limited_to_a_kind ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/the_filter_holds_the_frame_rate.rs (/tmp/target-central/debug/deps/the_filter_holds_the_frame_rate-3d4c8aa68fa70dfc)
+
+running 1 test
+test the_filter_holds_the_frame_rate ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.04s
+
+     Running tests/the_filter_matches_without_a_dialog.rs (/tmp/target-central/debug/deps/the_filter_matches_without_a_dialog-da274205f413ceb1)
+
+running 1 test
+test the_filter_matches_without_a_dialog ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/the_filter_pattern_language.rs (/tmp/target-central/debug/deps/the_filter_pattern_language-e73135f29b20c268)
+
+running 5 tests
+test a_plain_text_matches_anywhere_in_the_name ... ok
+test the_evaluation_is_the_same_for_the_same_input ... ok
+test the_question_mark_matches_exactly_one_character ... ok
+test the_star_matches_any_sequence_of_characters ... ok
+test the_tilde_matches_without_regard_to_the_case ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/the_filter_survives_a_directory_change.rs (/tmp/target-central/debug/deps/the_filter_survives_a_directory_change-b0cf48516b8b6974)
+
+running 1 test
+test the_filter_survives_a_directory_change ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/target-central/debug/deps/phocommander_viewer-943ddbbbdbd9b3bb)
+
+running 12 tests
+test content::tests::an_opened_file_carries_its_path_and_its_bytes ... ok
+test content::tests::an_opened_file_without_content_is_empty ... ok
+test content::tests::the_time_of_the_last_change_is_carried_when_it_is_known ... ok
+test policy::tests::a_relaxed_policy_allows_the_preview_of_a_marked_entry ... ok
+test policy::tests::no_policy_ever_allows_a_background_scan ... ok
+test policy::tests::the_strict_policy_reads_only_what_the_user_asked_for ... ok
+test reader::tests::the_reader_opens_the_file_the_user_asked_for ... ok
+test reader::tests::the_reader_reads_the_preview_when_the_rule_is_switched_off ... ok
+test reader::tests::the_reader_refuses_a_file_that_is_too_large ... ok
+test reader::tests::the_reader_refuses_the_preview_when_the_rule_is_in_force ... ok
+test reader::tests::the_reader_reports_a_file_that_does_not_exist ... ok
+test reader::tests::the_reader_reports_the_rules_it_works_with ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/tmp/target-central/debug/deps/xtask-d74c9c82189cc2a3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests phocommander_android
+
+running 1 test
+test apps/phocommander-android/src/lib.rs - (line 32) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.45s; merged doctests compilation took 0.45s
+   Doc-tests phocommander_archive
+
+running 55 tests
+test crates/phocommander-archive/src/crc32.rs - crc32 (line 11) - compile ... ok
+test crates/phocommander-archive/src/crc32.rs - crc32::Crc32::default (line 90) - compile ... ok
+test crates/phocommander-archive/src/crc32.rs - crc32::Crc32::finish (line 74) - compile ... ok
+test crates/phocommander-archive/src/crc32.rs - crc32::Crc32::new (line 37) - compile ... ok
+test crates/phocommander-archive/src/crc32.rs - crc32::Crc32::update (line 50) - compile ... ok
+test crates/phocommander-archive/src/entry.rs - entry (line 11) - compile ... ok
+test crates/phocommander-archive/src/entry.rs - entry::ArchiveEntry::is_directory (line 107) - compile ... ok
+test crates/phocommander-archive/src/entry.rs - entry::ArchiveEntry::is_file (line 86) - compile ... ok
+test crates/phocommander-archive/src/entry.rs - entry::ArchiveEntry::is_symlink (line 128) - compile ... ok
+test crates/phocommander-archive/src/entry_name.rs - entry_name (line 20) - compile ... ok
+test crates/phocommander-archive/src/entry_name.rs - entry_name::resolve_entry_name (line 134) - compile ... ok
+test crates/phocommander-archive/src/error.rs - error (line 10) - compile ... ok
+test crates/phocommander-archive/src/error.rs - error::ArchiveError::code (line 74) - compile ... ok
+test crates/phocommander-archive/src/error.rs - error::ArchiveError::io (line 105) - compile ... ok
+test crates/phocommander-archive/src/error.rs - error::LimitKind::code (line 137) - compile ... ok
+test crates/phocommander-archive/src/error.rs - error::LimitKind::fmt (line 175) - compile ... ok
+test crates/phocommander-archive/src/error.rs - error::LimitKind::label (line 152) - compile ... ok
+test crates/phocommander-archive/src/error.rs - error::RefusalReason::code (line 221) - compile ... ok
+test crates/phocommander-archive/src/extract.rs - extract (line 23) - compile ... ok
+test crates/phocommander-archive/src/extract.rs - extract::extract_archive (line 190) - compile ... ok
+test crates/phocommander-archive/src/extract.rs - extract::extract_from (line 215) - compile ... ok
+test crates/phocommander-archive/src/formats/mod.rs - formats (line 11) - compile ... ok
+test crates/phocommander-archive/src/formats/mod.rs - formats::detect_format (line 205) - compile ... ok
+test crates/phocommander-archive/src/formats/mod.rs - formats::detect_tar_compression (line 233) - compile ... ok
+test crates/phocommander-archive/src/formats/mod.rs - formats::open_archive (line 276) - compile ... ok
+test crates/phocommander-archive/src/formats/sevenz.rs - formats::sevenz (line 9) - compile ... ok
+test crates/phocommander-archive/src/formats/sevenz.rs - formats::sevenz::SevenZArchiveReader::open (line 44) - compile ... ok
+test crates/phocommander-archive/src/formats/sevenz.rs - formats::sevenz::SevenZArchiveReader::path (line 66) - compile ... ok
+test crates/phocommander-archive/src/formats/sevenz.rs - formats::sevenz::SevenZArchiveWriter::create (line 148) - compile ... ok
+test crates/phocommander-archive/src/formats/sevenz.rs - formats::sevenz::SevenZArchiveWriter::path (line 170) - compile ... ok
+test crates/phocommander-archive/src/formats/tar.rs - formats::tar (line 12) - compile ... ok
+test crates/phocommander-archive/src/formats/tar.rs - formats::tar::TarArchiveReader::open (line 50) - compile ... ok
+test crates/phocommander-archive/src/formats/tar.rs - formats::tar::TarArchiveReader::path (line 86) - compile ... ok
+test crates/phocommander-archive/src/formats/tar.rs - formats::tar::TarArchiveWriter::create (line 243) - compile ... ok
+test crates/phocommander-archive/src/formats/tar.rs - formats::tar::TarArchiveWriter::path (line 287) - compile ... ok
+test crates/phocommander-archive/src/formats/zip.rs - formats::zip (line 10) - compile ... ok
+test crates/phocommander-archive/src/formats/zip.rs - formats::zip::ZipArchiveReader::open (line 48) - compile ... ok
+test crates/phocommander-archive/src/formats/zip.rs - formats::zip::ZipArchiveReader::path (line 70) - compile ... ok
+test crates/phocommander-archive/src/formats/zip.rs - formats::zip::ZipArchiveWriter::create (line 185) - compile ... ok
+test crates/phocommander-archive/src/formats/zip.rs - formats::zip::ZipArchiveWriter::path (line 204) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity (line 15) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity::IntegrityReport::entries (line 132) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity::IntegrityReport::failed (line 162) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity::IntegrityReport::is_intact (line 149) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity::IntegrityReport::verified (line 178) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity::IntegrityState::as_str (line 74) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity::IntegrityState::is_intact (line 91) - compile ... ok
+test crates/phocommander-archive/src/integrity.rs - integrity::verify_archive (line 199) - compile ... ok
+test crates/phocommander-archive/src/lib.rs - (line 22) - compile ... ok
+test crates/phocommander-archive/src/limits.rs - limits (line 19) - compile ... ok
+test crates/phocommander-archive/src/limits.rs - limits::ExtractionLimits::allows_entry_count (line 129) - compile ... ok
+test crates/phocommander-archive/src/limits.rs - limits::ExtractionLimits::allows_entry_size (line 115) - compile ... ok
+test crates/phocommander-archive/src/limits.rs - limits::ExtractionLimits::allows_total_size (line 143) - compile ... ok
+test crates/phocommander-archive/src/limits.rs - limits::ExtractionLimits::new (line 98) - compile ... ok
+test crates/phocommander-archive/src/windows_name.rs - windows_name (line 12) - compile ... ok
+
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+all doctests ran in 0.86s; merged doctests compilation took 0.84s
+   Doc-tests phocommander_config
+
+running 46 tests
+test crates/phocommander-config/src/lib.rs - (line 16) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader (line 10) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader::load_file (line 107) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader::load_file_or_safe (line 162) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader::parse_toml (line 85) - compile ... ok
+test crates/phocommander-config/src/loader.rs - loader::parse_toml_or_safe (line 134) - compile ... ok
+test crates/phocommander-config/src/notice.rs - notice (line 16) - compile ... ok
+test crates/phocommander-config/src/notice.rs - notice::ConfigNotice::new (line 83) - compile ... ok
+test crates/phocommander-config/src/notice.rs - notice::ConfigNotice::warning (line 100) - compile ... ok
+test crates/phocommander-config/src/notice.rs - notice::NoticeSeverity::as_str (line 50) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule (line 13) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRule::explanation (line 298) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRule::is_enabled (line 269) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRule::title (line 286) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRuleId::as_str (line 59) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRuleId::explanation (line 106) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRuleId::is_switchable (line 147) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRuleId::switch_name (line 172) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRuleId::title (line 80) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRuleSource::as_str (line 237) - compile ... ok
+test crates/phocommander-config/src/rule.rs - rule::SecurityRuleState::is_enabled (line 209) - compile ... ok
+test crates/phocommander-config/src/schema.rs - schema (line 11) - compile ... ok
+test crates/phocommander-config/src/schema.rs - schema::Config::safe (line 96) - compile ... ok
+test crates/phocommander-config/src/schema.rs - schema::Security::safe (line 338) - compile ... ok
+test crates/phocommander-config/src/schema.rs - schema::SecurityProfile::as_str (line 378) - compile ... ok
+test crates/phocommander-config/src/security.rs - security (line 13) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::follows_symlinks (line 272) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::is_enabled (line 191) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::keeps_background_index (line 287) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::notices (line 204) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::profile (line 150) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::reads_only_on_demand (line 244) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::remembers_session (line 232) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::requests_elevation (line 317) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::rule (line 178) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::rules (line 165) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::safe (line 136) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::sends_telemetry (line 302) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::verifies_checksums (line 256) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::EffectiveSecurity::verifies_directory_before_refresh (line 216) - compile ... ok
+test crates/phocommander-config/src/security.rs - security::resolve_security (line 338) - compile ... ok
+test crates/phocommander-config/src/session.rs - session (line 16) - compile ... ok
+test crates/phocommander-config/src/session.rs - session::SessionState::new (line 59) - compile ... ok
+test crates/phocommander-config/src/session.rs - session::load_session_state (line 167) - compile ... ok
+test crates/phocommander-config/src/session.rs - session::write_session_state (line 123) - compile ... ok
+test crates/phocommander-config/src/values.rs - values (line 10) - compile ... ok
+
+test result: ok. 46 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+all doctests ran in 0.84s; merged doctests compilation took 0.81s
+   Doc-tests phocommander_core
+
+running 53 tests
+test crates/phocommander-core/src/checksum.rs - checksum (line 15) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::Crc32 (line 59) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::Crc32::finish (line 115) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::Crc32::new (line 80) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::Crc32::reset (line 130) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::Crc32::update (line 93) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::crc32 (line 161) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::crc32_bytes (line 185) - compile ... ok
+test crates/phocommander-core/src/checksum.rs - checksum::crc32_file (line 203) - compile ... ok
+test crates/phocommander-core/src/config.rs - config (line 12) - compile ... ok
+test crates/phocommander-core/src/entry.rs - entry (line 13) - compile ... ok
+test crates/phocommander-core/src/entry.rs - entry::Entry::new (line 125) - compile ... ok
+test crates/phocommander-core/src/entry.rs - entry::Entry::with_modified (line 158) - compile ... ok
+test crates/phocommander-core/src/entry.rs - entry::Entry::with_size (line 144) - compile ... ok
+test crates/phocommander-core/src/entry.rs - entry::EntryKind::is_directory (line 67) - compile ... ok
+test crates/phocommander-core/src/entry.rs - entry::EntryKind::is_file (line 51) - compile ... ok
+test crates/phocommander-core/src/entry.rs - entry::EntryKind::is_symlink (line 84) - compile ... ok
+test crates/phocommander-core/src/error.rs - error (line 14) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::Error::code (line 264) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::Error::io (line 201) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::Error::too_large (line 242) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::Error::write (line 219) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::ErrorCode (line 71) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::ErrorCode::as_str (line 111) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::ErrorCode::number (line 137) - compile ... ok
+test crates/phocommander-core/src/error.rs - error::IoOperation::as_str (line 48) - compile ... ok
+test crates/phocommander-core/src/lib.rs - (line 21) - compile ... ok
+test crates/phocommander-core/src/local.rs - local (line 14) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::checksum (line 198) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::follows_symlinks (line 114) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::is_case_sensitive (line 157) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::new (line 53) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::resolve (line 173) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::root (line 145) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::rooted (line 75) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::with_case_sensitivity (line 130) - compile ... ok
+test crates/phocommander-core/src/local.rs - local::LocalSource::with_follow_symlinks (line 100) - compile ... ok
+test crates/phocommander-core/src/path.rs - path (line 16) - compile ... ok
+test crates/phocommander-core/src/path.rs - path::PathError::code (line 95) - compile ... ok
+test crates/phocommander-core/src/path.rs - path::is_reserved_device_name (line 301) - compile ... ok
+test crates/phocommander-core/src/path.rs - path::is_within (line 255) - compile ... ok
+test crates/phocommander-core/src/path.rs - path::normalize_relative (line 190) - compile ... ok
+test crates/phocommander-core/src/path.rs - path::resolve_within (line 129) - compile ... ok
+test crates/phocommander-core/src/path.rs - path::same_name (line 281) - compile ... ok
+test crates/phocommander-core/src/source.rs - source (line 17) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::MutableSource (line 104) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::MutableSource::copy (line 124) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::MutableSource::create_directory (line 193) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::MutableSource::move_entry (line 143) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::MutableSource::remove (line 179) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::MutableSource::rename (line 161) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::Source (line 45) - compile ... ok
+test crates/phocommander-core/src/source.rs - source::Source::list (line 80) - compile ... ok
+
+test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+all doctests ran in 0.96s; merged doctests compilation took 0.93s
+   Doc-tests phocommander_desktop
+
+running 7 tests
+test apps/phocommander-desktop/src/catalogue.rs - catalogue (line 10) - compile ... ok
+test apps/phocommander-desktop/src/lib.rs - (line 12) - compile ... ok
+test apps/phocommander-desktop/src/security.rs - security (line 15) - compile ... ok
+test apps/phocommander-desktop/src/security.rs - security::SecurityPlan::copy_policy (line 66) - compile ... ok
+test apps/phocommander-desktop/src/security.rs - security::SecurityPlan::from_effective (line 47) - compile ... ok
+test apps/phocommander-desktop/src/security.rs - security::SecurityPlan::read_policy (line 80) - compile ... ok
+test apps/phocommander-desktop/src/security.rs - security::SecurityPlan::refresh_policy (line 95) - compile ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 1.74s; merged doctests compilation took 1.71s
+   Doc-tests phocommander_i18n
+
+running 11 tests
+test crates/phocommander-i18n/src/catalogue.rs - catalogue::Translator::for_requested (line 121) - compile ... ok
+test crates/phocommander-i18n/src/catalogue.rs - catalogue::Translator::new (line 96) - compile ... ok
+test crates/phocommander-i18n/src/catalogue.rs - catalogue::Translator::text (line 153) - compile ... ok
+test crates/phocommander-i18n/src/catalogue.rs - catalogue::Translator::text_with_args (line 172) - compile ... ok
+test crates/phocommander-i18n/src/catalogue.rs - catalogue::catalogue_directories (line 51) - compile ... ok
+test crates/phocommander-i18n/src/catalogue.rs - catalogue::catalogue_keys_of_every_locale (line 244) - compile ... ok
+test crates/phocommander-i18n/src/lib.rs - (line 16) - compile ... ok
+test crates/phocommander-i18n/src/locale.rs - locale (line 12) - compile ... ok
+test crates/phocommander-i18n/src/locale.rs - locale::Locale::all (line 53) - compile ... ok
+test crates/phocommander-i18n/src/locale.rs - locale::Locale::parse (line 92) - compile ... ok
+test crates/phocommander-i18n/src/locale.rs - locale::lookup_chain (line 158) - compile ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.48s; merged doctests compilation took 0.47s
+   Doc-tests phocommander_testkit
+
+running 9 tests
+test tests/common/mod.rs - (line 18) - compile ... ok
+test tests/common/mod.rs - TempTree::create_tree (line 138) - compile ... ok
+test tests/common/mod.rs - TempTree::entry_names (line 157) - compile ... ok
+test tests/common/mod.rs - TempTree::new (line 58) - compile ... ok
+test tests/common/mod.rs - TempTree::path (line 85) - compile ... ok
+test tests/common/mod.rs - TempTree::write_file (line 104) - compile ... ok
+test tests/common/mod.rs - count_files (line 245) - compile ... ok
+test tests/common/mod.rs - directory_names (line 216) - compile ... ok
+test tests/common/mod.rs - repository_root (line 193) - compile ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.70s; merged doctests compilation took 0.69s
+   Doc-tests phocommander_ios
+
+running 1 test
+test apps/phocommander-ios/src/lib.rs - (line 31) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.28s; merged doctests compilation took 0.28s
+   Doc-tests phocommander_keymap
+
+running 9 tests
+test crates/phocommander-keymap/src/bindings.rs - bindings (line 12) - compile ... ok
+test crates/phocommander-keymap/src/bindings.rs - bindings::Bindings::bind (line 85) - compile ... ok
+test crates/phocommander-keymap/src/bindings.rs - bindings::Bindings::conflicts (line 139) - compile ... ok
+test crates/phocommander-keymap/src/bindings.rs - bindings::Bindings::from_table (line 54) - compile ... ok
+test crates/phocommander-keymap/src/catalog.rs - catalog (line 11) - compile ... ok
+test crates/phocommander-keymap/src/catalog.rs - catalog::ActionId::new (line 107) - compile ... ok
+test crates/phocommander-keymap/src/keymap.rs - keymap (line 10) - compile ... ok
+test crates/phocommander-keymap/src/keymap.rs - keymap::Keymap::from_context_tables (line 52) - compile ... ok
+test crates/phocommander-keymap/src/lib.rs - (line 13) - compile ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.48s; merged doctests compilation took 0.47s
+   Doc-tests phocommander_ops
+
+running 167 tests
+test crates/phocommander-ops/src/compare.rs - compare (line 15) - compile ... ok
+test crates/phocommander-ops/src/compare.rs - compare::ComparisonDepth::computes_checksums (line 68) - compile ... ok
+test crates/phocommander-ops/src/compare.rs - compare::compare_directories (line 212) - compile ... ok
+test crates/phocommander-ops/src/compare.rs - compare::compare_trees (line 88) - compile ... ok
+test crates/phocommander-ops/src/copy.rs - copy (line 16) - compile ... ok
+test crates/phocommander-ops/src/copy.rs - copy::copy_one_file (line 116) - compile ... ok
+test crates/phocommander-ops/src/copy.rs - copy::execute_copy (line 239) - compile ... ok
+test crates/phocommander-ops/src/copy/atomic.rs - copy::atomic (line 20) - compile ... ok
+test crates/phocommander-ops/src/copy/atomic.rs - copy::atomic::copy_atomically (line 69) - compile ... ok
+test crates/phocommander-ops/src/copy/policy.rs - copy::policy (line 12) - compile ... ok
+test crates/phocommander-ops/src/copy/policy.rs - copy::policy::CopyPolicy::follows_symlinks (line 87) - compile ... ok
+test crates/phocommander-ops/src/copy/policy.rs - copy::policy::CopyPolicy::new (line 37) - compile ... ok
+test crates/phocommander-ops/src/copy/policy.rs - copy::policy::CopyPolicy::strict (line 55) - compile ... ok
+test crates/phocommander-ops/src/copy/policy.rs - copy::policy::CopyPolicy::verifies_checksums (line 70) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types (line 13) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyMode::as_str (line 69) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyMode::deletes (line 111) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyMode::is_sync (line 89) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyMode::verifies (line 125) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyRequest::new (line 168) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyRequest::with_mode (line 189) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyRequest::with_policy (line 205) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyRequest::with_restricted_items (line 241) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyRequest::with_restriction (line 261) - compile ... ok
+test crates/phocommander-ops/src/copy/types.rs - copy::types::CopyRequest::with_rules (line 222) - compile ... ok
+test crates/phocommander-ops/src/datetime.rs - datetime (line 12) - compile ... ok
+test crates/phocommander-ops/src/datetime.rs - datetime::format_date (line 29) - compile ... ok
+test crates/phocommander-ops/src/datetime.rs - datetime::format_time (line 44) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit (line 15) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::ConflictPolicy::as_str (line 113) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::Edit::as_str (line 68) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::cancel (line 238) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::is_cancelled (line 252) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::is_paused (line 293) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::new (line 216) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::pause (line 264) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::pending (line 324) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::request (line 305) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::resume (line 278) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::JobControl::take_pending (line 343) - compile ... ok
+test crates/phocommander-ops/src/edit.rs - edit::check_edit (line 167) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error (line 14) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::JobError::code (line 349) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::JobError::continues (line 363) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::JobError::item (line 335) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::JobError::new (line 306) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::JobErrorCode::as_str (line 232) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::JobErrorCode::number (line 260) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::NameProblem::as_str (line 51) - compile ... ok
+test crates/phocommander-ops/src/error.rs - error::OpError::code (line 154) - compile ... ok
+test crates/phocommander-ops/src/executor.rs - executor (line 12) - compile ... ok
+test crates/phocommander-ops/src/executor.rs - executor::confirmed_job (line 269) - compile ... ok
+test crates/phocommander-ops/src/executor.rs - executor::execute (line 71) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs (line 18) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::checksum_calls (line 354) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::corrupt_next_copy (line 378) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::exists (line 217) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::fail_copy_of (line 290) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::is_empty (line 337) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::kind_of (line 201) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::len (line 324) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::link_target (line 181) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::new (line 59) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::read_dir (line 237) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::read_file (line 121) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::stop_failing (line 304) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::write_file (line 87) - compile ... ok
+test crates/phocommander-ops/src/fake_fs.rs - fake_fs::FakeFileSystem::write_symlink (line 146) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job (line 14) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::errors (line 459) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::failed_items (line 433) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::id (line 407) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::new (line 364) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::restricted_items (line 446) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::snapshot (line 472) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::state (line 420) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Job::with_restricted_items (line 391) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::JobId::get (line 64) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::JobId::new (line 51) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::JobState::as_str (line 162) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::JobState::is_finished (line 182) - compile ... ok
+test crates/phocommander-ops/src/job.rs - job::Priority::as_str (line 225) - compile ... ok
+test crates/phocommander-ops/src/lib.rs - (line 20) - compile ... ok
+test crates/phocommander-ops/src/names.rs - names (line 17) - compile ... ok
+test crates/phocommander-ops/src/names.rs - names::invalid_characters (line 76) - compile ... ok
+test crates/phocommander-ops/src/names.rs - names::is_reserved_device_name (line 103) - compile ... ok
+test crates/phocommander-ops/src/names.rs - names::suggest_replacement (line 58) - compile ... ok
+test crates/phocommander-ops/src/port.rs - port (line 15) - compile ... ok
+test crates/phocommander-ops/src/port.rs - port::DirEntry::new (line 130) - compile ... ok
+test crates/phocommander-ops/src/port.rs - port::EntryKind::as_str (line 95) - compile ... ok
+test crates/phocommander-ops/src/port.rs - port::EntryKind::is_directory (line 67) - compile ... ok
+test crates/phocommander-ops/src/port.rs - port::EntryKind::is_file (line 55) - compile ... ok
+test crates/phocommander-ops/src/port.rs - port::EntryKind::is_symlink (line 79) - compile ... ok
+test crates/phocommander-ops/src/port.rs - port::FileSystem (line 185) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress (line 19) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::add_bytes (line 290) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::add_verified_bytes (line 380) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::begin_item (line 249) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::begin_verification (line 333) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::bytes_done (line 182) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::checkpoint (line 453) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::control (line 142) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::current_item (line 270) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::finish_item (line 311) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::items_done (line 162) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::items_total (line 202) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::new (line 110) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::report (line 486) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::set_state (line 426) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::set_totals (line 227) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::state (line 405) - compile ... ok
+test crates/phocommander-ops/src/progress.rs - progress::JobContext::verification (line 360) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue (line 14) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::apply_edit (line 262) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::enqueue (line 152) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::errors_of (line 230) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::new (line 112) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::shutdown (line 422) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::snapshot (line 185) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::snapshot_of (line 205) - compile ... ok
+test crates/phocommander-ops/src/queue.rs - queue::JobQueue::wait_until_idle (line 384) - compile ... ok
+test crates/phocommander-ops/src/queue/worker.rs - queue::worker (line 11) - compile ... ok
+test crates/phocommander-ops/src/queue/worker.rs - queue::worker::unfinished (line 216) - compile ... ok
+test crates/phocommander-ops/src/rename.rs - rename (line 18) - compile ... ok
+test crates/phocommander-ops/src/rename.rs - rename::RenameConflict::new (line 114) - compile ... ok
+test crates/phocommander-ops/src/rename.rs - rename::RenameConflictKind::as_str (line 86) - compile ... ok
+test crates/phocommander-ops/src/rename.rs - rename::RenamePair::new (line 54) - compile ... ok
+test crates/phocommander-ops/src/rename.rs - rename::execute_renames (line 210) - compile ... ok
+test crates/phocommander-ops/src/rename.rs - rename::item_name (line 345) - compile ... ok
+test crates/phocommander-ops/src/rename.rs - rename::plan_renames (line 136) - compile ... ok
+test crates/phocommander-ops/src/series.rs - series (line 15) - compile ... ok
+test crates/phocommander-ops/src/series.rs - series::detect_series_numbers (line 42) - compile ... ok
+test crates/phocommander-ops/src/series.rs - series::series_name_from_parent (line 120) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync (line 15) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncAction::as_str (line 99) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncAction::moves_data (line 121) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncPlan::copies (line 261) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncPlan::deletions (line 235) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncPlan::entries (line 214) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncPlan::fingerprint (line 308) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncPlan::to_document (line 286) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncPlanEntry::is_deletion (line 170) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::SyncState::as_str (line 61) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::build_plan (line 341) - compile ... ok
+test crates/phocommander-ops/src/sync.rs - sync::build_plan_with (line 371) - compile ... ok
+test crates/phocommander-ops/src/sync/document.rs - sync::document (line 15) - compile ... ok
+test crates/phocommander-ops/src/sync/document.rs - sync::document::fingerprint (line 87) - compile ... ok
+test crates/phocommander-ops/src/sync/document.rs - sync::document::write_document (line 53) - compile ... ok
+test crates/phocommander-ops/src/sync/execute.rs - sync::execute (line 11) - compile ... ok
+test crates/phocommander-ops/src/sync/execute.rs - sync::execute::execute_sync (line 41) - compile ... ok
+test crates/phocommander-ops/src/sync/execute.rs - sync::execute::source_path (line 182) - compile ... ok
+test crates/phocommander-ops/src/temporary.rs - temporary (line 15) - compile ... ok
+test crates/phocommander-ops/src/temporary.rs - temporary::TemporaryFile<'a>::disarm (line 181) - compile ... ok
+test crates/phocommander-ops/src/temporary.rs - temporary::TemporaryFile<'a>::is_armed (line 198) - compile ... ok
+test crates/phocommander-ops/src/temporary.rs - temporary::TemporaryFile<'a>::path (line 161) - compile ... ok
+test crates/phocommander-ops/src/temporary.rs - temporary::TemporaryFile<'a>::reserve (line 140) - compile ... ok
+test crates/phocommander-ops/src/temporary.rs - temporary::temporary_path (line 77) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo (line 16) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoLedger::is_empty (line 178) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoLedger::last (line 202) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoLedger::len (line 166) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoLedger::new (line 119) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoLedger::record_copy (line 138) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoLedger::scope (line 190) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoLedger::undo_last (line 218) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoScope::as_str (line 52) - compile ... ok
+test crates/phocommander-ops/src/undo.rs - undo::UndoScope::restores_previous_state (line 66) - compile ... ok
+
+test result: ok. 167 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+all doctests ran in 0.86s; merged doctests compilation took 0.83s
+   Doc-tests phocommander_platform
+
+running 10 tests
+test platform/phocommander-platform/src/host.rs - host (line 10) - compile ... ok
+test platform/phocommander-platform/src/host.rs - host::config_directory (line 103) - compile ... ok
+test platform/phocommander-platform/src/lib.rs - (line 16) - compile ... ok
+test platform/phocommander-platform/src/portable.rs - portable (line 11) - compile ... ok
+test platform/phocommander-platform/src/portable.rs - portable::config_directory (line 101) - compile ... ok
+test platform/phocommander-platform/src/portable.rs - portable::executable_directory (line 44) - compile ... ok
+test platform/phocommander-platform/src/portable.rs - portable::is_portable (line 75) - compile ... ok
+test platform/phocommander-platform/src/portable.rs - portable::is_portable_in (line 172) - compile ... ok
+test platform/phocommander-platform/src/portable.rs - portable::portable_config_directory (line 128) - compile ... ok
+test platform/phocommander-platform/src/portable.rs - portable::portable_config_directory_in (line 148) - compile ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.34s; merged doctests compilation took 0.33s
+   Doc-tests phocommander_remote
+
+running 1 test
+test crates/phocommander-remote/src/lib.rs - (line 21) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.29s; merged doctests compilation took 0.28s
+   Doc-tests phocommander_ui
+
+running 78 tests
+test crates/phocommander-ui/src/actions.rs - actions (line 12) - compile ... ok
+test crates/phocommander-ui/src/actions.rs - actions::Action::from_id (line 107) - compile ... ok
+test crates/phocommander-ui/src/actions.rs - actions::Action::menu_groups (line 445) - compile ... ok
+test crates/phocommander-ui/src/actions.rs - actions::Action::toolbar_actions (line 457) - compile ... ok
+test crates/phocommander-ui/src/app.rs - app (line 17) - compile ... ok
+test crates/phocommander-ui/src/app.rs - app::WorkSurfaceApp::refresh_policy (line 204) - compile ... ok
+test crates/phocommander-ui/src/app.rs - app::WorkSurfaceApp::undo_availability (line 146) - compile ... ok
+test crates/phocommander-ui/src/app.rs - app::WorkSurfaceApp::with_refresh_policy (line 176) - compile ... ok
+test crates/phocommander-ui/src/app.rs - app::WorkSurfaceApp::with_undo_availability (line 118) - compile ... ok
+test crates/phocommander-ui/src/app/input.rs - app::input (line 11) - compile ... ok
+test crates/phocommander-ui/src/commands.rs - commands (line 10) - compile ... ok
+test crates/phocommander-ui/src/context.rs - context (line 10) - compile ... ok
+test crates/phocommander-ui/src/draw.rs - draw (line 15) - compile ... ok
+test crates/phocommander-ui/src/draw/areas.rs - draw::areas (line 11) - compile ... ok
+test crates/phocommander-ui/src/draw/list.rs - draw::list (line 13) - compile ... ok
+test crates/phocommander-ui/src/draw/list.rs - draw::list::column_key (line 295) - compile ... ok
+test crates/phocommander-ui/src/draw/panel.rs - draw::panel (line 13) - compile ... ok
+test crates/phocommander-ui/src/filter.rs - filter (line 18) - compile ... ok
+test crates/phocommander-ui/src/filter.rs - filter::Filter::matches_entry (line 573) - compile ... ok
+test crates/phocommander-ui/src/filter.rs - filter::FilterDepth::next (line 126) - compile ... ok
+test crates/phocommander-ui/src/filter.rs - filter::FilterKind::next (line 64) - compile ... ok
+test crates/phocommander-ui/src/filter.rs - filter::FilterPattern (line 176) - compile ... ok
+test crates/phocommander-ui/src/filter.rs - filter::FilterPattern::matches (line 288) - compile ... ok
+test crates/phocommander-ui/src/filter.rs - filter::FilterPattern::parse (line 205) - compile ... ok
+test crates/phocommander-ui/src/filter/field.rs - filter::field (line 11) - compile ... ok
+test crates/phocommander-ui/src/filter/index.rs - filter::index (line 11) - compile ... ok
+test crates/phocommander-ui/src/i18n.rs - i18n (line 12) - compile ... ok
+test crates/phocommander-ui/src/i18n.rs - i18n::Texts<'a>::get (line 87) - compile ... ok
+test crates/phocommander-ui/src/i18n/keys.rs - i18n::keys (line 9) - compile ... ok
+test crates/phocommander-ui/src/i18n/keys.rs - i18n::keys::TextKey::as_str (line 239) - compile ... ok
+test crates/phocommander-ui/src/input.rs - input (line 12) - compile ... ok
+test crates/phocommander-ui/src/input.rs - input::stroke_of (line 43) - compile ... ok
+test crates/phocommander-ui/src/jobs.rs - jobs (line 11) - compile ... ok
+test crates/phocommander-ui/src/jobs.rs - jobs::JobSource::summaries (line 218) - compile ... ok
+test crates/phocommander-ui/src/keymap_view.rs - keymap_view (line 19) - compile ... ok
+test crates/phocommander-ui/src/keymap_view.rs - keymap_view::Binding::parse (line 405) - compile ... ok
+test crates/phocommander-ui/src/keymap_view.rs - keymap_view::Key::from_name (line 142) - compile ... ok
+test crates/phocommander-ui/src/keymap_view.rs - keymap_view::KeyStroke::new (line 284) - compile ... ok
+test crates/phocommander-ui/src/keymap_view.rs - keymap_view::KeyStroke::parse (line 309) - compile ... ok
+test crates/phocommander-ui/src/keymap_view.rs - keymap_view::KeymapView::from_context_tables (line 500) - compile ... ok
+test crates/phocommander-ui/src/keymap_view.rs - keymap_view::KeymapView::resolve (line 555) - compile ... ok
+test crates/phocommander-ui/src/layout.rs - layout (line 15) - compile ... ok
+test crates/phocommander-ui/src/layout.rs - layout::LayoutProfile::for_context (line 215) - compile ... ok
+test crates/phocommander-ui/src/lib.rs - (line 19) - compile ... ok
+test crates/phocommander-ui/src/listing.rs - listing (line 13) - compile ... ok
+test crates/phocommander-ui/src/listing.rs - listing::Entry::new (line 89) - compile ... ok
+test crates/phocommander-ui/src/listing.rs - listing::Entry::with_depth (line 124) - compile ... ok
+test crates/phocommander-ui/src/listing.rs - listing::ListingState::visible_rows (line 346) - compile ... ok
+test crates/phocommander-ui/src/metrics.rs - metrics (line 11) - compile ... ok
+test crates/phocommander-ui/src/metrics.rs - metrics::Metrics::for_platform (line 104) - compile ... ok
+test crates/phocommander-ui/src/panel.rs - panel (line 21) - compile ... ok
+test crates/phocommander-ui/src/panel.rs - panel::PanelSide::other (line 63) - compile ... ok
+test crates/phocommander-ui/src/panel/columns.rs - panel::columns (line 10) - compile ... ok
+test crates/phocommander-ui/src/panel/selection.rs - panel::selection (line 11) - compile ... ok
+test crates/phocommander-ui/src/panel/tab.rs - panel::tab (line 15) - compile ... ok
+test crates/phocommander-ui/src/panel/tab.rs - panel::tab::Tab::new (line 57) - compile ... ok
+test crates/phocommander-ui/src/panel/tree.rs - panel::tree (line 13) - compile ... ok
+test crates/phocommander-ui/src/panel/tree.rs - panel::tree::DirectoryTree::set_root (line 152) - compile ... ok
+test crates/phocommander-ui/src/preview.rs - preview (line 13) - compile ... ok
+test crates/phocommander-ui/src/preview.rs - preview::Preview::new (line 45) - compile ... ok
+test crates/phocommander-ui/src/preview.rs - preview::PreviewSource::preview (line 100) - compile ... ok
+test crates/phocommander-ui/src/refresh.rs - refresh (line 13) - compile ... ok
+test crates/phocommander-ui/src/refresh.rs - refresh::RefreshPolicy::new (line 31) - compile ... ok
+test crates/phocommander-ui/src/refresh.rs - refresh::RefreshPolicy::strict (line 47) - compile ... ok
+test crates/phocommander-ui/src/refresh.rs - refresh::RefreshPolicy::verifies_before_refresh (line 59) - compile ... ok
+test crates/phocommander-ui/src/surface.rs - surface (line 17) - compile ... ok
+test crates/phocommander-ui/src/surface.rs - surface::WorkSurface::transfer_to_other (line 168) - compile ... ok
+test crates/phocommander-ui/src/theme.rs - theme (line 12) - compile ... ok
+test crates/phocommander-ui/src/theme.rs - theme::contrast_ratio (line 162) - compile ... ok
+test crates/phocommander-ui/src/theme.rs - theme::visuals (line 67) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo (line 13) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo::UndoAvailability::available (line 89) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo::UndoAvailability::is_available (line 102) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo::UndoAvailability::notice (line 153) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo::UndoAvailability::notice_key (line 130) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo::UndoAvailability::scope (line 114) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo::UndoScope::as_str (line 47) - compile ... ok
+test crates/phocommander-ui/src/undo.rs - undo::UndoScope::restores_previous_state (line 61) - compile ... ok
+
+test result: ok. 78 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+all doctests ran in 3.11s; merged doctests compilation took 3.05s
+   Doc-tests phocommander_viewer
+
+running 20 tests
+test crates/phocommander-viewer/src/content.rs - content (line 10) - compile ... ok
+test crates/phocommander-viewer/src/content.rs - content::OpenedFile::bytes (line 90) - compile ... ok
+test crates/phocommander-viewer/src/content.rs - content::OpenedFile::is_empty (line 132) - compile ... ok
+test crates/phocommander-viewer/src/content.rs - content::OpenedFile::modified (line 118) - compile ... ok
+test crates/phocommander-viewer/src/content.rs - content::OpenedFile::new (line 35) - compile ... ok
+test crates/phocommander-viewer/src/content.rs - content::OpenedFile::path (line 76) - compile ... ok
+test crates/phocommander-viewer/src/content.rs - content::OpenedFile::size (line 104) - compile ... ok
+test crates/phocommander-viewer/src/content.rs - content::OpenedFile::with_modified (line 59) - compile ... ok
+test crates/phocommander-viewer/src/lib.rs - (line 22) - compile ... ok
+test crates/phocommander-viewer/src/policy.rs - policy (line 14) - compile ... ok
+test crates/phocommander-viewer/src/policy.rs - policy::ReadPolicy::allows (line 97) - compile ... ok
+test crates/phocommander-viewer/src/policy.rs - policy::ReadPolicy::new (line 55) - compile ... ok
+test crates/phocommander-viewer/src/policy.rs - policy::ReadPolicy::reads_only_on_demand (line 81) - compile ... ok
+test crates/phocommander-viewer/src/policy.rs - policy::ReadPolicy::strict (line 69) - compile ... ok
+test crates/phocommander-viewer/src/reader.rs - reader (line 14) - compile ... ok
+test crates/phocommander-viewer/src/reader.rs - reader::ViewerReader::max_file_size (line 116) - compile ... ok
+test crates/phocommander-viewer/src/reader.rs - reader::ViewerReader::new (line 85) - compile ... ok
+test crates/phocommander-viewer/src/reader.rs - reader::ViewerReader::open (line 134) - compile ... ok
+test crates/phocommander-viewer/src/reader.rs - reader::ViewerReader::policy (line 102) - compile ... ok
+test crates/phocommander-viewer/src/reader.rs - reader::ViewerReader::preview (line 154) - compile ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.60s; merged doctests compilation took 0.59s
