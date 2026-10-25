@@ -18,7 +18,9 @@ use phocommander_config::{
     Config, ConfigNotice, EffectiveSecurity, NoticeSeverity, resolve_security,
 };
 use phocommander_desktop::desktop::DesktopApp;
+use phocommander_desktop::filesystem::HostFileSystem;
 use phocommander_desktop::language::{ConfigWatcher, InterfaceLanguage, locale_of};
+use phocommander_desktop::rename::{FileTemplateStore, OpsRenameEngine};
 use phocommander_desktop::security::SecurityPlan;
 use phocommander_platform::config_directory;
 use phocommander_ui::{
@@ -34,6 +36,12 @@ const CONFIGURATION_FILE_NAME: &str = "config.toml";
 
 /// Der Name der Tastenbelegung in der Konfigurationsdatei.
 const KEYMAP_FILE_NAME: &str = "keymap.toml";
+
+/// The name of the file with the named templates of the multiple rename.
+///
+/// WHY: the templates of the user live beside the configuration file, so
+///       that they are there after a restart of the program (FR-36).
+const TEMPLATE_STORE_FILE_NAME: &str = "rename-templates.txt";
 
 fn main() -> eframe::Result<()> {
     let (config, notices) = read_configuration();
@@ -122,6 +130,27 @@ pub fn build_application(config: &Config) -> WorkSurfaceApp {
         .with_theme(Theme::Dark)
         .with_metrics(metrics)
         .with_context(Context::Keyboard)
+        // WHY: the dialog of the multiple rename asks the engine for the new
+        //       names, and the engine of the operations lives in another
+        //       crate. The composition root hands the implementation over
+        //       (FR-34).
+        .with_rename_engine(Box::new(OpsRenameEngine::new(Box::new(
+            HostFileSystem::new(),
+        ))))
+        .with_template_store(Box::new(FileTemplateStore::new(template_store_path())))
+}
+
+/// The path of the file of the named templates.
+///
+/// WHY: the templates of the user live beside the configuration file, so
+///       that they are there after a restart of the program (FR-36). A
+///       machine without a configuration directory has no place for them,
+///       and the dialog then works without stored templates.
+fn template_store_path() -> PathBuf {
+    match config_directory() {
+        Ok(directory) => directory.join(TEMPLATE_STORE_FILE_NAME),
+        Err(_) => PathBuf::from(TEMPLATE_STORE_FILE_NAME),
+    }
 }
 
 /// The path of the configuration file, if the configuration directory can be
