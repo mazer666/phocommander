@@ -1,0 +1,30 @@
+# The localisation layer of Phocommander.
+#
+# WHAT: the Fluent catalogues of the interface and the lookup that turns a
+#       translation key into a text.
+# WHY: every visible string of the product is externalised, so that a third
+#       language is a directory of files and not a change in the source code
+#       (FR-125). The lookup never returns an empty string: a missing
+#       translation falls back to English and then to the key itself, because
+#       an empty button cannot be diagnosed and a visible key can (FR-122).
+# EXAMPLE: `let translator = Translator::new(Locale::German);`
+
+[package]
+name = "phocommander-i18n"
+description = "The Fluent catalogues and the lookup chain of Phocommander."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fluent = { workspace = true }
+fluent-syntax = { workspace = true }
+rust-embed = { workspace = true }
+sys-locale = { workspace = true }
+thiserror = { workspace = true }
+unic-langid = { workspace = true }
+
+[lints]
+workspace = true
