@@ -303,9 +303,9 @@ hartkodiert ist und in der eine neue Sprache nur eine Datei braucht.
 | Meilenstein abgeschlossen | Release | Plattformen, die mit diesem Release ausgeliefert werden |
 |---|---|---|
 | M1 | **Alpha 1** (0.1.0-alpha.1) | macOS (Apple Silicon, Intel) |
-| M2 | **Alpha 2** (0.1.0-alpha.2) | zusätzlich Linux (x86_64, aarch64) |
-| M2b | **Beta 1** (0.2.0-beta.1) | zusätzlich Windows — beide Sprachen vollständig |
-| M3 | **Beta 2** (0.2.0-beta.2) | zusätzlich FreeBSD und NetBSD, Windows-Pakete, die portable Variante |
+| M2 | **Alpha 2** (0.1.0-alpha.2) | macOS — die Oberfläche reift, die Plattform bleibt |
+| M2b | **Beta 1** (0.2.0-beta.1) | macOS — **beide Sprachen vollständig** |
+| M3 | **Beta 2** (0.2.0-beta.2) | zusätzlich Linux (x86_64, aarch64), Windows (mit den Paketen und der portablen Variante), FreeBSD und NetBSD |
 | M4 und M5 | **Beta 3** (0.3.0-beta.3) | zusätzlich Android und iPadOS aus den Stores |
 | M6 und M7 | **Beta 4** (0.3.0-beta.4) | zusätzlich die Netzwerkquellen, der Cloud-Zugriff, der Controller-Kontext |
 | M8 | **Beta 5** (0.3.0-beta.5) | zusätzlich Fire TV und Google TV |
@@ -330,9 +330,9 @@ Release, das jemand im Alltag benutzt.
 | Release | Version | Auslöser | Plattformen | Was ausgeliefert wird |
 |---|---|---|---|---|
 | **Alpha 1** | 0.1.0-alpha.1 | Ende von M1 | macOS (Apple Silicon, Intel) | Die erste lauffähige Anwendung: browsen, kopieren, umbenennen, ansehen, Archive öffnen. Ausdrücklich **Alpha**: Fehler sind zu erwarten |
-| **Alpha 2** | 0.1.0-alpha.2 | Ende von M2 | macOS, Linux (x86_64, aarch64) | Registerkarten, Profile, sichere Kopiermodi, die Oberfläche in beiden Layouts |
-| **Beta 1** | 0.2.0-beta.1 | Ende von M2b | macOS, Linux, Windows | **Beide Sprachen vollständig**, die Oberfläche ist an einem echten Tag benutzbar, keine Datenverluste |
-| **Beta 2** | 0.2.0-beta.2 | Ende von M3 | macOS, Linux, Windows, FreeBSD, NetBSD | Alle Desktop-Plattformen, Windows-Pakete, die portable Variante |
+| **Alpha 2** | 0.1.0-alpha.2 | Ende von M2 | macOS | Registerkarten, Profile, sichere Kopiermodi, die Oberfläche in beiden Layouts |
+| **Beta 1** | 0.2.0-beta.1 | Ende von M2b | macOS | **Beide Sprachen vollständig**, die Oberfläche ist an einem echten Tag benutzbar, keine Datenverluste |
+| **Beta 2** | 0.2.0-beta.2 | Ende von M3 | macOS, Linux (x86_64, aarch64), Windows, FreeBSD, NetBSD | Alle Desktop-Plattformen, die Windows-Pakete, die portable Variante |
 | **Beta 3** | 0.3.0-beta.3 | Ende von M4 und M5 | zusätzlich Android und iPadOS | Die mobilen Versionen aus den Stores |
 | **Beta 4** | 0.3.0-beta.4 | Ende von M6 und M7 | zusätzlich alle obigen | Die Netzwerkquellen und der Cloud-Zugriff, der Controller-Kontext |
 | **Beta 5** | 0.3.0-beta.5 | Ende von M8 | zusätzlich Fire TV und Google TV | Die Fernseher-Version |
@@ -376,6 +376,22 @@ fertig sein muss.
 | **iPadOS** | Über den App Store | Datenschutzerklärung, Altersfreigabe, die Screenshots in beiden Sprachen | Apple Developer |
 | **Meta Quest** | Über den Meta Horizon Store, oder als APK von der Website | Die App laeuft als flaches Panel, kein immersiver VR-Port | Meta Store |
 | **Fire TV, Google TV** | Über den Play Store | Das Leanback-Manifest, die Erreichbarkeit mit dem D-Pad, das Banner | Play App Signing |
+
+### Warum Linux und Windows erst mit Beta 2 kommen
+
+**Entscheidung vom 25.10.2026.** Der Release-Plan sah zunächst vor, dass Linux mit Alpha 2 und
+Windows mit Beta 1 ausgeliefert werden. Das widerspricht der Meilensteinplan: der **Linux-Port
+mit dem Wayland-Pfad** und der **Windows-Port mit dem Manifest** sind Teile von **M3**. Eine
+Oberfläche, die auf Linux ohne den Bildschirmserver läuft oder auf Windows ohne den Pfadupport,
+ist kein Release, sondern eine Fehlermeldung mit einem Bildschirm.
+
+Darum gilt:
+
+- **Alpha 1 und Alpha 2** liefern **macOS** aus. Sie sind die Reife der Oberfläche, keine
+  Reichweite.
+- **Beta 1** liefert **macOS** aus, mit beiden Sprachen vollständig. Das ist die Zusage an den
+  Benutzer: die Oberfläche spricht seine Sprache, und sie verliert keine Daten.
+- **Beta 2** liefert **alle fünf Desktop-Plattformen** aus, weil M3 die drei anderen Portiert.
 
 ### Was ein Release **nicht** ist
 
