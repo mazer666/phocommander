@@ -35,25 +35,12 @@ use crate::commands::Command;
 use crate::context::Context;
 use crate::draw;
 use crate::i18n::{Catalogue, Texts};
-use crate::keymap_view::{InputEvent, Key, KeyStroke, KeymapView, Modifiers};
+use crate::input::{PrimaryModifier, stroke_of};
+use crate::keymap_view::{InputEvent, Key, KeyStroke, KeymapView};
 use crate::metrics::{Metrics, Platform};
+use crate::refresh::RefreshPolicy;
 use crate::surface::WorkSurface;
 use crate::theme::{Palette, Theme};
-
-/// The key that carries the primary meaning on the platform.
-///
-/// WHY: the actions are the same on every platform, only the key that
-/// triggers them differs. `Cmd` is the primary key on macOS and on iPadOS,
-/// `Ctrl` everywhere else.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum PrimaryModifier {
-    /// The command key — macOS and iPadOS.
-    Command,
-
-    /// The control key — Windows, Linux and BSD.
-    #[default]
-    Control,
-}
 
 /// The application shell of the work surface.
 pub struct WorkSurfaceApp {
@@ -68,6 +55,7 @@ pub struct WorkSurfaceApp {
     status: Option<String>,
     activity: u64,
     visible_rows: usize,
+    refresh_policy: RefreshPolicy,
 }
 
 impl WorkSurfaceApp {
@@ -85,7 +73,66 @@ impl WorkSurfaceApp {
             status: None,
             activity: 0,
             visible_rows: 20,
+            refresh_policy: RefreshPolicy::strict(),
         }
+    }
+
+    /// The shell with another rule for reading a directory again.
+    ///
+    /// WHY: the rule "verify_directory_before_refresh" of the security
+    /// section decides whether the content of a directory is read again
+    /// before a panel shows it. The value comes from the configuration, and
+    /// the composition root hands it over.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::app::WorkSurfaceApp;
+    /// use phocommander_ui::refresh::RefreshPolicy;
+    /// # use phocommander_ui::{Catalogue, WorkSurface};
+    /// # use phocommander_ui::keymap_view::KeymapView;
+    /// # use std::path::PathBuf;
+    /// # struct Empty;
+    /// # impl Catalogue for Empty {
+    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::i18n::Argument<'_>]) -> Option<String> {
+    /// #         None
+    /// #     }
+    /// # }
+    /// let app = WorkSurfaceApp::new(
+    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
+    ///     KeymapView::default(),
+    ///     Box::new(Empty),
+    /// )
+    /// .with_refresh_policy(RefreshPolicy::new(false));
+    /// assert!(!app.refresh_policy().verifies_before_refresh());
+    /// ```
+    pub fn with_refresh_policy(mut self, refresh_policy: RefreshPolicy) -> Self {
+        self.refresh_policy = refresh_policy;
+        self
+    }
+
+    /// The rule for reading a directory again.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::app::WorkSurfaceApp;
+    /// # use phocommander_ui::{Catalogue, WorkSurface};
+    /// # use phocommander_ui::keymap_view::KeymapView;
+    /// # use std::path::PathBuf;
+    /// # struct Empty;
+    /// # impl Catalogue for Empty {
+    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::i18n::Argument<'_>]) -> Option<String> {
+    /// #         None
+    /// #     }
+    /// # }
+    /// let app = WorkSurfaceApp::new(
+    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
+    ///     KeymapView::default(),
+    ///     Box::new(Empty),
+    /// );
+    /// assert!(app.refresh_policy().verifies_before_refresh());
+    /// ```
+    pub fn refresh_policy(&self) -> &RefreshPolicy {
+        &self.refresh_policy
     }
 
     /// The shell with another colour scheme.
@@ -151,6 +198,10 @@ impl WorkSurfaceApp {
 
     /// Draws the work surface and resolves the input of the frame.
     pub fn update(&mut self, ui: &mut egui::Ui) {
+        // WHY: the index of the filter is rebuilt when the directory or the
+        // filter changed. The check is cheap and happens before the input
+        // is resolved, so that the cursor and the list always agree.
+        self.surface.refresh();
         self.resolve_input(ui.ctx());
         self.draw(ui);
     }
@@ -161,6 +212,16 @@ impl WorkSurfaceApp {
         let primary = self.primary;
 
         for event in events {
+            // WHY: the characters of the filter field arrive as a text
+            // event and not as a key event, because the keyboard layout of
+            // the user decides which characters a key produces.
+            if let egui::Event::Text(text) = &event
+                && self.filter_is_editing()
+            {
+                self.surface.active_mut().filter_insert(text);
+                continue;
+            }
+
             let egui::Event::Key {
                 key,
                 modifiers,
@@ -176,6 +237,13 @@ impl WorkSurfaceApp {
                 continue;
             };
 
+            // WHY: the field that has the focus takes the keys that belong
+            // to it. The escape key empties the field and hides it, the
+            // enter key confirms the filter and keeps it (FR-74a).
+            if self.filter_is_editing() && self.filter_key(stroke) {
+                continue;
+            }
+
             let action = self.keymap.resolve(self.context, &InputEvent::Key(stroke));
             if let Some(action) = action {
                 self.dispatch(action);
@@ -183,6 +251,55 @@ impl WorkSurfaceApp {
             }
 
             self.move_cursor(stroke);
+        }
+    }
+
+    /// Whether the panel that has the focus is editing its filter.
+    fn filter_is_editing(&self) -> bool {
+        self.surface.active().is_filter_editing()
+    }
+
+    /// Carries out a key stroke in the filter field.
+    ///
+    /// WHY: while the field is being edited, the keys that belong to the
+    /// field must not reach the actions of the panel. The method answers
+    /// whether it has used the key.
+    fn filter_key(&mut self, stroke: KeyStroke) -> bool {
+        let panel = self.surface.active_mut();
+        match stroke.key {
+            Key::Escape => {
+                panel.cancel_filter();
+                true
+            }
+            Key::Enter => {
+                panel.confirm_filter();
+                true
+            }
+            Key::Backspace => {
+                panel.filter_backspace();
+                true
+            }
+            Key::Delete => {
+                panel.filter_delete();
+                true
+            }
+            Key::ArrowLeft => {
+                panel.filter_move_caret(-1);
+                true
+            }
+            Key::ArrowRight => {
+                panel.filter_move_caret(1);
+                true
+            }
+            Key::Home => {
+                panel.filter_caret_to_start();
+                true
+            }
+            Key::End => {
+                panel.filter_caret_to_end();
+                true
+            }
+            _ => false,
         }
     }
 
@@ -195,7 +312,10 @@ impl WorkSurfaceApp {
     fn dispatch(&mut self, action: Action) {
         self.activity += 1;
         match action.id() {
-            "panel.switch" => self.surface.switch_active(),
+            "panel.switch" => {
+                self.surface.switch_active();
+                self.request_verification();
+            }
             "panel.swap" => {
                 self.surface.swap_panels();
                 self.commands.push(Command::SwapPanels);
@@ -249,6 +369,7 @@ impl WorkSurfaceApp {
             }
             "panel.drives" => self.defer(action),
             "panel.edit" => self.defer(action),
+            "panel.filter" => self.surface.active_mut().open_filter(),
             "panel.next_tab" => self.surface.active_mut().next_tab(),
             "panel.prev_tab" => self.surface.active_mut().previous_tab(),
             "selection.toggle" => self.surface.active_mut().toggle_at_cursor(),
@@ -283,6 +404,22 @@ impl WorkSurfaceApp {
     /// Reports an action that this milestone does not carry out.
     fn defer(&mut self, action: Action) {
         self.commands.push(Command::Deferred { action });
+    }
+
+    /// Asks the application to read the directory of the active panel again.
+    ///
+    /// WHY: the rule "verify_directory_before_refresh" says that the
+    /// content of a directory is read again before it is shown, so that a
+    /// change that was made elsewhere is noticed. The surface holds the
+    /// listing and the application reads the directory; the rule decides
+    /// whether the request is made at all.
+    fn request_verification(&mut self) {
+        if !self.refresh_policy.verifies_before_refresh() {
+            return;
+        }
+        let side = self.surface.active_side();
+        let path = self.surface.active().path().to_path_buf();
+        self.commands.push(Command::LoadDirectory { side, path });
     }
 
     /// Builds the request that transfers the marked entries into the other
@@ -342,20 +479,17 @@ impl WorkSurfaceApp {
     }
 
     /// Moves the cursor to the first entry.
-    fn move_cursor_to(&mut self, position: usize) {
+    fn move_cursor_to(&mut self, row: usize) {
         let visible = self.visible_rows();
         let panel = self.surface.active_mut();
-        panel.set_cursor(position);
+        panel.set_cursor_row(row);
         panel.ensure_cursor_visible(visible);
     }
 
     /// Moves the cursor to the last entry.
     fn move_cursor_to_last(&mut self) {
-        let visible = self.visible_rows();
         let last = self.surface.active().row_count().saturating_sub(1);
-        let panel = self.surface.active_mut();
-        panel.set_cursor(last);
-        panel.ensure_cursor_visible(visible);
+        self.move_cursor_to(last);
     }
 
     /// The number of rows that fit on the screen.
@@ -423,172 +557,11 @@ fn parent_of(path: &std::path::Path) -> PathBuf {
     }
 }
 
-/// The key stroke of an event of egui.
-///
-/// WHY: the binding table of the configuration file is written in words and
-/// the platform delivers a key of the framework. The stroke is the form in
-/// which both can be compared.
-fn stroke_of(
-    key: egui::Key,
-    modifiers: egui::Modifiers,
-    primary: PrimaryModifier,
-) -> Option<KeyStroke> {
-    let mut key = Key::from_name(key.name())?;
-
-    let mut shift = modifiers.shift;
-    let alt = modifiers.alt;
-    let primary_pressed = match primary {
-        PrimaryModifier::Command => modifiers.command,
-        PrimaryModifier::Control => modifiers.ctrl,
-    };
-
-    // WHY: the star key of the numeric keypad is Shift+8 on a keyboard with
-    // an American layout, and egui delivers the shift and the eight. The
-    // combination is normalised into the key of the keypad, so that the
-    // binding of the catalogue can be reached.
-    if shift && key == Key::Digit(8) {
-        key = Key::NumpadMultiply;
-        shift = false;
-    }
-
-    Some(KeyStroke {
-        key,
-        modifiers: Modifiers {
-            primary: primary_pressed,
-            shift,
-            alt,
-        },
-    })
-}
-
 #[cfg(test)]
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod tests {
-    use super::*;
-    use crate::Argument;
-    use crate::keymap_view::KeymapView;
-    use crate::listing::{Entry, EntryKind};
-    use crate::panel::PanelSide;
-    use std::collections::BTreeMap;
-
-    /// A catalogue that answers every key with the key itself.
-    struct Echo;
-
-    impl Catalogue for Echo {
-        fn lookup_with(&self, key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
-            Some(key.to_string())
-        }
-    }
-
-    /// The shell with three entries in the left panel.
-    fn app() -> WorkSurfaceApp {
-        let mut surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
-        surface.active_mut().listing_mut().set_entries(vec![
-            Entry::new("a.txt", EntryKind::File),
-            Entry::new("b.txt", EntryKind::File),
-            Entry::new("c.txt", EntryKind::File),
-        ]);
-
-        let mut keyboard = BTreeMap::new();
-        keyboard.insert("panel.copy".to_string(), "F5".to_string());
-        keyboard.insert("panel.switch".to_string(), "Tab".to_string());
-        keyboard.insert("selection.toggle".to_string(), "Ins".to_string());
-        let mut tables = BTreeMap::new();
-        tables.insert(Context::Keyboard, keyboard);
-
-        let keymap = match KeymapView::from_context_tables(&tables) {
-            Ok(keymap) => keymap,
-            Err(error) => panic!("the tables should be valid: {error}"),
-        };
-
-        WorkSurfaceApp::new(surface, keymap, Box::new(Echo))
-    }
-
-    #[test]
-    fn every_action_of_the_catalogue_does_something() {
-        // WHY: an action that is added to the catalogue and carried out
-        // silently would be a defect that nobody notices.
-        for action in Action::all() {
-            let mut app = app();
-            let before = app.activity();
-
-            app.dispatch(*action);
-
-            assert!(
-                app.activity() > before,
-                "the action {} changed nothing",
-                action.id()
-            );
-        }
-    }
-
-    #[test]
-    fn the_copy_names_the_other_panel_as_its_destination() {
-        // arrange
-        let mut app = app();
-        app.surface_mut().active_mut().toggle_at(0);
-
-        // act
-        let copy = match Action::from_id("panel.copy") {
-            Some(action) => action,
-            None => panic!("the catalogue should hold the action"),
-        };
-        app.dispatch(copy);
-
-        // assert
-        let commands = app.commands();
-        assert_eq!(commands.len(), 1);
-        match &commands[0] {
-            Command::Copy { transfer } => {
-                assert_eq!(transfer.source(), PanelSide::Left);
-                assert_eq!(transfer.destination(), PanelSide::Right);
-                assert_eq!(transfer.entries().len(), 1);
-            }
-            other => panic!("the command should be a copy: {other:?}"),
-        }
-    }
-
-    #[test]
-    fn the_copy_after_the_switch_names_the_right_panel_as_its_source() {
-        // arrange
-        let mut app = app();
-        app.surface_mut().switch_active();
-
-        // act
-        let copy = match Action::from_id("panel.copy") {
-            Some(action) => action,
-            None => panic!("the catalogue should hold the action"),
-        };
-        app.dispatch(copy);
-
-        // assert
-        match &app.commands()[0] {
-            Command::Copy { transfer } => {
-                assert_eq!(transfer.source(), PanelSide::Right);
-                assert_eq!(transfer.destination(), PanelSide::Left);
-            }
-            other => panic!("the command should be a copy: {other:?}"),
-        }
-    }
-
-    #[test]
-    fn the_parent_of_a_path_is_the_directory_above_it() {
-        // act
-        let parent = parent_of(std::path::Path::new("/tmp/folder"));
-
-        // assert
-        assert_eq!(parent, PathBuf::from("/tmp"));
-    }
-
-    #[test]
-    fn the_parent_of_the_root_is_the_root() {
-        // act
-        let parent = parent_of(std::path::Path::new("/"));
-
-        // assert
-        assert_eq!(parent, PathBuf::from("/"));
-    }
-}
+// WHY: the test module carries its own exception, because the file of the
+// tests is a file of its own. The exception is therefore written once and
+// not twice.
+mod tests;

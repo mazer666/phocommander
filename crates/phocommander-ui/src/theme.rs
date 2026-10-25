@@ -107,6 +107,14 @@ pub struct Palette {
     /// The colour of the frame around the focused element.
     pub focus_frame: Color32,
 
+    /// The colour of the line that separates two areas.
+    ///
+    /// WHY: the line between the path, the list and the status line is the
+    /// same line everywhere. It is therefore one colour and not a colour per
+    /// place, and it is not the colour of the focus — the focus has to stay
+    /// the one thing the eye finds first.
+    pub separator: Color32,
+
     /// The colour of the background of a marked entry.
     pub marked: Color32,
 
@@ -123,6 +131,7 @@ impl Palette {
             text: Color32::from_rgb(0x1a, 0x1a, 0x1a),
             text_dimmed: Color32::from_rgb(0x55, 0x55, 0x55),
             focus_frame: Color32::from_rgb(0x0b, 0x57, 0xd0),
+            separator: Color32::from_rgb(0xcf, 0xcf, 0xcf),
             marked: Color32::from_rgb(0xd6, 0xe4, 0xff),
             cursor: Color32::from_rgb(0xff, 0xf3, 0xc4),
         }
@@ -136,6 +145,7 @@ impl Palette {
             text: Color32::from_rgb(0xe8, 0xe8, 0xe8),
             text_dimmed: Color32::from_rgb(0xa4, 0xa4, 0xa4),
             focus_frame: Color32::from_rgb(0x8a, 0xb4, 0xf8),
+            separator: Color32::from_rgb(0x3d, 0x3d, 0x3d),
             marked: Color32::from_rgb(0x2f, 0x4a, 0x7a),
             cursor: Color32::from_rgb(0x3b, 0x3b, 0x2a),
         }
@@ -183,7 +193,6 @@ fn relative_luminance(color: Color32) -> f32 {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

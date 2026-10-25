@@ -168,6 +168,16 @@ impl WorkSurface {
             .collect();
         TransferRequest::new(source, destination, entries)
     }
+
+    /// Rebuilds the index of the filter of both panels.
+    ///
+    /// WHY: the index of the filter belongs to the panel and is rebuilt
+    /// when the directory or the filter changed. The surface knows both
+    /// panels and is therefore the place that refreshes them.
+    pub fn refresh(&mut self) {
+        self.left.refresh();
+        self.right.refresh();
+    }
 }
 
 /// The two panels as an operation sees them.
@@ -261,7 +271,6 @@ pub fn panel_path(panel: &PanelState) -> &Path {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::listing::{Entry, EntryKind};
@@ -269,7 +278,7 @@ mod tests {
     /// The work surface with three entries in the left panel.
     fn surface() -> WorkSurface {
         let mut surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
-        surface.active_mut().listing_mut().set_entries(vec![
+        surface.active_mut().set_entries(vec![
             Entry::new("a.txt", EntryKind::File),
             Entry::new("b.txt", EntryKind::File),
         ]);

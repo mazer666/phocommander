@@ -29,11 +29,17 @@
 ///
 /// WHY: a file manager needs plural forms ("1 entry" against "2 entries").
 /// The count is therefore an argument of the message and not a part of the
-/// text, so that the plural rule stays in the catalogue.
+/// text, so that the plural rule stays in the catalogue. The catalogue of
+/// the product reads the number as the argument `count` and the total as
+/// the argument `total`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Argument<'a> {
-    /// A number.
+    /// The number of the message — the count of the entries, for example.
     Number(u64),
+
+    /// The number the message compares with — the number of the entries of
+    /// the directory, for example.
+    Total(u64),
 
     /// A text.
     Text(&'a str),
@@ -76,6 +82,8 @@ pub enum TextKey {
     ActionPanelDrives,
     /// The label of the action `action-panel-edit`.
     ActionPanelEdit,
+    /// The label of the action `action-panel-filter`.
+    ActionPanelFilter,
     /// The label of the action `action-panel-mkdir`.
     ActionPanelMkdir,
     /// The label of the action `action-panel-move`.
@@ -170,8 +178,19 @@ pub enum TextKey {
     PanelStatusReady,
     /// The number of entries of a panel.
     PanelStatusEntries,
+    /// The number of the entries that pass the filter and the number of the
+    /// entries of the directory.
+    PanelStatusFiltered,
     /// The number of marked entries of a panel.
     PanelStatusSelected,
+    /// The label of the line with the filter field.
+    PanelFilterLabel,
+    /// The text of an empty filter field.
+    PanelFilterPlaceholder,
+    /// The number of the entries that pass the filter.
+    PanelFilterMatches,
+    /// The hint at the pattern language of the filter.
+    PanelFilterGrammar,
     /// The label of a tab.
     PanelTab,
     /// The name of the detailed view.
@@ -214,6 +233,7 @@ impl TextKey {
             TextKey::ActionPanelDelete => "action-panel-delete",
             TextKey::ActionPanelDrives => "action-panel-drives",
             TextKey::ActionPanelEdit => "action-panel-edit",
+            TextKey::ActionPanelFilter => "action-panel-filter",
             TextKey::ActionPanelMkdir => "action-panel-mkdir",
             TextKey::ActionPanelMove => "action-panel-move",
             TextKey::ActionPanelNextTab => "action-panel-next-tab",
@@ -261,7 +281,12 @@ impl TextKey {
             TextKey::PanelEmpty => "panel-empty",
             TextKey::PanelStatusReady => "panel-status-ready",
             TextKey::PanelStatusEntries => "panel-status-entries",
+            TextKey::PanelStatusFiltered => "panel-status-filtered",
             TextKey::PanelStatusSelected => "panel-status-selected",
+            TextKey::PanelFilterLabel => "panel-filter-label",
+            TextKey::PanelFilterPlaceholder => "panel-filter-placeholder",
+            TextKey::PanelFilterMatches => "panel-filter-matches",
+            TextKey::PanelFilterGrammar => "panel-filter-grammar",
             TextKey::PanelTab => "panel-tab",
             TextKey::PanelViewDetails => "panel-view-details",
             TextKey::PanelViewCompact => "panel-view-compact",
@@ -287,7 +312,7 @@ impl TextKey {
 /// WHY: the list is the contract between the code and the catalogue. The
 /// gate of the workspace compares it with the key sets of the catalogues, so
 /// that a key cannot be used without a translation.
-const KEYS: [TextKey; 66] = [
+const KEYS: [TextKey; 72] = [
     TextKey::ActionAppMenu,
     TextKey::ActionAppQuit,
     TextKey::ActionPaletteOpen,
@@ -295,6 +320,7 @@ const KEYS: [TextKey; 66] = [
     TextKey::ActionPanelDelete,
     TextKey::ActionPanelDrives,
     TextKey::ActionPanelEdit,
+    TextKey::ActionPanelFilter,
     TextKey::ActionPanelMkdir,
     TextKey::ActionPanelMove,
     TextKey::ActionPanelNextTab,
@@ -342,7 +368,12 @@ const KEYS: [TextKey; 66] = [
     TextKey::PanelEmpty,
     TextKey::PanelStatusReady,
     TextKey::PanelStatusEntries,
+    TextKey::PanelStatusFiltered,
     TextKey::PanelStatusSelected,
+    TextKey::PanelFilterLabel,
+    TextKey::PanelFilterPlaceholder,
+    TextKey::PanelFilterMatches,
+    TextKey::PanelFilterGrammar,
     TextKey::PanelTab,
     TextKey::PanelViewDetails,
     TextKey::PanelViewCompact,
@@ -406,7 +437,6 @@ impl<'a> Texts<'a> {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::collections::BTreeSet;

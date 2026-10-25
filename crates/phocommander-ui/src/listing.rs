@@ -72,6 +72,14 @@ pub struct Entry {
 
     /// The time of the last change of the entry, if the source knows it.
     pub modified: Option<SystemTime>,
+
+    /// The distance of the entry from the directory that is listed.
+    ///
+    /// WHY: an entry of the directory that is shown has the distance zero.
+    /// The filter uses the distance to decide whether it reaches into the
+    /// directories below (FR-74d), and a reader that walks deeper than one
+    /// directory fills the value in.
+    pub depth: u16,
 }
 
 impl Entry {
@@ -90,6 +98,7 @@ impl Entry {
             kind,
             size: None,
             modified: None,
+            depth: 0,
         }
     }
 
@@ -103,6 +112,29 @@ impl Entry {
     pub fn with_modified(mut self, modified: SystemTime) -> Self {
         self.modified = Some(modified);
         self
+    }
+
+    /// The entry at the given distance from the directory that is listed.
+    ///
+    /// WHY: the distance is zero for an entry of the directory that is
+    /// shown. A reader that walks deeper fills the value in, and the filter
+    /// uses it to decide how far it reaches (FR-74d).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::listing::{Entry, EntryKind};
+    ///
+    /// let entry = Entry::new("notes.txt", EntryKind::File).with_depth(2);
+    /// assert_eq!(entry.depth(), 2);
+    /// ```
+    pub fn with_depth(mut self, depth: u16) -> Self {
+        self.depth = depth;
+        self
+    }
+
+    /// The distance of the entry from the directory that is listed.
+    pub const fn depth(&self) -> u16 {
+        self.depth
     }
 }
 
@@ -177,6 +209,7 @@ pub struct ListingState {
     inverse: Vec<usize>,
     sort: Sort,
     materialised: Cell<u64>,
+    revision: u64,
 }
 
 impl ListingState {
@@ -189,6 +222,7 @@ impl ListingState {
             inverse: Vec::new(),
             sort: Sort::default(),
             materialised: Cell::new(0),
+            revision: 0,
         }
     }
 
@@ -228,13 +262,33 @@ impl ListingState {
     /// that read the directory — the interface thread never sorts.
     pub fn set_entries(&mut self, entries: Vec<Entry>) {
         self.entries = entries;
+        self.revision += 1;
         self.apply_sort();
     }
 
     /// Changes the order and applies it.
     pub fn set_sort(&mut self, sort: Sort) {
         self.sort = sort;
+        self.revision += 1;
         self.apply_sort();
+    }
+
+    /// The number of times the content or the order of the listing changed.
+    ///
+    /// WHY: the panel holds the index of the entries that pass the filter,
+    /// and the index has to be rebuilt when the listing changes. The
+    /// counter tells the panel whether it has to rebuild it, without
+    /// comparing the entries themselves.
+    pub const fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    /// The order of the screen: the position of the entry in every row.
+    ///
+    /// WHY: the index of the filter follows the order of the screen, so
+    /// that the filtered list is sorted like the list without a filter.
+    pub fn order(&self) -> &[usize] {
+        &self.order
     }
 
     /// The position of the entry in the row of the screen.
@@ -255,6 +309,31 @@ impl ListingState {
     /// The entry with the given position.
     pub fn entry_at(&self, position: usize) -> Option<&Entry> {
         self.entries.get(position)
+    }
+
+    /// The entries of the listing, in the order in which the source
+    /// delivered them.
+    ///
+    /// WHY: the index of the filter is built from the entries and from the
+    /// order of the screen, and it lives outside of the listing.
+    pub fn entries(&self) -> &[Entry] {
+        &self.entries
+    }
+
+    /// The row of the entry with the given position.
+    ///
+    /// WHY: the row is the unit the drawing works with. The counter of the
+    /// materialised rows grows with every row that is handed to the
+    /// widgets, and it is the evidence that only the visible slice of the
+    /// list is drawn (FR-106).
+    pub fn row_at(&self, position: usize, offset: usize) -> Option<Row<'_>> {
+        let entry = self.entries.get(position)?;
+        self.materialised.set(self.materialised.get() + 1);
+        Some(Row {
+            entry,
+            position,
+            offset,
+        })
     }
 
     /// The rows of the screen that are visible.
@@ -481,155 +560,4 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod tests {
-    use super::*;
-
-    /// Builds a listing with the given number of entries.
-    fn listing(count: usize) -> ListingState {
-        let mut listing = ListingState::new(PathBuf::from("/tmp"));
-        listing.set_entries(
-            (0..count)
-                .map(|index| Entry::new(format!("file-{index:06}.txt"), EntryKind::File))
-                .collect(),
-        );
-        listing
-    }
-
-    #[test]
-    fn an_empty_listing_has_no_entries() {
-        // act
-        let listing = ListingState::new(PathBuf::from("/tmp"));
-
-        // assert
-        assert!(listing.is_empty());
-        assert_eq!(listing.len(), 0);
-    }
-
-    #[test]
-    fn only_the_visible_slice_is_handed_to_the_widgets() {
-        // WHY: FR-106 — a directory with a hundred thousand entries must not
-        // cost a hundred thousand rows per frame.
-        // arrange
-        let listing = listing(100_000);
-
-        // act
-        let rows: Vec<_> = listing.visible_rows(0, 40).collect();
-
-        // assert
-        assert_eq!(rows.len(), 40);
-        assert_eq!(listing.rows_materialised(), 40);
-        assert_eq!(listing.len(), 100_000);
-    }
-
-    #[test]
-    fn the_visible_slice_starts_where_it_is_asked_to_start() {
-        // arrange
-        let listing = listing(1_000);
-
-        // act
-        let rows: Vec<_> = listing.visible_rows(100, 10).collect();
-
-        // assert
-        assert_eq!(rows.len(), 10);
-        assert_eq!(rows[0].offset(), 100);
-        assert_eq!(listing.rows_materialised(), 10);
-    }
-
-    #[test]
-    fn a_visible_slice_beyond_the_end_is_shortened() {
-        // arrange
-        let listing = listing(5);
-
-        // act
-        let rows: Vec<_> = listing.visible_rows(3, 10).collect();
-
-        // assert
-        assert_eq!(rows.len(), 2);
-    }
-
-    #[test]
-    fn the_order_of_the_screen_is_a_permutation_of_the_entries() {
-        // arrange
-        let listing = listing(50);
-
-        // act
-        let mut positions: Vec<usize> = (0..50)
-            .map(|row| listing.position_of_view_row(row).unwrap_or(usize::MAX))
-            .collect();
-
-        // assert
-        positions.sort_unstable();
-        assert_eq!(positions, (0..50).collect::<Vec<usize>>());
-    }
-
-    #[test]
-    fn the_position_of_an_entry_survives_a_change_of_the_order() {
-        // WHY: the selection holds positions, so that it keeps its meaning
-        // when the order of the screen changes.
-        // arrange
-        let mut listing = listing(100);
-        let position = listing.position_of_view_row(10).unwrap_or(0);
-
-        // act
-        listing.set_sort(Sort::by(SortKey::Size));
-
-        // assert
-        let view_row = listing.view_row_of_position(position);
-        assert!(view_row.is_some());
-        assert_eq!(
-            listing.position_of_view_row(view_row.unwrap_or(0)),
-            Some(position)
-        );
-    }
-
-    #[test]
-    fn the_order_by_name_is_the_order_of_the_names() {
-        // arrange
-        let mut listing = ListingState::new(PathBuf::from("/tmp"));
-        listing.set_entries(vec![
-            Entry::new("b.txt", EntryKind::File),
-            Entry::new("a.txt", EntryKind::File),
-            Entry::new("c.txt", EntryKind::File),
-        ]);
-
-        // act
-        let names: Vec<String> = listing
-            .visible_rows(0, 3)
-            .map(|row| row.name().to_string())
-            .collect();
-
-        // assert
-        assert_eq!(names, vec!["a.txt", "b.txt", "c.txt"]);
-    }
-
-    #[test]
-    fn writes_a_size_the_way_a_file_manager_writes_it() {
-        // act
-        let sizes = [
-            format_size(0),
-            format_size(512),
-            format_size(2_048),
-            format_size(5_368_709_120),
-        ];
-
-        // assert
-        assert_eq!(sizes[0], "0 B");
-        assert_eq!(sizes[1], "512 B");
-        assert_eq!(sizes[2], "2.0 KiB");
-        assert_eq!(sizes[3], "5.0 GiB");
-    }
-
-    #[test]
-    fn writes_a_date_the_way_a_file_manager_writes_it() {
-        // arrange
-        let moment = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_772_000_000);
-
-        // act
-        let text = format_time(moment);
-
-        // assert
-        assert_eq!(text.len(), 16);
-        assert!(text.starts_with("2026-"));
-    }
-}
+mod tests;

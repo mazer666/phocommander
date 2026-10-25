@@ -8,7 +8,9 @@
 //!       and its own view state (FR-12). The cursor and the marks belong to
 //!       the panel, and the marks hold *positions* and not paths: a position
 //!       keeps its meaning when the order of the list changes, while a path
-//!       does not survive a rename that happened somewhere else.
+//!       does not survive a rename that happened somewhere else. The filter
+//!       belongs to the panel as well and not to the tab, so that it survives
+//!       a change of the directory (FR-74f).
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ui::panel::PanelState;
@@ -19,10 +21,18 @@
 //! assert_eq!(panel.selection().len(), 1);
 //! ```
 
-use std::collections::BTreeSet;
+pub mod columns;
+pub mod selection;
+pub mod tab;
+
 use std::path::{Path, PathBuf};
 
-use crate::listing::{Entry, ListingState, Sort, SortKey};
+use crate::filter::{Filter, FilterDepth, FilterField, FilterKind, FilteredIndex};
+use crate::listing::{Entry, ListingState, Row, Sort};
+
+pub use columns::{Column, ViewMode};
+pub use selection::Selection;
+pub use tab::Tab;
 
 /// The side of a panel in the work surface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -69,197 +79,13 @@ impl std::fmt::Display for PanelSide {
     }
 }
 
-/// A column of the file list.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Column {
-    /// The name of the entry.
-    Name,
-
-    /// The size of the entry.
-    Size,
-
-    /// The time of the last change.
-    Date,
-
-    /// The type of the entry.
-    Type,
-}
-
-impl Column {
-    /// Every column, in the order the specification names them.
-    pub const fn all() -> [Column; 4] {
-        [Column::Name, Column::Size, Column::Date, Column::Type]
-    }
-
-    /// The spelling of the column in the configuration file.
-    pub const fn config_name(&self) -> &'static str {
-        match self {
-            Column::Name => "name",
-            Column::Size => "size",
-            Column::Date => "date",
-            Column::Type => "type",
-        }
-    }
-
-    /// The column with the given spelling in the configuration file.
-    pub fn from_config_name(name: &str) -> Option<Column> {
-        Column::all()
-            .into_iter()
-            .find(|column| column.config_name() == name)
-    }
-}
-
-/// The way a panel shows its entries.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub enum ViewMode {
-    /// The detailed list with the columns.
-    #[default]
-    Details,
-
-    /// The compact list with the names only.
-    Compact,
-}
-
-/// The marked entries of a panel.
-///
-/// WHY: the marks hold the *positions* of the entries and not their paths.
-/// A position is the index in the order in which the source delivered the
-/// entries, and it does not change when the order of the screen changes.
-/// The marks therefore stay on the same files when the user sorts the list.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Selection {
-    positions: BTreeSet<usize>,
-}
-
-impl Selection {
-    /// The empty selection.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// The number of marked entries.
-    pub fn len(&self) -> usize {
-        self.positions.len()
-    }
-
-    /// Whether no entry is marked.
-    pub fn is_empty(&self) -> bool {
-        self.positions.is_empty()
-    }
-
-    /// Whether the entry with the position is marked.
-    pub fn contains(&self, position: usize) -> bool {
-        self.positions.contains(&position)
-    }
-
-    /// Marks the entry with the position.
-    pub fn insert(&mut self, position: usize) {
-        self.positions.insert(position);
-    }
-
-    /// Removes the mark of the entry with the position.
-    pub fn remove(&mut self, position: usize) {
-        self.positions.remove(&position);
-    }
-
-    /// Switches the mark of the entry with the position.
-    pub fn toggle(&mut self, position: usize) {
-        if !self.positions.remove(&position) {
-            self.positions.insert(position);
-        }
-    }
-
-    /// Removes every mark.
-    pub fn clear(&mut self) {
-        self.positions.clear();
-    }
-
-    /// Inverts the marks of the first `count` entries.
-    pub fn invert(&mut self, count: usize) {
-        for position in 0..count {
-            self.toggle(position);
-        }
-    }
-
-    /// The marked positions, in the order of the listing.
-    pub fn positions(&self) -> impl Iterator<Item = usize> + '_ {
-        self.positions.iter().copied()
-    }
-}
-
-/// A tab of a panel.
-///
-/// WHY: a tab holds its own path, its own order and its own view state
-/// (FR-12). The order and the view are therefore properties of the tab and
-/// not of the panel, so that two tabs of one panel can be ordered
-/// differently.
-#[derive(Debug)]
-pub struct Tab {
-    path: PathBuf,
-    sort: Sort,
-    columns: Vec<Column>,
-    view: ViewMode,
-    listing: ListingState,
-}
-
-impl Tab {
-    /// A tab that shows a path.
-    pub fn new(path: PathBuf) -> Self {
-        Self {
-            listing: ListingState::new(path.clone()),
-            path,
-            sort: Sort::by(SortKey::Name),
-            columns: Column::all().to_vec(),
-            view: ViewMode::default(),
-        }
-    }
-
-    /// The path of the tab.
-    pub fn path(&self) -> &Path {
-        &self.path
-    }
-
-    /// Changes the path of the tab.
-    ///
-    /// WHY: the path belongs to the tab and to the listing of the tab, and
-    /// the two must not drift apart. The method therefore sets both.
-    pub fn set_path(&mut self, path: PathBuf) {
-        self.listing.set_path(path.clone());
-        self.path = path;
-    }
-
-    /// The order of the entries.
-    pub fn sort(&self) -> Sort {
-        self.sort
-    }
-
-    /// The columns of the file list.
-    pub fn columns(&self) -> &[Column] {
-        &self.columns
-    }
-
-    /// The way the tab shows its entries.
-    pub fn view(&self) -> ViewMode {
-        self.view
-    }
-
-    /// The content of the directory of the tab.
-    pub fn listing(&self) -> &ListingState {
-        &self.listing
-    }
-
-    /// The content of the directory of the tab.
-    pub fn listing_mut(&mut self) -> &mut ListingState {
-        &mut self.listing
-    }
-}
-
 /// The state of a panel.
 ///
 /// WHY: the panel owns its tabs and its cursor and its marks. Every
 /// operation of the interface acts on the panel that has the focus; the
 /// transfer into the other panel is always explicit and is therefore not
-/// part of this type (FR-16).
+/// part of this type (FR-16). The panel owns the filter as well, and the
+/// filter survives a change of the directory (FR-74f).
 #[derive(Debug)]
 pub struct PanelState {
     tabs: Vec<Tab>,
@@ -268,6 +94,11 @@ pub struct PanelState {
     selection: Selection,
     scroll_row: usize,
     fallback_tab: Tab,
+    filter: Filter,
+    field: FilterField,
+    index: FilteredIndex,
+    index_revision: u64,
+    index_filter: Filter,
 }
 
 impl PanelState {
@@ -280,6 +111,11 @@ impl PanelState {
             selection: Selection::new(),
             scroll_row: 0,
             fallback_tab: Tab::new(PathBuf::new()),
+            filter: Filter::default(),
+            field: FilterField::new(),
+            index: FilteredIndex::default(),
+            index_revision: 0,
+            index_filter: Filter::default(),
         }
     }
 
@@ -320,7 +156,7 @@ impl PanelState {
             return false;
         }
         self.active_tab = index;
-        self.clamp_cursor();
+        self.reconcile_cursor();
         true
     }
 
@@ -330,7 +166,7 @@ impl PanelState {
             return;
         }
         self.active_tab = (self.active_tab + 1) % self.tabs.len();
-        self.clamp_cursor();
+        self.reconcile_cursor();
     }
 
     /// Shows the previous tab.
@@ -339,7 +175,7 @@ impl PanelState {
             return;
         }
         self.active_tab = (self.active_tab + self.tabs.len() - 1) % self.tabs.len();
-        self.clamp_cursor();
+        self.reconcile_cursor();
     }
 
     /// The path of the tab that is shown.
@@ -348,9 +184,28 @@ impl PanelState {
     }
 
     /// Changes the path of the tab that is shown.
+    ///
+    /// WHY: the filter belongs to the panel and not to the tab, so that it
+    /// survives the change of the directory (FR-74f). The method therefore
+    /// changes the path and nothing else.
     pub fn set_path(&mut self, path: PathBuf) {
         self.active_tab_mut().set_path(path);
-        self.clamp_cursor();
+        self.reconcile_cursor();
+    }
+
+    /// Puts the entries into the listing of the tab that is shown.
+    ///
+    /// WHY: the method refreshes the index of the filter, so that the
+    /// entries that pass the filter are known right after they arrived.
+    pub fn set_entries(&mut self, entries: Vec<Entry>) {
+        self.active_tab_mut().listing_mut().set_entries(entries);
+        self.refresh();
+    }
+
+    /// Changes the order of the entries and applies it.
+    pub fn set_sort(&mut self, sort: Sort) {
+        self.active_tab_mut().listing_mut().set_sort(sort);
+        self.refresh();
     }
 
     /// The order of the entries of the tab that is shown.
@@ -374,13 +229,46 @@ impl PanelState {
     }
 
     /// The content of the directory of the tab that is shown.
+    ///
+    /// WHY: the caller changes the content behind the back of the panel and
+    /// has to call [`Self::refresh`] afterwards, so that the index of the
+    /// filter is rebuilt.
     pub fn listing_mut(&mut self) -> &mut ListingState {
         self.active_tab_mut().listing_mut()
     }
 
-    /// The number of entries of the panel.
+    /// The number of entries that are on the screen.
+    ///
+    /// WHY: with a filter the screen shows the entries that pass the
+    /// filter, so the number of the visible entries is the number of the
+    /// matches (FR-74e).
     pub fn row_count(&self) -> usize {
+        self.index.len()
+    }
+
+    /// The number of entries of the directory, without the filter.
+    pub fn total_count(&self) -> usize {
         self.listing().len()
+    }
+
+    /// The rows of the screen that are visible.
+    ///
+    /// WHY: only the visible slice of the list is handed to the widgets, so
+    /// that a directory with a hundred thousand entries costs the same in
+    /// every frame as a directory with thirty entries (FR-106).
+    pub fn visible_rows(&self, first: usize, count: usize) -> Vec<Row<'_>> {
+        let listing = self.listing();
+        let mut rows = Vec::new();
+        for offset in first..first.saturating_add(count) {
+            let Some(position) = self.index.position_of_row(offset) else {
+                break;
+            };
+            let Some(row) = listing.row_at(position, offset) else {
+                break;
+            };
+            rows.push(row);
+        }
+        rows
     }
 
     /// The position of the entry the cursor is on.
@@ -388,36 +276,99 @@ impl PanelState {
         self.cursor
     }
 
+    /// The row of the screen in which the entry under the cursor is shown.
+    pub fn cursor_row(&self) -> Option<usize> {
+        self.index.row_of_position(self.cursor)
+    }
+
     /// The entry the cursor is on.
+    ///
+    /// WHY: an entry that the filter hides is not on the screen, and the
+    /// cursor does not point at it. The answer is therefore `None` when the
+    /// entry under the cursor does not pass the filter.
     pub fn cursor_entry(&self) -> Option<&Entry> {
+        if !self.index.contains(self.cursor) {
+            return None;
+        }
         self.listing().entry_at(self.cursor)
     }
 
     /// Moves the cursor to the given position.
     ///
-    /// WHY: a position that is outside the list is clamped instead of
-    /// rejected, because the list can become shorter while the cursor is on
-    /// it — after a reload, for example.
+    /// WHY: a position that is not on the screen is refused, because the
+    /// cursor has to point at an entry the user can see. The cursor then
+    /// goes to the last entry that is on the screen.
     pub fn set_cursor(&mut self, position: usize) {
-        self.cursor = position.min(self.row_count().saturating_sub(1));
+        if self.index.contains(position) {
+            self.cursor = position;
+            return;
+        }
+        if let Some(last) = self.index.positions().last() {
+            self.cursor = *last;
+        } else {
+            self.cursor = 0;
+        }
     }
 
-    /// Moves the cursor by a number of rows.
-    pub fn move_cursor(&mut self, rows: isize) {
-        let current = self
-            .listing()
-            .view_row_of_position(self.cursor)
-            .unwrap_or(0);
-        let last = self.row_count().saturating_sub(1) as isize;
-        let target = (current as isize + rows).clamp(0, last);
-        if let Some(position) = self.listing().position_of_view_row(target as usize) {
+    /// Moves the cursor to the entry in the given row of the screen.
+    ///
+    /// WHY: the row is the unit the user sees. The home key goes to the
+    /// first row and the end key to the last one, and both are rows of the
+    /// list that the filter makes visible.
+    pub fn set_cursor_row(&mut self, row: usize) {
+        let last = self.row_count().saturating_sub(1);
+        if let Some(position) = self.index.position_of_row(row.min(last)) {
             self.cursor = position;
         }
     }
 
-    /// Puts the cursor back into the list.
-    pub fn clamp_cursor(&mut self) {
-        self.cursor = self.cursor.min(self.row_count().saturating_sub(1));
+    /// Moves the cursor by a number of rows.
+    pub fn move_cursor(&mut self, rows: isize) {
+        let current = self.cursor_row().unwrap_or(0);
+        let last = self.row_count().saturating_sub(1) as isize;
+        let target = (current as isize + rows).clamp(0, last);
+        if let Some(position) = self.index.position_of_row(target as usize) {
+            self.cursor = position;
+        }
+    }
+
+    /// Puts the cursor back onto an entry that is on the screen.
+    ///
+    /// WHY: when the filter changes, the entry under the cursor can stop
+    /// passing the filter. The cursor then goes to the first entry that
+    /// passes it, and it never points at an entry that is not on the screen.
+    pub fn reconcile_cursor(&mut self) {
+        if self.index.is_empty() {
+            self.cursor = 0;
+            self.scroll_row = 0;
+            return;
+        }
+        if !self.index.contains(self.cursor)
+            && let Some(first) = self.index.positions().first()
+        {
+            self.cursor = *first;
+        }
+        self.set_scroll_row(self.scroll_row);
+    }
+
+    /// Rebuilds the index of the entries that pass the filter.
+    ///
+    /// WHY: the index is built when the filter or the directory changes and
+    /// not in every frame. The method compares the filter and the revision
+    /// of the listing and does nothing when both are the same.
+    pub fn refresh(&mut self) {
+        let revision = self.listing().revision();
+        if revision != self.index_revision || self.filter != self.index_filter {
+            let index = FilteredIndex::build(
+                self.listing().entries(),
+                self.listing().order(),
+                &self.filter,
+            );
+            self.index = index;
+            self.index_revision = revision;
+            self.index_filter = self.filter.clone();
+        }
+        self.reconcile_cursor();
     }
 
     /// The marked entries of the panel.
@@ -442,10 +393,14 @@ impl PanelState {
         }
     }
 
-    /// Marks every entry.
+    /// Marks every entry that is on the screen.
+    ///
+    /// WHY: with a filter the user marks what he sees, and not the entries
+    /// that the filter hides.
     pub fn select_all(&mut self) {
         self.selection = Selection::new();
-        for position in 0..self.row_count() {
+        let positions: Vec<usize> = self.index.positions().to_vec();
+        for position in positions {
             self.selection.insert(position);
         }
     }
@@ -455,9 +410,12 @@ impl PanelState {
         self.selection.clear();
     }
 
-    /// Inverts the marks of every entry.
+    /// Inverts the marks of every entry that is on the screen.
     pub fn invert_selection(&mut self) {
-        self.selection.invert(self.row_count());
+        let positions: Vec<usize> = self.index.positions().to_vec();
+        for position in positions {
+            self.selection.toggle(position);
+        }
     }
 
     /// The marked entries, in the order of the listing.
@@ -494,7 +452,7 @@ impl PanelState {
         if rows == 0 {
             return;
         }
-        let Some(view_row) = self.listing().view_row_of_position(self.cursor) else {
+        let Some(view_row) = self.cursor_row() else {
             return;
         };
         let first = self.scroll_row;
@@ -505,118 +463,123 @@ impl PanelState {
         }
         self.set_scroll_row(self.scroll_row);
     }
+
+    /// The filter of the panel.
+    pub fn filter(&self) -> &Filter {
+        &self.filter
+    }
+
+    /// The text in the filter field.
+    pub fn filter_text(&self) -> &str {
+        self.field.text()
+    }
+
+    /// Whether the line with the filter field is drawn.
+    ///
+    /// WHY: the line is drawn while the field is being edited and while the
+    /// filter is in use. A filter that was cancelled leaves no line behind.
+    pub fn is_filter_visible(&self) -> bool {
+        self.field.is_visible() || self.filter.is_active()
+    }
+
+    /// Whether the filter field has the focus.
+    pub fn is_filter_editing(&self) -> bool {
+        self.field.is_editing()
+    }
+
+    /// The number of entries that pass the filter.
+    pub fn matching_count(&self) -> usize {
+        self.index.len()
+    }
+
+    /// Shows the filter field and puts the caret into it.
+    pub fn open_filter(&mut self) {
+        self.field.open();
+    }
+
+    /// Writes the text into the filter field and applies it.
+    pub fn set_filter_text(&mut self, text: &str) {
+        self.field.set_text(text);
+        self.apply_filter();
+    }
+
+    /// Inserts text into the filter field and applies it.
+    pub fn filter_insert(&mut self, text: &str) {
+        self.field.insert(text);
+        self.apply_filter();
+    }
+
+    /// Deletes the character before the caret and applies the filter.
+    pub fn filter_backspace(&mut self) {
+        self.field.backspace();
+        self.apply_filter();
+    }
+
+    /// Deletes the character at the caret and applies the filter.
+    pub fn filter_delete(&mut self) {
+        self.field.delete();
+        self.apply_filter();
+    }
+
+    /// Moves the caret in the filter field.
+    pub fn filter_move_caret(&mut self, delta: isize) {
+        self.field.move_caret(delta);
+    }
+
+    /// The position of the caret in the filter field.
+    pub fn filter_caret(&self) -> usize {
+        self.field.caret()
+    }
+
+    /// Puts the caret in front of the text of the filter field.
+    pub fn filter_caret_to_start(&mut self) {
+        self.field.caret_to_start();
+    }
+
+    /// Puts the caret behind the text of the filter field.
+    pub fn filter_caret_to_end(&mut self) {
+        self.field.caret_to_end();
+    }
+
+    /// Confirms the filter: the text stays and the field loses the focus.
+    pub fn confirm_filter(&mut self) {
+        self.field.confirm();
+    }
+
+    /// Cancels the filter: the text is cleared and the line is hidden.
+    pub fn cancel_filter(&mut self) {
+        self.field.clear();
+        self.filter = self.filter.without_pattern();
+        self.refresh();
+    }
+
+    /// Limits the filter to the files, to the directories or to both.
+    pub fn set_filter_kind(&mut self, kind: FilterKind) {
+        self.filter = Filter::new(self.filter.pattern().clone(), kind, self.filter.depth());
+        self.refresh();
+    }
+
+    /// Changes the depth the filter reaches.
+    pub fn set_filter_depth(&mut self, depth: FilterDepth) {
+        self.filter = Filter::new(self.filter.pattern().clone(), self.filter.kind(), depth);
+        self.refresh();
+    }
+
+    /// Reads the text of the field into the filter.
+    ///
+    /// WHY: the text of the field is the pattern, and the pattern is
+    /// applied while the user types — there is no delay between the key
+    /// stroke and the new list (FR-74a).
+    fn apply_filter(&mut self) {
+        let kind = self.filter.kind();
+        let depth = self.filter.depth();
+        self.filter = Filter::from_text(self.field.text(), kind, depth);
+        self.refresh();
+    }
 }
 
 #[cfg(test)]
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod tests {
-    use super::*;
-    use crate::listing::EntryKind;
-
-    /// A panel with three entries.
-    fn panel() -> PanelState {
-        let mut panel = PanelState::new(PathBuf::from("/tmp"));
-        panel.listing_mut().set_entries(vec![
-            Entry::new("a.txt", EntryKind::File),
-            Entry::new("b.txt", EntryKind::File),
-            Entry::new("c.txt", EntryKind::File),
-        ]);
-        panel
-    }
-
-    #[test]
-    fn the_marks_hold_positions_and_not_paths() {
-        // arrange
-        let mut panel = panel();
-
-        // act
-        panel.toggle_at(1);
-
-        // assert
-        assert!(panel.is_marked(1));
-        assert!(!panel.is_marked(0));
-        assert_eq!(panel.selection().len(), 1);
-    }
-
-    #[test]
-    fn the_marks_survive_a_change_of_the_order() {
-        // arrange
-        let mut panel = panel();
-        panel.toggle_at(0);
-
-        // act
-        panel.listing_mut().set_sort(Sort::by(SortKey::Size));
-
-        // assert
-        assert!(panel.is_marked(0));
-    }
-
-    #[test]
-    fn the_cursor_stays_inside_the_list() {
-        // arrange
-        let mut panel = panel();
-
-        // act
-        panel.set_cursor(99);
-
-        // assert
-        assert_eq!(panel.cursor(), 2);
-    }
-
-    #[test]
-    fn the_cursor_moves_by_rows_and_not_by_positions() {
-        // arrange
-        let mut panel = panel();
-        panel.listing_mut().set_sort(Sort::by(SortKey::Size));
-
-        // act
-        panel.move_cursor(1);
-
-        // assert
-        let row = panel.listing().view_row_of_position(panel.cursor());
-        assert_eq!(row, Some(1));
-    }
-
-    #[test]
-    fn selecting_all_marks_every_entry() {
-        // arrange
-        let mut panel = panel();
-
-        // act
-        panel.select_all();
-
-        // assert
-        assert_eq!(panel.selection().len(), 3);
-        panel.invert_selection();
-        assert_eq!(panel.selection().len(), 0);
-    }
-
-    #[test]
-    fn a_tab_that_does_not_exist_is_refused() {
-        // arrange
-        let mut panel = panel();
-
-        // act
-        let refused = panel.switch_tab(3);
-
-        // assert
-        assert!(!refused);
-        assert_eq!(panel.tab_count(), 1);
-    }
-
-    #[test]
-    fn the_scroll_follows_the_cursor() {
-        // arrange
-        let mut panel = panel();
-
-        // act
-        panel.set_cursor(2);
-        panel.ensure_cursor_visible(2);
-
-        // assert
-        assert_eq!(panel.scroll_row(), 1);
-    }
-}
+mod tests;

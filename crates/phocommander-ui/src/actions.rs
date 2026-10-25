@@ -134,7 +134,7 @@ impl Action {
 /// {docs/KEYMAP.md}. The gate of the integration tests compares the three
 /// descriptions, so that a new command cannot appear in the code without
 /// appearing in the documentation.
-const ACTIONS: [Action; 36] = [
+const ACTIONS: [Action; 37] = [
     Action {
         id: "panel.rename",
         category: ActionCategory::File,
@@ -144,6 +144,11 @@ const ACTIONS: [Action; 36] = [
         id: "panel.view",
         category: ActionCategory::View,
         label: TextKey::ActionPanelView,
+    },
+    Action {
+        id: "panel.filter",
+        category: ActionCategory::View,
+        label: TextKey::ActionPanelFilter,
     },
     Action {
         id: "panel.edit",
@@ -321,7 +326,6 @@ const ACTIONS: [Action; 36] = [
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::collections::BTreeSet;
@@ -368,10 +372,11 @@ mod tests {
         let identifiers: Vec<&str> = Action::all().iter().map(|action| action.id()).collect();
 
         // assert
-        assert_eq!(identifiers.len(), 36);
+        assert_eq!(identifiers.len(), 37);
         assert!(identifiers.contains(&"palette.open"));
         assert!(identifiers.contains(&"panel.tab.9"));
         assert!(identifiers.contains(&"rename.conflict_previous"));
+        assert!(identifiers.contains(&"panel.filter"));
     }
 
     #[test]
