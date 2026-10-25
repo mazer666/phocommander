@@ -3550,6 +3550,7 @@ name = "phocommander-i18n"
 version = "0.1.0"
 dependencies = [
  "fluent",
+ "fluent-bundle",
  "fluent-syntax",
  "icu",
  "rust-embed",
