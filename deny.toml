@@ -27,6 +27,34 @@ allow = [
     "Unicode-3.0",
     "Zlib",
     "MPL-2.0",
+    # The following four licences entered the tree with the archive adapters of
+    # M1 — the compressors of the TAR container, the reader of the 7z
+    # container and the font handling of the interface. All four are
+    # permissive and none of them is a copyleft, so the policy of section 9.6
+    # of the specification — copyleft is excluded, everything else that is
+    # permissive is allowed — is applied to them as well:
+    #   bzip2-1.0.6  the licence of the library `bzip2` (OSI approved)
+    #   BSL-1.0       the Boost Software License 1.0 (OSI approved)
+    #   CC0-1.0       the public-domain dedication of `ppmd-rust`
+    #   MIT-0         MIT without the duty of naming the author
+    # The licence of the font data of the interface is the combined
+    # expression `(MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0`: the
+    # code is under MIT or Apache-2.0, the font data under the Open Font
+    # License and under the licence of Ubuntu. The project ships no font of
+    # its own — the fonts come from the system of the user.
+    "bzip2-1.0.6",
+    "BSL-1.0",
+    "CC0-1.0",
+    "MIT-0",
+    # The licence of the font data of the interface is the combined
+    # expression `(MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0`: the
+    # code is under MIT or Apache-2.0, the font data under the Open Font
+    # License and under the licence of Ubuntu. The allow list of
+    # cargo-deny 0.20.2 names one licence per entry, so the two parts of the
+    # expression are named separately. The project ships no font of its own —
+    # the fonts come from the system of the user.
+    "OFL-1.1",
+    "Ubuntu-font-1.0",
 ]
 
 [licenses.private]
