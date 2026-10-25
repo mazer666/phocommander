@@ -36,7 +36,7 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 |---|---|
 | Tests | **1123 grün, 0 rot, 0 übersprungen** |
 | Testbinäre | 54 |
-| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 25.10.2026 nach dem Meilenstein M2b: **PASS** |
+| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 25.10.2026 nach dem Dialog der Mehrfachumbenennung: **PASS**, 38 von 38 |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
 | Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
@@ -108,8 +108,8 @@ genauso leicht zu brechen sind:
 |---|---|---|
 | 1 | Das manuelle Protokoll von M1 auf einem macOS-Gerät | Die Sandbox hat ein Linux-System und keinen Bildschirm. Die Abnahme braucht dieses Protokoll, sonst bleibt M1 offen |
 | 2 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
-| 2 | Den Auslöser des Sprachwechsels festlegen | Der Desktop-Build liest die Konfigurationsdatei einmal pro Sekunde. Ein Eintrag in der nativen Menüleiste wäre die dauerhafte Lösung — `muda` kommt mit M3 |
-| 3 | Den Meilenstein M3 beginnen — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft |
+| 3 | Den Auslöser des Sprachwechsels festlegen | Der Desktop-Build liest die Konfigurationsdatei einmal pro Sekunde. Ein Eintrag in der nativen Menüleiste wäre die dauerhafte Lösung — `muda` kommt mit M3 |
+| 4 | Den Meilenstein M3 vorbereiten — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft. Zuerst die Portabilitätsfragen: der Trenner der Pfade, die langen Pfade unter Windows, die Tastenbelegung je Plattform und die Matrix der CI |
 
 ## 7. Die Fragen, die eine Entscheidung brauchen
 
