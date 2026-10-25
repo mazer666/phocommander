@@ -336,9 +336,11 @@ impl WorkSurfaceApp {
 
     /// The action of the dialog that a key stroke triggers.
     fn rename_action(&self, stroke: KeyStroke) -> Option<Action> {
-        Action::in_category(ActionCategory::Rename).into_iter().find(|action| {
-            self.keymap.binding_for(self.context, *action) == Some(&Binding::Key(stroke))
-        })
+        Action::in_category(ActionCategory::Rename)
+            .into_iter()
+            .find(|action| {
+                self.keymap.binding_for(self.context, *action) == Some(&Binding::Key(stroke))
+            })
     }
 
     /// Draws the dialog of the multiple rename.
