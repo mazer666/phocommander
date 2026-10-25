@@ -71,11 +71,12 @@ SPECIFICATION_BINDINGS = {
     "rename.conflict_previous": "Shift+F3",
 }
 
-# The binding of the one action that the key table of the specification does
-# not name. It is the symmetric completion of "Ctrl+Tab" and is marked as such
-# in config/keymap.toml and in the open points of the handover.
+# The bindings that the key table of the specification does not name. They
+# are documented in the catalogue itself and in the reference document, and
+# they are the completion of the classic set.
 DERIVED_BINDINGS = {
     "panel.prev_tab": "Ctrl+Shift+Tab",
+    "panel.filter": "Ctrl+F",
 }
 
 # The action IDs that are not part of the catalogue but of the surface.
