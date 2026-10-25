@@ -65,6 +65,13 @@ milestone.
 | Switch to tab 1–9 `panel.tab.1` … `panel.tab.9` | `Ctrl+1` … `Ctrl+9` | `keyboard`, palette | `Cmd+1` … `Cmd+9` on macOS/iPadOS | Tabs arrive with M2. |
 | Switch to the next tab `panel.next_tab` | `Ctrl+Tab` | `keyboard`, palette | `Cmd+Tab` on macOS/iPadOS | M2 |
 | Switch to the previous tab `panel.prev_tab` | `Ctrl+Shift+Tab` | `keyboard`, palette | `Cmd+Shift+Tab` on macOS/iPadOS | **Not in the specification.** The symmetric completion of `Ctrl+Tab`; `config/keymap.toml` marks it as the first binding to revisit if it proves wrong. M2 with the tabs. |
+| Open a new tab `panel.tab.new` | `Ctrl+T` | `keyboard`, palette | `Cmd+T` on macOS/iPadOS | **Not in the specification.** The specification names the function of the tabs in FR-12 and names no key for it. M2 |
+| Close the tab that is shown `panel.tab.close` | `Ctrl+W` | `keyboard`, palette | `Cmd+W` on macOS/iPadOS | **Not in the specification.** The last tab of a panel is never closed — a panel without a tab would have nothing to show. M2 |
+| Move the tab into the other panel `panel.tab.move_to_other` | `Ctrl+Shift+M` | `keyboard`, palette | `Cmd+Shift+M` on macOS/iPadOS | **Not in the specification.** The tab keeps its path, its order, its cursor, its marks and its filter when it moves (FR-12, FR-13). M2 |
+| Switch the arrangement of the panels `panel.layout.toggle` | `Ctrl+Shift+L` | `keyboard`, palette | `Cmd+Shift+L` on macOS/iPadOS | **Not in the specification.** The panels stand next to each other or below each other, and the state of the panels does not change with the arrangement (FR-11). M2 |
+| Show or hide the tree of the directories `panel.tree.toggle` | `Ctrl+B` | `keyboard`, palette | `Cmd+B` on macOS/iPadOS | **Not in the specification.** The tree belongs to one panel. It shows the directories the user has opened and the directories below the current path — it never reads the tree recursively (FR-14). M2 |
+| Show or hide the quick view `panel.quick_view.toggle` | `Ctrl+Q` | `keyboard`, palette | `Cmd+Q` on macOS/iPadOS | **Not in the specification.** The quick view shows the content of the marked file without opening it, and it reads exactly one file (FR-15). M2 |
+| Show or hide the list of the jobs `panel.job_list.toggle` | `Ctrl+J` | `keyboard`, palette | `Cmd+J` on macOS/iPadOS | **Not in the specification.** The list of the jobs shows the queue of the operations (FR-22g). M2 |
 | Toggle the selection `selection.toggle` | `Ins` | `keyboard`, palette | — | Toggles the marking of the entry under the cursor. M1 |
 | Select all `selection.all` | `Ctrl+A` | `keyboard`, palette | `Cmd+A` on macOS/iPadOS | M1 |
 | Clear the selection `selection.none` | `Ctrl+Num-` | `keyboard`, palette | `Cmd+Num-` on macOS/iPadOS | M1 |

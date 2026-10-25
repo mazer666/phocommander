@@ -9,6 +9,7 @@
 | Decided by | *pending — the owner decides; this document is the evidence of the QA engineer* |
 | Result | **accepted with conditions** — every gate that could be measured is green; the conditions are listed in section 7 and section 8 |
 | Correction | 25.10.2026 — the identifiers, the line limits and the version references of this document were brought to version 2.0 of the specification. The measurements are the ones of 24.10.2026 and were not repeated; the statements that version 2.0 no longer covers were moved to section 7 with their evidence. |
+| Second correction | 25.10.2026 (QA session qa3) — the identifier `FR-55` of section 1 was replaced by `H-06`, because `FR-55` of version 2.0 is the file metadata of the viewer and not the size limits; the reasons of the "not measured" rows of section 3 and of the rows of section 7 were brought to the state of the tree of commit `514ca0b`; the state of the conditions of section 8 was verified against the workflow of the owner. The measurements of M0 itself were not repeated — they are the ones of 24.10.2026. |
 
 **Who wrote this document:** the QA engineer of the team. **What it is:** the measured evidence for
 the milestone M0 — the command outputs, the test names with their results and the exact reasons for
@@ -29,11 +30,12 @@ not cover with a requirement identifier are listed in section 7 with their evide
 
 | Requirement | Behaviour observed | Evidence |
 |---|---|---|
-| H-06, FR-55 | The canonical limits of `phocommander-core` and the values of the shipped configuration file are equal: 2 147 483 648 bytes, 100 000 entries, 10 485 760 bytes, 4 194 304 bytes. | `core_limits::the_shipped_configuration_file_carries_the_canonical_archive_limits`, `core_limits::the_shipped_configuration_file_carries_the_canonical_viewer_limits` — green in `cargo test --workspace` |
-| FR-101 | The shipped key binding file is free of conflicts — with the two exceptions that the specification itself names (`F3` and `Shift+F3`, which mean "find" in the viewer and "jump to the conflict" in the rename dialog). | `keymap_bindings::the_shipped_keymap_has_no_conflict_in_any_context` — green |
-| FR-101 | Every action of the keyboard context is reachable in the `dpad` context and in the `controller` context. | `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_dpad_context`, `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_controller_context` — green |
-| FR-101 | In the `dpad` and in the `controller` context every action is bound to the action palette (`palette:…`); the only exceptions are `palette.open` (Menu key) and `selection.toggle` (grip) in the controller context. | `keymap_bindings::the_dpad_and_the_controller_bind_their_actions_to_the_action_palette` — green |
-| FR-100 | Every action identifier of the shipped file is well formed. | `keymap_bindings::the_action_identifiers_of_the_shipped_file_are_well_formed` — green |
+| H-06 | The canonical archive limits of `phocommander-core` and the values of the shipped configuration file are equal: 2 147 483 648 bytes and 100 000 entries. | `core_limits::the_shipped_configuration_file_carries_the_canonical_archive_limits` — green in `cargo test --workspace` |
+| H-06, FR-50 to FR-55 (M1) | The canonical viewer limits of `phocommander-core` and the values of the shipped configuration file are equal: 10 485 760 bytes and 4 194 304 bytes. Version 2.0 names no identifier for the size limits of the viewer; the limit belongs to the viewer requirements of the milestone M1. | `core_limits::the_shipped_configuration_file_carries_the_canonical_viewer_limits` — green in `cargo test --workspace` |
+| FR-101 (M1) | The shipped key binding file is free of conflicts — with the two exceptions that the specification itself names (`F3` and `Shift+F3`, which mean "find" in the viewer and "jump to the conflict" in the rename dialog). | `keymap_bindings::the_shipped_keymap_has_no_conflict_in_any_context` — green |
+| FR-101 (M1) | Every action of the keyboard context is reachable in the `dpad` context and in the `controller` context. | `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_dpad_context`, `keymap_bindings::every_action_of_the_keyboard_is_reachable_in_the_controller_context` — green |
+| FR-101 (M1) | In the `dpad` and in the `controller` context every action is bound to the action palette (`palette:…`); the only exceptions are `palette.open` (Menu key) and `selection.toggle` (grip) in the controller context. | `keymap_bindings::the_dpad_and_the_controller_bind_their_actions_to_the_action_palette` — green |
+| FR-100 (M1) | Every action identifier of the shipped file is well formed. | `keymap_bindings::the_action_identifiers_of_the_shipped_file_are_well_formed` — green |
 | NFR-20 | The dependency direction of the workspace holds: `apps/*` → `platform/*` → `crates/*`, no crate below `crates/` depends on a sibling. | `./scripts/check-crate-boundaries.sh` → `8 path dependencies checked, 0 violations` (`logs/check-crate-boundaries.log`) |
 | NFR-20 | The gate has teeth: a dependency of `phocommander-core` on `phocommander-keymap` makes the gate red, removing it makes it green again. | `./scripts/check-gates-negative.sh`, gate 4 (`logs/check-gates-negative.log`) |
 | NFR-17 | The integration tests of the crate boundaries exist and run: the copy through a temporary directory is NOT RUN (the file operations arrive in M1), the extraction of an archive with traversal entries is covered by `security_path_traversal`, the loading of a configuration file with an unknown field is covered by `config_defaults`. | `cargo test --workspace` → `129 passed; 0 failed` (`logs/cargo-test-workspace.log`) |
@@ -46,6 +48,12 @@ thematically and carries no identifier for the configuration file as such: the f
 configuration module of section 5.2 and to the acceptance criteria of section 13. The three
 measurements therefore stay in the document — in section 7, with the names of the tests — and are no
 longer presented as the proof of an identifier that does not exist.
+
+**What the milestone column of version 2.0 means for these rows.** `FR-100` and `FR-101` are
+requirements of the milestone **M1** in version 2.0. The measurements of M0 are the foundation that
+M1 builds on: the action catalogue, the binding tables and the conflict check exist since M0.4 and
+were proven there. The rows stay in section 1 because the measurement was made in M0 — a milestone
+that reaches its definition of done is not measured against the identifiers of a later milestone.
 
 ---
 
@@ -87,10 +95,10 @@ measured is reported as "not measured", never as "met".
 | Target value | Threshold | Measured with | Result | Status |
 |---|---|---|---|---|
 | Directory listing with 10 000 entries, until the first display | < 100 ms | `cargo bench -p phocommander-integration-tests --bench directory_listing -- --warm-up-time 1 --measurement-time 5` (criterion 0.8) | criterion: `time: [58.887 ms 64.391 ms 70.880 ms]`; the median of five runs: `53.287992ms` | **met** — 64 ms against 100 ms |
-| Directory change, already loaded | < 16 ms | — | — | **not measured** — the panel state and the drawing do not exist yet (M1/M2) |
-| Key press until the visible reaction | < 50 ms | — | — | **not measured** — the surface does not exist yet |
-| Start time until the operable surface | < 800 ms (macOS, warm) | — | — | **not measured** — no macOS machine in the sandbox, the surface is a skeleton |
-| Memory in idle, two panels open | < 120 MB | — | — | **not measured** — no surface |
+| Directory change, already loaded | < 16 ms | — | — | **not measured** — no benchmark exists. The panel state and the drawing exist since M1; the measurement of a directory change is a benchmark of M2 (NFR-02). |
+| Key press until the visible reaction | < 50 ms | — | — | **not measured** — no benchmark exists. The surface and the binding exist since M1; the measurement of a key stroke is a benchmark of M2 (NFR-03). |
+| Start time until the operable surface | < 800 ms (macOS, warm) | — | — | **not measured** — no macOS machine in the sandbox, the application opens no window |
+| Memory in idle, two panels open | < 120 MB | — | — | **not measured** — no window |
 | File copy, sequential | ≥ 80 % of the sequential read/write bandwidth | — | — | **not measured** — the file operations arrive in M1 |
 | Search over 100 000 files (names) | < 30 s | — | — | **not measured** — the search arrives in M2 |
 | Archive listing, 5 000 entries | < 500 ms | — | — | **not measured** — the container readers arrive in M1 |
@@ -168,24 +176,38 @@ something to list.
 | Limitation | Reason | Planned for |
 |---|---|---|
 | The validity of the central configuration file is not covered by a requirement identifier of version 2.0. The measurements of M0 exist and are green: `config_defaults::the_shipped_configuration_file_is_accepted`, `config_defaults::the_shipped_configuration_file_holds_the_values_of_the_specification`, `config_defaults::a_configuration_file_with_an_unknown_field_is_refused`, `config_defaults::a_configuration_file_that_cannot_be_read_reports_the_path`. | Version 1.1 named this subject with FR-121, FR-122 and FR-160. Version 2.0 numbers its requirements thematically and carries no identifier for it; the file belongs to the configuration module of section 5.2 of the specification. | The owner decides whether version 2.0 needs an identifier for it |
+| The size limits of the viewer are not covered by a requirement identifier of version 2.0. The measurement of M0 exists and is green: `core_limits::the_shipped_configuration_file_carries_the_canonical_viewer_limits` (10 485 760 bytes for the file, 4 194 304 bytes for the text). | Version 2.0 names the archive limits in the hardening rule H-06 and the viewer in the requirements FR-50 to FR-55 of the milestone M1; no identifier names the two numbers themselves. | The owner decides whether version 2.0 needs an identifier for it |
 | The negative test of the extraction layer (symlink escape, SUID/SGID, the abort of the bomb) does not exist in M0 | the container readers of `phocommander-archive` arrive in M1; the crate exposes `resolve_entry_name` today | M1 — closed, see `docs/acceptance/M1-ACCEPTANCE.md` |
-| The directory model of the core crate has no test that lists a directory | the file system model arrives in M1; the test is written against the expected API and waits in `tests/integration/directory_entries.rs` | M1 |
-| The property tests cover the path resolution only | the rename rule and the key resolution do not exist yet | M1 |
-| No fuzz target exists | the parsers arrive in M1; the nightly job of the CI is in place | M1 |
-| No UI test exists | the surface is a skeleton; `egui_kittest` is in the dependency catalogue | M1/M2 |
+| The directory model of the core crate has no test that lists a directory | the file system model arrives in M1; the test is written against the expected API and waits in `tests/integration/directory_entries.rs` | M1 — the model and its unit test exist since M1 (`phocommander-core/src/local/tests.rs::a_listing_names_the_entries_of_the_directory`). **Open:** the integration file `tests/integration/directory_entries.rs` carries three tests that are never executed, because the package `phocommander-integration-tests` sets `autotests = false` and does not list the file in `tests/Cargo.toml`. |
+| The property tests cover the path resolution only | the rename rule and the key resolution do not exist yet | M1 — the key resolution is proven by `phocommander-ui/src/keymap_view.rs::the_resolution_is_deterministic`, the filter by `phocommander-ui/src/filter/property_tests.rs`. **Open:** the property test of the determinism of the rename (FR-33) does not exist, because the rename engine does not exist. |
+| No fuzz target exists | the parsers arrive in M1; the nightly job of the CI is in place | M1 — **still open.** The repository holds no `fuzz/` package, so the step `cargo +nightly fuzz run` of the nightly job of the CI has no target to run. The job carries `continue-on-error: true`, so it stays green. |
+| No UI test exists | the surface is a skeleton; `egui_kittest` is in the dependency catalogue | M1 — **closed.** Six interface tests with `egui_kittest` exist under `crates/phocommander-ui/tests/` and run green. |
 | The build for macOS, Windows, FreeBSD, NetBSD, Android and iOS was not measured | the sandbox has one Linux system and no cross toolchain; the CI matrix of the owner builds the other targets | CI of the owner, before the end of M0 |
 | The performance values other than the directory listing were not measured | the measured functions do not exist yet (surface, file operations, search, archive listing) | M1/M2 |
 | The `dpad` reachability protocol does not exist | it is a milestone of its own | M8 |
 | The CI runs the matrix jobs without the six commands of the quality job | the workflow of the owner runs `cargo test` and `cargo build --release` on the matrix, but not `fmt`, `clippy`, `deny` and `audit`; the specification asks for these in **every** run. The cross-compilation job has `continue-on-error: true`, so the platform build can never turn the build red, and the target `aarch64-apple-ios` is missing. | owner of the workflow, before the end of M0 — the ready-to-use YAML blocks are in `deliverable.md` |
 | The cargo-deny lock file needs a writable `CARGO_HOME` outside an NFS mount | a property of the sandbox, not of the project; the CI runs on a normal file system | not a project defect |
+| `cargo audit` reports four unmaintained crates in the dependency tree of the milestone M1 | `ttf-parser` (RUSTSEC-2026-0192) and `zbus_names`, `zvariant`, `zvariant_derive` (RUSTSEC-2026-0370, RUSTSEC-2026-0371, RUSTSEC-2026-0372). The crates come from the font handling of the interface and from the Wayland stack of the window system. The run exits with the code 0 and reports **no vulnerability** — an unmaintained crate is a warning, not an advisory. | the owner decides whether the warnings are acceptable for the first release |
 
-**Status of the conditions on 25.10.2026.** The workflow of the owner has changed since the evidence
-above was taken: `.github/workflows/ci.yml` now carries the jobs `quality`, `desktop` (Linux, macOS
-and Windows), `cross-compile` (Android, iOS, FreeBSD, NetBSD, Linux and the iOS simulator) without
-`continue-on-error`, `performance` and `nightly`, and the version of `cargo-deny` is verified in the
-run. The conditions themselves remain open: the telemetry gate and the link gate still run only in
-the `quality` job, not in the matrix job, and the version of `cargo-audit` is verified only in the
-matrix job. The measurements of the other platforms are still the business of the CI of the owner.
+**Status of the conditions on 25.10.2026 (verified again by the QA session qa3).** The workflow of the
+owner has changed since the evidence above was taken: `.github/workflows/ci.yml` now carries the jobs
+`quality`, `desktop` (Linux, macOS and Windows), `cross-compile` (Android, iOS, FreeBSD, NetBSD, Linux
+and the iOS simulator) without `continue-on-error`, `performance` and `nightly`, and the version of
+`cargo-deny` is verified in the run. The conditions themselves remain open and were read again in the
+file on 25.10.2026: the telemetry gate (`scripts/check-no-telemetry.sh`) and the link gate
+(`scripts/check-docs-links.py`) still run only in the `quality` job and not in the matrix job, and the
+version of `cargo-audit` is verified only in the matrix job and not in the `quality` job. The
+cross-compilation job builds without the flag `--locked`. The measurements of the other platforms are
+still the business of the CI of the owner.
+
+**What the session qa3 measured on the tree of the commit `514ca0b`.** All eighteen gates of the
+acceptance chain ran on the committed state and were green; the outputs are in
+`docs/acceptance/logs/m1-*-2026-10-25.log` and are cited by `docs/acceptance/M1-ACCEPTANCE.md`. The
+numbers differ from the ones of M0 because the tree grew: the test run counts 746 tests instead of
+129, the boundary gate checks 12 path dependencies instead of 8, the telemetry gate reads 16 manifests
+and 80 dependency names instead of 15 and 51, the link gate checks 147 links instead of 138, and
+`cargo audit` scans 574 crates instead of 214. The measurements of M0 itself were not repeated; they
+are the ones of 24.10.2026 and they stand as they are documented above.
 
 ---
 
@@ -221,6 +243,7 @@ Every command that was run for this acceptance, with its output in the repositor
 | 12 | `cargo bench -p phocommander-integration-tests --bench directory_listing` | exit code 0 — criterion `[58.887 ms 64.391 ms 70.880 ms]`, median 53.29 ms, threshold 100 ms | `docs/acceptance/logs/bench-directory-listing.log` |
 | 13 | `cargo deny --version`, `cargo audit --version` | `cargo-deny 0.20.2`, `cargo-audit-audit 0.22.2` | the versions the specification pins |
 | 14 | `rustfmt --edition 2024 --check tests/integration/directory_entries.rs` | exit code 0 — the waiting test is syntactically correct | run on 24.10.2026, see `deliverable.md` |
+| 15 | The eighteen gates of the acceptance chain on the tree of the commit `514ca0b` (build, test, format, clippy, three shell gates, seven Python gates, licence, advisory, tool versions) | eighteen runs with the exit code 0 | `docs/acceptance/logs/m1-*-2026-10-25.log`, cited by `docs/acceptance/M1-ACCEPTANCE.md` |
 
 *End of document. Every status reflects the state of the repository on 24.10.2026, corrected to the
 identifier system of version 2.0 of the specification on 25.10.2026. No row is marked as proven
