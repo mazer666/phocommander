@@ -29,7 +29,8 @@ use icu::datetime::fieldsets::{T, YMD};
 use icu::datetime::input::Time;
 use icu::datetime::{DateTimeFormatter, DateTimeFormatterPreferences, NoCalendarFormatter};
 use icu::decimal::input::Decimal;
-use icu::decimal::{DecimalFormatter, DecimalFormatterOptions, DecimalFormatterPreferences};
+use icu::decimal::options::DecimalFormatterOptions;
+use icu::decimal::{DecimalFormatter, DecimalFormatterPreferences};
 use icu::locale::Locale as IcuLocale;
 use writeable::Writeable;
 
@@ -83,28 +84,28 @@ impl LocaleFormat {
         })?;
 
         let decimal_preferences = DecimalFormatterPreferences::from(&locale);
-        let decimals = DecimalFormatter::try_new(
-            decimal_preferences,
-            DecimalFormatterOptions::default(),
-        )
-        .map_err(|error| FormatError::Unavailable {
-            locale: tag.to_string(),
-            reason: error.to_string(),
-        })?;
+        let decimals =
+            DecimalFormatter::try_new(decimal_preferences, DecimalFormatterOptions::default())
+                .map_err(|error| FormatError::Unavailable {
+                    locale: tag.to_string(),
+                    reason: error.to_string(),
+                })?;
 
         let datetime_preferences = DateTimeFormatterPreferences::from(&locale);
-        let dates = DateTimeFormatter::try_new(datetime_preferences, YMD::medium()).map_err(
-            |error| FormatError::Unavailable {
-                locale: tag.to_string(),
-                reason: error.to_string(),
-            },
-        )?;
-        let times = NoCalendarFormatter::try_new(datetime_preferences, T::hm()).map_err(|error| {
-            FormatError::Unavailable {
-                locale: tag.to_string(),
-                reason: error.to_string(),
-            }
-        })?;
+        let dates =
+            DateTimeFormatter::try_new(datetime_preferences, YMD::medium()).map_err(|error| {
+                FormatError::Unavailable {
+                    locale: tag.to_string(),
+                    reason: error.to_string(),
+                }
+            })?;
+        let times =
+            NoCalendarFormatter::try_new(datetime_preferences, T::hm()).map_err(|error| {
+                FormatError::Unavailable {
+                    locale: tag.to_string(),
+                    reason: error.to_string(),
+                }
+            })?;
 
         Ok(Self {
             tag: tag.to_string(),
@@ -332,8 +333,13 @@ mod tests {
     }
 
     /// The moment of 2024-05-17, 14:30:00 in the time zone of UTC.
+    ///
+    /// WHY: the formatter reads the moment in the time zone of UTC, because
+    ///       the platform layer has not yet supplied the offset of the time
+    ///       zone of the machine. The moment of the test is therefore the
+    ///       one that carries 14:30 in that time zone.
     fn moment() -> SystemTime {
-        UNIX_EPOCH + Duration::from_secs(1_715_934_600)
+        UNIX_EPOCH + Duration::from_secs(1_715_956_200)
     }
 
     #[test]
@@ -385,9 +391,16 @@ mod tests {
         let german = format("de-DE").date(moment());
 
         // assert
-        assert!(english.contains("5") && english.contains("17"), "{english}");
+        // WHY: English writes the month before the day, German writes the day
+        //       before the month. The test reads the order out of the text
+        //       and not out of a fixed shape, because the shape of the
+        //       medium date is a rule of the data of CLDR and not a rule of
+        //       this crate.
+        assert!(english.starts_with("May"), "{english}");
+        assert!(english.contains("17"), "{english}");
         assert!(english.contains("2024"), "{english}");
-        assert!(german.contains("17.05.2024"), "{german}");
+        assert!(german.starts_with("17"), "{german}");
+        assert!(german.contains("05.2024"), "{german}");
     }
 
     #[test]

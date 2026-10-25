@@ -8,7 +8,9 @@
 //!       not live in the drawing code — it lives in this state object, and
 //!       only the visible slice of it is handed to the widgets (FR-106,
 //!       NFR-01). The state object is therefore the answer to "what is in
-//!       this directory", and it knows nothing about pixels.
+//!       this directory", and it knows nothing about pixels. The sizes and
+//!       the dates of the rows are written by the formats of the interface
+//!       (FR-123), so that the locale of the user decides how they look.
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ui::listing::{Entry, EntryKind, ListingState};
@@ -23,6 +25,7 @@ use std::cell::Cell;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use crate::format::Formats;
 use crate::i18n::TextKey;
 
 /// The kind of an entry of a directory listing.
@@ -466,23 +469,28 @@ impl<'a> Row<'a> {
         self.entry.kind
     }
 
-    /// The size of the entry, written the way a file manager writes it.
-    pub fn size_text(&self) -> String {
+    /// The size of the entry, written the way the locale of the interface
+    /// writes sizes.
+    ///
+    /// WHY: the format of a size follows the locale of the user (FR-123).
+    ///       The row therefore asks the formats of the interface and knows
+    ///       no rule of a locale itself.
+    pub fn size_text(&self, formats: &dyn Formats) -> String {
         match self.entry.size {
-            Some(size) => format_size(size),
+            Some(size) => formats.size(size),
             None => String::new(),
         }
     }
 
-    /// The time of the last change, written the way a file manager writes
-    /// it.
+    /// The time of the last change, written the way the locale of the
+    /// interface writes dates and times.
     ///
-    /// WHY: the format is fixed and unambiguous in this milestone. The
-    /// format that follows the locale of the system belongs to the
-    /// localisation module and arrives with it (FR-123).
-    pub fn date_text(&self) -> String {
+    /// WHY: the format of a date follows the locale of the user (FR-123).
+    ///       The column of the date carries the date and the time together,
+    ///       so the row asks for both at once.
+    pub fn date_text(&self, formats: &dyn Formats) -> String {
         match self.entry.modified {
-            Some(modified) => format_time(modified),
+            Some(modified) => formats.date_time(modified),
             None => String::new(),
         }
     }
@@ -500,60 +508,6 @@ impl<'a> Row<'a> {
             EntryKind::Other => TextKey::PanelTypeOther,
         }
     }
-}
-
-/// Writes a size in bytes the way a file manager writes it.
-fn format_size(size: u64) -> String {
-    const UNITS: [&str; 5] = ["B", "KiB", "MiB", "GiB", "TiB"];
-    let mut value = size as f64;
-    let mut unit = 0;
-    while value >= 1024.0 && unit + 1 < UNITS.len() {
-        value /= 1024.0;
-        unit += 1;
-    }
-    if unit == 0 {
-        format!("{size} {}", UNITS[0])
-    } else {
-        format!("{value:.1} {}", UNITS[unit])
-    }
-}
-
-/// Writes the time of a change as `YYYY-MM-DD HH:MM`.
-fn format_time(time: SystemTime) -> String {
-    let seconds = match time.duration_since(SystemTime::UNIX_EPOCH) {
-        Ok(duration) => duration.as_secs() as i64,
-        Err(error) => -(error.duration().as_secs() as i64),
-    };
-
-    let days = seconds.div_euclid(86_400);
-    let time_of_day = seconds.rem_euclid(86_400);
-    let hour = time_of_day / 3_600;
-    let minute = (time_of_day % 3_600) / 60;
-
-    // WHY: the conversion from the day number to a date is the civil
-    // calendar of Howard Hinnant, which needs no table and no library.
-    let (year, month, day) = civil_from_days(days);
-    format!("{year:04}-{month:02}-{day:02} {hour:02}:{minute:02}")
-}
-
-/// Converts a number of days since 1970-01-01 into a civil date.
-fn civil_from_days(days: i64) -> (i64, u32, u32) {
-    let shifted = days + 719_468;
-    let era = shifted.div_euclid(146_097);
-    let day_of_era = shifted.rem_euclid(146_097);
-    let year_of_era =
-        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
-    let year = year_of_era + era * 400;
-    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let shifted_month = (5 * day_of_year + 2) / 153;
-    let day = (day_of_year - (153 * shifted_month + 2) / 5 + 1) as u32;
-    let month = if shifted_month < 10 {
-        shifted_month + 3
-    } else {
-        shifted_month - 9
-    } as u32;
-    let year = if month <= 2 { year + 1 } else { year };
-    (year, month, day)
 }
 
 #[cfg(test)]

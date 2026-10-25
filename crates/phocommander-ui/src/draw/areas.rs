@@ -332,8 +332,8 @@ pub(crate) fn draw_job_list(
             let progress = texts.get_with(
                 TextKey::PanelJobProgress,
                 &[
-                    Argument::Number(job.items_done()),
-                    Argument::Total(job.items_total()),
+                    Argument::count(job.items_done()),
+                    Argument::total(job.items_total()),
                 ],
             );
             ui.scope_builder(
@@ -385,20 +385,20 @@ pub(crate) fn draw_status_bar(
                 texts.get_with(
                     TextKey::PanelStatusFiltered,
                     &[
-                        Argument::Number(entries as u64),
-                        Argument::Total(total as u64),
+                        Argument::count(entries as u64),
+                        Argument::total(total as u64),
                     ],
                 )
             } else {
                 texts.get_with(
                     TextKey::PanelStatusEntries,
-                    &[Argument::Number(entries as u64)],
+                    &[Argument::count(entries as u64)],
                 )
             }];
             if marked > 0 {
                 parts.push(texts.get_with(
                     TextKey::PanelStatusSelected,
-                    &[Argument::Number(marked as u64)],
+                    &[Argument::count(marked as u64)],
                 ));
             }
             for part in parts {
