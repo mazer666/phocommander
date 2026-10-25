@@ -17,17 +17,26 @@ license.workspace = true
 repository.workspace = true
 publish = false
 
-[dependencies]
-phocommander-config = { path = "../../crates/phocommander-config" }
-phocommander-platform = { path = "../../platform/phocommander-platform" }
+[lib]
+# The library of the desktop build. It carries the translation of the
+# configuration into the rules of the subsystems, so that the documentation
+# examples of that translation are compiled and run with the test suite.
+name = "phocommander_desktop"
+path = "src/lib.rs"
 
-[dev-dependencies]
+[dependencies]
 # The application is the composition root of the workspace: it is the only
-# crate that may see the core crate and the configuration crate at the same
-# time, because no crate below `crates/` may depend on a sibling. The
-# integration test that holds the canonical limits and the shipped
-# configuration file against each other therefore lives here.
+# crate that may see the core crate, the configuration crate, the operations
+# crate and the viewer crate at the same time, because no crate below
+# `crates/` may depend on a sibling. The integration test that holds the
+# canonical limits and the shipped configuration file against each other
+# therefore lives here as well.
+phocommander-config = { path = "../../crates/phocommander-config" }
 phocommander-core = { path = "../../crates/phocommander-core" }
+phocommander-ops = { path = "../../crates/phocommander-ops" }
+phocommander-platform = { path = "../../platform/phocommander-platform" }
+phocommander-ui = { path = "../../crates/phocommander-ui" }
+phocommander-viewer = { path = "../../crates/phocommander-viewer" }
 
 [lints]
 workspace = true
