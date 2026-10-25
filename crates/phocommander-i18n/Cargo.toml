@@ -21,10 +21,12 @@ repository.workspace = true
 [dependencies]
 fluent = { workspace = true }
 fluent-syntax = { workspace = true }
+icu = { workspace = true }
 rust-embed = { workspace = true }
 sys-locale = { workspace = true }
 thiserror = { workspace = true }
 unic-langid = { workspace = true }
+writeable = { workspace = true }
 
 [lints]
 workspace = true

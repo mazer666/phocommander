@@ -36,51 +36,61 @@ use std::time::{Duration, Instant};
 
 use crate::edit::{Edit, EditError, JobControl, check_edit};
 use crate::error::JobError;
-use crate::executor::{self, JobResult};
-use crate::job::{Job, JobId, JobKind, JobSnapshot, JobState, Priority};
+use crate::job::{Job, JobId, JobKind, JobSnapshot, JobState};
 use crate::port::FileSystem;
-use crate::progress::{JobContext, ProgressSink, ProgressUpdate};
+
+// WHY: the module is public, so that the helpers of the worker — the loop,
+//       the choice of the next job and the listing of the unfinished jobs —
+//       can be reached from outside and can be tested on their own.
+pub mod worker;
+
+#[cfg(test)]
+// WHY: the tests of the queue live in a file of their own, so that the queue
+//       itself stays readable.
+mod tests;
+
+use worker::worker_loop;
 
 /// The longest time a worker waits before it looks at the queue again.
-const IDLE_WAIT: Duration = Duration::from_millis(20);
+pub(super) const IDLE_WAIT: Duration = Duration::from_millis(20);
 
 /// The shortest time between two reports of the same job.
 ///
 /// WHY: the specification asks for at most ten updates per second, so that
 /// a fast copy cannot flood the interface (NFR-09b).
-const REPORT_INTERVAL: Duration = Duration::from_millis(100);
+pub(super) const REPORT_INTERVAL: Duration = Duration::from_millis(100);
 
 /// One job of the queue.
 #[derive(Debug)]
-struct JobRecord {
+pub(super) struct JobRecord {
     /// The job itself.
-    job: Job,
+    pub job: Job,
 
     /// The flags the worker and the queue share.
-    control: Arc<JobControl>,
+    pub control: Arc<JobControl>,
 }
 
 /// The state the queue keeps.
 #[derive(Debug, Default)]
-struct QueueState {
+pub(super) struct QueueState {
     /// The jobs of the queue, in the order they were submitted.
-    records: Vec<JobRecord>,
+    pub records: Vec<JobRecord>,
 
     /// The number the next job receives.
-    next_id: u64,
+    pub next_id: u64,
 
     /// Whether the queue is closing.
-    shutting_down: bool,
+    pub shutting_down: bool,
 }
 
 /// The parts the workers share.
 #[derive(Debug)]
-struct QueueInner {
+pub(super) struct QueueInner {
     /// The state of the queue.
-    state: Mutex<QueueState>,
+    pub state: Mutex<QueueState>,
 
     /// Wakes a worker that waits for a job.
-    wake: Condvar,
+    pub wake: Condvar,
 }
 
 /// The queue of the background jobs.
@@ -242,8 +252,11 @@ impl JobQueue {
     /// Changes a job that has not finished.
     ///
     /// WHY: the rule of the states decides whether the change is allowed at
-    /// all, and a change to a running job waits in the control of the job
-    /// until the worker reaches the next item boundary.
+    ///       all, and a change to a running job waits in the control of the job
+    ///       until the worker reaches the next item boundary. The retry of the
+    ///       failed items is the one change that produces a new job: the
+    ///       failed items run again in a job of their own, so that the files
+    ///       that were copied already are not copied a second time.
     ///
     /// EXAMPLE:
     /// ```no_run
@@ -260,84 +273,105 @@ impl JobQueue {
     /// ));
     /// assert!(queue.apply_edit(id, Edit::Priority(Priority::High)).is_ok());
     /// ```
-    pub fn apply_edit(&self, id: JobId, edit: Edit) -> Result<(), EditError> {
-        let mut state = self.lock();
-        let record = state
-            .records
-            .iter_mut()
-            .find(|record| record.job.id == id)
-            .ok_or(EditError::UnknownJob { id: id.get() })?;
+    ///
+    /// The answer carries the identifier of the job that the retry produced,
+    /// so that the interface can show the new job in the list of the jobs.
+    pub fn apply_edit(&self, id: JobId, edit: Edit) -> Result<Option<JobId>, EditError> {
+        let mut retry: Option<Job> = None;
+        {
+            let mut state = self.lock();
+            let record = state
+                .records
+                .iter_mut()
+                .find(|record| record.job.id == id)
+                .ok_or(EditError::UnknownJob { id: id.get() })?;
 
-        check_edit(&record.job.state, &edit)?;
+            check_edit(&record.job.state, &edit)?;
 
-        match &edit {
-            Edit::Priority(priority) => {
-                record.job.priority = *priority;
-                record.job.history.push(history(&format!(
-                    "the priority changed to {}",
-                    priority.as_str()
-                )));
-                Ok(())
-            }
-            Edit::Destination(path) => match &mut record.job.kind {
-                JobKind::Copy { destination, .. } | JobKind::Move { destination, .. } => {
-                    *destination = path.clone();
+            match &edit {
+                Edit::Priority(priority) => {
+                    record.job.priority = *priority;
                     record.job.history.push(history(&format!(
-                        "the destination changed to {}",
-                        path.display()
+                        "the priority changed to {}",
+                        priority.as_str()
                     )));
-                    Ok(())
                 }
-                _ => Err(EditError::NotPossible {
-                    edit: edit.as_str(),
-                    reason: "the job does not copy into a directory".to_string(),
-                }),
-            },
-            Edit::ConflictPolicy(_) => {
-                record
-                    .job
-                    .history
-                    .push(history("the conflict policy changed"));
-                Ok(())
-            }
-            Edit::VerificationMode(mode) => match &mut record.job.kind {
-                JobKind::Copy { mode: job_mode, .. } | JobKind::Move { mode: job_mode, .. } => {
-                    *job_mode = *mode;
+                Edit::Destination(path) => match &mut record.job.kind {
+                    JobKind::Copy { destination, .. } | JobKind::Move { destination, .. } => {
+                        *destination = path.clone();
+                        record.job.history.push(history(&format!(
+                            "the destination changed to {}",
+                            path.display()
+                        )));
+                    }
+                    _ => {
+                        return Err(EditError::NotPossible {
+                            edit: edit.as_str(),
+                            reason: "the job does not copy into a directory".to_string(),
+                        });
+                    }
+                },
+                Edit::ConflictPolicy(_) => {
                     record
                         .job
                         .history
-                        .push(history(&format!("the mode changed to {}", mode.as_str())));
-                    Ok(())
+                        .push(history("the conflict policy changed"));
                 }
-                _ => Err(EditError::NotPossible {
-                    edit: edit.as_str(),
-                    reason: "the job does not copy files".to_string(),
-                }),
-            },
-            Edit::Pause => {
-                record.control.pause();
-                record.job.history.push(history("the job was paused"));
-                Ok(())
+                Edit::VerificationMode(mode) => match &mut record.job.kind {
+                    JobKind::Copy { mode: job_mode, .. } | JobKind::Move { mode: job_mode, .. } => {
+                        *job_mode = *mode;
+                        record
+                            .job
+                            .history
+                            .push(history(&format!("the mode changed to {}", mode.as_str())));
+                    }
+                    _ => {
+                        return Err(EditError::NotPossible {
+                            edit: edit.as_str(),
+                            reason: "the job does not copy files".to_string(),
+                        });
+                    }
+                },
+                Edit::Pause => {
+                    record.control.pause();
+                    record.job.history.push(history("the job was paused"));
+                }
+                Edit::Resume => {
+                    record.control.resume();
+                    record.job.history.push(history("the job was continued"));
+                }
+                Edit::Cancel => {
+                    record.control.cancel();
+                    record.job.history.push(history("the job was cancelled"));
+                }
+                Edit::RetryFailed => {
+                    // WHY: the retry is a job of its own, limited to the
+                    // items that failed. The job that failed keeps its
+                    // failures — they are its history — and the new job
+                    // touches the failed items and nothing else.
+                    let failed = record.job.failed_items.clone();
+                    if failed.is_empty() {
+                        return Err(EditError::NotPossible {
+                            edit: edit.as_str(),
+                            reason: "the job has no item that failed".to_string(),
+                        });
+                    }
+                    let kind = record.job.kind.clone();
+                    let priority = record.job.priority;
+                    record
+                        .job
+                        .history
+                        .push(history("the failed items run again in a job of their own"));
+                    retry = Some(Job::new(kind, priority).with_restricted_items(failed));
+                }
             }
-            Edit::Resume => {
-                record.control.resume();
-                record.job.history.push(history("the job was continued"));
-                Ok(())
-            }
-            Edit::Cancel => {
-                record.control.cancel();
-                record.job.history.push(history("the job was cancelled"));
-                Ok(())
-            }
-            Edit::RetryFailed => {
-                record.job.errors.clear();
-                record.job.state = JobState::Queued;
-                record
-                    .job
-                    .history
-                    .push(history("the failed items run again"));
-                Ok(())
-            }
+        }
+
+        // WHY: the new job is put into the queue outside of the lock, because
+        // the queue locks itself when a job is put in.
+        match retry {
+            Some(job) => Ok(Some(self.enqueue(job))),
+            None => Ok(None),
         }
     }
 
@@ -351,7 +385,7 @@ impl JobQueue {
     /// use phocommander_ops::fake_fs::FakeFileSystem;
     /// use phocommander_ops::queue::JobQueue;
     /// use std::sync::Arc;
-    /// use std::time::Duration;
+    /// use std::time::{Duration, Instant};
     ///
     /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
     /// assert!(queue.wait_until_idle(Duration::from_millis(50)));
@@ -432,190 +466,4 @@ fn history(message: &str) -> crate::job::HistoryEntry {
         at: std::time::SystemTime::now(),
         message: message.to_string(),
     }
-}
-
-/// The worker loop: it waits for a job and carries it out.
-fn worker_loop(inner: Arc<QueueInner>, fs: Arc<dyn FileSystem>) {
-    loop {
-        let next = {
-            let mut state = inner
-                .state
-                .lock()
-                .unwrap_or_else(|error| error.into_inner());
-            loop {
-                if state.shutting_down {
-                    return;
-                }
-                if let Some(index) = pick_next(&state) {
-                    break Some(index);
-                }
-                let (guard, _timeout) = inner
-                    .wake
-                    .wait_timeout(state, IDLE_WAIT)
-                    .unwrap_or_else(|error| error.into_inner());
-                state = guard;
-            }
-        };
-
-        let Some(index) = next else {
-            continue;
-        };
-
-        let (job, control) = {
-            let mut state = inner
-                .state
-                .lock()
-                .unwrap_or_else(|error| error.into_inner());
-            let record = &mut state.records[index];
-            record.job.state = JobState::Running;
-            (record.job.clone(), Arc::clone(&record.control))
-        };
-
-        let sink = QueueSink {
-            inner: Arc::clone(&inner),
-            id: job.id,
-            last_report: Instant::now(),
-        };
-        let mut context = JobContext::new(control.clone(), Box::new(sink));
-
-        let result = executor::execute(fs.as_ref(), &job, &mut context);
-        finish(&inner, job.id, result, &control);
-    }
-}
-
-/// Picks the job that runs next.
-///
-/// WHY: the queue runs the job with the highest priority first, and within
-/// one priority the job that was submitted first.
-fn pick_next(state: &QueueState) -> Option<usize> {
-    let mut best: Option<(usize, Priority)> = None;
-    for (index, record) in state.records.iter().enumerate() {
-        if record.job.state != JobState::Queued {
-            continue;
-        }
-        let better = match best {
-            None => true,
-            Some((_, priority)) => record.job.priority > priority,
-        };
-        if better {
-            best = Some((index, record.job.priority));
-        }
-    }
-    best.map(|(index, _)| index)
-}
-
-/// Writes the result of a job back into the queue.
-fn finish(
-    inner: &Arc<QueueInner>,
-    id: JobId,
-    result: Result<JobResult, crate::error::OpError>,
-    control: &Arc<JobControl>,
-) {
-    let mut state = inner
-        .state
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-
-    let Some(record) = state.records.iter_mut().find(|record| record.job.id == id) else {
-        return;
-    };
-
-    match result {
-        Ok(result) => {
-            record.job.state = result.state;
-            record.job.errors.extend(result.errors);
-            record.job.progress.items_done = result.items_done;
-            record.job.progress.bytes_done = result.bytes_done;
-        }
-        Err(crate::error::OpError::Cancelled) => {
-            record.job.state = JobState::Cancelled;
-        }
-        Err(error) => {
-            record.job.state = JobState::Failed;
-            record.job.errors.push(crate::error::JobError::new(
-                std::path::PathBuf::new(),
-                error.code(),
-                error.to_string(),
-                false,
-            ));
-        }
-    }
-
-    if control.is_cancelled() && record.job.state != JobState::Cancelled {
-        record.job.state = JobState::Cancelled;
-    }
-}
-
-/// The sink that writes the progress of a running job into the queue.
-struct QueueSink {
-    inner: Arc<QueueInner>,
-    id: JobId,
-    last_report: Instant,
-}
-
-impl ProgressSink for QueueSink {
-    fn report(&mut self, update: ProgressUpdate) {
-        let now = Instant::now();
-        if now.duration_since(self.last_report) < REPORT_INTERVAL {
-            return;
-        }
-        self.last_report = now;
-
-        let mut state = self
-            .inner
-            .state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        let Some(record) = state
-            .records
-            .iter_mut()
-            .find(|record| record.job.id == self.id)
-        else {
-            return;
-        };
-        record.job.progress.items_done = update.items_done;
-        record.job.progress.items_total = update.items_total;
-        record.job.progress.bytes_done = update.bytes_done;
-        record.job.progress.bytes_total = update.bytes_total;
-        record.job.progress.current_item = update.current_item;
-        record.job.progress.verification = update.verification;
-        if update.state != JobState::Running {
-            record.job.state = update.state;
-        }
-    }
-}
-
-/// The order in which the jobs of the queue are shown.
-///
-/// WHY: the job list can be reordered, filtered by state and inspected. The
-/// queue answers with the jobs in the order of their priority, so that the
-/// list shows what is going to happen next.
-pub fn ordered_snapshots(snapshots: &[JobSnapshot]) -> Vec<JobSnapshot> {
-    let mut ordered: Vec<JobSnapshot> = snapshots.to_vec();
-    ordered.sort_by(|left, right| {
-        right
-            .priority
-            .cmp(&left.priority)
-            .then_with(|| left.id.cmp(&right.id))
-    });
-    ordered
-}
-
-/// The jobs of a snapshot that have not finished.
-///
-/// WHY: the job list filters by state, and the filter that matters most is
-/// the one that shows what is still to come.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::queue::unfinished;
-///
-/// let snapshots: Vec<phocommander_ops::job::JobSnapshot> = Vec::new();
-/// assert!(unfinished(&snapshots).is_empty());
-/// ```
-pub fn unfinished(snapshots: &[JobSnapshot]) -> Vec<&JobSnapshot> {
-    snapshots
-        .iter()
-        .filter(|snapshot| !snapshot.state.is_finished())
-        .collect()
 }

@@ -99,7 +99,9 @@ pub fn execute(
             destination,
             mode,
         } => {
-            let request = CopyRequest::new(source.clone(), destination.clone()).with_mode(*mode);
+            let request = CopyRequest::new(source.clone(), destination.clone())
+                .with_mode(*mode)
+                .with_restriction(job.restricted_items.clone());
             let outcome = execute_copy(fs, &request, context)?;
             Ok(JobResult {
                 state: state_of(&outcome.errors),
@@ -113,10 +115,13 @@ pub fn execute(
             destination,
             mode,
         } => {
-            let request = CopyRequest::new(source.clone(), destination.clone()).with_mode(*mode);
+            let request = CopyRequest::new(source.clone(), destination.clone())
+                .with_mode(*mode)
+                .with_restriction(job.restricted_items.clone());
             let outcome = execute_copy(fs, &request, context)?;
             let mut errors = outcome.errors;
             if errors.is_empty()
+                && job.restricted_items.is_none()
                 && let Err(error) = remove_tree(fs, source)
             {
                 errors.push(JobError::new(

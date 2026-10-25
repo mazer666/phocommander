@@ -1,18 +1,17 @@
-//! The copy: the modes of the specification and the comparison of two trees.
+//! The copy: the modes of the specification.
 //!
-//! WHAT: the execution of a copy ([{execute_copy}]) and the comparison of two
-//!       directory trees ([{compare_trees}]). The vocabulary of the copy —
-//!       the mode, the request, the outcome, the item of a tree — lives in
-//!       the file `types.rs` of this directory, the rules of the security
-//!       section in the file `policy.rs`.
+//! WHAT: the execution of a copy ([{execute_copy}]) and the copy of a single
+//!       file ([{copy_one_file}]). The vocabulary of the copy — the mode, the
+//!       request, the outcome, the item of a tree — lives in the file
+//!       `types.rs` of this directory, the rules of the security section in
+//!       the file `policy.rs` and the atomic mode in the file `atomic.rs`.
 //! WHY: a copy is not one operation but a family of them, and the difference
 //!       between them is the difference between a fast copy and a copy that
 //!       can be trusted (section 6.9 of the specification). The user chooses
 //!       the mode; the default is the safe one, because the failure of a copy
-//!       is discovered far too late otherwise. The comparison behind every
-//!       synchronisation is the same and produces the same plan: per entry
-//!       the state is identical, different, missing-in-destination or
-//!       extra-in-destination.
+//!       is discovered far too late otherwise. The comparison of two trees
+//!       lives in the module [{crate::compare}], because the synchronisation
+//!       and the comparison of two directories use the same one.
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ops::copy::{CopyMode, CopyRequest};
@@ -28,15 +27,11 @@
 //!       operations. It never touches a file system on its own.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::error::{JobError, OpError};
 use crate::progress::JobContext;
-use crate::sync::{SyncAction, SyncPlanEntry, SyncState};
 
-/// The counter that makes the name of a temporary file unique.
-static TEMPORARY_COUNTER: AtomicU64 = AtomicU64::new(0);
-
+pub mod atomic;
 mod policy;
 mod types;
 
@@ -177,45 +172,28 @@ pub fn copy_one_file(
             }
             Ok(result.bytes)
         }
-        CopyMode::Atomic => {
-            // WHY: the atomic mode always verifies the temporary file. The
-            // promise of the mode is that a program never reads a
-            // half-written file, and that promise does not belong to the
-            // switch of the verified mode.
-            let temporary = temporary_path(target);
-            let result = fs.copy_file(source, &temporary)?;
-            let temporary_checksum = fs.checksum(&temporary)?;
-            if temporary_checksum != result.checksum {
-                let _ = fs.remove_file(&temporary);
-                context.begin_verification(1, result.bytes);
-                context.add_verified_bytes(result.bytes);
-                return Err(OpError::ChecksumMismatch {
-                    path: target.to_path_buf(),
-                });
-            }
-            fs.rename(&temporary, target)?;
-            Ok(result.bytes)
-        }
+        CopyMode::Atomic => atomic::copy_atomically(fs, source, target, context),
         _ => Err(OpError::UnsupportedMode {
             mode: mode.as_str().to_string(),
         }),
     }
 }
 
-/// The name of the temporary file of the atomic mode.
+/// Limits a list of items to the items of a restriction.
 ///
-/// WHY: the temporary file has to be in the same directory as the target,
-/// because a rename cannot cross a file system. The name starts with a dot
-/// and ends with a suffix that no user file carries, so that the temporary
-/// file is not mistaken for a result.
-fn temporary_path(target: &Path) -> PathBuf {
-    let counter = TEMPORARY_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let name = target
-        .file_name()
-        .map(|name| name.to_string_lossy().to_string())
-        .unwrap_or_else(|| "file".to_string());
-    let parent = target.parent().map(Path::to_path_buf).unwrap_or_default();
-    parent.join(format!(".{name}.phocommander-{counter}.part"))
+/// WHY: a job that repeats only its failed items carries the list of the
+///       items that failed. The list of the items of the tree is then cut
+///       down to those items, so that the files that were copied already are
+///       not copied a second time. An item that is not in the tree any more
+///       is simply not part of the copy.
+fn restrict_to(items: Vec<TreeItem>, restricted: Option<&[PathBuf]>) -> Vec<TreeItem> {
+    let Some(restricted) = restricted else {
+        return items;
+    };
+    items
+        .into_iter()
+        .filter(|item| restricted.iter().any(|path| path == &item.path))
+        .collect()
 }
 
 /// Finds a name that does not exist yet.
@@ -290,6 +268,7 @@ pub fn execute_copy(
     }
 
     let items = collect_items(fs, &request.source)?;
+    let items = restrict_to(items, request.restricted_items.as_deref());
     let total_bytes: u64 = items.iter().map(|item| item.size).sum();
     context.set_totals(items.len() as u64, total_bytes);
 
@@ -397,133 +376,6 @@ pub fn execute_copy(
     }
 
     Ok(outcome)
-}
-
-/// Compares two directory trees.
-///
-/// WHY: the comparison behind every synchronisation is the same and produces
-/// the same plan. Per entry the state is identical, different,
-/// missing-in-destination or extra-in-destination, together with the size
-/// and the time of both sides. The action that the mode derives from the
-/// state is part of the entry, so that the plan shows what the operation
-/// would do before anything is moved.
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ops::copy::{CopyMode, compare_trees};
-///
-/// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
-/// let entries = compare_trees(fs, std::path::Path::new("/photos"), std::path::Path::new("/backup"), CopyMode::SyncPreview)?;
-/// for entry in entries {
-///     println!("{:?} {:?}", entry.state, entry.relative_path);
-/// }
-/// # Ok(())
-/// # }
-/// ```
-pub fn compare_trees(
-    fs: &dyn crate::port::FileSystem,
-    source: &Path,
-    destination: &Path,
-    mode: CopyMode,
-) -> Result<Vec<SyncPlanEntry>, OpError> {
-    let source_items = collect_items(fs, source)?;
-    let destination_items = collect_items(fs, destination).unwrap_or_default();
-
-    let mut entries: Vec<SyncPlanEntry> = Vec::new();
-
-    for item in &source_items {
-        let counterpart = destination_items
-            .iter()
-            .find(|other| other.relative_path == item.relative_path);
-
-        match counterpart {
-            None => {
-                entries.push(SyncPlanEntry {
-                    relative_path: item.relative_path.clone(),
-                    kind: crate::port::EntryKind::File,
-                    state: SyncState::MissingInDestination,
-                    source_size: Some(item.size),
-                    destination_size: None,
-                    source_modified: item.modified,
-                    destination_modified: None,
-                    checksum: None,
-                    action: SyncAction::Copy,
-                });
-            }
-            Some(other) => {
-                let identical = item.size == other.size
-                    && item.modified.is_some()
-                    && item.modified == other.modified;
-                let state = if identical {
-                    SyncState::Identical
-                } else {
-                    SyncState::Different
-                };
-                let action = if identical {
-                    SyncAction::Keep
-                } else {
-                    match mode {
-                        CopyMode::SyncTwoWay => {
-                            if newer(item.modified, other.modified) {
-                                SyncAction::CopyToSource
-                            } else {
-                                SyncAction::Overwrite
-                            }
-                        }
-                        _ => SyncAction::Overwrite,
-                    }
-                };
-                entries.push(SyncPlanEntry {
-                    relative_path: item.relative_path.clone(),
-                    kind: crate::port::EntryKind::File,
-                    state,
-                    source_size: Some(item.size),
-                    destination_size: Some(other.size),
-                    source_modified: item.modified,
-                    destination_modified: other.modified,
-                    checksum: None,
-                    action,
-                });
-            }
-        }
-    }
-
-    for item in &destination_items {
-        let known = source_items
-            .iter()
-            .any(|other| other.relative_path == item.relative_path);
-        if known {
-            continue;
-        }
-        let action = if mode.deletes() {
-            SyncAction::Delete
-        } else {
-            SyncAction::Keep
-        };
-        entries.push(SyncPlanEntry {
-            relative_path: item.relative_path.clone(),
-            kind: crate::port::EntryKind::File,
-            state: SyncState::ExtraInDestination,
-            source_size: None,
-            destination_size: Some(item.size),
-            source_modified: None,
-            destination_modified: item.modified,
-            checksum: None,
-            action,
-        });
-    }
-
-    entries.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
-    Ok(entries)
-}
-
-/// Whether the first time is the newer one.
-fn newer(first: Option<std::time::SystemTime>, second: Option<std::time::SystemTime>) -> bool {
-    match (first, second) {
-        (Some(first), Some(second)) => first > second,
-        (Some(_), None) => true,
-        _ => false,
-    }
 }
 
 #[cfg(test)]

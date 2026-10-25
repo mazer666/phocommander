@@ -9,6 +9,11 @@
 //!       failure is collected. The fake answers with a checksum of its own,
 //!       because the checksum belongs to the source and a source may use any
 //!       algorithm.
+//! SIZE: the fake holds the whole file system in the memory and therefore
+//!       needs the writing, the reading, the linking, the deleting and the
+//!       failing in one place. The alternative — a fake per test — would
+//!       repeat the same hundred lines in every test file, and the tests
+//!       would differ from each other in the details that matter.
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ops::fake_fs::FakeFileSystem;
@@ -24,7 +29,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::error::OpError;
@@ -43,6 +48,8 @@ struct FakeEntry {
 pub struct FakeFileSystem {
     entries: Mutex<HashMap<PathBuf, FakeEntry>>,
     checksums: AtomicU64,
+    corrupt_next: AtomicBool,
+    failing: Mutex<std::collections::HashSet<PathBuf>>,
 }
 
 impl FakeFileSystem {
@@ -69,6 +76,8 @@ impl FakeFileSystem {
         Self {
             entries: Mutex::new(entries),
             checksums: AtomicU64::new(0),
+            corrupt_next: AtomicBool::new(false),
+            failing: Mutex::new(std::collections::HashSet::new()),
         }
     }
 
@@ -216,6 +225,99 @@ impl FakeFileSystem {
         self.lock().contains_key(path)
     }
 
+    /// The entries of a directory.
+    ///
+    /// WHY: a test has to be able to see what a directory holds, to prove
+    ///       that a failed operation leaves nothing behind. The names of the
+    ///       direct children are enough for that, and the order is the order
+    ///       of the paths, so that the result of a test does not depend on the
+    ///       order of a hash table.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_file(Path::new("/backup/a.txt"), b"a").unwrap_or_default();
+    /// assert_eq!(fs.read_dir(Path::new("/backup")).unwrap_or_default().len(), 1);
+    /// ```
+    pub fn read_dir(&self, path: &Path) -> Result<Vec<DirEntry>, OpError> {
+        let entries = self.lock();
+        if !entries.contains_key(path) {
+            return Err(OpError::NotFound {
+                path: path.to_path_buf(),
+            });
+        }
+
+        let mut listing: Vec<DirEntry> = entries
+            .iter()
+            .filter_map(|(candidate, entry)| {
+                let rest = candidate.strip_prefix(path).ok()?;
+                if rest.as_os_str().is_empty() {
+                    return None;
+                }
+                // WHY: only the direct children are listed. A file deeper in
+                //       the tree belongs to a directory that is itself a
+                //       child of the listed directory.
+                if rest.components().count() != 1 {
+                    return None;
+                }
+                Some(DirEntry {
+                    name: rest.to_string_lossy().to_string(),
+                    kind: entry.kind,
+                    size: match entry.kind {
+                        EntryKind::Directory => None,
+                        _ => Some(entry.content.len() as u64),
+                    },
+                    modified: Some(entry.modified),
+                })
+            })
+            .collect();
+        listing.sort_by(|left, right| left.name.cmp(&right.name));
+        Ok(listing)
+    }
+
+    /// Makes the copies of the given path fail.
+    ///
+    /// WHY: a job that copies a tree collects the failures and carries on
+    ///       with the next entry (FR-25). A test therefore has to be able to
+    ///       make exactly one entry fail, to prove that the other entries
+    ///       are copied and that the retry touches only the failed one
+    ///       (FR-22k).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.fail_copy_of(Path::new("/photos/a.txt"));
+    /// ```
+    pub fn fail_copy_of(&self, path: &Path) {
+        self.lock_failing().insert(path.to_path_buf());
+    }
+
+    /// Lets the copies of the given path succeed again.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.fail_copy_of(Path::new("/photos/a.txt"));
+    /// fs.stop_failing(Path::new("/photos/a.txt"));
+    /// ```
+    pub fn stop_failing(&self, path: &Path) {
+        self.lock_failing().remove(path);
+    }
+
+    /// Whether the copies of the given path fail.
+    pub fn fails_to_copy(&self, path: &Path) -> bool {
+        self.lock_failing().contains(path)
+    }
+
     /// The number of entries the file system holds.
     ///
     /// EXAMPLE:
@@ -263,9 +365,36 @@ impl FakeFileSystem {
         self.checksums.load(Ordering::Relaxed)
     }
 
+    /// Makes the next copy write content that differs from the source.
+    ///
+    /// WHY: the verified and the atomic copy compare the checksum of the
+    ///       source with the checksum of the file that was written. A test
+    ///       has to be able to produce a file that differs — a medium that
+    ///       writes the wrong bytes is exactly the case the modes exist for.
+    ///       The copy reports the checksum of the source, as a file system
+    ///       does, and writes content with a different checksum.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.corrupt_next_copy();
+    /// ```
+    pub fn corrupt_next_copy(&self) {
+        self.corrupt_next.store(true, Ordering::SeqCst);
+    }
+
     /// Locks the entries of the file system.
     fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<PathBuf, FakeEntry>> {
         self.entries
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+    }
+
+    /// The set of the paths whose copies fail.
+    fn lock_failing(&self) -> std::sync::MutexGuard<'_, std::collections::HashSet<PathBuf>> {
+        self.failing
             .lock()
             .unwrap_or_else(|error| error.into_inner())
     }
@@ -333,6 +462,15 @@ impl FileSystem for FakeFileSystem {
     }
 
     fn copy_file(&self, from: &Path, to: &Path) -> Result<crate::port::CopyResult, OpError> {
+        // WHY: the failure of one entry is asked for by the test, so that the
+        //       job can collect it and carry on with the next entry.
+        if self.fails_to_copy(from) {
+            return Err(OpError::Io {
+                path: from.to_path_buf(),
+                source: std::io::Error::other("the copy of this path was made to fail"),
+            });
+        }
+
         let mut entries = self.lock();
         let entry = entries
             .get(from)
@@ -359,11 +497,38 @@ impl FileSystem for FakeFileSystem {
 
         let bytes = content.len() as u64;
         let checksum = fake_checksum(&content);
+
+        // WHY: the corruption is applied after the checksum of the source is
+        // computed. The copy therefore reports the checksum of the source and
+        // writes content with a different checksum — the situation the
+        // verified and the atomic copy have to notice.
+        let written = if self.corrupt_next.swap(false, Ordering::SeqCst) {
+            let mut damaged = content.clone();
+            if let Some(first) = damaged.first_mut() {
+                *first = first.wrapping_add(1);
+            } else {
+                damaged.push(1);
+            }
+            damaged
+        } else {
+            content
+        };
+
+        if let Some(parent) = to.parent() {
+            entries.insert(
+                parent.to_path_buf(),
+                FakeEntry {
+                    kind: EntryKind::Directory,
+                    content: Vec::new(),
+                    modified: UNIX_EPOCH,
+                },
+            );
+        }
         entries.insert(
             to.to_path_buf(),
             FakeEntry {
                 kind: EntryKind::File,
-                content,
+                content: written,
                 modified: entry.modified,
             },
         );

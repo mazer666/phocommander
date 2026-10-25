@@ -21,7 +21,7 @@ use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 
 use zip::write::SimpleFileOptions;
-use zip::{CompressionMethod, ZipArchive, ZipWriter};
+use zip::{CompressionMethod, ZipArchive, ZipReadOptions, ZipWriter};
 
 use crate::entry::{ArchiveEntry, EntryKind};
 use crate::entry_name::resolve_entry_name;
@@ -86,10 +86,17 @@ impl ArchiveReader for ZipArchiveReader {
         // The number of entries is read before the loop, because the file of
         // an entry borrows the archive while the visitor works with it.
         let count = self.archive.len();
+
         for index in 0..count {
+            // WHY: the check of the container crate is switched off only when
+            // the visitor asks for it. The integrity check compares the
+            // checksum itself, so that its report can name the entry that
+            // differs.
+            let options =
+                ZipReadOptions::default().ignore_crc32(visitor.skips_container_checksum());
             let mut file = self
                 .archive
-                .by_index(index)
+                .by_index_with_options(index, options)
                 .map_err(|error| ArchiveError::Format {
                     reason: format!("the entry {index} could not be read: {error}"),
                 })?;
@@ -104,6 +111,10 @@ impl ArchiveReader for ZipArchiveReader {
                 EntryKind::File
             };
             let size = file.size();
+            // WHY: the ZIP container stores the CRC-32 of the content of
+            // every entry in its directory. It is the value the integrity
+            // check compares the content with.
+            let stored_checksum = Some(u64::from(file.crc32()));
 
             // The target of a link is the content of the entry. It is read
             // here, because the extraction never creates a link and therefore
@@ -121,6 +132,7 @@ impl ArchiveReader for ZipArchiveReader {
                 size,
                 mode,
                 link_target,
+                stored_checksum,
             };
 
             let content = if kind == EntryKind::File {

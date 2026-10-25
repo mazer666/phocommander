@@ -1,19 +1,20 @@
 // The catalogues and the lookup chain of Phocommander.
 // The files under `locales/` are the shipped translations.
 //
-// WHAT: the embedded Fluent catalogues ([`Translator`]) and the reasons why a
-//       catalogue could not be read ([`CatalogueError`]).
+// WHAT: the embedded Fluent catalogues ([`Translator`]), the directories that
+//       hold them ([`catalogue_directories`]) and the reasons why a catalogue
+//       could not be read ([`CatalogueError`]).
 // WHY: the interface is translated, and a missing translation must never
-//       produce an empty label: the lookup walks "requested locale → English
-//       → the key itself" (FR-122). The catalogues are embedded into the
-//       binary, so that the program works on a machine that has no
-//       configuration directory at all.
+//       produce an empty label: the lookup walks "requested locale → language
+//       fallback chain → English → the key itself" (FR-122). The catalogues
+//       are embedded into the binary, so that the program works on a machine
+//       that has no configuration directory at all.
 // EXAMPLE:
 // ```no_run
 // use phocommander_i18n::{Locale, Translator};
 //
 // # fn main() -> Result<(), phocommander_i18n::CatalogueError> {
-// let translator = Translator::new(Locale::German)?;
+// let translator = Translator::new(Locale::of("de"))?;
 // assert_eq!(translator.text("common-ok"), "OK");
 // # Ok(())
 // # }
@@ -26,7 +27,7 @@ use fluent_syntax::ast::Entry;
 use rust_embed::RustEmbed;
 use unic_langid::LanguageIdentifier;
 
-use crate::locale::Locale;
+use crate::locale::{Locale, lookup_chain};
 
 /// The embedded catalogue directory.
 #[derive(RustEmbed)]
@@ -40,17 +41,48 @@ struct Locales;
 /// the specification).
 const DOMAINS: [&str; 5] = ["common", "actions", "panel", "viewer", "palette"];
 
+/// The directories that hold the embedded catalogues.
+///
+/// WHY: the locales of the product are the directories of the catalogue and
+/// not a list in the code. A language that is added as a directory is
+/// therefore known without a change in the source code (FR-125).
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_i18n::catalogue_directories;
+///
+/// assert!(catalogue_directories().contains("en"));
+/// ```
+pub fn catalogue_directories() -> BTreeSet<String> {
+    Locales::iter()
+        .filter_map(|path| path.split('/').next().map(str::to_string))
+        .collect()
+}
+
 /// The catalogue of one locale and the lookup that reads it.
 ///
 /// WHY: the translator owns the fallback chain, so that no caller has to
 /// remember it. A key that is missing in the requested locale is looked up in
-/// English, and a key that is missing everywhere is answered with the key
-/// itself — never with an empty string.
+/// the next locale of the chain, and a key that is missing everywhere is
+/// answered with the key itself — never with an empty string.
+// WHY: the derive of Debug cannot be used here: the bundle of Fluent does not
+//       implement Debug, and the translator holds a list of bundles. The
+//       fields that carry the state are written by hand instead, so that the
+//       translator can be printed in a log without the texts of the catalogue.
 pub struct Translator {
-    locale: Locale,
-    bundle: FluentBundle<FluentResource>,
-    fallback: Option<FluentBundle<FluentResource>>,
+    chain: Vec<Locale>,
+    bundles: Vec<FluentBundle<FluentResource>>,
     keys: BTreeSet<String>,
+}
+
+impl std::fmt::Debug for Translator {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("Translator")
+            .field("chain", &self.chain)
+            .field("keys", &self.keys)
+            .finish()
+    }
 }
 
 impl Translator {
@@ -65,29 +97,51 @@ impl Translator {
     /// use phocommander_i18n::{Locale, Translator};
     ///
     /// # fn main() -> Result<(), phocommander_i18n::CatalogueError> {
-    /// let translator = Translator::new(Locale::English)?;
+    /// let translator = Translator::new(Locale::english())?;
     /// assert!(translator.has("common-ok"));
     /// # Ok(())
     /// # }
     /// ```
     pub fn new(locale: Locale) -> Result<Self, CatalogueError> {
-        let (bundle, keys) = build_bundle(locale)?;
-        let fallback = match locale.fallback() {
-            Some(fallback_locale) => Some(build_bundle(fallback_locale)?.0),
-            None => None,
-        };
+        let mut chain = vec![locale];
+        if !chain[0].is_english() {
+            chain.push(Locale::english());
+        }
+        Self::from_chain(chain)
+    }
 
-        Ok(Self {
-            locale,
-            bundle,
-            fallback,
-            keys,
-        })
+    /// Reads the catalogue of a requested locale.
+    ///
+    /// WHY: the requested locale may name a regional variant (`de-AT`) or a
+    /// language that the product does not ship. The chain of the lookup
+    /// answers both cases: the language of the request, then English, then
+    /// the key itself.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_i18n::Translator;
+    ///
+    /// # fn main() -> Result<(), phocommander_i18n::CatalogueError> {
+    /// let translator = Translator::for_requested("de-AT")?;
+    /// assert_eq!(translator.text("common-cancel"), "Abbrechen");
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn for_requested(requested: &str) -> Result<Self, CatalogueError> {
+        Self::from_chain(lookup_chain(requested))
     }
 
     /// The locale of this catalogue.
-    pub fn locale(&self) -> Locale {
-        self.locale
+    pub fn locale(&self) -> &Locale {
+        &self.chain[0]
+    }
+
+    /// The chain of locales that the lookup walks.
+    ///
+    /// WHY: the chain is the evidence of the promise of the specification
+    /// (section 8.3). A test reads it and knows which step answers a key.
+    pub fn chain(&self) -> &[Locale] {
+        &self.chain
     }
 
     /// The text of a key, or the key itself when no catalogue knows it.
@@ -100,7 +154,7 @@ impl Translator {
     /// use phocommander_i18n::{Locale, Translator};
     ///
     /// # fn main() -> Result<(), phocommander_i18n::CatalogueError> {
-    /// let translator = Translator::new(Locale::English)?;
+    /// let translator = Translator::new(Locale::english())?;
     /// assert_eq!(translator.text("a-key-that-does-not-exist"), "a-key-that-does-not-exist");
     /// # Ok(())
     /// # }
@@ -120,7 +174,7 @@ impl Translator {
     /// use phocommander_i18n::{Locale, Translator};
     ///
     /// # fn main() -> Result<(), phocommander_i18n::CatalogueError> {
-    /// let translator = Translator::new(Locale::English)?;
+    /// let translator = Translator::new(Locale::english())?;
     /// let mut args = FluentArgs::new();
     /// args.set("count", 2);
     /// assert_eq!(translator.text_with_args("panel-status-entries", &args), "2 entries");
@@ -128,14 +182,10 @@ impl Translator {
     /// # }
     /// ```
     pub fn text_with_args(&self, key: &str, args: &FluentArgs) -> String {
-        if let Some(text) = format_message(&self.bundle, key, args) {
-            return text;
-        }
-
-        if let Some(fallback) = &self.fallback
-            && let Some(text) = format_message(fallback, key, args)
-        {
-            return text;
+        for bundle in &self.bundles {
+            if let Some(text) = format_message(bundle, key, args) {
+                return text;
+            }
         }
 
         key.to_string()
@@ -153,6 +203,26 @@ impl Translator {
     pub fn keys(&self) -> &BTreeSet<String> {
         &self.keys
     }
+
+    /// Builds a translator that walks a chain of locales.
+    fn from_chain(chain: Vec<Locale>) -> Result<Self, CatalogueError> {
+        let mut bundles = Vec::new();
+        let mut keys = BTreeSet::new();
+
+        for (position, locale) in chain.iter().enumerate() {
+            let (bundle, locale_keys) = build_bundle(locale.clone())?;
+            if position == 0 {
+                keys = locale_keys;
+            }
+            bundles.push(bundle);
+        }
+
+        Ok(Self {
+            chain,
+            bundles,
+            keys,
+        })
+    }
 }
 
 /// The keys of the catalogue of a locale.
@@ -164,17 +234,34 @@ pub fn catalogue_keys(locale: Locale) -> Result<BTreeSet<String>, CatalogueError
     Ok(build_bundle(locale)?.1)
 }
 
+/// The keys of every catalogue of the product.
+///
+/// WHY: the gate of the specification walks every locale directory. The
+/// function answers with the keys of every catalogue, so that the gate does
+/// not have to know how the catalogues are stored.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_i18n::catalogue_keys_of_every_locale;
+///
+/// let keysets = catalogue_keys_of_every_locale();
+/// assert!(!keysets.is_empty());
+/// ```
+pub fn catalogue_keys_of_every_locale() -> Vec<(String, BTreeSet<String>)> {
+    Locale::all()
+        .into_iter()
+        .filter_map(|locale| match catalogue_keys(locale.clone()) {
+            Ok(keys) => Some((locale.as_str().to_string(), keys)),
+            Err(_) => None,
+        })
+        .collect()
+}
+
 /// Builds the bundle of a locale from the embedded files.
 fn build_bundle(
     locale: Locale,
 ) -> Result<(FluentBundle<FluentResource>, BTreeSet<String>), CatalogueError> {
-    let language: LanguageIdentifier =
-        locale
-            .as_str()
-            .parse()
-            .map_err(|_| CatalogueError::UnknownLocale {
-                locale: locale.as_str().to_string(),
-            })?;
+    let language: LanguageIdentifier = locale.identifier().clone();
 
     let mut bundle = FluentBundle::new(vec![language]);
     // WHY: the isolation marks of Fluent are invisible characters around

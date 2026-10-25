@@ -84,6 +84,27 @@ impl EntryKind {
     pub fn is_symlink(&self) -> bool {
         matches!(self, EntryKind::Symlink)
     }
+
+    /// The name of the kind, as the plan of a synchronisation writes it.
+    ///
+    /// WHY: the plan is a document that is quoted in an acceptance, and a
+    ///       document names the kinds of the entries with the same words as
+    ///       the interface.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::port::EntryKind;
+    ///
+    /// assert_eq!(EntryKind::Directory.as_str(), "directory");
+    /// ```
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            EntryKind::File => "file",
+            EntryKind::Directory => "directory",
+            EntryKind::Symlink => "symlink",
+            EntryKind::Other => "other",
+        }
+    }
 }
 
 /// One entry of a directory listing, as the operations need it.
@@ -263,6 +284,15 @@ mod tests {
         assert!(directory.is_directory());
         assert!(link.is_symlink());
         assert!(!link.is_file());
+    }
+
+    #[test]
+    fn the_kinds_have_the_names_the_plan_writes() {
+        // act, assert
+        assert_eq!(EntryKind::File.as_str(), "file");
+        assert_eq!(EntryKind::Directory.as_str(), "directory");
+        assert_eq!(EntryKind::Symlink.as_str(), "symlink");
+        assert_eq!(EntryKind::Other.as_str(), "other");
     }
 
     #[test]

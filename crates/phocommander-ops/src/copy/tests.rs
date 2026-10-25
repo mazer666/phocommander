@@ -12,6 +12,7 @@ use crate::edit::JobControl;
 use crate::fake_fs::FakeFileSystem;
 use crate::port::EntryKind;
 use crate::progress::{JobContext, ProgressSink, ProgressUpdate};
+use crate::temporary::temporary_path;
 use std::sync::Arc;
 
 /// A sink that discards every report.
@@ -273,4 +274,134 @@ fn the_temporary_file_of_the_atomic_mode_sits_next_to_the_target() {
         .unwrap_or_default();
     assert!(name.starts_with(".sunset.jpg."), "{name}");
     assert!(name.ends_with(".part"), "{name}");
+}
+
+#[test]
+fn the_atomic_copy_leaves_no_temporary_file_behind_when_the_comparison_fails() {
+    // WHY: the temporary file is removed on every path out of the
+    // operation — a failed comparison is one of them.
+    // arrange
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    fs.corrupt_next_copy();
+    let mut context = context();
+
+    // act
+    let result = copy_one_file(
+        &fs,
+        Path::new("/photos/a.txt"),
+        Path::new("/backup/a.txt"),
+        CopyMode::Atomic,
+        &CopyPolicy::strict(),
+        &mut context,
+    );
+
+    // assert
+    assert!(
+        matches!(result, Err(OpError::ChecksumMismatch { .. })),
+        "{result:?}"
+    );
+    let leftovers = fs
+        .read_dir(Path::new("/backup"))
+        .unwrap_or_else(|error| panic!("the directory could not be listed: {error}"));
+    assert!(leftovers.is_empty(), "{leftovers:?}");
+}
+
+#[test]
+fn the_atomic_copy_never_writes_the_target_before_the_comparison() {
+    // WHY: the target may not carry a file that was not compared. The
+    // comparison fails, and the target does not exist.
+    // arrange
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    fs.corrupt_next_copy();
+    let mut context = context();
+
+    // act
+    let _ = copy_one_file(
+        &fs,
+        Path::new("/photos/a.txt"),
+        Path::new("/backup/a.txt"),
+        CopyMode::Atomic,
+        &CopyPolicy::strict(),
+        &mut context,
+    );
+
+    // assert
+    assert!(!fs.exists(Path::new("/backup/a.txt")));
+}
+
+#[test]
+fn the_atomic_copy_replaces_the_target_only_after_the_comparison() {
+    // arrange
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    write_file(&fs, "/backup/a.txt", b"old");
+    let mut context = context();
+
+    // act
+    let result = copy_one_file(
+        &fs,
+        Path::new("/photos/a.txt"),
+        Path::new("/backup/a.txt"),
+        CopyMode::Atomic,
+        &CopyPolicy::strict(),
+        &mut context,
+    );
+
+    // assert
+    assert!(result.is_ok(), "{result:?}");
+    let content = fs
+        .read_file(Path::new("/backup/a.txt"))
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    assert_eq!(content, b"payload");
+}
+
+#[test]
+fn the_policy_that_never_overwrites_leaves_an_existing_target_alone() {
+    // WHY: the conflict policy is the same for every mode. The atomic mode
+    // does not get a name of its own.
+    // arrange
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    write_file(&fs, "/backup/a.txt", b"old");
+    let mut context = context();
+    let request = CopyRequest::new("/photos", "/backup")
+        .with_mode(CopyMode::Atomic)
+        .with_policy(ConflictPolicy::Never);
+
+    // act
+    let outcome = execute_copy(&fs, &request, &mut context)
+        .unwrap_or_else(|error| panic!("the copy failed: {error}"));
+
+    // assert
+    assert_eq!(outcome.errors.len(), 0, "{:?}", outcome.errors);
+    assert_eq!(outcome.files_skipped, 1);
+    let content = fs
+        .read_file(Path::new("/backup/a.txt"))
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    assert_eq!(content, b"old");
+}
+
+#[test]
+fn the_copy_of_a_tree_can_be_limited_to_some_items() {
+    // WHY: the retry of the failed items (FR-22k) copies the items that
+    // failed and nothing else.
+    // arrange
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"a");
+    write_file(&fs, "/photos/b.txt", b"b");
+    let mut context = context();
+    let request = CopyRequest::new("/photos", "/backup")
+        .with_mode(CopyMode::Quick)
+        .with_restricted_items(vec![Path::new("/photos/a.txt").to_path_buf()]);
+
+    // act
+    let outcome = execute_copy(&fs, &request, &mut context)
+        .unwrap_or_else(|error| panic!("the copy failed: {error}"));
+
+    // assert
+    assert_eq!(outcome.files_copied, 1);
+    assert!(fs.exists(Path::new("/backup/a.txt")));
+    assert!(!fs.exists(Path::new("/backup/b.txt")));
 }

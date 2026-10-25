@@ -55,12 +55,20 @@ toml = "1"
 # `fluent-syntax` is used to read the identifiers of the messages out of a
 # parsed catalogue, `rust-embed` embeds the `.ftl` files into the binary and
 # `sys-locale` asks the operating system for the language of the user.
+#
+# `icu` carries the rules of the locales: the separator of the decimals, the
+# order of the parts of a date and the cycle of the clock. The application
+# therefore keeps no table of separators of its own, and the formats follow
+# the locale of the system (FR-123). `writeable` writes the formatted value
+# of `icu` into a string.
 # ---------------------------------------------------------------------------
 fluent = "0.17"
 fluent-syntax = "0.12"
 rust-embed = { version = "8.13", features = ["debug-embed"] }
 sys-locale = "0.3"
 unic-langid = "0.9"
+icu = "2.4"
+writeable = "0.6"
 
 # ---------------------------------------------------------------------------
 # Error handling and diagnostics.

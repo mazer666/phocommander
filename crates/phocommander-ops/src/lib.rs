@@ -4,8 +4,11 @@
 //!       ([{copy}]), the conflict behaviour of a copy ([{edit}]), the errors
 //!       ([{error}]), the execution of a job ([{executor}]), the file system
 //!       the operations work on ([{port}]), the progress of a job
-//!       ([{progress}]), the queue that runs the jobs ([{queue}]) and the
-//!       comparison of two trees ([{sync}]).
+//!       ([{progress}]), the queue that runs the jobs ([{queue}]), the
+//!       comparison of two trees ([{compare}]), the plan of a synchronisation
+//!       ([{sync}]), the atomic multiple rename ([{rename}]), the temporary
+//!       file of the atomic copy ([{temporary}]) and the undo of a copy
+//!       ([{undo}]).
 //! WHY: every operation that can take longer than a frame belongs into the
 //!       job queue, so that the user interface stays usable while a copy is
 //!       running. The conflict behaviour — overwrite, skip, keep both, ask —
@@ -27,6 +30,7 @@
 //! assert_eq!(request.mode, CopyMode::Verified);
 //! ```
 
+pub mod compare;
 pub mod copy;
 pub mod datetime;
 pub mod edit;
@@ -38,12 +42,16 @@ pub mod names;
 pub mod port;
 pub mod progress;
 pub mod queue;
+pub mod rename;
 pub mod series;
 pub mod sync;
+pub mod temporary;
+pub mod undo;
 
+pub use compare::{ComparisonDepth, compare_directories, compare_trees, compare_trees_with};
 pub use copy::{
-    CopyMode, CopyOutcome, CopyPolicy, CopyRequest, TreeItem, collect_items, compare_trees,
-    copy_one_file, execute_copy, free_name,
+    CopyMode, CopyOutcome, CopyPolicy, CopyRequest, TreeItem, collect_items, copy_one_file,
+    execute_copy, free_name,
 };
 pub use edit::{ConflictPolicy, Edit, EditError, JobControl};
 pub use error::{JobError, JobErrorCode, NameProblem, OpError};
@@ -51,4 +59,10 @@ pub use job::{Job, JobId, JobKind, JobSnapshot, JobState, Priority};
 pub use port::{CopyResult, DirEntry, EntryKind, FileInfo, FileSystem};
 pub use progress::{JobContext, ProgressSink, ProgressUpdate};
 pub use queue::JobQueue;
-pub use sync::{Approval, SyncAction, SyncPlan, SyncPlanEntry, SyncState};
+pub use rename::{RenameConflict, RenameConflictKind, RenamePair, execute_renames, plan_renames};
+pub use sync::{
+    Approval, SyncAction, SyncPlan, SyncPlanEntry, SyncState, build_plan, build_plan_with,
+    execute_sync,
+};
+pub use temporary::{TemporaryFile, temporary_path};
+pub use undo::{UndoEntry, UndoLedger, UndoOutcome, UndoScope};

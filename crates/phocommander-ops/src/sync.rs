@@ -1,10 +1,10 @@
-//! The plan of a synchronisation and the execution of the plan.
+//! The plan of a synchronisation and the confirmation of the user.
 //!
 //! WHAT: the state of an entry in the comparison ([{SyncState}]), what the
 //!       synchronisation does with it ([{SyncAction}]), one entry of the plan
 //!       ([{SyncPlanEntry}]), the plan itself ([{SyncPlan}]), the
-//!       confirmation of the user ([{Approval}]) and the execution of the
-//!       plan ([{execute_sync}]).
+//!       confirmation of the user ([{Approval}]) and the building of the plan
+//!       ([{build_plan}]).
 //! WHY: the plan is the document the user confirms, and the same document
 //!       that the acceptance of a synchronisation refers to. No data moves
 //!       before the plan is confirmed, and 'sync-mirror' — the only mode that
@@ -28,10 +28,15 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::copy::{CopyMode, compare_trees, copy_one_file};
-use crate::error::{JobError, OpError};
-use crate::port::EntryKind;
-use crate::progress::JobContext;
+use crate::compare::ComparisonDepth;
+use crate::copy::CopyMode;
+use crate::error::OpError;
+
+pub mod document;
+pub mod execute;
+
+pub use document::{FNV_OFFSET, FNV_PRIME, write_document};
+pub use execute::execute_sync;
 
 /// The state of an entry in the comparison of two directories.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -87,6 +92,43 @@ pub enum SyncAction {
     CopyToSource,
 }
 
+impl SyncAction {
+    /// The name of the action.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::sync::SyncAction;
+    ///
+    /// assert_eq!(SyncAction::Delete.as_str(), "delete");
+    /// ```
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SyncAction::Copy => "copy",
+            SyncAction::Overwrite => "overwrite",
+            SyncAction::Delete => "delete",
+            SyncAction::Keep => "keep",
+            SyncAction::CopyToSource => "copy-to-source",
+        }
+    }
+
+    /// Whether the action moves data.
+    ///
+    /// WHY: the plan names the copies and the deletions apart, because the
+    ///       deletions are the part that the user has to see before the
+    ///       operation runs.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::sync::SyncAction;
+    ///
+    /// assert!(SyncAction::Copy.moves_data());
+    /// assert!(!SyncAction::Keep.moves_data());
+    /// ```
+    pub fn moves_data(&self) -> bool {
+        !matches!(self, SyncAction::Keep)
+    }
+}
+
 /// One entry of a synchronisation plan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyncPlanEntry {
@@ -94,7 +136,7 @@ pub struct SyncPlanEntry {
     pub relative_path: PathBuf,
 
     /// The kind of the entry.
-    pub kind: EntryKind,
+    pub kind: crate::port::EntryKind,
 
     /// The state of the entry in the comparison.
     pub state: SyncState,
@@ -111,8 +153,11 @@ pub struct SyncPlanEntry {
     /// The time of the last change in the destination.
     pub destination_modified: Option<std::time::SystemTime>,
 
-    /// The checksum of the entry, if one was computed.
+    /// The checksum of the entry in the source, if one was computed.
     pub checksum: Option<u64>,
+
+    /// The checksum of the entry in the destination, if one was computed.
+    pub destination_checksum: Option<u64>,
 
     /// What the synchronisation does with the entry.
     pub action: SyncAction,
@@ -136,6 +181,7 @@ impl SyncPlanEntry {
     ///     source_modified: None,
     ///     destination_modified: None,
     ///     checksum: None,
+    ///     destination_checksum: None,
     ///     action: SyncAction::Delete,
     /// };
     /// assert!(entry.is_deletion());
@@ -146,7 +192,7 @@ impl SyncPlanEntry {
 }
 
 /// The plan of a synchronisation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SyncPlan {
     /// The mode the plan was built for.
     pub mode: CopyMode,
@@ -205,6 +251,74 @@ impl SyncPlan {
             .filter(|entry| entry.is_deletion())
             .collect()
     }
+
+    /// The entries the plan copies.
+    ///
+    /// WHY: the plan tells the copies and the deletions apart, so that the
+    ///       user can see what the operation moves and what it removes.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::sync::{SyncPlan, build_plan};
+    /// use phocommander_ops::copy::CopyMode;
+    /// use std::path::Path;
+    ///
+    /// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+    /// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncUpdate)?;
+    /// assert_eq!(plan.copies().len(), plan.entries().len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn copies(&self) -> Vec<&SyncPlanEntry> {
+        self.entries
+            .iter()
+            .filter(|entry| entry.action.moves_data() && !entry.is_deletion())
+            .collect()
+    }
+
+    /// The document of the plan.
+    ///
+    /// WHY: the plan has to be quotable in an acceptance, so that the
+    ///       acceptance can name the plan it refers to. The document is a
+    ///       stable text: the same plan always produces the same document.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::sync::{SyncPlan, build_plan};
+    /// use phocommander_ops::copy::CopyMode;
+    /// use std::path::Path;
+    ///
+    /// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+    /// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncPreview)?;
+    /// assert!(plan.to_document().contains("phocommander-sync-plan"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn to_document(&self) -> String {
+        document::write_document(self)
+    }
+
+    /// The fingerprint of the plan.
+    ///
+    /// WHY: the fingerprint names the plan in one line. Two plans with the
+    ///       same fingerprint are the same plan, and the acceptance can cite
+    ///       the fingerprint instead of the whole document.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::sync::{SyncPlan, build_plan};
+    /// use phocommander_ops::copy::CopyMode;
+    /// use std::path::Path;
+    ///
+    /// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+    /// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncPreview)?;
+    /// assert_eq!(plan.fingerprint(), plan.fingerprint());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn fingerprint(&self) -> u64 {
+        document::fingerprint(self)
+    }
 }
 
 /// Whether the user confirmed the plan.
@@ -241,154 +355,45 @@ pub fn build_plan(
     destination: &Path,
     mode: CopyMode,
 ) -> Result<SyncPlan, OpError> {
-    let entries = compare_trees(fs, source, destination, mode)?;
-    Ok(SyncPlan {
-        mode,
-        source: source.to_path_buf(),
-        destination: destination.to_path_buf(),
-        entries,
-    })
+    build_plan_with(fs, source, destination, mode, ComparisonDepth::Metadata)
 }
 
-/// Executes the plan of a synchronisation.
+/// Compares two directories and builds the plan of the synchronisation.
 ///
-/// WHY: the plan is executed only when the user confirmed it. A plan that
-/// was not confirmed changes nothing at all — not a byte and not a deletion.
+/// WHY: the depth decides whether the content of the entries is compared as
+///       well. The plan of a synchronisation is built with the depth of the
+///       metadata, because a synchronisation copies everything that differs
+///       anyway; the plan of a *comparison* (FR-79) is built with the depth
+///       of the content, because the user asks whether the two directories
+///       hold the same files.
 ///
 /// EXAMPLE:
 /// ```no_run
+/// use phocommander_ops::compare::ComparisonDepth;
 /// use phocommander_ops::copy::CopyMode;
-/// use phocommander_ops::sync::{Approval, build_plan, execute_sync};
+/// use phocommander_ops::sync::build_plan_with;
 /// use std::path::Path;
 ///
-/// # fn run(fs: &dyn phocommander_ops::port::FileSystem, context: &mut phocommander_ops::progress::JobContext) -> Result<(), phocommander_ops::error::OpError> {
-/// let plan = build_plan(fs, Path::new("/photos"), Path::new("/backup"), CopyMode::SyncMirror)?;
-/// let outcome = execute_sync(fs, &plan, Approval::Granted, context)?;
-/// assert_eq!(outcome.errors.len(), 0);
+/// # fn run(fs: &dyn phocommander_ops::port::FileSystem) -> Result<(), phocommander_ops::error::OpError> {
+/// let plan = build_plan_with(
+///     fs,
+///     Path::new("/photos"),
+///     Path::new("/backup"),
+///     CopyMode::SyncPreview,
+///     ComparisonDepth::Content,
+/// )?;
+/// assert_eq!(plan.entries().len(), plan.entries.len());
 /// # Ok(())
 /// # }
 /// ```
-pub fn execute_sync(
+pub fn build_plan_with(
     fs: &dyn crate::port::FileSystem,
-    plan: &SyncPlan,
-    approval: Approval,
-    context: &mut JobContext,
-) -> Result<crate::copy::CopyOutcome, OpError> {
-    if approval == Approval::Withheld {
-        return Err(OpError::NotConfirmed);
-    }
-
-    let mut outcome = crate::copy::CopyOutcome::default();
-    let total_bytes: u64 = plan
-        .entries
-        .iter()
-        .filter(|entry| {
-            matches!(
-                entry.action,
-                SyncAction::Copy | SyncAction::Overwrite | SyncAction::CopyToSource
-            )
-        })
-        .filter_map(|entry| entry.source_size.or(entry.destination_size))
-        .sum();
-    context.set_totals(plan.entries.len() as u64, total_bytes);
-
-    // The deletions run from the deepest entry to the shallowest one, so that
-    // a directory is removed after the files it contains.
-    let mut order: Vec<&SyncPlanEntry> = plan.entries.iter().collect();
-    order.sort_by_key(|entry| {
-        (
-            !entry.is_deletion(),
-            std::cmp::Reverse(entry.relative_path.components().count()),
-            entry.relative_path.clone(),
-        )
-    });
-
-    for entry in order {
-        match context.checkpoint() {
-            Ok(_) => {}
-            Err(error) => return Err(error),
-        }
-
-        let name = entry
-            .relative_path
-            .file_name()
-            .map(|name| name.to_string_lossy().to_string())
-            .unwrap_or_else(|| entry.relative_path.to_string_lossy().to_string());
-        context.begin_item(&name);
-
-        let source_path = plan.source.join(&entry.relative_path);
-        let destination_path = plan.destination.join(&entry.relative_path);
-
-        let result = match entry.action {
-            SyncAction::Keep => {
-                context.finish_item();
-                context.report();
-                continue;
-            }
-            SyncAction::Delete => {
-                if entry.kind.is_directory() {
-                    fs.remove_dir(&destination_path)
-                } else {
-                    fs.remove_file(&destination_path)
-                }
-            }
-            SyncAction::Copy | SyncAction::Overwrite => {
-                if entry.kind.is_directory() {
-                    fs.create_dir_all(&destination_path)
-                } else {
-                    if let Some(parent) = destination_path.parent() {
-                        let _ = fs.create_dir_all(parent);
-                    }
-                    copy_one_file(
-                        fs,
-                        &source_path,
-                        &destination_path,
-                        CopyMode::Verified,
-                        &crate::copy::CopyPolicy::strict(),
-                        context,
-                    )
-                    .map(|_| ())
-                }
-            }
-            SyncAction::CopyToSource => {
-                if entry.kind.is_directory() {
-                    fs.create_dir_all(&source_path)
-                } else {
-                    if let Some(parent) = source_path.parent() {
-                        let _ = fs.create_dir_all(parent);
-                    }
-                    copy_one_file(
-                        fs,
-                        &destination_path,
-                        &source_path,
-                        CopyMode::Verified,
-                        &crate::copy::CopyPolicy::strict(),
-                        context,
-                    )
-                    .map(|_| ())
-                }
-            }
-        };
-
-        match result {
-            Ok(()) => {
-                outcome.files_copied += 1;
-                context.finish_item();
-            }
-            Err(error) => {
-                outcome.errors.push(JobError::new(
-                    source_path.clone(),
-                    error.code(),
-                    error.to_string(),
-                    true,
-                ));
-                context.finish_item();
-            }
-        }
-        context.report();
-    }
-
-    Ok(outcome)
+    source: &Path,
+    destination: &Path,
+    mode: CopyMode,
+    depth: ComparisonDepth,
+) -> Result<SyncPlan, OpError> {
+    crate::compare::compare_directories(fs, source, destination, mode, depth)
 }
 
 #[cfg(test)]
@@ -397,6 +402,7 @@ pub fn execute_sync(
 // there.
 mod tests {
     use super::*;
+    use crate::port::EntryKind;
 
     #[test]
     fn the_states_have_the_names_the_plan_shows() {
@@ -429,6 +435,7 @@ mod tests {
                 source_modified: None,
                 destination_modified: None,
                 checksum: None,
+                destination_checksum: None,
                 action: SyncAction::Delete,
             }],
         };
@@ -439,5 +446,6 @@ mod tests {
         // assert
         assert_eq!(deletions.len(), 1);
         assert_eq!(deletions[0].relative_path, PathBuf::from("old.txt"));
+        assert!(plan.copies().is_empty());
     }
 }

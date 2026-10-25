@@ -139,6 +139,12 @@ impl ArchiveReader for TarArchiveReader {
                 size,
                 mode,
                 link_target,
+                // WHY: the TAR format stores the checksum of the header of
+                // an entry and not the checksum of its content. The crate
+                // checks the header while it reads the entry, so a damaged
+                // header is noticed; the content itself cannot be compared
+                // with a stored value.
+                stored_checksum: None,
             };
 
             let content = if kind == EntryKind::File {

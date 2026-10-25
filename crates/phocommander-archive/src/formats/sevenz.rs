@@ -128,6 +128,10 @@ fn convert_entry(entry: &SevenZEntry) -> ArchiveEntry {
         // the permissions of the application for every entry.
         mode: None,
         link_target: None,
+        // WHY: the 7z format stores the CRC-32 of the content of every entry
+        // in its header. It is the value the integrity check compares the
+        // content with.
+        stored_checksum: entry.has_crc.then_some(entry.crc),
     }
 }
 

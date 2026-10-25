@@ -13,6 +13,12 @@
 //!       directory (the {openat} semantics of ADR-0004, decision 6). A
 //!       symbolic link that is swapped in between the check and the write
 //!       therefore cannot redirect the write out of the destination.
+//! SIZE: the hardening of the extraction belongs in one module. Every check —
+//!       the name, the canonicalisation, the budget, the permissions, the
+//!       symbolic links — is one step of the same walk, and a reader who
+//!       wants to know whether a path can escape has to see all of them at
+//!       once.
+//!
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_archive::{ExtractionOptions, extract_archive};

@@ -3,8 +3,9 @@
 //! WHAT: the hardened resolution of the names an archive contains
 //!       ([{entry_name}]), the rules of the file names of Windows
 //!       ([{windows_name}]), the limits of an extraction ([{limits}]), the
-//!       container adapters ([{formats}]) and the extraction itself
-//!       ([{extract}]).
+//!       container adapters ([{formats}]), the extraction itself
+//!       ([{extract}]) and the integrity check of an archive
+//!       ([{integrity}]).
 //! WHY: an archive is untrusted input, exactly like a file that comes from a
 //!       network source. The name of an entry decides where the entry is
 //!       written. A name that leaves the destination directory, that is an
@@ -29,14 +30,17 @@
 //! # }
 //! ```
 
+pub mod crc32;
 pub mod entry;
 pub mod entry_name;
 pub mod error;
 pub mod extract;
 pub mod formats;
+pub mod integrity;
 pub mod limits;
 pub mod windows_name;
 
+pub use crc32::Crc32;
 pub use entry::{ArchiveEntry, EntryKind};
 pub use entry_name::{EntryNameError, MAX_ENTRY_NAME_BYTES, resolve_entry_name};
 pub use error::{ArchiveError, LimitKind, RefusalReason};
@@ -47,6 +51,7 @@ pub use extract::{
 pub use formats::{
     ArchiveReader, ArchiveWriter, ContainerFormat, EntryVisitor, TarCompression, VisitDecision,
 };
+pub use integrity::{IntegrityEntry, IntegrityReport, IntegrityState, verify_archive};
 pub use limits::{
     EXTRACTED_DIRECTORY_MODE, EXTRACTED_FILE_MODE, ExtractionLimits, MAX_ARCHIVE_ENTRIES,
     MAX_EXTRACTED_BYTES, MAX_SINGLE_ENTRY_BYTES,

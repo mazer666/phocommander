@@ -10,6 +10,11 @@
 //!       flags the user can set — pause and cancel — so that a change to a
 //!       running job takes effect at the next item boundary and never in the
 //!       middle of a file that is being written.
+//! SIZE: the report, the channel and the context of a running job describe
+//!       one contract. A reader who wants to know what a running job can
+//!       see and what it can change has to see the report, the sink and the
+//!       context at the same time.
+//!
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ops::edit::JobControl;

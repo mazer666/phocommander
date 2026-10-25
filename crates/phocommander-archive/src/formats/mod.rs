@@ -87,6 +87,18 @@ pub trait EntryVisitor {
         entry: &ArchiveEntry,
         content: Option<&mut dyn Read>,
     ) -> Result<VisitDecision, ArchiveError>;
+
+    /// Whether the container crate may skip the check of its own checksum.
+    ///
+    /// WHY: the container crates check the checksum of an entry while they
+    ///       read it and report a failure without naming the entry. The
+    ///       integrity check of this project compares the checksum itself, so
+    ///       that its report can name the entry that differs and the value it
+    ///       found. The extraction leaves the check of the container switched
+    ///       on — two checks are better than one.
+    fn skips_container_checksum(&self) -> bool {
+        false
+    }
 }
 
 /// A reader of one container format.

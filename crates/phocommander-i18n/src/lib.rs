@@ -17,7 +17,7 @@
 //! use phocommander_i18n::{Locale, Translator};
 //!
 //! # fn main() -> Result<(), phocommander_i18n::CatalogueError> {
-//! let translator = Translator::new(Locale::German)?;
+//! let translator = Translator::new(Locale::of("de"))?;
 //! assert_eq!(translator.text("common-cancel"), "Abbrechen");
 //! # Ok(())
 //! # }
@@ -31,8 +31,11 @@
 pub mod catalogue;
 pub mod locale;
 
-pub use catalogue::{CatalogueError, Translator, catalogue_keys};
-pub use locale::Locale;
+pub use catalogue::{
+    CatalogueError, Translator, catalogue_directories, catalogue_keys,
+    catalogue_keys_of_every_locale,
+};
+pub use locale::{Locale, lookup_chain};
 
 #[cfg(test)]
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
@@ -44,7 +47,11 @@ mod tests {
     use super::*;
 
     /// The locales that ship with the product.
-    fn locales() -> [Locale; 2] {
+    ///
+    /// WHY: the list grows with every catalogue directory. A test that names
+    ///       a fixed number of locales would fail as soon as a language is
+    ///       added, and it would fail for the wrong reason.
+    fn locales() -> Vec<Locale> {
         Locale::all()
     }
 
@@ -54,11 +61,11 @@ mod tests {
         // translation that is missing is a defect that the gate of the
         // specification reports.
         // arrange
-        let english = match catalogue_keys(Locale::English) {
+        let english = match catalogue_keys(Locale::english()) {
             Ok(keys) => keys,
             Err(error) => panic!("the English catalogue should be readable: {error}"),
         };
-        let german = match catalogue_keys(Locale::German) {
+        let german = match catalogue_keys(Locale::of("de")) {
             Ok(keys) => keys,
             Err(error) => panic!("the German catalogue should be readable: {error}"),
         };
@@ -82,14 +89,14 @@ mod tests {
     #[test]
     fn every_locale_carries_a_translation_for_every_key() {
         // arrange
-        let expected = match catalogue_keys(Locale::English) {
+        let expected = match catalogue_keys(Locale::english()) {
             Ok(keys) => keys,
             Err(error) => panic!("the English catalogue should be readable: {error}"),
         };
 
         // act
         for locale in locales() {
-            let translator = match Translator::new(locale) {
+            let translator = match Translator::new(locale.clone()) {
                 Ok(translator) => translator,
                 Err(error) => panic!("the catalogue should be readable: {error}"),
             };
@@ -107,7 +114,7 @@ mod tests {
     #[test]
     fn a_missing_key_falls_back_to_the_key_itself() {
         // arrange
-        let translator = match Translator::new(Locale::English) {
+        let translator = match Translator::new(Locale::english()) {
             Ok(translator) => translator,
             Err(error) => panic!("the catalogue should be readable: {error}"),
         };
@@ -125,7 +132,7 @@ mod tests {
         // WHY: FR-122 — a missing translation falls back to English and then
         // to the key, never to an empty string.
         // arrange
-        let translator = match Translator::new(Locale::German) {
+        let translator = match Translator::new(Locale::of("de")) {
             Ok(translator) => translator,
             Err(error) => panic!("the catalogue should be readable: {error}"),
         };
@@ -140,7 +147,7 @@ mod tests {
     #[test]
     fn the_plural_form_follows_the_number() {
         // arrange
-        let translator = match Translator::new(Locale::English) {
+        let translator = match Translator::new(Locale::english()) {
             Ok(translator) => translator,
             Err(error) => panic!("the catalogue should be readable: {error}"),
         };

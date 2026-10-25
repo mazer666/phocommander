@@ -128,6 +128,17 @@ pub enum OpError {
         mode: String,
     },
 
+    /// The rename of a selection was refused because of a conflict.
+    ///
+    /// WHY: the rename of a selection is atomic (FR-41). A selection with a
+    ///       conflict is refused as a whole, and the error names every
+    ///       conflict, so that the interface can show the list.
+    #[error("the rename was refused: {}", conflicts.join(", "))]
+    RenameConflict {
+        /// The description of every conflict.
+        conflicts: Vec<String>,
+    },
+
     /// The operation was cancelled.
     #[error("the operation was cancelled")]
     Cancelled,
@@ -167,6 +178,7 @@ impl OpError {
             OpError::NotConfirmed => JobErrorCode::NotConfirmed,
             OpError::ChecksumMismatch { .. } => JobErrorCode::ChecksumMismatch,
             OpError::UnsupportedMode { .. } => JobErrorCode::ModeUnsupported,
+            OpError::RenameConflict { .. } => JobErrorCode::RenameConflict,
             OpError::Cancelled => JobErrorCode::Cancelled,
         }
     }
@@ -204,6 +216,9 @@ pub enum JobErrorCode {
 
     /// The mode does not belong to the operation.
     ModeUnsupported,
+
+    /// The rename of a selection was refused because of a conflict.
+    RenameConflict,
 }
 
 impl JobErrorCode {
@@ -232,6 +247,7 @@ impl JobErrorCode {
             JobErrorCode::NotFound => "io.read",
             JobErrorCode::AlreadyExists => "job.already_exists",
             JobErrorCode::ModeUnsupported => "job.unsupported_mode",
+            JobErrorCode::RenameConflict => "job.rename_conflict",
         }
     }
 
@@ -258,6 +274,7 @@ impl JobErrorCode {
             JobErrorCode::NotFound => 1004,
             JobErrorCode::AlreadyExists => 1304,
             JobErrorCode::ModeUnsupported => 1305,
+            JobErrorCode::RenameConflict => 1306,
         }
     }
 }

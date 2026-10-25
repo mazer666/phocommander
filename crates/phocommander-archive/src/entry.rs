@@ -18,6 +18,7 @@
 //!     mode: Some(0o100_644),
 //!     link_target: None,
 //!     name_is_lossy: false,
+//!     stored_checksum: None,
 //! };
 //! assert!(entry.is_file());
 //! ```
@@ -68,6 +69,14 @@ pub struct ArchiveEntry {
 
     /// The target of the link, if the entry is a link.
     pub link_target: Option<String>,
+
+    /// The checksum the container stores for the content of the entry.
+    ///
+    /// WHY: the ZIP format and the 7z format store a CRC-32 with every
+    ///       entry; the TAR format stores none. The integrity check of the
+    ///       archive compares the checksum of the content with this value,
+    ///       and an entry without a value cannot be compared.
+    pub stored_checksum: Option<u64>,
 }
 
 impl ArchiveEntry {
@@ -84,6 +93,7 @@ impl ArchiveEntry {
     /// #     size: 0,
     /// #     mode: None,
     /// #     link_target: None,
+    /// #     stored_checksum: None,
     /// # };
     /// assert!(entry.is_file());
     /// ```
@@ -104,6 +114,7 @@ impl ArchiveEntry {
     /// #     size: 0,
     /// #     mode: None,
     /// #     link_target: None,
+    /// #     stored_checksum: None,
     /// # };
     /// assert!(entry.is_directory());
     /// ```
@@ -124,6 +135,7 @@ impl ArchiveEntry {
     /// #     size: 0,
     /// #     mode: None,
     /// #     link_target: Some("../outside".to_string()),
+    /// #     stored_checksum: None,
     /// # };
     /// assert!(entry.is_symlink());
     /// ```

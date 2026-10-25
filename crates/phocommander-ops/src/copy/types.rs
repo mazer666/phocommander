@@ -151,6 +151,14 @@ pub struct CopyRequest {
 
     /// The rules that decide how the copy treats the files it copies.
     pub rules: CopyPolicy,
+
+    /// The items the copy is limited to, if it is limited to some.
+    ///
+    /// WHY: a job that repeats only its failed items (FR-22k) carries the
+    ///       list of the items that failed. The copy then touches those
+    ///       items and nothing else — the files that were copied already are
+    ///       not copied a second time.
+    pub restricted_items: Option<Vec<PathBuf>>,
 }
 
 impl CopyRequest {
@@ -171,6 +179,7 @@ impl CopyRequest {
             mode: CopyMode::default(),
             policy: ConflictPolicy::default(),
             rules: CopyPolicy::strict(),
+            restricted_items: None,
         }
     }
 
@@ -220,6 +229,45 @@ impl CopyRequest {
     /// ```
     pub fn with_rules(mut self, rules: CopyPolicy) -> Self {
         self.rules = rules;
+        self
+    }
+
+    /// Limits the copy to the given items.
+    ///
+    /// WHY: the request of a retry carries the items that failed. The copy
+    ///       then touches those items and nothing else.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::copy::CopyRequest;
+    /// use std::path::PathBuf;
+    ///
+    /// let request = CopyRequest::new("/photos", "/backup")
+    ///     .with_restricted_items(vec![PathBuf::from("/photos/a.txt")]);
+    /// assert_eq!(request.restricted_items.map(|items| items.len()), Some(1));
+    /// ```
+    pub fn with_restricted_items(mut self, items: Vec<PathBuf>) -> Self {
+        self.restricted_items = Some(items);
+        self
+    }
+
+    /// Limits the copy to the given items, if there are any.
+    ///
+    /// WHY: the executor builds the request of a job, and a job knows whether
+    ///       it is limited to some items. The method takes the value as it
+    ///       is, so that the executor does not have to ask twice.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::copy::CopyRequest;
+    /// use std::path::PathBuf;
+    ///
+    /// let request = CopyRequest::new("/photos", "/backup")
+    ///     .with_restriction(Some(vec![PathBuf::from("/photos/a.txt")]));
+    /// assert_eq!(request.restricted_items.map(|items| items.len()), Some(1));
+    /// ```
+    pub fn with_restriction(mut self, items: Option<Vec<PathBuf>>) -> Self {
+        self.restricted_items = items;
         self
     }
 }

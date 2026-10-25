@@ -311,6 +311,19 @@ pub struct JobSnapshot {
 
     /// The history of the job.
     pub history: Vec<HistoryEntry>,
+
+    /// The items that failed.
+    ///
+    /// WHY: a job that repeats only its failed items (FR-22k) has to know
+    ///       which items those are. The list is filled from the failures the
+    ///       job collected, and it is the only thing a retry uses.
+    pub failed_items: Vec<PathBuf>,
+
+    /// The items this job is limited to, if it is limited to some.
+    ///
+    /// WHY: `None` means that the job touches every item of its work. A
+    ///       value means that the job touches these items and nothing else.
+    pub restricted_items: Option<Vec<PathBuf>>,
 }
 
 /// A job of the queue.
@@ -336,6 +349,12 @@ pub struct Job {
 
     /// The history of the job.
     pub history: Vec<HistoryEntry>,
+
+    /// The items that failed.
+    pub failed_items: Vec<PathBuf>,
+
+    /// The items this job is limited to, if it is limited to some.
+    pub restricted_items: Option<Vec<PathBuf>>,
 }
 
 impl Job {
@@ -357,7 +376,29 @@ impl Job {
             progress: JobProgress::default(),
             errors: Vec::new(),
             history: Vec::new(),
+            failed_items: Vec::new(),
+            restricted_items: None,
         }
+    }
+
+    /// Limits the job to the given items.
+    ///
+    /// WHY: the job that repeats the failed items of another job is limited
+    ///       to those items. The files that were copied already are not
+    ///       copied a second time.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::job::{Job, JobKind, Priority};
+    /// use std::path::PathBuf;
+    ///
+    /// let job = Job::new(JobKind::Delete { paths: Vec::new() }, Priority::Normal)
+    ///     .with_restricted_items(vec![PathBuf::from("/photos/a.txt")]);
+    /// assert_eq!(job.restricted_items().map(|items| items.len()), Some(1));
+    /// ```
+    pub fn with_restricted_items(mut self, items: Vec<PathBuf>) -> Self {
+        self.restricted_items = Some(items);
+        self
     }
 
     /// The identifier of the job.
@@ -384,6 +425,32 @@ impl Job {
     /// ```
     pub fn state(&self) -> JobState {
         self.state
+    }
+
+    /// The items that failed.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::job::{Job, JobKind, Priority};
+    ///
+    /// let job = Job::new(JobKind::Delete { paths: Vec::new() }, Priority::Normal);
+    /// assert!(job.failed_items().is_empty());
+    /// ```
+    pub fn failed_items(&self) -> &[PathBuf] {
+        &self.failed_items
+    }
+
+    /// The items this job is limited to, if it is limited to some.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::job::{Job, JobKind, Priority};
+    ///
+    /// let job = Job::new(JobKind::Delete { paths: Vec::new() }, Priority::Normal);
+    /// assert!(job.restricted_items().is_none());
+    /// ```
+    pub fn restricted_items(&self) -> Option<&[PathBuf]> {
+        self.restricted_items.as_deref()
     }
 
     /// The failures the job collected.
@@ -417,6 +484,8 @@ impl Job {
             progress: self.progress.clone(),
             errors: self.errors.clone(),
             history: self.history.clone(),
+            failed_items: self.failed_items.clone(),
+            restricted_items: self.restricted_items.clone(),
         }
     }
 }
@@ -453,6 +522,37 @@ mod tests {
         assert_eq!(snapshot.state, JobState::Running);
         assert_eq!(snapshot.priority, Priority::High);
         assert_eq!(snapshot.id, job.id);
+    }
+
+    #[test]
+    fn a_job_remembers_the_items_that_failed() {
+        // arrange
+        let mut job = Job::new(Delete { paths: Vec::new() }, Priority::Normal);
+        job.failed_items.push(PathBuf::from("/photos/a.txt"));
+
+        // act
+        let snapshot = job.snapshot();
+
+        // assert
+        assert_eq!(job.failed_items(), &[PathBuf::from("/photos/a.txt")]);
+        assert_eq!(snapshot.failed_items.len(), 1);
+    }
+
+    #[test]
+    fn a_job_can_be_limited_to_some_items() {
+        // act
+        let job = Job::new(Delete { paths: Vec::new() }, Priority::Normal)
+            .with_restricted_items(vec![PathBuf::from("/photos/a.txt")]);
+
+        // assert
+        assert_eq!(
+            job.restricted_items(),
+            Some(&[PathBuf::from("/photos/a.txt")][..])
+        );
+        assert_eq!(
+            job.snapshot().restricted_items.map(|items| items.len()),
+            Some(1)
+        );
     }
 
     #[test]

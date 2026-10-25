@@ -90,6 +90,21 @@
 # The specification lists only the forward direction; this is the symmetric
 # completion and the first point to adjust if it turns out to be wrong.
 "panel.prev_tab" = "Ctrl+Shift+Tab"
+# Open a new tab in the active pane.
+"panel.tab.new" = "Ctrl+T"
+# Close the tab that is shown in the active pane.
+"panel.tab.close" = "Ctrl+W"
+# Move the tab that is shown into the other pane.
+"panel.tab.move_to_other" = "Ctrl+Shift+M"
+# Switch the arrangement of the two panes: next to each other or below
+# each other. The state of the panes does not change with it.
+"panel.layout.toggle" = "Ctrl+Shift+L"
+# Show or hide the tree of the directories in the active pane.
+"panel.tree.toggle" = "Ctrl+B"
+# Show or hide the quick view of the marked file.
+"panel.quick_view.toggle" = "Ctrl+Q"
+# Show or hide the list of the jobs.
+"panel.job_list.toggle" = "Ctrl+J"
 # Toggle the marking of the entry under the cursor.
 "selection.toggle" = "Ins"
 # Select all entries of the active pane.
@@ -171,6 +186,20 @@
 "panel.next_tab" = "palette:panel.next_tab"
 # Switch to the previous tab of the active pane.
 "panel.prev_tab" = "palette:panel.prev_tab"
+# Open a new tab in the active pane.
+"panel.tab.new" = "palette:panel.tab.new"
+# Close the tab that is shown in the active pane.
+"panel.tab.close" = "palette:panel.tab.close"
+# Move the tab that is shown into the other pane.
+"panel.tab.move_to_other" = "palette:panel.tab.move_to_other"
+# Switch the arrangement of the two panes.
+"panel.layout.toggle" = "palette:panel.layout.toggle"
+# Show or hide the tree of the directories in the active pane.
+"panel.tree.toggle" = "palette:panel.tree.toggle"
+# Show or hide the quick view of the marked file.
+"panel.quick_view.toggle" = "palette:panel.quick_view.toggle"
+# Show or hide the list of the jobs.
+"panel.job_list.toggle" = "palette:panel.job_list.toggle"
 # Toggle the marking of the entry under the focus.
 "selection.toggle" = "palette:selection.toggle"
 # Select all entries of the active pane.
@@ -251,6 +280,20 @@
 "panel.next_tab" = "palette:panel.next_tab"
 # Switch to the previous tab of the active pane.
 "panel.prev_tab" = "palette:panel.prev_tab"
+# Open a new tab in the active pane.
+"panel.tab.new" = "palette:panel.tab.new"
+# Close the tab that is shown in the active pane.
+"panel.tab.close" = "palette:panel.tab.close"
+# Move the tab that is shown into the other pane.
+"panel.tab.move_to_other" = "palette:panel.tab.move_to_other"
+# Switch the arrangement of the two panes.
+"panel.layout.toggle" = "palette:panel.layout.toggle"
+# Show or hide the tree of the directories in the active pane.
+"panel.tree.toggle" = "palette:panel.tree.toggle"
+# Show or hide the quick view of the marked file.
+"panel.quick_view.toggle" = "palette:panel.quick_view.toggle"
+# Show or hide the list of the jobs.
+"panel.job_list.toggle" = "palette:panel.job_list.toggle"
 # Toggle the marking of the entry under the focus — bound to the grip.
 "selection.toggle" = "Grip"
 # Select all entries of the active pane.
