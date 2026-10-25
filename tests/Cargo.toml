@@ -39,6 +39,7 @@ phocommander-archive = { path = "../crates/phocommander-archive" }
 phocommander-config = { path = "../crates/phocommander-config" }
 phocommander-core = { path = "../crates/phocommander-core" }
 phocommander-keymap = { path = "../crates/phocommander-keymap" }
+phocommander-ui = { path = "../crates/phocommander-ui" }
 criterion = { workspace = true }
 proptest = { workspace = true }
 toml = { workspace = true }
@@ -60,6 +61,14 @@ path = "integration/core_limits.rs"
 name = "keymap_bindings"
 path = "integration/keymap_bindings.rs"
 
+[[test]]
+name = "security_profiles"
+path = "integration/security_profiles.rs"
+
+[[test]]
+name = "the_filter_searches_deeper"
+path = "integration/the_filter_searches_deeper.rs"
+
 # ---------------------------------------------------------------------------
 # The negative tests. They perform the attack and prove that the defence
 # holds — a positive test proves nothing about a hardening.
@@ -72,6 +81,14 @@ path = "security/path_traversal.rs"
 [[test]]
 name = "security_decompression_bomb"
 path = "security/decompression_bomb.rs"
+
+[[test]]
+name = "security_extraction_hardening"
+path = "security/extraction_hardening.rs"
+
+[[test]]
+name = "security_extraction_limits"
+path = "security/extraction_limits.rs"
 
 # ---------------------------------------------------------------------------
 # The benchmark. The file lives in `benches/` at the root of the repository,
