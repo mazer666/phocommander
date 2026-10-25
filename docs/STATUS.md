@@ -82,7 +82,8 @@ gefunden — im Code und in den Tests:
 23. Das Modul `format` des i18n-Crates war **nie kompiliert** — es war nicht deklariert. Der erste Build des Crates wäre rot gewesen.
 23. Fluent registriert seine eingebauten Funktionen **nicht** von selbst. `NUMBER($count)` war deshalb eine unbekannte Funktion, und die Nachricht fiel auf den Schlüssel zurück.
 24. Fluent 0.16 schreibt eine Zahl **ohne** die Trennzeichen der Sprache — das Feld `use_grouping` existiert, wird aber nicht benutzt. Die Zahlen der Oberfläche tragen die Trennzeichen jetzt, weil der i18n-Crate sie selbst mit den Regeln von CLDR formatiert.
-25. Ein Argument der Oberfläche hatte **keinen Namen**. Der Katalog konnte die Werte nicht zuordnen, und ein Argument, das zwei Zahlen trägt, wäre nicht zuordenbar gewesen.
+25. Ein Argument der Oberfläche hatte **keinen Namen**.
+27. **Das Standard-Input der Shell trägt die Ausgabe des vorherigen Kommandos.** `rustc -` liest es als Rust-Quelltext und stirbt mit „unterminated character literal". Das war die Ursache der „Operation aborted"-Meldungen — **keine** Speicherprobleme, sondern ein verseuchtes stdin. Jeder cargo-Aufruf bekommt jetzt `< /dev/null`. Der Katalog konnte die Werte nicht zuordnen, und ein Argument, das zwei Zahlen trägt, wäre nicht zuordenbar gewesen.
 
 ## 5. Die Regeln, die aus diesem Meilenstein folgen
 
@@ -96,6 +97,7 @@ genauso leicht zu brechen sind:
 | **Die Agenten bauen nicht.** Sie schreiben, die Leitende Instanz baut und prüft. | Ein Bau in einem fremden Verzeichnis frisst 1 bis 5 GB und blockiert das NAS-Volume, auf dem das Repository liegt. |
 | **Nach jedem Meilenstein wird aufgeräumt.** | Am Ende dieses Tages lagen 20 GB Target-Verzeichnisse in `/tmp`. |
 | **Nach jedem `git reset` das Ausführungsbit wiederherstellen.** | `./scripts/restore-executable-bits.sh` — der Weg, der den Inhalt schreibt, trägt den Modus nicht. |
+| **Jeder cargo-Aufruf bekommt `< /dev/null`.** | Das Standard-Input der Shell trägt die Ausgabe des vorherigen Kommandos, und `rustc -` liest sie als Rust-Quelltext. |
 | **Ein Gate, das nie rot war, ist ein Wunsch.** | Jedes neue Gate gehört in `check-gates-negative.sh`, mit einem eingebauten Defekt. |
 
 ## 6. Was als Nächstes kommt
