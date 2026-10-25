@@ -63,3 +63,13 @@ panel-quick-view-empty = Marquez un fichier pour voir son aperçu
 panel-quick-view-title = Aperçu rapide
 panel-tab-close = Fermer l’onglet
 panel-tree-title = Arborescence
+
+# The messages of the errors of the surface.
+
+error-binding-empty = La liaison est vide.
+error-binding-key-twice = La liaison nomme la touche { $key } deux fois.
+error-binding-no-key = La liaison ne nomme aucune touche.
+error-binding-empty-palette-entry = L'entrée de la palette d'actions ne porte aucun nom.
+error-binding-unknown-action = L'action { $identifier } ne fait pas partie du catalogue.
+error-binding-unknown-key = La liaison { $binding } nomme la touche inconnue { $key }.
+error-transfer-same-panel = Le panneau { $side } ne peut pas être à la fois la source et la destination d'un transfert.
