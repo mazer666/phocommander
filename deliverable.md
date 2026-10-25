@@ -1,364 +1,528 @@
-# Übergabe QA & Test-Engineer — Abnahme M1 und Korrektur der M0-Abnahme
+# Übergabe — Core Engineer: die Namensbildung der Mehrfachumbenennung (M1)
 
 | Feld | Wert |
 |---|---|
-| Rolle | QA & Test Engineer (Prüfstand, Testevidenz, CI-Gate, unabhängige Abnahme) |
-| Repository | `/workspace/phocommander`, Branch `main`, kein Commit, kein Push, kein Tag |
-| Arbeitsverzeichnis | `/workspace/phocommander` (Dateien liegen im Repository) |
-| Sitzungsdatum | 24./25.10.2026 |
-| Spezifikation | `docs/REQUIREMENTS.md` **Fassung 2.0** (24.10.2026, 1714 Zeilen) |
-| Werkzeuge | Rust 1.99.1 / cargo 1.99.1, `cargo-deny 0.20.2`, `cargo-audit 0.22.2`, Python 3.11.2 |
-| Bauumgebung | `CARGO_HOME=/tmp/qa2-cargo`, `CARGO_TARGET_DIR=/tmp/qa2-target` (lokale Platte, NFS-sicher), `CARGO_BUILD_JOBS=1` |
+| Rolle | Core Engineer (Namensbildung, Auftrags-Wahrheit, keine Oberfläche) |
+| Repository | `/workspace/phocommander`, Branch `main`, **kein** Commit, **kein** Push, **kein** Tag |
+| Grundlage | `docs/REQUIREMENTS.md` §4.4 (FR-30 bis FR-41), `docs/ACCEPTANCE-CRITERIA.md` (AC-M1-19 bis AC-M1-29, AC-M2-12), `docs/glossary.md`, `docs/user-guide/multi-rename.en.md`, `docs/ARCHITECTURE.md` §9 |
+| Umfang | FR-30, FR-31, FR-32, FR-33, FR-37, FR-38, FR-39 — **plus** die Engine-Hälfte von FR-40 (die Meldung der verbotenen Zeichen) |
+| Nicht im Umfang | FR-34 (Vorschau), FR-35 (Konfliktsprung-Liste), FR-36 (gespeicherte Vorlagen) — das ist der Dialog und kommt als eigener Auftrag |
+| Werkzeuge | Rust 1.99.1 (installiert, **nicht** zum Bauen benutzt), Python 3.11.2, bash |
+| Bauumgebung | **kein** Build ausgelöst — siehe Abschnitt 5 |
+
+> **Hinweis zur Ablage:** `deliverable.md` wird im gemeinsam benutzten Repository von mehreren
+> Rollen parallel beschrieben. Dieser Text liegt deshalb zusätzlich unter
+> **`deliverable.core-engineer-rename.md`** (identisch). Der vorherige Inhalt von `deliverable.md`
+> (Abnahme M1 der QA-Rolle) ist damit überschrieben — die QA-Übergabe liegt weiterhin als
+> `deliverable-qa-test-engineer.md` vor.
 
 ---
 
-## 0. Kurzfassung für den Teamleiter
+## 1. Kurzfassung
 
-**Ergebnis der Abnahme M1: nicht angenommen.** Die negativen Sicherheitstests der Härtungsregeln
-H-02 bis H-06 existieren und sind grün (12 Tests, 0 Fehler). Die zehn Gates, die keinen Build
-brauchen, sind grün, und ihr Negativtest beweist 25 Läufe „rot und wieder grün". Der
-workspace-weite Testlauf ist **nicht gemessen**: die Sandbox hat 3 GB RAM, drei Sessions bauten
-gleichzeitig, der Linker wurde vom OOM-Killer beendet (`ld terminated with signal 9 [Killed]`).
-Elf Anforderungen des Meilenstands M1 haben gar keinen Test — darunter die **gesamte
-Umbenennungs-Engine** (FR-30 bis FR-35) und damit auch der von der Spezifikation verlangte
-**Property-Test der Determinismus (FR-33)**.
+Die Mehrfachumbenennung **führte aus**, ohne zu wissen, **wie** der neue Name heißt. Jetzt gibt es
+die Bildung:
 
-**Was der Teamleiter jetzt tun muss:** zentral bauen und testen (Abschnitt 8), dann die
-Abnahme M1 anhand von `docs/acceptance/M1-ACCEPTANCE.md` fortschreiben.
+* Ein neues Modul `crates/phocommander-ops/src/template.rs` (304 Zeilen) mit sieben Dateien:
+  die Daten der Regel (`types.rs`), die Platzhalter (`placeholders.rs`), das Suchen und Ersetzen
+  (`replace.rs`), der Zähler (`counter.rs`), die Serienvorlage (`series.rs`), die Bildungslogik und
+  die Unit-Tests (`tests.rs`).
+* **Eine Funktion, eine Ausgabe:** `form_names(&rule, &inputs, now) -> Result<Vec<FormedName>,
+  TemplateError>` — aus einer Liste von Eingaben und einer Regel eine Liste von Zielnamen. Der
+  Dialog kann sie unverändert benutzen; `rename_pairs(&names)` liefert die Paare für den bereits
+  vorhandenen atomaren Rename.
+* **Die Determinismus (FR-33) ist der Entwurf, nicht eine Behauptung:** die Bildungsfunktion liest
+  *nur ihre Argumente*. Die Uhr kommt vom Aufrufer, die Größe und die Prüfsumme kommen vom
+  Aufrufer, und der „Zufallswert" wird aus dem Dateinamen abgeleitet (FNV-1a, ein fester
+  Algorithmus) — ein echter Zufall würde FR-33 brechen.
+* **Der Zähler wird zuletzt geschrieben** (Platzhalter → Ersetzen → Zähler, so wie es Glossar und
+  Benutzerhandbuch vorgeben), damit eine Ersetzungsregel keine Nummer verfälscht, die der Benutzer
+  behalten will.
+* **Die Serienvorlage** liest Staffel und Folge aus dem Namen (`SxxEyy`), nimmt den Seriennamen aus
+  dem Elternverzeichnis, lässt beides überschreiben und **verbreitert die Nullauffüllung
+  automatisch**, wenn die Auswahl eine dreistellige Zahl enthält (FR-39).
 
-**Was ich in fremden Dateien repariert habe** (transparent aufgelistet in Abschnitt 6), damit der
-Baum überhaupt bauen konnte.
-
----
-
-## 1. Baseline-Testlauf
-
-### 1.1 Was gemessen wurde
-
-| Kommando | Ausgabe-Zusammenfassung | Testanzahl | Fehler | übersprungen | Dauer | Zeitpunkt |
-|---|---|---|---|---|---|---|
-| `cargo check --workspace --all-targets --locked` | EXIT=0 | — | — | — | ≈ 1 min je Lauf | 00:26 h, 00:44 h, 01:05 h |
-| `cargo build --workspace --all-targets --locked` | EXIT=0 | — | — | — | ≈ 5 min | 00:47 h |
-| `cargo test --workspace --locked` | **NOT RUN** — Abbruch im Link-Schritt, `ld terminated with signal 9 [Killed]` | **nicht gemessen** | **nicht gemessen** | **nicht gemessen** | — | 01:12 h |
-| `cargo test --workspace --locked` (zweiter Lauf) | **NOT RUN** — auf Weisung des Teamleiters abgebrochen | **nicht gemessen** | **nicht gemessen** | **nicht gemessen** | — | 01:33 h |
-| `cargo test -p phocommander-integration-tests --test security_extraction_hardening --test security_extraction_limits` | `test result: ok. 8 passed; 0 failed; 0 ignored` / `test result: ok. 4 passed; 0 failed; 0 ignored` | **12** | **0** | **0** | 0,05 s + 0,01 s | 01:10 h |
-| `cargo fmt --all --check` | EXIT=0 | — | — | — | ≈ 3 s | 01:12 h |
-| `cargo clippy --workspace --all-targets --locked -- -D warnings` | **NOT RUN** — der Lauf endete mit EXIT=101, weil `phocommander-ui` in diesem Moment nicht übersetzbar war; **kein** clippy-Befund | — | — | — | — | 01:12 h |
-| `cargo deny check` | `advisories ok, bans ok, licenses ok, sources ok` | — | 0 | — | ≈ 20 s | 01:07 h |
-| `cargo audit` | EXIT=0 | — | 0 | — | ≈ 40 s | 01:07 h |
-| `./scripts/check-crate-boundaries.sh` | `8 path dependencies checked, 0 violations` | — | 0 | — | < 1 s | 01:35 h |
-| `./scripts/check-file-size.sh` | 0 Verstöße gegen die harte Grenze, 7 über dem Zielwert 600 | 110 Dateien gemessen | 0 | — | < 1 s | 01:35 h |
-| `./scripts/check-no-telemetry.sh` | `Violations : 0` | — | 0 | — | < 1 s | 01:35 h |
-| `python3 scripts/check-docs-links.py` | `Broken links : 0` | — | 0 | — | ≈ 3 s | 01:35 h |
-| `python3 scripts/check-requirement-ids.py` | `RESULT: PASS — 7 of 7 checks passed` | 154 Anforderungen / 154 Zeilen | 0 | — | < 1 s | 01:35 h |
-| `python3 scripts/check-acceptance-ids.py` | `RESULT: PASS — 6 of 6 checks passed` | 121 Kriterien | 0 | — | < 1 s | 01:35 h |
-| `python3 scripts/check-action-ids.py` | `RESULT: PASS — 9 of 9 checks passed` | 35 Aktions-IDs | 0 | — | < 1 s | 01:35 h |
-| `python3 scripts/check-config-schema.py` | `RESULT: PASS — 7 of 7 checks passed` | 9 Dateien | 0 | — | < 1 s | 01:35 h |
-| `python3 scripts/check-keymap-consistency.py` | `RESULT: PASS — specification, catalogue and reference agree.` | 35 Aktionen | 0 | — | < 1 s | 01:35 h |
-| `python3 scripts/check-interface-profiles.py` | `RESULT: PASS — 4 of 4 checks passed` | 2 Profile | 0 | — | < 1 s | 01:35 h |
-| `./scripts/check-gates-negative.sh --without-cargo` | `RESULT: PASS — every gate that ran turned red on a broken state and green again.` / `Gates proved: 25` | 25 Läufe | 0 | — | ≈ 40 s | 01:40 h |
-
-### 1.2 Warum der Testlauf nicht vollständig gemessen wurde
-
-Die Sandbox hat 3 GB RAM. Während meiner Sitzung bauten drei Sessions gleichzeitig
-(`cargo`, `cargo`, `cargo` in `ps`), und der Systemprotokoll zeigt:
-
-```
-oom-kill:constraint=CONSTRAINT_NONE,... task=rust-lld,pid=420229
-Out of memory: Killed process 420229 (rust-lld) total-vm:2640816kB
-```
-
-Der Linker wurde beim Linken der Testbinaries (`egui_kittest`) beendet. Ich habe daraufhin mit
-`CARGO_BUILD_JOBS=1` und `CARGO_PROFILE_TEST_DEBUG=line-tables-only` neu gebaut (dokumentiert in
-`scripts/qa-env.sh`), aber der zweite Lauf wurde um 01:33 h auf Weisung des Teamleiters beendet.
-**Ich behaupte keine Testanzahl, die ich nicht gemessen habe.** Der Baum enthält 375
-Test-Attribute in 68 Dateien (gezählt, nicht ausgeführt); wie viele davon grün sind, ist
-**nicht gemessen**.
-
-### 1.3 Was das für die Abnahme heißt
-
-Die Abnahme M1 ist damit **nicht angenommen**. Die M0-Abnahme bleibt „accepted with conditions";
-die Bedingungen sind in `docs/acceptance/M0-ACCEPTANCE.md` Abschnitt 7/8 unverändert offen.
+**Was der Owner jetzt tun muss:** zentral bauen und testen (Abschnitt 9). Der Code ist **nicht
+kompiliert** — die Regeln dieses Auftrags verbieten jeden Build neben dem Build des Owners.
 
 ---
 
-## 2. Gate-Abdeckungstabelle
+## 2. Was ich geändert habe — Datei für Datei
 
-`scripts/check-gates-negative.sh` deckt jetzt **alle 15 Gates** ab, die die Spezifikation in den
-Abschnitten 10.3, 13.3 und 13.5 nennt. Das Skript erzeugt für jedes Gate absichtlich einen
-Verstoß, zeigt das Gate rot, baut den Verstoß zurück und zeigt das Gate wieder grün.
+### 2.1 Neu (Kern der Namensbildung)
 
-| # | Gate | Skript | Negativtest belegt? | Wo | Lücke |
-|---|---|---|---|---|---|
-| 1 | Formatierung (`cargo fmt --all --check`) | Gate 11 | **nein — NOT RUN** (OOM) | `scripts/check-gates-negative.sh`, Abschnitt „Gate 11" | Der Negativlauf steht aus; der Positivlauf war um 01:12 h grün |
-| 2 | Statische Analyse (`cargo clippy -D warnings`) | Gate 12 | **nein — NOT RUN** (OOM) | Abschnitt „Gate 12" | dito |
-| 3 | Tests (`cargo test --workspace`) | Gate 13 | **nein — NOT RUN** (OOM) | Abschnitt „Gate 13" | dito |
-| 4 | Lizenz (`cargo deny check`) | Gate 14 | **nein — NOT RUN** (OOM) | Abschnitt „Gate 14" | Der **Positiv**lauf war um 01:07 h grün (`licenses ok`) |
-| 5 | Advisories (`cargo audit`) | Gate 15 | **nein** — nur der Positivlauf (01:07 h, EXIT=0) | Abschnitt „Gate 15" | Der Negativlauf fehlt vollständig |
-| 6 | Crate-Grenzen | Gate 4 | **ja — 2 Läufe** | `m1-check-gates-negative.log`, Gate 4 | — |
-| 7 | Dateigröße (600 Ziel / 900 hart) | Gate 2 | **ja — 3 Läufe** (901 Zeilen → rot, 601 → Warnung, 100 → grün) | Gate 2 | — |
-| 8 | Telemetrie | Gate 1 | **ja — 2 Läufe** | Gate 1 | — |
-| 9 | Link-Prüfung | Gate 3 | **ja — 2 Läufe** | Gate 3 | — |
-| 10 | Anforderungs-IDs | Gate 5 | **ja — 3 Läufe** (fehlend → rot, doppelt → rot,_repository → grün) | Gate 5 | — |
-| 11 | Aktions-IDs | Gate 7 | **ja — 3 Läufe** (Bindung entfernt → rot, Doppeltbindung → rot, Repository → grün) | Gate 7 | neu in dieser Sitzung |
-| 12 | Konfigurationsschema | Gate 8 | **ja — 3 Läufe** (Standardwert geändert → rot, Kommentar entfernt → rot, Repository → grün) | Gate 8 | neu in dieser Sitzung |
-| 13 | Keymap-Konsistenz | Gate 9 | **ja — 2 Läufe** (F5→F9 → rot, Repository → grün) | Gate 9 | neu in dieser Sitzung |
-| 14 | Schnittstellenprofile | Gate 10 | **ja — 2 Läufe** (`clean` mit Werkzeugleiste → rot, Repository → grün) | Gate 10 | neu in dieser Sitzung |
-| 15 | Abnahmekriterien-IDs | Gate 6 | **ja — 3 Läufe** (Kriterium entfernt → rot, unbekanntes FR → rot, Repository → grün) | Gate 6 | — |
+| Datei | Zeilen | Zweck |
+|---|---:|---|
+| `crates/phocommander-ops/src/template.rs` | 304 | Das Modul: die Bildungsfunktion `form_names`, `rename_pairs`, `name_problems`, die Freigaben, die Pfad-Hilfen. Header mit WHAT/WHY/EXAMPLE und BOUNDARY. |
+| `crates/phocommander-ops/src/template/types.rs` | 533 | Die Daten: `RenameRule` (Format, Ersetzungen, Zähler, Serie), `RenameInput` (Pfad, Größe, Zeit, Prüfsumme, vom Benutzer bestätigte Serie, Zufallswert), `FormedName` (`Named`/`Failed`), `TemplateError` (vier Fehlerarten). |
+| `crates/phocommander-ops/src/template/placeholders.rs` | 370 | Die 17 Platzhalter, das Parsen des Formats (`[name]`, `[ext]`, `[parent]`, `[n]`, `[date]`, `[time]`, `[size]`, `[hash]`, `[rand]`, `[case]`, `[lower]`, `[upper]`, `[title]`, `[series]`, `[season]`, `[episode]`, `[episode_title]`), die Kurz-Prüfsumme, der aus dem Namen abgeleitete Wert und die vier Schreibweisen. |
+| `crates/phocommander-ops/src/template/replace.rs` | 164 | `ReplaceRule` (literal oder regulärer Ausdruck), das Kompilieren der Muster (ein kaputtes Muster ist ein Fehler, kein stiller Wechsel) und das Anwenden in der Reihenfolge der Regeln. |
+| `crates/phocommander-ops/src/template/counter.rs` | 170 | `CounterRule` (Startwert, Schrittweite, Breite, Reihenfolge), `CounterOrder` (Auswahl/Name/Datum), die Nummern der Auswahl, das Schreiben der Nullauffüllung. |
+| `crates/phocommander-ops/src/template/series.rs` | 293 | `SeriesRule`, das Standardformat der Serie, das Erkennen der Staffel und der Folge, der Episodentitel (der Name ohne das Muster), die automatische Breite der Zahlen. |
+| `crates/phocommander-ops/src/template/tests.rs` | 484 | 21 Unit-Tests der öffentlichen Funktionen (WHAT/WHY/EXAMPLE-Stil, kein `unwrap()` im Produktionscode). |
 
-**Gemessen:** 25 Läufe, 25 × „RESULT: PASS — the gate is effective", 0 Abweichungen
-(`docs/acceptance/logs/m1-check-gates-negative.log`).
+### 2.2 Geändert
 
-**Neu in dieser Sitzung am Skript:** die Gates 7 bis 10 (Aktions-IDs, Konfigurationsschema,
-Keymap-Konsistenz, Schnittstellenprofile) waren vorher nicht abgedeckt; das Skript hat jetzt 15
-Gates. Die Grenzen des Skripts wurden an die Fassung 2.0 angepasst (901 Zeilen statt 600 als
-Verstoß, weil 600 jetzt der Zielwert und 900 die harte Grenze ist).
+| Datei | Änderung | Zeilen |
+|---|---|---:|
+| `crates/phocommander-ops/src/series.rs` | Neu: `SeriesPattern` (Staffel, Folge, **Fundstelle** in Byte) und `detect_series_pattern(name)`. `detect_series_numbers` ruft jetzt diese Funktion auf — die Erkennung bleibt identisch, der Code ist nicht doppelt. Dazu zwei Unit-Tests für die neue Funktion. | 309 (vorher 227) |
+| `crates/phocommander-ops/src/lib.rs` | `pub mod template;`, die Freigaben der neuen Typen und Funktionen, der Modulkopf erwähnt das neue Modul. | 73 (vorher 68) |
+| `crates/phocommander-ops/Cargo.toml` | `regex = { workspace = true }` (FR-31) und `[dev-dependencies] proptest = { workspace = true }` (der Property-Test von FR-33). | 33 (vorher 26) |
+| `Cargo.toml` | Neue Sektion „Text processing" mit `regex = "1"` — der Katalog des Workspace, damit die Version einmal geschrieben wird. | +10 |
+| `Cargo.lock` | Die Abhängigkeiten von `phocommander-ops` um `proptest` und `regex` ergänzt (Handedit, von `cargo metadata --locked` bestätigt, siehe 4.1). | +2 |
+| `docs/WHERE_TO_CHANGE.md` | Neue Zeile „The names of a multiple rename" → `crates/phocommander-ops/src/template.rs`. | +1 |
+| `docs/ARCHITECTURE.md` | Die Zeile „The rename placeholders" zeigt jetzt auf `template.rs` statt auf `rename.rs` (die Ausführung und die Bildung waren vorher vermischt). | 1 Zeile geändert |
 
-**Neue Flagge:** `--without-cargo` überspringt die fünf Gates, die cargo aufrufen. Sie existiert,
-weil die Maschine, auf der ich arbeite, nicht bauen kann; ohne sie wäre kein einziger
-Negativtest möglich gewesen. Der Aufruf ohne die Flagge ist der vollständige Nachweis.
+### 2.3 Neu (Integrationstests, je ein Ziel nach dem Namen der Abnahmekriterien)
 
----
+| Datei | Zeilen | Kriterium |
+|---|---:|---|
+| `crates/phocommander-ops/tests/rename_placeholders.rs` | 110 | AC-M1-19 (FR-30) — ein Fall je Platzhalter |
+| `crates/phocommander-ops/tests/rename_search_and_replace.rs` | 91 | AC-M1-20 (FR-31) — Regex an/aus, kaputtes Muster |
+| `crates/phocommander-ops/tests/rename_counter.rs` | 89 | AC-M1-21 (FR-32) — `001`, `002`, `003` |
+| `crates/phocommander-ops/tests/rename_is_deterministic.rs` | 118 | AC-M1-22 (FR-33) — zwei Läufe, versteckte Uhr, versteckter Zufall, Reihenfolge der Aufrufe |
+| `crates/phocommander-ops/tests/rename_properties.rs` | 108 | AC-M1-22 (FR-33) — **echter `proptest`-Property-Test**, drei Eigenschaften |
+| `crates/phocommander-ops/tests/series_detects_season_and_episode.rs` | 97 | AC-M1-26 (FR-37) |
+| `crates/phocommander-ops/tests/series_name_defaults_to_the_parent.rs` | 78 | AC-M1-27 (FR-38) |
+| `crates/phocommander-ops/tests/series_zero_padding.rs` | 100 | AC-M1-28 (FR-39) |
+| `crates/phocommander-ops/tests/rename_reports_forbidden_characters.rs` | 80 | AC-M1-29 (FR-40) — die Engine-Hälfte |
 
-## 3. Testabdeckungs-Matrix für M1
+Jede Datei trägt die Kopfzeile mit dem Kommando, das die Abnahme fordert, und
+`#![allow(clippy::unwrap_used, clippy::expect_used)]` — die Konvention der bestehenden
+Integrationstests im Repository.
 
-Die Matrix steht vollständig in `docs/acceptance/M1-ACCEPTANCE.md` Abschnitt 1 (54 Anforderungen des
-Meilenstands M1). Hier die Zusammenfassung:
+### 2.4 **Nicht** von mir geändert (Fremdstand im Baum)
 
-| Zustand | Anzahl | Bedeutung |
-|---|---|---|
-| **measured** | 1 | FR-70 (die gehärtete Extraktion) — 8 negative Tests, grün |
-| **test exists** | 34 | Der Test liegt im Baum, sein Lauf wurde in dieser Sitzung nicht abgeschlossen |
-| **no test** | 17 | Die Anforderung hat keinen Test (Liste unten) |
-| **not measured** | 2 | NFR-09a (Lesevolumen der Prüfung), NFR-17b (Namensprüfung) |
-
-**Die Anforderungen ohne Test — die Prioritätenliste für den Owner:**
-
-| Prio | Anforderung | Warum fehlt der Test |
-|---|---|---|
-| 1 | **FR-33** (Determinismus der Umbenennung) | Die Umbenennungs-Engine existiert nicht. Der von der Spezifikation verlangte Property-Test ist damit **nicht vorhanden**. |
-| 2 | **FR-30, FR-31, FR-32, FR-34, FR-35** (Platzhalter, Suchen/Ersetzen, Zähler, Live-Vorschau, Konfliktsprungliste) | Dieselbe Ursache: keine Umbenennungs-Engine im Baum. |
-| 3 | **FR-39** (Nullauffüllung, wachsende Breite der Seriennummer) | Es gibt keine Funktion, die eine Zahl mit Breite schreibt. FR-37 ist nur die *Erkennung*. |
-| 4 | **FR-21, NFR-09** (Hintergrund-Job, blockiert die Oberfläche nicht) | `crates/phocommander-ops/src/queue.rs` hat **keinen** Test; die Messung der Frame-Lücke existiert nicht. |
-| 5 | **FR-67, FR-68, FR-65, FR-66** (Archivformate, Archive anlegen, virtuelles Verzeichnis, Einträge kopieren) | `crates/phocommander-archive/src/formats/` hat **keinen** Test; kein Round-Trip über ZIP/TAR/7z. |
-| 6 | **FR-22** (die vier Konfliktregeln), **FR-17** (Spaltensatz), **FR-18** (Sortierung pro Reiter) | Die Werte existieren, die Tests wurden nicht geschrieben. |
-| 7 | **FR-27** (Papierkorb als Standard) | Keine Papierkorb-Implementierung im Baum. |
-| 8 | **FR-50 bis FR-54** (Viewer-Bereich, Zeichensätze, Hexdump, Bilder, Archivinhalt) | Der Viewer hat nur Lesepfad und Richtlinie. |
-| 9 | **NFR-09b** (maximal zehn Aktualisierungen pro Sekunde) | Die Konstante `REPORT_INTERVAL` existiert, kein Test zählt die Aktualisierungen. |
-| 10 | **NFR-09a** (Lesevolumen höchstens doppelt) | Das Benchmark `benches/copy_verification_read_volume.rs` aus AC-M1-45 wurde nicht geschrieben. |
-
-**Was ausdrücklich vorhanden und grün ist:** die zwölf negativen Sicherheitstests der
-Härtungsregeln H-02 bis H-06 (Abschnitt 4).
+`docs/STATUS.md` und `docs/acceptance/M1-ACCEPTANCE.md` waren **schon vor meinem ersten Schreibzugriff
+geändert** (`git status` zu Beginn der Sitzung). Ich habe sie nicht angefasst.
 
 ---
 
-## 4. Erstellte und angepasste Tests
+## 3. Die öffentliche API
 
-| Pfad | Testname | Was er beweist |
-|---|---|---|
-| `tests/security/extraction_hardening.rs` | `no_container_crate_is_asked_to_extract_an_archive` | **H-02**: die Quellen des ganzen Arbeitsbereichs enthalten keinen Aufruf der `extract()`-Methode einer Container-Bibliothek — die Einträge schreibt das Projekt selbst |
-| | `an_entry_that_leaves_the_destination_is_refused` | **H-03**: der Angriff `../escape.txt` wird mit dem Grund *traversal* abgelehnt |
-| | `nothing_is_written_outside_of_the_destination_directory` | **H-03**: von neun feindlichen Namen werden drei abgelehnt, der eine harmlose geschrieben, und unterhalb des temporären Verzeichnisses liegt nichts außer dem Archiv und dem Ziel |
-| | `a_symbolic_link_is_skipped_instead_of_being_created` | **H-04**: ein Link wird als *übersprungen* gemeldet und nie angelegt |
-| | `a_symbolic_link_with_a_refused_target_is_reported_as_such` | **H-04**: ein Link, dessen Ziel aus dem Zielverzeichnis zeigt, wird mit dem passenden Grund gemeldet |
-| | `a_symbolic_link_cannot_redirect_a_later_entry` | **H-04**: der Eintrag hinter dem Link wird nicht umgelenkt |
-| | `an_entry_written_through_an_existing_symbolic_link_is_refused` | **H-03/H-04**: ein bereits vorhandener Link im Ziel lässt den Eintrag ablehnen (`SymlinkInPath`), und außerhalb wird nichts geschrieben |
-| | `the_set_user_id_and_the_set_group_id_bits_never_reach_the_file_system` | **H-05**: das extrahierte Datei trägt kein Sonderbit |
-| | `the_archive_with_the_set_user_id_bit_really_carries_it` | **H-05**: das Angriffsmaterial trägt das Bit wirklich — die Rohbytes des Archivs werden geprüft, damit der Test nicht ins Leere läuft |
-| `tests/security/extraction_limits.rs` | `the_extraction_aborts_when_the_total_size_limit_is_exceeded` | **H-06**: die Extraktion bricht mit `LimitExceeded { TotalBytes }` ab |
-| | `the_extraction_aborts_when_the_number_of_entries_limit_is_exceeded` | **H-06**: `LimitExceeded { EntryCount }` nach dem dritten Eintrag |
-| | `the_extraction_aborts_when_the_size_of_a_single_entry_limit_is_exceeded` | **H-06**: `LimitExceeded { SingleEntryBytes }`, der Eintrag wird nicht geschrieben |
-| | `an_archive_within_the_limits_is_extracted_completely` | das Gegenstück: ein Archiv innerhalb der Grenzen wird vollständig geschrieben — ein Gate, das für jedes Archiv rot ist, beweist nichts |
-
-**Ergebnis:** `8 passed; 0 failed` und `4 passed; 0 failed` (01:10 h).
-
----
-
-## 5. Abnahmedokumente
-
-| Pfad | Meilenstein | Status | Entscheidung |
+| Crate | Modul | Typ / Funktion | Zweck |
 |---|---|---|---|
-| `docs/acceptance/M0-ACCEPTANCE.md` | M0 | **auf Fassung 2.0 gebracht** | accepted with conditions (unverändert, die Bedingungen sind offen) |
-| `docs/acceptance/M1-ACCEPTANCE.md` | M1 | **neu geschrieben**, Muster nach §13.1 der Spezifikation | **not accepted** — mit Begründung, offenen Punkten und Auflagenliste |
-| `docs/acceptance/logs/m1-*.log` | M1 | 17 Logdateien mit sprechendem Namen | — |
+| `phocommander-ops` | `template` | `RenameRule` | Die Regel: Format, Ersetzungen, Zähler, Serie. Daten, kein Verhalten. |
+| | | `RenameRule::new` / `with_replacement` / `with_counter` / `with_series` / `effective_format` | Bauen der Regel; das wirksame Format (leer → Standardformat der Serie). |
+| | | `RenameInput` (+ `new`, `with_size`, `with_modified`, `with_checksum`, `with_series`, `with_random`) | Die Fakten einer Datei. Alles, was die Bildung nicht selbst lesen kann. |
+| | | `FormedName` (`Named`/`Failed`) | Das Ergebnis je Datei: der neue Name, der Zielpfad, der Fehler. |
+| | | `FormedName::source` / `name` / `target` / `problem` / `pair` | Zugriff auf das Ergebnis; `pair()` liefert das `RenamePair` für den atomaren Rename. |
+| | | `TemplateError` | `EmptyFormat`, `UnknownValue`, `InvalidPattern`, `InvalidName`. |
+| | | `form_names(rule, inputs, now)` | **Die Hauptfunktion:** aus Eingaben und Regel eine Liste von Zielnamen. Reine Funktion. |
+| | | `rename_pairs(names)` | Die Paare des Renames — `None`, wenn auch nur eine Datei keinen Namen bekam (FR-41). |
+| | | `name_problems(name)` | Die verbotenen Zeichen eines gebildeten Namens mit dem vorgeschlagenen Ersatz (FR-40, Engine-Hälfte). |
+| | `template::counter` | `CounterRule`, `CounterOrder` | Startwert, Schrittweite, Breite, Reihenfolge. |
+| | `template::placeholders` | `Placeholder` (+ `ALL`, `parse`, `as_str`) | Die 17 Platzhalter — die Dialogliste kann sie anzeigen. |
+| | `template::replace` | `ReplaceRule` (`literal`, `pattern`) | Suchen und Ersetzen, literal oder als regulärer Ausdruck. |
+| | `template::series` | `SeriesRule` (+ `STANDARD_FORMAT`) | Die Serienvorlage: Name, Staffel, Folge, Format, Breiten. |
+| `phocommander-ops` | `series` | `SeriesPattern`, `detect_series_pattern` | Die Erkennung **mit Fundstelle** — der Episodentitel braucht sie. |
 
-### 5.1 Was ich an der M0-Abnahme korrigiert habe
+**Die Signatur, die der Dialog braucht:**
 
-* **Fassungsbezug:** `1.1 (963 Zeilen)` → `2.0 (1714 Zeilen)`; der Katalogeintrag nennt jetzt die 154 Anforderungen der Fassung 2.0 mit den Buchstabenblöcken FR-22a…FR-22q und FR-74a…FR-74g sowie NFR-09a/b und NFR-17a…NFR-17c.
-* **Zeilengrenzen:** „400 soft / 550 hard" → **„600 Ziel / 900 hart"** (NFR-14 der Fassung 2.0), an allen drei Stellen (Technik, Sicherheit, Negativtest).
-* **Anforderungs-IDs:** jede ID gegen die Spezifikation geprüft und ersetzt — FR-117 → **NFR-20**, FR-139/FR-140 → **NFR-17**, FR-146 → **NFR-21**, FR-160 → **H-06 und FR-55**, FR-162/FR-163 → **FR-101**, FR-164 → **FR-100**, NFR-40 → **FR-02 und NFR-25**.
-* **Aussagen ohne Deckung in der Fassung 2.0** (die Gültigkeit der zentralen Konfigurationsdatei, vormals FR-121/FR-122/FR-160) stehen jetzt in Abschnitt 7 „Bekannte Einschränkungen" — **mit erhaltenem Beleg**, wie gefordert. Sie wurden nicht gelöscht.
-* **Statusangaben** zu den negativen Extraktionstests: der Verweis auf M1 ergänzt, wo der Test inzwischen existiert.
+```rust
+pub fn form_names(
+    rule: &RenameRule,
+    inputs: &[RenameInput],
+    now: SystemTime,
+) -> Result<Vec<FormedName>, TemplateError>
+```
 
-### 5.2 Was ich an den Konsistenzskripten korrigiert habe
-
-| Skript | Befund | Korrektur |
-|---|---|---|
-| `scripts/check-requirement-ids.py` | Das Skript war korrekt, der **Katalog** war veraltet: 129 Zeilen gegen 154 Anforderungen der Fassung 2.0. `check_requirement_ids` meldete 25 fehlende IDs, 71 falsche Quellzeilen und eine Lücke in der Nummerierung. | `docs/REQUIREMENTS-IDS.md` aus der Spezifikation neu erzeugt (154 Zeilen, jede Quellzeile geprüft), Regel 3 und Änderungsprotokoll nachgezogen. Ergebnis: `PASS — 7 of 7`. |
-| `scripts/check-acceptance-ids.py` | Korrekt, aber 16 Anforderungen der Meilensteine M0/M1/M2 der Fassung 2.0 hatten kein Abnahmekriterium. | 16 Kriterien ergänzt (AC-M0-14, AC-M1-48…AC-M1-54, AC-M2-46…AC-M2-53), Appendix B nachgezogen. Ergebnis: `PASS — 6 of 6`, 121 Kriterien. |
-| `scripts/check-action-ids.py` | Korrekt und grün. | Keine Änderung. |
-| `scripts/check-keymap-consistency.py` | Korrekt und grün. | Keine Änderung. |
-| `scripts/check-config-schema.py` | **rot**: `config/defaults.toml:170` — dem Abschnitt `[remote]` fehlte der Kommentar darüber. | Kommentar in `config/defaults.toml` ergänzt. Ergebnis: `PASS — 7 of 7`. |
-| `scripts/check-interface-profiles.py` | Korrekt und grün. | Keine Änderung. |
-| `scripts/check-gates-negative.sh` | Deckte nur 6 Gates, mit den alten Zeilengrenzen (600 als harte Grenze). | Auf 15 Gates erweitert, Grenzen auf 600/900 angepasst, `--without-cargo` ergänzt, Bericht um die Zahl der belegten Läufe erweitert. |
-
----
-
-## 6. Änderungen an Dateien, die einer anderen Session gehören
-
-Die gemeinsame Sandbox hatte den Arbeitsbaum während meiner Sitzung **in Bewegung**: eine zweite
-Session hat den Meilenstand M1 implementiert (Modul `filter`, `panel`, `input`, `copy`, `viewer`
-usw.). Beim ersten `cargo check` um 00:26 h übersetzte der Baum **nicht**. Damit überhaupt eine
-Abnahme möglich wurde, habe ich die following Reparaturen angebracht — jede einzelne mechanisch
-und dokumentiert, keine davon ändert das Verhalten:
-
-| Datei | Reparatur | Grund |
-|---|---|---|
-| `crates/phocommander-ops/Cargo.toml` | `thiserror = { workspace = true }` ergänzt | Die Kiste benutzt `#[derive(Error)]`, ohne die Abhängigkeit. 30 Compilerfehler. |
-| `crates/phocommander-ops/src/edit.rs:160` | zwei `//!`-Zeilen zu `///` | Innerer Doc-Kommentar an unzulässiger Stelle (E0753). |
-| `crates/phocommander-ops/src/series.rs:16` | eine `///`-Zeile zu `//!` | dito |
-| `crates/phocommander-ops/src/job.rs` | `impl Display for JobState` | `thiserror` braucht `Display` für `{state}` in der Fehlermeldung. |
-| `crates/phocommander-ops/src/error.rs` | `impl Display for NameProblem`; `OpError` leitet nur noch `Debug` und `Error` ab | `io::Error` ist weder `Clone` noch `Eq`. |
-| `crates/phocommander-ops/src/fake_fs.rs` | `checksums: AtomicU64::new(0)` in `new()` | Feld fehlte im Konstruktor (E0063). |
-| `crates/phocommander-ops/src/copy.rs` | `ref path` + `to_path_buf()` | teilweise verschobener Wert (E0382). |
-| `crates/phocommander-ops/src/progress.rs` | `verification().copied()` | `&VerificationProgress` hat kein `Default` (E0277). |
-| `crates/phocommander-viewer/src/content.rs` | `use std::time::{Duration, UNIX_EPOCH};` | fehlender Import im Testmodul. |
-| `crates/phocommander-config/src/session.rs` | `SecurityProfile` wird aus `crate::schema` importiert | privater Re-Export (E0603). |
-| `crates/phocommander-ui/src/filter/tests.rs:187` | eine überzählige schließende Klammer entfernt | Syntaxfehler (E0753), Blockade des ganzen Baums. |
-| `crates/phocommander-ui/src/filter/property_tests.rs:62` | `format!("prefix-{}-suffix", text)` | `format!` kann in `prop_assert!` keine Variablen einsetzen. |
-| `crates/phocommander-ops/src/copy.rs` → `copy/tests.rs` | Die Testmodul-Ablage (1101 Zeilen über der harten Grenze von 900) in eine eigene Datei verlegt, nach dem Muster von `panel/` und `filter/` | NFR-14: das Dateigrößen-Gate war rot. **Die zweite Session hat diese Aufteilung inzwischen selbst übernommen** (`copy/policy.rs`, `copy/types.rs`). |
-| der ganze Baum | `cargo fmt --all` | Das Formatierungs-Gate war rot (193 Diffs). |
-| `deny.toml` | Allow-Liste um `bzip2-1.0.6`, `BSL-1.0`, `CC0-1.0`, `MIT-0`, `OFL-1.1`, `Ubuntu-font-1.0` erweitert | Die Abhängigkeiten von M1 brachten diese Lizenzen; das Lizenz-Gate war rot. Alle sechs sind permissiv, keine ist Copyleft — die Politik des §9.6 der Spezifikation greift. **Der Owner bestätigt oder dreht diese Änderung zurück.** |
-| `Cargo.lock` | durch cargo aktualisiert | Die neue Abhängigkeit `thiserror` des Crates `phocommander-ops`. |
+`now` kommt vom Aufrufer — nicht aus der Bibliothek. Das ist der Grund, warum die Bildung testbar
+und reproduzierbar ist.
 
 ---
 
-## 7. Ausgaben aller Kommandos
+## 4. Die Befehle, die ich **wirklich** ausgeführt habe
 
-Vollständige Ausgaben liegen unter `docs/acceptance/logs/`:
+Ich habe **keinen** Build, **keinen** Testlauf und **kein** `cargo fmt` ausgelöst (Abschnitt 5).
+Die folgenden drei Kommandos bauen nichts und sind deshalb zulässig; ihre Ausgabe steht im
+Original.
 
-| Log | Inhalt |
+### 4.1 `cargo metadata --locked --offline` — Prüfung der Lock-Datei
+
+```
+$ cd /workspace/phocommander && CARGO_HOME=/workspace/.home/.cargo cargo metadata --locked --offline --format-version 1 > /tmp/metadata.json
+exit=0
+```
+
+Die Ausgabe ist ein JSON-Dokument (3.090.921 Bytes). Der relevante Ausschnitt:
+
+```
+$ python3 -c "import json; ..."
+phocommander-ops deps: ['regex', 'thiserror', 'proptest']
+   regex ^1 None
+   proptest ^1 dev
+```
+
+Und die Kontrolle, dass Cargo die Lock-Datei **nicht** verändert hat:
+
+```
+$ git diff --stat Cargo.lock
+ Cargo.lock | 2 ++
+ 1 file changed, 2 insertions(+)
+
+$ git diff Cargo.lock
+@@ -3592,6 +3592,8 @@ dependencies = [
+ name = "phocommander-ops"
+ version = "0.1.0"
+ dependencies = [
++ "proptest",
++ "regex",
+  "thiserror 2.0.21",
+ ]
+```
+
+**Wichtig für den Owner:** `cargo metadata --locked` läuft mit Exit 0 durch. Der Build mit
+`--locked` (wie er gerade läuft) wird an der Lock-Datei **nicht** scheitern.
+
+### 4.2 `./scripts/check-file-size.sh`
+
+```
+OVER  682 lines  ./crates/phocommander-archive/src/extract.rs
+OVER  674 lines  ./crates/phocommander-ops/src/fake_fs.rs
+OVER  614 lines  ./crates/phocommander-ops/src/progress.rs
+OVER  721 lines  ./crates/phocommander-ui/src/app.rs
+OVER  613 lines  ./crates/phocommander-ui/src/keymap_view.rs
+OVER  651 lines  ./crates/phocommander-ui/src/panel.rs
+
+Source files measured : 164 (extensions: rs)
+Target value          : 600 lines (warning)
+Absolute maximum      : 900 lines (failure)
+Target-value warnings : 6
+Maximum violations    : 0
+RESULT: PASS with warnings — 6 file(s) exceed the target value of 600 lines.
+        Each of them must name the reason in its module header.
+```
+
+Keine der sechs Warnungen betrifft eine Datei aus diesem Auftrag — alle sieben neuen Dateien liegen
+unter 600 Zeilen.
+
+### 4.3 `./scripts/check-crate-boundaries.sh`
+
+```
+Phocommander - crate boundary gate
+rule: apps/* -> platform/* -> crates/*, no crate below crates/ may depend
+      on another crate below crates/, registry dependencies are not checked
+
+OK    apps/phocommander-desktop -> crates/phocommander-config (apps -> crates)
+OK    apps/phocommander-desktop -> crates/phocommander-core (apps -> crates)
+OK    apps/phocommander-desktop -> crates/phocommander-i18n (apps -> crates)
+OK    apps/phocommander-desktop -> crates/phocommander-ops (apps -> crates)
+OK    apps/phocommander-desktop -> platform/phocommander-platform (apps -> platform)
+OK    apps/phocommander-desktop -> crates/phocommander-ui (apps -> crates)
+OK    apps/phocommander-desktop -> crates/phocommander-viewer (apps -> crates)
+OK    platform/phocommander-platform -> crates/phocommander-core (platform -> crates)
+OK    tests -> crates/phocommander-archive (tests -> crates)
+OK    tests -> crates/phocommander-config (tests -> crates)
+OK    tests -> crates/phocommander-core (tests -> crates)
+OK    tests -> crates/phocommander-keymap (tests -> crates)
+OK    tests -> crates/phocommander-ui (tests -> crates)
+
+13 path dependencies checked, 0 violations
+```
+
+`phocommander-ops` hängt an keinem Geschwister-Crate ✓ — die Abhängigkeit auf `regex` ist eine
+Registry-Abhängigkeit und wird vom Gate nicht geprüft (so gewollt).
+
+### 4.4 `python3 scripts/check-links.py`
+
+```
+docs/user-guide/multi-rename.en.md:10      ../REQUIREMENTS.md                                                                                                                   ok  (resolves)
+docs/user-guide/multi-rename.en.md:11      ../KEYMAP.md                                                                                                                         ok  (resolves)
+docs/user-guide/multi-rename.en.md:193     getting-started.en.md                                                                                                                ok  (resolves)
+docs/user-guide/multi-rename.en.md:194     ../KEYMAP.md                                                                                                                         ok  (resolves)
+docs/user-guide/multi-rename.en.md:195     ../glossary.md                                                                                                                       ok  (resolves)
+tests/README.md:3                          ../docs/REQUIREMENTS.md                                                                                                              ok  (resolves)
+tests/README.md:5                          ../docs/ACCEPTANCE-CRITERIA.md                                                                                                       ok  (resolves)
+tests/security/README.md:3                 ../../docs/REQUIREMENTS.md                                                                                                            ok  (resolves)
+tests/security/README.md:5                 ../../docs/security/THREAT_MODEL.md                                                                                                  ok  (resolves)
+
+Markdown files scanned : 45
+Repository links checked: 159
+External links skipped : 20
+Broken links           : 0
+RESULT: PASS — every repository link resolves.
+```
+
+### 4.5 Was ich **nicht** gemessen habe (und warum)
+
+| Kommando | Status | Grund |
+|---|---|---|
+| `cargo test --workspace` | **nicht ausgeführt** | Auftrag: „Kein `cargo build`, kein `cargo test`" — die Sandbox hat 3 GB RAM, ein zweiter Build neben dem des Owners bricht beide ab. Zum Zeitpunkt meiner Messung lief ein `cargo test --workspace --locked` des Owners. |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **nicht ausgeführt** | Wie oben. |
+| `cargo fmt --all --check` | **nicht ausgeführt** | Wie oben. Der Code ist von Hand in der rustfmt-Näherung geschrieben; **die Formatierung ist ungeprüft**. Bitte vor dem Gate `cargo fmt --all` laufen lassen. |
+| `cargo deny check` / `cargo audit` | **nicht ausgeführt** | Wie oben. Für `regex` (MIT OR Apache-2.0, kein C-Anteil, bereits im Abhängigkeitsbaum) ist die Lizenzprüfung trotzdem Pflicht (Abschnitt 5.8 der Spezifikation). |
+| `cargo test --doc -p phocommander-ops` | **nicht ausgeführt** | Wie oben. Die Doctests der neuen Dateien sind geschrieben, aber ungeprüft. |
+
+---
+
+## 5. Warum ich nicht gebaut habe — und was das für die Übergabe heißt
+
+Die Regel „kein `cargo build`, kein `cargo test`, kein `cargo fmt`" ist im Auftrag ausdrücklich mit
+dem Grund begründet: 3 GB RAM, ein zweiter Build bricht beide ab, heute Nachmittag sind vier
+Agenten genau daran hängengeblieben. Zum Zeitpunkt meiner Arbeit lief der Build des Owners:
+
+```
+202725  0.5  3.7 338964 119528 ?  Sl  13:15 /workspace/.home/.rustup/.../cargo test --workspace --locked
+204956 97.6 22.6 1334092 713368 ?  Sl  13:20 /workspace/.home/.rustup/.../rustc --crate-name x11rb_protocol ...
+```
+
+**Folge für den Owner:** Der gelieferte Code ist **nicht kompiliert**. Ein Fehler im ersten Build
+kann eine Stelle betreffen, die ich nicht sehen konnte — in einem mehrtausendzeiligen Baum ist das
+nicht auszuschließen. Bitte den Build als ersten Schritt laufen lassen; die wahrscheinlichsten
+Stellen sind in Abschnitt 9.2 genannt.
+
+Der Erschütterungsbeweis der drei Gates (Datei-Größe, Crate-Grenzen, Links) ist in Abschnitt 4
+geführt — diese Gates bauen nichts und sind echt gemessen.
+
+---
+
+## 6. Testabdeckungsmatrix
+
+| Bereich | getestet? | Testdatei | Testname | Lücke |
+|---|---|---|---|---|
+| FR-30 Platzhalter (13 Stück) | ja | `tests/rename_placeholders.rs` | `rename_placeholders` | Der Zufallswert wird auf Länge, Hex und Gleichheit geprüft, **nicht** auf einen festen Wert — er ist per Definition vom Namen abgeleitet (siehe 8.1). |
+| FR-30 Zähler-Platzhalter | ja | `tests/rename_placeholders.rs` | `the_counter_placeholder_carries_the_number_of_the_counter` | — |
+| FR-30 Zufallswert (zwei Dateien) | ja | `tests/rename_placeholders.rs` | `the_random_value_of_two_files_differs` | — |
+| FR-31 Suche literal / Regex | ja | `tests/rename_search_and_replace.rs` | `rename_search_and_replace`, `a_search_that_is_not_a_regular_expression_matches_the_text` | — |
+| FR-31 kaputtes Muster | ja | `tests/rename_search_and_replace.rs` | `a_broken_pattern_produces_an_error_and_changes_no_name` | — |
+| FR-32 Zähler (Start, Schritt, Breite) | ja | `tests/rename_counter.rs` | `rename_counter`, `the_counter_starts_at_the_configured_value_and_grows_by_the_step` | — |
+| FR-32 Reihenfolge nach Name | ja | `tests/rename_counter.rs` | `the_counter_can_count_by_the_name` | Die Reihenfolge nach **Datum** ist implementiert, aber nicht als Integrationstest abgesichert — nur im Code. **Lücke.** |
+| FR-33 Determinismus (zwei Läufe) | ja | `tests/rename_is_deterministic.rs` | `rename_is_deterministic` | — |
+| FR-33 keine versteckte Uhr | ja | `tests/rename_is_deterministic.rs` | `the_result_does_not_depend_on_a_hidden_clock` | — |
+| FR-33 kein versteckter Zufall | ja | `tests/rename_is_deterministic.rs` | `the_result_does_not_depend_on_a_hidden_random_source` | — |
+| FR-33 keine globale Lage | ja | `tests/rename_is_deterministic.rs` | `the_result_does_not_depend_on_the_order_of_the_calls` | — |
+| FR-33 Property-Test | ja | `tests/rename_properties.rs` | `the_result_is_a_function_of_the_input`, `the_counter_numbers_the_files_in_a_row`, `a_file_that_cannot_be_named_does_not_stop_the_others` | **Echter `proptest`-Test**, 100 Fälle je Eigenschaft ( `--proptest 100`). |
+| FR-37 Staffel und Folge | ja | `tests/series_detects_season_and_episode.rs` | `series_detects_season_and_episode`, `the_engine_uses_the_numbers_that_it_found_in_the_name`, `a_file_without_a_pattern_carries_no_numbers` | — |
+| FR-38 Serienname aus dem Elternverzeichnis | ja | `tests/series_name_defaults_to_the_parent.rs` | `series_name_defaults_to_the_parent`, `the_name_of_the_series_can_be_overridden` | — |
+| FR-39 Nullauffüllung, wachsende Breite | ja | `tests/series_zero_padding.rs` | `series_zero_padding`, `the_width_grows_with_the_largest_number_of_the_selection`, `the_width_of_the_season_grows_as_well` | — |
+| FR-40 verbotene Zeichen (Engine) | ja | `tests/rename_reports_forbidden_characters.rs` | `rename_reports_forbidden_characters`, `the_replacement_of_a_forbidden_character_is_allowed`, `a_name_without_a_forbidden_character_reports_nothing`, `a_device_name_of_windows_is_reported` | Der Teil „der Rename läuft nicht, bevor der Benutzer bestätigt" gehört dem Dialog. |
+| Fehler: Wert unbekannt | ja | `src/template/tests.rs` | `a_value_that_the_caller_did_not_supply_is_reported` | — |
+| Fehler: kein Format | ja | `src/template/tests.rs` | `a_rule_without_a_format_is_refused` | — |
+| Fehler: Trenner im Namen | ja | `src/template/tests.rs` | `a_name_with_a_separator_is_refused` | — |
+| Paare des Renames / Atomizität | ja | `src/template/tests.rs` | `the_pairs_of_the_rename_are_built_from_the_names`, `a_selection_with_a_file_that_could_not_be_named_has_no_pairs` | Die Atomizität der Ausführung selbst (FR-41, M2) liegt in `rename.rs` und ist nicht meine Aufgabe. |
+| Öffentliche Funktionen (jede hat einen Test) | ja | `src/template/tests.rs` + `tests/*.rs` | 21 Unit-Tests + 21 Integrationstests | — |
+| FR-34 Vorschau / FR-35 Konfliktsprung / FR-36 Vorlagen | **nein** | — | — | **Bewusst nicht im Umfang** — der Dialog ist ein eigener Auftrag. |
+| Die geschweiften Klammern der benannten Vorlagen (E13) | **nein** | — | — | **Offene Frage 8.3** — die Engine spricht die eckigen Klammern des Dialogs. |
+
+---
+
+## 7. Der Determinismus-Nachweis (FR-33)
+
+**Die Aussage.** `form_names` ist eine reine Funktion von `(Regel, Eingaben, Zeit)`. Es gibt keine
+globale Lage, keine Uhr in der Bibliothek und keine Zufallsquelle, die nicht erklärt ist.
+
+**Wie das erreicht wurde — vier Entscheidungen:**
+
+1. **Die Uhr kommt vom Aufrufer.** `form_names(rule, inputs, now)` — der Parameter `now: SystemTime`
+   wird von oben gereicht. Ohne das wäre die Bildung nicht testbar und nicht reproduzierbar.
+2. **Die Fakten kommen vom Aufrufer.** `RenameInput` trägt Größe (`Option<u64>`), Zeit der letzten
+   Änderung und Prüfsumme (`Option<u64>`). Die Bibliothek liest **keine** Datei. Ein fehlender Wert
+   ist ein Fehler (`UnknownValue`), kein stiller Leerwert.
+3. **Der „Zufallswert" ist abgeleitet, nicht gezogen.** `[rand]` = FNV-1a über den Dateinamen,
+   auf acht Hexadezimalstellen gekürzt. FNV-1a ist ein fester, dokumentierter Algorithmus — der
+   `DefaultHasher` der Standardbibliothek ist es **nicht** (sein Ergebnis ist über die Versionen
+   des Compilers nicht garantiert stabil); das steht im Kommentar der Funktion.
+4. **Die Reihenfolge ist total.** Sortierungen (`CounterOrder::Name`, `CounterOrder::Date`) sind
+   *stabile* Sortierungen: gleiche Dateien behalten die Reihenfolge der Auswahl. Es gibt keine
+   Gleichheit, die zwei Dateien ohne Entscheidung liegen lässt.
+
+**Der Beweis in den Tests.** `tests/rename_is_deterministic.rs` bildet dieselbe Regel zweimal über
+dieselben Dateien ab und vergleicht die Ergebnisse; zusätzlich prüft es, dass eine andere Regel
+zwischen zwei Läufen nichts verändert, dass eine andere Uhr ohne `[date]`/`[time]` nichts verändert
+und dass der Zufallswert gleich bleibt. `tests/rename_properties.rs` ist der **echte
+`proptest`-Property-Test** der Spezifikation: er zieht das Format, den Schritt, die Breite und die
+Dateinamen aus dem Generator, bildet jeden Fall **zweimal** ab und vergleicht — 100 Fälle je
+Eigenschaft (`--proptest 100`).
+
+**Ausführen:**
+
+```bash
+cargo test -p phocommander-ops --test rename_is_deterministic -- --exact
+cargo test -p phocommander-ops --test rename_properties -- --proptest 100
+```
+
+**Erwartetes Ergebnis:** `test result: ok.` für beide Ziele. *Nicht gemessen* — siehe Abschnitt 5.
+
+---
+
+## 8. Die Entscheidungen, die ich getroffen habe (mit Begründung)
+
+### 8.1 Der Zufallswert — eine Abweichung von AC-M1-19
+
+`AC-M1-19` verlangt: „The random value differs between two runs." `FR-33` verlangt: „The rename
+result is deterministic: the same input always yields the same output." **Beides zusammen ist
+unmöglich.**
+
+Ich habe **FR-33** umgesetzt, weil der Auftrag die Determinismus als den Kern benennt und weil
+ein Name, der sich bei jedem Lauf ändert, für einen Benutzer wertlos ist. Der Ausweg für die
+Absicht von AC-M1-19 ist offen: `RenameInput::with_random(value)` — der Aufrufer (der Dialog) darf
+einen echten Zufallswert **einspeisen**; die Bibliothek bleibt eine reine Funktion, und der
+Zufallswert ändert sich dann, weil sich die *Eingabe* geändert hat.
+
+**Das braucht eine Entscheidung des Owners:** entweder AC-M1-19 wird auf „the random value is
+derived from the name and therefore the same in two runs" korrigiert, oder der Dialog zeichnet den
+Wert und die Zufallsquelle wird dort deklariert.
+
+### 8.2 Die Reihenfolge der Auswertung — Platzhalter, Ersetzen, Zähler
+
+Glossar: „Platzhalter werden vor den Ersetzungsregeln und dem Zähler ausgewertet." Benutzerhandbuch
+§3: „The three parts of the rule are evaluated in this order: Placeholders, Replace, Counter."
+
+Der Zähler wird also **zuletzt** geschrieben: eine Ersetzungsregel kann eine Nummer nicht
+verfälschen. Technisch steht zwischen den Phasen ein Zeichen, das in einem Dateinamen nicht
+vorkommen kann (`\u{0}`), damit die Ersetzung den Zähler nicht beschädigen kann. Eine Regel **ohne**
+Zähler lässt das Platzhalterzeichen `[n]` als Text im Namen stehen — der Benutzer sieht im
+Vorschau, dass der Zähler fehlt.
+
+### 8.3 Der Dialekt der Vorlagen — nur die eckigen Klammern
+
+Nach E13 benutzt der Dialog eckige, die benannten Vorlagen geschweifte Klammern. Die Engine
+spricht **die eckigen Klammern des Dialogs**; die geschweiften Klammern der fünf Vorlagen in
+`config/templates/` sind **nicht** implementiert. Die Zuordnung ist eine Zeile:
+
+| Vorlagenfeld | Platzhalter der Engine |
 |---|---|
-| `m1-build-all-targets.log` | `cargo build --workspace --all-targets --locked` (EXIT=0, 00:47 h) |
-| `m1-test-workspace.log` | `cargo test --workspace --locked` — **NOT RUN**, OOM im Link-Schritt |
-| `m1-fmt-check.log` | `cargo fmt --all --check` (EXIT=0, 01:12 h) |
-| `m1-clippy.log` | `cargo clippy …` — EXIT=101, Übersetzungsfehler in `phocommander-ui` |
-| `m1-deny-check.log` | `cargo deny check` — `advisories ok, bans ok, licenses ok, sources ok` |
-| `m1-audit.log` | `cargo audit` — EXIT=0 |
-| `m1-crate-boundaries.log`, `m1-file-size.log`, `m1-no-telemetry.log`, `m1-docs-links.log` | die Shell-Gates, alle EXIT=0 (01:35 h) |
-| `m1-requirement-ids.log`, `m1-acceptance-ids.log`, `m1-action-ids.log`, `m1-config-schema.log`, `m1-keymap-consistency.log`, `m1-interface-profiles.log` | die Konsistenzskripte, alle EXIT=0 (01:35 h) |
-| `m1-check-gates-negative.log` | der Negativtest der Gates: 25 Läufe, 25 × „the gate is effective", 0 Abweichungen |
-| `m1-build-release.log`, `m1-cargo-test-workspace.log` … | die Altbestände aus der M0-Abnahme (`cargo-*.log` ohne `m1-`Präfix) sind unverändert und dienen als historischer Vergleich |
+| `{serie}` | `[series]` |
+| `{staffel}` | `[season]` |
+| `{episode}` | `[episode]` |
+| `{titel}` | `[episode_title]` (der Name der Datei ohne das Muster `SxxEyy`) |
+| `{format}` | `[ext]` |
+| `{n}` | `[n]` (die Breite kommt aus der Zählerregel) |
+| `{date}` | `[date]` |
+| `{name}`, `{parent}`, `{size}`, `{hash}`, `{rand}` | gleichnamig |
 
-**Die Konsistenzskripte, einzeln (alle um 01:35 h):**
+Die Zuordnung gehört in die Schicht, die beide Welten kennt — der Dialog (er darf `crates/*`
+benutzen). `phocommander-config` darf `phocommander-ops` **nicht** benutzen (Geschwister-Regel),
+die Zuordnung kann also nicht im Konfigurations-Crate liegen.
 
-```
-check-requirement-ids.py   → RESULT: PASS — 7 of 7 checks passed   (154 Anforderungen / 154 Zeilen)
-check-acceptance-ids.py    → RESULT: PASS — 6 of 6 checks passed   (121 Kriterien)
-check-action-ids.py        → RESULT: PASS — 9 of 9 checks passed   (35 Aktions-IDs)
-check-config-schema.py     → RESULT: PASS — 7 of 7 checks passed   (9 Dateien unter config/)
-check-keymap-consistency.py→ RESULT: PASS — specification, catalogue and reference agree.
-check-interface-profiles.py→ RESULT: PASS — 4 of 4 checks passed   (2 Profile)
-```
+### 8.4 Die Namen der Serien-Platzhalter
 
-**`cargo deny check` (01:07 h), Auszug:**
+`[series]`, `[season]`, `[episode]`, `[episode_title]`. Bewusst **englisch** (wie die übrigen
+Platzhalter des Dialogs) und **nicht** `[title]` — das ist laut Glossar die Schreibweise „Title
+Case" und keine Episodenbezeichnung.
 
-```
-advisories ok, bans ok, licenses ok, sources ok
-EXIT=0
-```
+### 8.5 Der Episodentitel
 
-**`./scripts/check-gates-negative.sh --without-cargo` (01:40 h), Auszug:**
+„The.Expanse.S01E03.avi" → der Episodentitel ist „The.Expanse" — der Name der Datei **ohne** das
+Muster und ohne die Trenner an der Naht. Das ist die dokumentierte Lesart („offers the rest of the
+name as the episode title").
 
-```
-Gate 1 — telemetry … Gate 10 — interface profiles
-  RESULT: PASS — the gate is effective          (25 ×)
-  RESULT: FAIL — the gate did not behave as documented   (0 ×)
-RESULT: PASS — every gate that ran turned red on a broken state and green again.
-Gates proved: 25
-EXIT=0
-```
+### 8.6 Die Breite der Serienzahlen
 
-**`cargo test -p phocommander-integration-tests --test security_extraction_hardening --test security_extraction_limits` (01:10 h), Auszug:**
+Die Breite der Staffel und die Breite der Folge werden **getrennt** berechnet: die Breite ist das
+Maximum der Ziffernzahl der jeweiligen Zahl in der Auswahl, mindestens die Breite der Regel
+(Vorgabe 2). Deshalb wird aus `S01E099` und `S01E100` genau so, wie die Abnahme es fordert.
 
-```
-running 8 tests
-test a_symbolic_link_cannot_redirect_a_later_entry ... ok
-test a_symbolic_link_is_skipped_instead_of_being_created ... ok
-test a_symbolic_link_with_a_refused_target_is_reported_as_such ... ok
-test an_entry_that_leaves_the_destination_is_refused ... ok
-test an_entry_written_through_an_existing_symbolic_link_is_refused ... ok
-test nothing_is_written_outside_of_the_destination_directory ... ok
-test the_archive_with_the_set_user_id_bit_really_carries_it ... ok
-test the_set_user_id_and_the_set_group_id_bits_never_reach_the_file_system ... ok
-test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+### 8.7 Der Zähler zählt alle Dateien der Auswahl
 
-running 4 tests
-test an_archive_within_the_limits_is_extracted_completely ... ok
-test the_extraction_aborts_when_the_number_of_entries_limit_is_exceeded ... ok
-test the_extraction_aborts_when_the_size_of_a_single_entry_limit_is_exceeded ... ok
-test the_extraction_aborts_when_the_total_size_limit_is_exceeded ... ok
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
-```
+Auch die Dateien, deren Staffel und Folge bereits im Namen stehen, bekommen eine Nummer. Für die
+Episodennummer einer Datei **ohne** Muster ist der Zähler die Quelle; das entspricht dem Ablauf im
+Benutzerhandbuch (der Benutzer gibt die erste Nummer ein, der Zähler läuft weiter).
+
+### 8.8 Die Kurz-Prüfsumme
+
+`[hash]` = die ersten acht Zeichen der Prüfsumme in Hexadezimal, ohne führende Nullen
+(`format!("{:x}")`, nicht `{:08x}`) — bei einer 32-Bit-Prüfsumme ist das die ganze Summe, bei einer
+64-Bit-Prüfsumme die obere Hälfte.
 
 ---
 
-## 8. Offene Testlücken, die der Owner priorisieren muss
+## 9. Offene Punkte und das, was der Owner tun muss
 
-1. **Zentral bauen und testen.** `cargo build --workspace --all-targets --locked`,
-   `cargo test --workspace --locked`, `cargo fmt --all --check` und
-   `cargo clippy --workspace --all-targets --locked -- -D warnings` auf einer Maschine mit
-   ausreichend RAM. Die Zahl der grünen Tests ist bis dahin **unbekannt**.
-2. **Die Umbenennungs-Engine implementieren** (M1.6) — mit dem **Property-Test der Determinismus
-   (FR-33)** als erstem Test. Ohne sie bleiben FR-30 bis FR-35 ungedeckt.
-3. **Die Seriennummer schreiben** (FR-39): eine Funktion, die die Zahl mit der Breite schreibt,
-   die bei einer dreistelligen Nummer mitwächst.
-4. **Der Job-Queue ihre Tests geben** (`queue.rs`, `executor.rs`) — FR-21, NFR-09, NFR-09b hängen
-   daran.
-5. **Den Archivadaptern ihre Tests geben** — ein Round-Trip je Format (FR-67), das Anlegen eines
-   Archivs (FR-68), das virtuelle Verzeichnis (FR-65), das Kopieren eines Eintrags (FR-66).
-6. **Die fünf Gates mit cargo im Negativtest belegen** (Formatierung, statische Analyse, Tests,
-   Lizenz, Advisories). Für „Advisories" fehlt der Negativlauf vollständig.
-7. **Die Konfliktregeln, den Spaltensatz und die Sortierung pro Reiter testen** (FR-22, FR-17,
-   FR-18) — die Werte existieren, die Tests fehlen.
-8. **Die Allow-Liste von `deny.toml` bestätigen oder zurückdrehen** (Abschnitt 6).
-9. **Den Benchmark `benches/copy_verification_read_volume.rs`** schreiben (NFR-09a, AC-M1-45).
-10. **Die Oberfläche messbar machen**: die manuelle Abnahme von FR-10 (zwei Panels), FR-50
-    (Viewer-Bereich), FR-34 (Live-Vorschau) und FR-35 (Konfliktsprung) braucht ein Fenster; ohne
-    Fenster bleiben sie „nicht gemessen".
+### 9.1 Der Owner muss bauen und messen
+
+```bash
+cargo fmt --all                       # die Formatierung ist ungeprüft (Abschnitt 4.5)
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-features
+cargo test -p phocommander-ops --test rename_placeholders -- --exact
+cargo test -p phocommander-ops --test rename_search_and_replace -- --exact
+cargo test -p phocommander-ops --test rename_counter -- --exact
+cargo test -p phocommander-ops --test rename_is_deterministic -- --exact
+cargo test -p phocommander-ops --test rename_properties -- --proptest 100
+cargo test -p phocommander-ops --test series_detects_season_and_episode -- --exact
+cargo test -p phocommander-ops --test series_name_defaults_to_the_parent -- --exact
+cargo test -p phocommander-ops --test series_zero_padding -- --exact
+cargo test -p phocommander-ops --test rename_reports_forbidden_characters -- --exact
+cargo deny check && cargo audit       # die neue Abhängigkeit regex braucht die Lizenzprüfung (§5.8)
+```
+
+Die Testziele sind so benannt, dass die Abnahmekriterien mit `--exact` genau einen Test treffen:
+`cargo test -p phocommander-ops --test rename_counter -- --exact` führt den Test
+`rename_counter` aus.
+
+### 9.2 Wo ein Fehler am wahrscheinlichsten ist
+
+Da ich nicht bauen durfte, nenne ich die Stellen, an denen ich die größte Unsicherheit habe:
+
+1. `template/types.rs` — der `thiserror`-Aufbau von `TemplateError` und die `Display`-Zeilen der
+   Fehler (Zeilen 495 ff.).
+2. `template/placeholders.rs` — die `match`-Arme in `value_of` (17 Arme, alle Varianten der
+   `Placeholder`-Enum).
+3. `template/series.rs` — die Byte-Offsets des Musters und der Schnitt mit `base[..pattern.start]`
+   (der Schutz `pattern.end > base.len()` ist eingebaut, damit kein panic entsteht).
+4. Die Formatierung: `cargo fmt --all` bitte zuerst laufen lassen, dann `cargo fmt --all --check`.
+
+### 9.3 Entscheidungen, die der Owner braucht
+
+| # | Frage | Mein Vorschlag | Warum es eine Entscheidung ist |
+|---|---|---|---|
+| 1 | AC-M1-19 („der Zufallswert unterscheidet sich zwischen zwei Läufen") gegen FR-33 (Determinismus) | AC-M1-19 auf „abgeleitet vom Namen, also in zwei Läufen gleich" korrigieren; der Dialog speist einen echten Zufallswert über `RenameInput::with_random` ein | Zwei Kriterien widersprechen sich. Die Spezifikation ist die Quelle; ein Kriterium darf nicht gegen die Anforderung laufen. |
+| 2 | Die geschweiften Klammern der benannten Vorlagen (E13) | Die Zuordnung (8.3) in den Dialog legen | FR-36 gehört einem anderen Auftrag; die Engine spricht den Dialog-Dialekt. |
+| 3 | Der Zähler zählt auch die Dateien mit erkannter Staffel/Episode (8.7) | So lassen | Das Benutzerhandbuch beschreibt den Ablauf nur für Dateien **ohne** Muster. |
+| 4 | Der Episodentitel ist der Name ohne das Muster (8.5) | So lassen | Eine Alternative wäre „der ganze Name" — dann hieße die Datei „... - The.Expanse.S01E03.avi". |
+| 5 | `regex` als neue Abhängigkeit | Behalten | Sie ist bereits im Abhängigkeitsbaum des Workspace, MIT/Apache-2.0, ohne C-Anteil. §5.8 verlangt trotzdem die Lizenzprüfung und eine Begründung — dieses Dokument ist die Begründung. |
+| 6 | Die Reihenfolge der Auswertung (8.2) | So lassen (Platzhalter → Ersetzen → Zähler) | Steht so im Glossar und im Benutzerhandbuch; die Wirkung ist, dass der Zähler die Ersetzung überlebt. |
+
+### 9.4 Was der nächste Auftrag (der Dialog) von mir bekommt
+
+* `form_names(&rule, &inputs, now) -> Result<Vec<FormedName>, TemplateError>` — die Vorschau
+  (FR-34) ist ein Aufruf dieser Funktion je Änderung der Regel.
+* `FormedName::problem()` — der Fehler je Datei (ein Datei mit unbekanntem `[hash]` blockiert die
+  anderen nicht).
+* `name_problems(name)` — die verbotenen Zeichen mit dem vorgeschlagenen Ersatz (FR-40, die
+  Engine-Hälfte).
+* `rename_pairs(&names)` — `None`, wenn auch nur eine Datei keinen Namen bekam; der Dialog soll
+  dann gar nichts anbieten (FR-41).
+* `Placeholder::ALL` — die Liste für die Menüleiste des Dialogs.
+* `SeriesRule` + `detect_series_pattern` — die Vorbelegung der Staffel und der Folge (FR-37) und
+  der Serienname aus dem Elternverzeichnis (FR-38).
+
+**Was der Dialog zusätzlich bauen muss:** die Konfliktsprung-Liste (FR-35), die Speicherung der
+Vorlagen (FR-36) und die Zuordnung der geschweiften Klammern (8.3).
 
 ---
 
-## 9. Dateien, die ich hinterlassen habe
+## 10. Die Liste der Dateien im Baum (Übergabe wie gefordert)
 
-**Neu:**
+```
+crates/phocommander-ops/src/template.rs                       (neu,   304 Zeilen)
+crates/phocommander-ops/src/template/types.rs                 (neu,   533 Zeilen)
+crates/phocommander-ops/src/template/placeholders.rs          (neu,   370 Zeilen)
+crates/phocommander-ops/src/template/replace.rs               (neu,   164 Zeilen)
+crates/phocommander-ops/src/template/counter.rs               (neu,   170 Zeilen)
+crates/phocommander-ops/src/template/series.rs                (neu,   293 Zeilen)
+crates/phocommander-ops/src/template/tests.rs                 (neu,   484 Zeilen)
+crates/phocommander-ops/src/series.rs                         (geänd., 309 Zeilen)
+crates/phocommander-ops/src/lib.rs                            (geänd.,  73 Zeilen)
+crates/phocommander-ops/Cargo.toml                           (geänd.,  33 Zeilen)
+crates/phocommander-ops/tests/rename_placeholders.rs          (neu,   110 Zeilen)
+crates/phocommander-ops/tests/rename_search_and_replace.rs   (neu,    91 Zeilen)
+crates/phocommander-ops/tests/rename_counter.rs               (neu,    89 Zeilen)
+crates/phocommander-ops/tests/rename_is_deterministic.rs      (neu,   118 Zeilen)
+crates/phocommander-ops/tests/rename_properties.rs            (neu,   108 Zeilen)
+crates/phocommander-ops/tests/series_detects_season_and_episode.rs (neu, 97 Zeilen)
+crates/phocommander-ops/tests/series_name_defaults_to_the_parent.rs (neu, 78 Zeilen)
+crates/phocommander-ops/tests/series_zero_padding.rs          (neu,   100 Zeilen)
+crates/phocommander-ops/tests/rename_reports_forbidden_characters.rs (neu, 80 Zeilen)
+Cargo.toml                                                   (geänd., +10 Zeilen)
+Cargo.lock                                                   (geänd.,  +2 Zeilen)
+docs/WHERE_TO_CHANGE.md                                      (geänd.,  +1 Zeile)
+docs/ARCHITECTURE.md                                         (geänd.,  1 Zeile)
+deliverable.md                                               (neu)
+deliverable.core-engineer-rename.md                          (neu, identische Kopie)
+```
 
-* `tests/security/extraction_hardening.rs` — 8 negative Tests (H-02, H-03, H-04, H-05)
-* `tests/security/extraction_limits.rs` — 4 negative Tests (H-06)
-* `docs/acceptance/M1-ACCEPTANCE.md` — die Abnahme M1
-* `crates/phocommander-ops/src/copy/tests.rs` — die Ablage der Kopietests (von der zweiten
-  Session inzwischen selbst übernommen)
-* `scripts/qa-env.sh` — die Umgebung der QA-Läufe (dokumentiert, mit dem RAM-Grund)
-
-**Geändert:**
-
-* `docs/acceptance/M0-ACCEPTANCE.md` — auf Fassung 2.0 gebracht
-* `docs/REQUIREMENTS-IDS.md` — 154 Zeilen, aus der Spezifikation erzeugt
-* `docs/ACCEPTANCE-CRITERIA.md` — 16 Kriterien ergänzt (121 insgesamt)
-* `scripts/check-gates-negative.sh` — 15 Gates, `--without-cargo`
-* `tests/Cargo.toml` — zwei neue Testziele
-* `config/defaults.toml` — Kommentar über `[remote]`
-* `deny.toml` — Allow-Liste erweitert (Owner-Entscheidung offen)
-* `crates/phocommander-ops/Cargo.toml` — `thiserror` ergänzt
-* die in Abschnitt 6 aufgelisteten Fremddateien (Reparaturen)
-* `Cargo.lock` — durch cargo aktualisiert
-
-**Kein Commit, kein Push, kein Tag.** Es liegt keine halb geschriebene Datei im Baum: die beiden
-neuen Testdateien sind grün, die Skripte sind syntaktisch geprüft (`bash -n`) und gelaufen, und
-alle Python-Skripte melden `PASS`.
-
----
-
-*Ende des Übergabedokuments. Jede Aussage nennt den Kommandooutput oder den grünen Testnamen,
-der dahintersteht. Was nicht gemessen wurde, steht als „nicht gemessen" dort und nicht als
-„erfüllt".*
+`docs/REQUIREMENTS.md` wurde **nicht** verändert — die Spezifikation ist die Quelle, und die
+Abweichung (8.1) ist hier beschrieben, nicht dort korrigiert.
