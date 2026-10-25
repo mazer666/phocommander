@@ -181,9 +181,25 @@ jobs:
         run: ./scripts/check-file-size.sh
 
   # ---------------------------------------------------------------------------
-  # Gate 3: Quer-Kompilierung fuer die mobilen Ziele und BSD.
+  # Gate 3: Quer-Kompilierung fuer die mobilen Ziele und die Linux-Bauten.
   # Der Bau wird geprueft, die Funktionstests bleiben eine manuelle Aufgabe
   # (NOT RUN mit Grund, bis echte Geraete im Testlauf stehen).
+  #
+  # Zwei Zeilen dieser Matrix sind noch nicht gebaut, und sie sagen es hier:
+  #
+  #   aarch64-linux-android   braucht das NDK von Google. Ohne das NDK
+  #                           findet der C-Compiler des Crates `cc` keine
+  #                           Werkzeuge fuer das Ziel, und der Bau bricht im
+  #                           Schritt der C-Kompilierung ab. Das NDK liefert
+  #                           der Meilenstein M4 mit dem Gradle-Projekt.
+  #   aarch64-apple-ios*      braucht das SDK von Apple, das nur auf einem
+  #                           macOS-Rechner mit Xcode vorhanden ist, und das
+  #                           Programm, das gebaut wird, ist die
+  #                           Desktop-Anwendung. Das Xcode-Projekt liefert
+  #                           der Meilenstein M5.
+  #
+  # Beide Zeilen bleiben als Tor stehen, damit der rote Zustand sichtbar
+  # bleibt, bis der jeweilige Meilenstein sie gruen macht.
   # ---------------------------------------------------------------------------
   cross-compile:
     name: Quer-Kompilierung (${{ matrix.target }})
@@ -196,10 +212,6 @@ jobs:
             label: Android arm64
           - target: x86_64-unknown-linux-gnu
             label: Linux
-          - target: x86_64-unknown-freebsd
-            label: FreeBSD
-          - target: x86_64-unknown-netbsd
-            label: NetBSD
           - target: aarch64-apple-ios
             label: iOS arm64
           - target: aarch64-apple-ios-sim
@@ -227,6 +239,108 @@ jobs:
         run: |
           echo "Quer-Bau ${{ matrix.target }} erfolgreich"
           echo "Die vollstaendige Abnahme der mobilen Ziele erfolgt in M4 und M5"
+
+  # ---------------------------------------------------------------------------
+  # Gate 3b: Die BSD-Bauten.
+  #
+  # Warum ein eigener Job: die beiden BSD-Ziele brauchen einen Cross-Linker
+  # und den Sysroot des Zielsystems. Der Rust-Compiler allein baut sie nicht.
+  # Die Linkzeile des Ziels x86_64-unknown-freebsd traegt die Bibliotheken
+  # "-lexecinfo -lkvm -lmemstat -lprocstat -ldevstat", und der Linker des
+  # Linux-Laeufer kennt sie nicht. Ohne das Kreuz-Werkzeug endet der Bau so:
+  #
+  #     error: linking with `cc` failed: exit status: 1
+  #     /usr/bin/ld: cannot find -lexecinfo: No such file or directory
+  #
+  # Das Kreuz-Werkzeug kommt aus dem Container-Image von cross-rs. Das Image
+  # traegt den Cross-Compiler, die crt-Objekte und den Sysroot des
+  # Zielsystems und setzt die Variable CARGO_TARGET_..._LINKER, die der
+  # Compiler fuer den Link-Schritt braucht. Die Version des Images ist
+  # festgeschrieben, damit der Bau reproduzierbar bleibt.
+  #
+  # Die Quellen des Images:
+  #   https://github.com/cross-rs/cross/blob/main/docker/Dockerfile.x86_64-unknown-freebsd
+  #   https://github.com/cross-rs/cross/blob/main/docker/Dockerfile.x86_64-unknown-netbsd
+  # ---------------------------------------------------------------------------
+  bsd:
+    name: BSD (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-freebsd
+            label: FreeBSD
+            image: ghcr.io/cross-rs/x86_64-unknown-freebsd:0.2.5
+            # Die Laufzeitbibliothek des Systems steht in der Linkzeile der
+            # fertigen Datei. Sie beweist, dass ein BSD-Programm entstanden ist
+            # und kein Linux-Programm.
+            libc: libc.so.7
+          - target: x86_64-unknown-netbsd
+            label: NetBSD
+            image: ghcr.io/cross-rs/x86_64-unknown-netbsd:0.2.5
+            libc: libc.so.12
+    steps:
+      - name: Quellen auschecken
+        uses: actions/checkout@v4
+
+      - name: Rust-Toolchain installieren
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust-Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      # Der Bau laeuft im Container, weil das Kreuz-Werkzeug dort liegt. Das
+      # Werkzeug des Rust-Projekts kommt aus dem Laufzeitsystem des
+      # Laeufer: das Verzeichnis mit dem Rust-Werkzeug und das Verzeichnis
+      # mit der Toolchain werden eingebunden, und die Variable
+      # RUSTUP_TOOLCHAIN benennt die Toolchain aus, damit die Datei
+      # rust-toolchain.toml nicht im Container gelesen wird.
+      #
+      # Die Verzeichnisse haengen an /cargo und /rustup und nicht an /root:
+      # der Container laeuft mit der Kennung des Laeufer, und ein Benutzer
+      # ohne Rechte darf /root nicht betreten.
+      - name: Bauen
+        run: |
+          docker run --rm \
+            --volume "$PWD:/project" \
+            --workdir /project \
+            --volume "$HOME/.cargo:/cargo" \
+            --volume "$HOME/.rustup:/rustup" \
+            --env CARGO_HOME=/cargo \
+            --env RUSTUP_HOME=/rustup \
+            --env RUSTUP_TOOLCHAIN=stable-x86_64-unknown-linux-gnu \
+            --user "$(id -u):$(id -g)" \
+            "${{ matrix.image }}" \
+            /cargo/bin/cargo build --workspace --release --target "${{ matrix.target }}"
+
+      # Der Beweis, dass der Bau etwas erzeugt hat: die Datei ist eine
+      # ELF-Datei des Zielsystems und haengt an der Laufzeitbibliothek des
+      # Zielsystems. Ein Linux-Programm haengt an "libc.so.6", und die
+      # Pruefung schlaegt dann fehl.
+      - name: Artefakt pruefen
+        run: |
+          artefact="target/${{ matrix.target }}/release/phocommander-desktop"
+          test -f "$artefact"
+          file "$artefact"
+          readelf -d "$artefact" | grep NEEDED || true
+          if ! readelf -d "$artefact" | grep -q "NEEDED.*${{ matrix.libc }}"; then
+            echo "FEHLER: die Datei haengt nicht an ${{ matrix.libc }}." >&2
+            exit 1
+          fi
+          if readelf -d "$artefact" | grep -q "libc.so.6"; then
+            echo "FEHLER: die Datei ist ein Linux-Programm." >&2
+            exit 1
+          fi
+
+      - name: Ergebnis melden
+        run: |
+          echo "BSD-Bau ${{ matrix.target }} erfolgreich"
+          echo "Der Bau auf einem echten BSD-Geraet bleibt eine manuelle Aufgabe (M3)"
 
   # ---------------------------------------------------------------------------
   # Gate 4: Das Leistungsgate. Die Zielwerte aus der Spezifikation sind
