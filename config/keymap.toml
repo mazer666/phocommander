@@ -41,6 +41,11 @@
 "panel.view" = "F3"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "F4"
+# Filter the entries of the active pane while the user types.
+# The specification names the filter in FR-74a to FR-74f and does not
+# name a key for it; Ctrl+F is the completion that the reference
+# documents in docs/KEYMAP.md.
+"panel.filter" = "Ctrl+F"
 # Copy the selection into the other pane.
 "panel.copy" = "F5"
 # Move the selection into the other pane.
@@ -122,6 +127,8 @@
 "panel.view" = "palette:file.view"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:file.edit"
+# Filter the entries of the active pane while the user types.
+"panel.filter" = "palette:panel.filter"
 # Copy the selection into the other pane.
 "panel.copy" = "palette:file.copy"
 # Move the selection into the other pane.
@@ -200,6 +207,8 @@
 "panel.view" = "palette:file.view"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:file.edit"
+# Filter the entries of the active pane while the user types.
+"panel.filter" = "palette:panel.filter"
 # Copy the selection into the other pane.
 "panel.copy" = "palette:file.copy"
 # Move the selection into the other pane.
