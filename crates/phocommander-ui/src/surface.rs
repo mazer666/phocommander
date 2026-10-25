@@ -416,10 +416,10 @@ impl PanelError {
         }
     }
 
-    /// The values that the message of this error carries.
-    pub fn message_arguments(&self) -> Vec<String> {
+    /// The values that the message of this error carries, with their names.
+    pub fn message_arguments(&self) -> Vec<(&'static str, String)> {
         match self {
-            Self::SamePanel { side } => vec![side.as_str().to_string()],
+            Self::SamePanel { side } => vec![("side", side.as_str().to_string())],
         }
     }
 }

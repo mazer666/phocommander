@@ -23,10 +23,12 @@
 use std::collections::BTreeSet;
 
 use fluent::{FluentArgs, FluentBundle, FluentResource};
+use fluent_bundle::types::FluentNumber;
 use fluent_syntax::ast::Entry;
 use rust_embed::RustEmbed;
 use unic_langid::LanguageIdentifier;
 
+use crate::format::LocaleFormat;
 use crate::locale::{Locale, lookup_chain};
 
 /// The embedded catalogue directory.
@@ -69,10 +71,42 @@ pub fn catalogue_directories() -> BTreeSet<String> {
 //       implement Debug, and the translator holds a list of bundles. The
 //       fields that carry the state are written by hand instead, so that the
 //       translator can be printed in a log without the texts of the catalogue.
+/// A value that a message of the catalogue carries.
+///
+/// WHY: the value is either a number or a text, and the two are written
+///       differently. A number that is handed over as a text loses the
+///       separators of the locale.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MessageValue {
+    /// A number.
+    Number(u64),
+
+    /// A text.
+    Text(String),
+}
+
+/// The catalogues of the locales of the interface.
+///
+/// WHY: the translator owns the catalogues of the chain of the lookup and the
+///       rules of the language of the first locale. It is the one place where
+///       the texts of the product and the rules of the language meet, so that
+///       neither the interface nor the application has to know how a
+///       catalogue is stored (FR-122, FR-123).
 pub struct Translator {
     chain: Vec<Locale>,
     bundles: Vec<FluentBundle<FluentResource>>,
     keys: BTreeSet<String>,
+
+    /// The formats of the language of the translator.
+    ///
+    /// WHY: Fluent writes a number without the separators of the language —
+    ///       "1234" in German as well as in English. The rules of the
+    ///       language live in the data of CLDR, and the translator owns them
+    ///       so that the numbers of the interface carry the separators of the
+    ///       language (FR-123). The formats are missing when the data of the
+    ///       language does not carry them; the number then stands without a
+    ///       separator, and the interface is still readable.
+    formats: Option<LocaleFormat>,
 }
 
 impl std::fmt::Debug for Translator {
@@ -191,6 +225,59 @@ impl Translator {
         key.to_string()
     }
 
+    /// The message of a key with the given arguments.
+    ///
+    /// WHY: a message of the catalogue can carry values — a number of
+    ///       entries, the name of a panel. The values carry the name that
+    ///       the message expects, and the catalogue of the product turns
+    ///       that name into the placeholder of its own language. A number is
+    ///       handed over as a number and not as a text, so that the catalogue
+    ///       writes it with the separators of the locale — "1.234" in German
+    ///       and "1,234" in English (FR-123).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_i18n::{Locale, MessageValue, Translator};
+    ///
+    /// let translator = Translator::new(Locale::english())
+    ///     .unwrap_or_else(|error| panic!("the catalogue should be readable: {error}"));
+    /// let text = translator.text_with_arguments(
+    ///     "panel-status-entries",
+    ///     &[("count".to_string(), MessageValue::Number(7))],
+    /// );
+    /// assert!(text.contains('7'));
+    /// ```
+    pub fn text_with_arguments(&self, key: &str, arguments: &[(String, MessageValue)]) -> String {
+        let mut values = FluentArgs::new();
+        for (name, value) in arguments {
+            match value {
+                MessageValue::Number(number) => {
+                    // WHY: the number is written twice, and each time for a
+                    //       reason. The text carries the separators of the
+                    //       language — "1.234" in German and "1,234" in
+                    //       English — and the raw number is what the plural
+                    //       rule of the message selects with. A catalogue
+                    //       that shows a number therefore writes the name of
+                    //       the text for the display and the name of the
+                    //       raw number for the selection:
+                    //       `{ $count_number -> [one] … *[other] { $count } … }`.
+                    let text = match &self.formats {
+                        Some(formats) => formats.number(*number),
+                        None => number.to_string(),
+                    };
+                    values.set(name.as_str(), text);
+                    // WHY: the name is handed over as an owned string. The
+                    //       arguments own it, and it outlives the call.
+                    values.set(format!("{name}_number"), FluentNumber::from(*number));
+                }
+                MessageValue::Text(text) => {
+                    values.set(name.as_str(), text.as_str());
+                }
+            }
+        }
+        self.text_with_args(key, &values)
+    }
+
     /// Whether the catalogue of this locale knows the key.
     ///
     /// WHY: the test that compares the key sets of two locales needs to know
@@ -217,10 +304,17 @@ impl Translator {
             bundles.push(bundle);
         }
 
+        // WHY: the formats belong to the language of the translator — the
+        //       first locale of the chain. A locale that the data of CLDR
+        //       does not know falls back to English, which is the fallback of
+        //       the whole product.
+        let formats = LocaleFormat::for_tag(chain[0].as_str()).ok();
+
         Ok(Self {
             chain,
             bundles,
             keys,
+            formats,
         })
     }
 }
@@ -268,6 +362,16 @@ fn build_bundle(
     // every placeholder. They are correct for a bidirectional text and wrong
     // for a file manager that compares a translated label with a key.
     bundle.set_use_isolating(false);
+    // WHY: the built-in functions of Fluent are not registered by the
+    //       constructor. Without this call the message `NUMBER($count)` is
+    //       an unknown function, the message falls back to the key, and the
+    //       numbers of the interface carry no separator of the locale.
+    bundle
+        .add_builtins()
+        .map_err(|error| CatalogueError::Rejected {
+            path: format!("the built-in functions of the locale {locale}"),
+            problems: vec![error.to_string()],
+        })?;
 
     let mut identifiers = BTreeSet::new();
 
@@ -364,4 +468,69 @@ pub enum CatalogueError {
         /// The problems the bundle reported.
         problems: Vec<String>,
     },
+}
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule that
+// forbids a panic applies to the production code, and it is enforced there.
+mod tests {
+    use super::*;
+
+    /// The translator of a locale, or a panic with the reason.
+    fn translator(directory: &str) -> Translator {
+        let locale = Locale::of(directory);
+        match Translator::new(locale) {
+            Ok(translator) => translator,
+            Err(error) => panic!("the catalogue should be readable: {error}"),
+        }
+    }
+
+    #[test]
+    fn a_number_that_carries_a_value_is_written_with_the_separators_of_the_locale() {
+        // act
+        let german = translator("de").text_with_arguments(
+            "panel-status-entries",
+            &[("count".to_string(), MessageValue::Number(1_234))],
+        );
+        let english = translator("en").text_with_arguments(
+            "panel-status-entries",
+            &[("count".to_string(), MessageValue::Number(1_234))],
+        );
+        let one = translator("en").text_with_arguments(
+            "panel-status-entries",
+            &[("count".to_string(), MessageValue::Number(1))],
+        );
+
+        // assert
+        // WHY: the number is handed over as a number and not as a text. The
+        //       catalogue therefore writes it with the separators of its own
+        //       language, and the German one carries the point where the
+        //       English one carries the comma (FR-123).
+        assert!(
+            german.contains("1.234"),
+            "the German catalogue should write the point: {german}"
+        );
+        assert!(
+            english.contains("1,234"),
+            "the English catalogue should write the comma: {english}"
+        );
+        // WHY: the plural rule selects with the raw number, and the text
+        //       shows the number of the language.
+        assert_eq!(one, "1 entry");
+    }
+
+    #[test]
+    fn a_text_that_carries_a_value_reaches_the_message() {
+        // act
+        let text = translator("en").text_with_arguments(
+            "error-transfer-same-panel",
+            &[("side".to_string(), MessageValue::Text("left".to_string()))],
+        );
+
+        // assert
+        assert!(
+            text.contains("left"),
+            "the message should carry the value: {text}"
+        );
+    }
 }

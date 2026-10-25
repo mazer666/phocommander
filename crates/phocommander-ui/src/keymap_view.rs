@@ -347,18 +347,20 @@ impl BindingError {
         }
     }
 
-    /// The values that the message of this error carries.
+    /// The values that the message of this error carries, with their names.
     ///
     /// WHY: the message of the catalogue has placeholders for the values that
     ///       the error knows — the identifier of the action, the name of the
-    ///       key. The values are handed over in the order in which the
-    ///       catalogue expects them.
-    pub fn message_arguments(&self) -> Vec<String> {
+    ///       key. The name belongs to the placeholder of the message, and
+    ///       only the message knows it.
+    pub fn message_arguments(&self) -> Vec<(&'static str, String)> {
         match self {
-            Self::UnknownAction { identifier } => vec![identifier.clone()],
-            Self::UnknownKey { binding, key } => vec![binding.clone(), key.clone()],
+            Self::UnknownAction { identifier } => vec![("identifier", identifier.clone())],
+            Self::UnknownKey { binding, key } => {
+                vec![("binding", binding.clone()), ("key", key.clone())]
+            }
             Self::Malformed { binding, reason } => {
-                let mut values = vec![binding.clone()];
+                let mut values = vec![("binding", binding.clone())];
                 values.extend(reason.message_arguments());
                 values
             }
@@ -408,10 +410,10 @@ impl MalformedReason {
         }
     }
 
-    /// The values that the message of this reason carries.
-    pub fn message_arguments(&self) -> Vec<String> {
+    /// The values that the message of this reason carries, with their names.
+    pub fn message_arguments(&self) -> Vec<(&'static str, String)> {
         match self {
-            Self::KeyTwice(name) => vec![name.clone()],
+            Self::KeyTwice(name) => vec![("key", name.clone())],
             _ => Vec::new(),
         }
     }
