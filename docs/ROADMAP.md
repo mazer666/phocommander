@@ -133,28 +133,28 @@ geschrieben.
 
 ## M2 — Maturity on macOS
 
-**Ziel.** Eine Anwendung, die im Alltag einen Dateibrowser ersetzen kann, in beiden Sprachen, mit
-einem Interface, das sich der Kontext anpasst.
+**Ziel.** Eine Anwendung, die im Alltag einen Dateibrowser ersetzen kann, mit einem Interface,
+das sich der Kontext anpasst. Die Sprachen folgen in **M2b**.
 
 | Punkt | Nachweis | Status |
 |---|---|---|
-| Die elf gemeinsamen Regeln R-01 bis R-21 | alle Gates | offen — wird am Ende gemessen |
-| Die Registerkarten mit eigenem Zustand je Karte, verschiebbar zwischen den Panels | `phocommander-ui` | in Arbeit |
-| Die Umschaltung der Anordnung ohne Neustart | `phocommander-ui` | in Arbeit |
-| Der Verzeichnisbaum je Panel, ohne rekursives Einlesen | `phocommander-ui` | in Arbeit |
-| Die Schnellansicht des markierten Eintrags | `phocommander-ui` | in Arbeit |
-| Die strukturell unterschiedlichen Layouts je Kontext | `phocommander-ui` | in Arbeit |
-| Die Oberfläche ist aufgeräumt: gleiche Abstände, eine Trennlinie, sichtbarer Fokus | `phocommander-ui` | in Arbeit |
-| Der atomare Kopiermodus: temporäre Datei, prüfen, umbenennen, immer aufräumen | `phocommander-ops` | in Arbeit |
-| Der Synchronisationsplan mit den Zuständen je Eintrag, ohne Plan keine Bewegung | `phocommander-ops` | in Arbeit |
-| Die atomare Umbenennung: alle Dateien oder keine | `phocommander-ops` | in Arbeit |
-| Das Wiederholen nur der fehlgeschlagenen Einträge | `phocommander-ops` | in Arbeit |
-| Der Verzeichnisvergleich auf Inhalt, Datum und Größe | `phocommander-ops` | in Arbeit |
-| Das Rückgängig, mit der sichtbaren Einschränkung | `phocommander-ops` | in Arbeit |
-| Die Archivprüfung ohne Entpacken | `phocommander-archive` | in Arbeit |
-| Die Interface-Profile `clean` und `full` sind wirksam, nicht nur beschrieben | `config/profiles/` | in Arbeit |
-| Jede Aktion einzeln schaltbar: `visible`, `palette`, `hidden` | `phocommander-ui` | in Arbeit |
-| Ein Profil enthält nur Oberflächenentscheidungen | `scripts/check-interface-profiles.py` | in Arbeit |
+| Die elf gemeinsamen Regeln R-01 bis R-21 | alle Gates | **erfüllt** — 924 Tests, 34 Gates, alle grün |
+| Die Registerkarten mit eigenem Zustand je Karte, verschiebbar zwischen den Panels | `phocommander-ui` | **erfüllt** |
+| Die Umschaltung der Anordnung ohne Neustart | `phocommander-ui` | **erfüllt** |
+| Der Verzeichnisbaum je Panel, ohne rekursives Einlesen | `phocommander-ui` | **erfüllt** |
+| Die Schnellansicht des markierten Eintrags | `phocommander-ui` | **erfüllt** |
+| Die strukturell unterschiedlichen Layouts je Kontext | `phocommander-ui` | **erfüllt** |
+| Die Oberfläche ist aufgeräumt: gleiche Abstände, eine Trennlinie, sichtbarer Fokus | `phocommander-ui` | **erfüllt** |
+| Der atomare Kopiermodus: temporäre Datei, prüfen, umbenennen, immer aufräumen | `phocommander-ops` | **erfüllt** |
+| Der Synchronisationsplan mit den Zuständen je Eintrag, ohne Plan keine Bewegung | `phocommander-ops` | **erfüllt** |
+| Die atomare Umbenennung: alle Dateien oder keine | `phocommander-ops` | **erfüllt** |
+| Das Wiederholen nur der fehlgeschlagenen Einträge | `phocommander-ops` | **erfüllt** |
+| Der Verzeichnisvergleich auf Inhalt, Datum und Größe | `phocommander-ops` | **erfüllt** |
+| Das Rückgängig, mit der sichtbaren Einschränkung | `phocommander-ops` | **erfüllt** |
+| Die Archivprüfung ohne Entpacken | `phocommander-archive` | **erfüllt** |
+| Die Interface-Profile `clean` und `full` sind wirksam, nicht nur beschrieben | `config/profiles/` | **erfüllt** |
+| Jede Aktion einzeln schaltbar: `visible`, `palette`, `hidden` | `phocommander-ui` | **erfüllt** |
+| Ein Profil enthält nur Oberflächenentscheidungen | `scripts/check-interface-profiles.py` | **erfüllt** |
 | Der About-Dialog nennt die Zahl der tatsächlich unterstützten Formate | `phocommander-viewer` | offen |
 | Die Leistungsziele NFR-01 bis NFR-08 sind gemessen | `benches/`, `docs/acceptance/logs/` | offen |
 
