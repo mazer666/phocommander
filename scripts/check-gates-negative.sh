@@ -70,6 +70,14 @@ done
 
 export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
 
+# WHY: the calls of cargo in this script use the wrapper of the repository.
+#       The wrapper empties the standard input and points cargo at the real
+#       driver of the toolchain. Without it the compiler reads the output of
+#       the previous command as Rust source and dies with "unknown start of
+#       token" — a failure that looks like a broken toolchain and like a full
+#       disk.
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # WHY: the target directory is always the one of this run and never the one
 #       of the environment. The script builds a copy of the repository, and a
 #       test binary carries the path of the repository it was built in — the
@@ -550,14 +558,14 @@ text = path.read_text(encoding="utf-8")
 text = text + "\npub fn qa_gate_probe( ) -> u32 { return 1 }\n"
 path.write_text(text, encoding="utf-8")
 PYTHON
-(cd "$COPY" && cargo fmt --all --check < /dev/null) > "$SCRATCH/fmt-negative.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" fmt --all --check < /dev/null) > "$SCRATCH/fmt-negative.log" 2>&1
 negative=$?
 show "^Diff in|^error" "$SCRATCH/fmt-negative.log"
 report "the gate is red on a source file that is not formatted" 1 "$negative"
 echo
 cp "$SCRATCH/checksum.rs" "$COPY_FILE"
 echo "11.2 positive run (the file is formatted again):"
-(cd "$COPY" && cargo fmt --all --check < /dev/null) > "$SCRATCH/fmt-positive.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" fmt --all --check < /dev/null) > "$SCRATCH/fmt-positive.log" 2>&1
 positive=$?
 show "^Diff in|^error" "$SCRATCH/fmt-positive.log"
 report "the gate is green again" 0 "$positive"
@@ -589,14 +597,14 @@ PYTHON
 #       not prove that every crate of the workspace is free of lints, and
 #       the lint of the whole workspace does not fit into the memory of the
 #       sandbox beside the build that the script itself makes.
-(cd "$COPY" && cargo clippy -p phocommander-core --all-targets --locked -- -D warnings < /dev/null) > "$SCRATCH/clippy-negative.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" clippy -p phocommander-core --all-targets --locked -- -D warnings < /dev/null) > "$SCRATCH/clippy-negative.log" 2>&1
 negative=$?
 show "len_zero|^error" "$SCRATCH/clippy-negative.log"
 report "the gate is red on a lint of clippy" "nonzero" "$negative"
 echo
 cp "$SCRATCH/checksum.rs" "$COPY_FILE"
 echo "12.2 positive run (the lint is removed again):"
-(cd "$COPY" && cargo clippy -p phocommander-core --all-targets --locked -- -D warnings < /dev/null) > "$SCRATCH/clippy-positive.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" clippy -p phocommander-core --all-targets --locked -- -D warnings < /dev/null) > "$SCRATCH/clippy-positive.log" 2>&1
 positive=$?
 show "len_zero|^error" "$SCRATCH/clippy-positive.log"
 report "the gate is green again" 0 "$positive"
@@ -625,14 +633,14 @@ PYTHON
 #       it does not prove that every crate of the workspace compiles, and
 #       the whole workspace does not fit into the memory of the sandbox
 #       beside the build that the script itself makes.
-(cd "$COPY" && cargo test -p phocommander-integration-tests --test config_defaults --locked < /dev/null) > "$SCRATCH/test-negative.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" test -p phocommander-integration-tests --test config_defaults --locked < /dev/null) > "$SCRATCH/test-negative.log" 2>&1
 negative=$?
 show "the QA gate probe fails on purpose|test result: FAILED|^error" "$SCRATCH/test-negative.log"
 report "the gate is red when a test fails" "nonzero" "$negative"
 echo
 cp "$SCRATCH/config_defaults.rs" "$TEST_FILE"
 echo "13.2 positive run (the test is repaired):"
-(cd "$COPY" && cargo test -p phocommander-integration-tests --test config_defaults --locked < /dev/null) > "$SCRATCH/test-positive.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" test -p phocommander-integration-tests --test config_defaults --locked < /dev/null) > "$SCRATCH/test-positive.log" 2>&1
 positive=$?
 show "test result: ok|^error|failed to run" "$SCRATCH/test-positive.log"
 report "the gate is green again" 0 "$positive"
@@ -667,7 +675,7 @@ text = text.replace(
 )
 manifest.write_text(text, encoding="utf-8")
 PYTHON
-(cd "$COPY" && cargo deny check licenses < /dev/null) > "$SCRATCH/deny-negative.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" deny check licenses < /dev/null) > "$SCRATCH/deny-negative.log" 2>&1
 negative=$?
 show "license|error|^error" "$SCRATCH/deny-negative.log"
 report "the gate is red on a copyleft dependency" "nonzero" "$negative"
@@ -675,7 +683,7 @@ echo
 cp "$SCRATCH/core-Cargo.toml" "$CORE_MANIFEST"
 cp "$SCRATCH/copy-Cargo.lock" "$COPY/Cargo.lock"
 echo "14.2 positive run (the copyleft dependency is removed again):"
-(cd "$COPY" && cargo deny check licenses < /dev/null) > "$SCRATCH/deny-positive.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" deny check licenses < /dev/null) > "$SCRATCH/deny-positive.log" 2>&1
 positive=$?
 show "licenses ok|^error" "$SCRATCH/deny-positive.log"
 report "the gate is green again" 0 "$positive"
@@ -685,7 +693,7 @@ echo "=============================================================="
 echo "Gate 15 — advisories: cargo audit"
 echo "=============================================================="
 echo "15.1 positive run (the dependency graph of the repository):"
-(cd "$COPY" && cargo audit < /dev/null) > "$SCRATCH/audit-positive.log" 2>&1
+(cd "$COPY" && "$REPO/scripts/cargo.sh" audit < /dev/null) > "$SCRATCH/audit-positive.log" 2>&1
 positive=$?
 show "vulnerabilities|^error" "$SCRATCH/audit-positive.log"
 report "the gate is green on the dependency graph of the repository" 0 "$positive"
