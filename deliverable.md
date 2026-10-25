@@ -1,528 +1,442 @@
-# Übergabe — Core Engineer: die Namensbildung der Mehrfachumbenennung (M1)
+# Übergabe — UI Engineer: der Dialog der Mehrfachumbenennung (M1)
 
 | Feld | Wert |
 |---|---|
-| Rolle | Core Engineer (Namensbildung, Auftrags-Wahrheit, keine Oberfläche) |
+| Rolle | UI Engineer (Dialog der Mehrfachumbenennung: Vorschau, Konfliktsprung-Liste, gespeicherte Vorlagen) |
 | Repository | `/workspace/phocommander`, Branch `main`, **kein** Commit, **kein** Push, **kein** Tag |
-| Grundlage | `docs/REQUIREMENTS.md` §4.4 (FR-30 bis FR-41), `docs/ACCEPTANCE-CRITERIA.md` (AC-M1-19 bis AC-M1-29, AC-M2-12), `docs/glossary.md`, `docs/user-guide/multi-rename.en.md`, `docs/ARCHITECTURE.md` §9 |
-| Umfang | FR-30, FR-31, FR-32, FR-33, FR-37, FR-38, FR-39 — **plus** die Engine-Hälfte von FR-40 (die Meldung der verbotenen Zeichen) |
-| Nicht im Umfang | FR-34 (Vorschau), FR-35 (Konfliktsprung-Liste), FR-36 (gespeicherte Vorlagen) — das ist der Dialog und kommt als eigener Auftrag |
-| Werkzeuge | Rust 1.99.1 (installiert, **nicht** zum Bauen benutzt), Python 3.11.2, bash |
-| Bauumgebung | **kein** Build ausgelöst — siehe Abschnitt 5 |
+| Grundlage | `docs/REQUIREMENTS.md` §4.4 (FR-34, FR-35, FR-36), `docs/WHERE_TO_CHANGE.md`, `docs/KEYMAP.md` |
+| Umfang | FR-34 (Live-Vorschau), FR-35 (Konfliktsprung-Liste mit F3/Shift+F3), FR-36 (benannte Vorlagen) — plus die Naht zur Engine |
+| Nicht im Umfang | die Ausführung der Umbenennung (der Befehl `Command::Rename` wird erzeugt, aber die Desktop-App führt ihn noch nicht aus — das ist die Arbeit der Kern-Rolle), die Wiederherstellung des Originalnamens bei einem Einzelfehler, FR-40 (die Meldung der verbotenen Zeichen in der Oberfläche) |
+| Werkzeuge | Python 3.11.2, bash — **kein** `cargo build`, **kein** `cargo test`, **kein** `cargo fmt` (Bau-Gate, siehe Abschnitt 7) |
+| Bauumgebung | **kein Build ausgelöst** — der Code ist **nicht übersetzt und nicht gelaufen** |
 
 > **Hinweis zur Ablage:** `deliverable.md` wird im gemeinsam benutzten Repository von mehreren
 > Rollen parallel beschrieben. Dieser Text liegt deshalb zusätzlich unter
-> **`deliverable.core-engineer-rename.md`** (identisch). Der vorherige Inhalt von `deliverable.md`
-> (Abnahme M1 der QA-Rolle) ist damit überschrieben — die QA-Übergabe liegt weiterhin als
-> `deliverable-qa-test-engineer.md` vor.
+> **`deliverable.ui-engineer-rename.md`** (identisch). Der vorherige Inhalt von `deliverable.md`
+> (die Übergabe der Core-Rolle) bleibt unter `deliverable.core-engineer-rename.md` erhalten.
 
 ---
 
-## 1. Kurzfassung
+## 1. Was ich gebaut habe
 
-Die Mehrfachumbenennung **führte aus**, ohne zu wissen, **wie** der neue Name heißt. Jetzt gibt es
-die Bildung:
+Die Engine der Namensbildung stand und ist getestet (`crates/phocommander-ops/src/template.rs`).
+Was fehlte, war die Oberfläche: ein Dialog, in dem der Benutzer die Regel sieht, die Vorschau
+live verfolgt, die Konflikte findet und die Regeln unter einem Namen speichert.
 
-* Ein neues Modul `crates/phocommander-ops/src/template.rs` (304 Zeilen) mit sieben Dateien:
-  die Daten der Regel (`types.rs`), die Platzhalter (`placeholders.rs`), das Suchen und Ersetzen
-  (`replace.rs`), der Zähler (`counter.rs`), die Serienvorlage (`series.rs`), die Bildungslogik und
-  die Unit-Tests (`tests.rs`).
-* **Eine Funktion, eine Ausgabe:** `form_names(&rule, &inputs, now) -> Result<Vec<FormedName>,
-  TemplateError>` — aus einer Liste von Eingaben und einer Regel eine Liste von Zielnamen. Der
-  Dialog kann sie unverändert benutzen; `rename_pairs(&names)` liefert die Paare für den bereits
-  vorhandenen atomaren Rename.
-* **Die Determinismus (FR-33) ist der Entwurf, nicht eine Behauptung:** die Bildungsfunktion liest
-  *nur ihre Argumente*. Die Uhr kommt vom Aufrufer, die Größe und die Prüfsumme kommen vom
-  Aufrufer, und der „Zufallswert" wird aus dem Dateinamen abgeleitet (FNV-1a, ein fester
-  Algorithmus) — ein echter Zufall würde FR-33 brechen.
-* **Der Zähler wird zuletzt geschrieben** (Platzhalter → Ersetzen → Zähler, so wie es Glossar und
-  Benutzerhandbuch vorgeben), damit eine Ersetzungsregel keine Nummer verfälscht, die der Benutzer
-  behalten will.
-* **Die Serienvorlage** liest Staffel und Folge aus dem Namen (`SxxEyy`), nimmt den Seriennamen aus
-  dem Elternverzeichnis, lässt beides überschreiben und **verbreitert die Nullauffüllung
-  automatisch**, wenn die Auswahl eine dreistellige Zahl enthält (FR-39).
+### 1.1 Die Naht: `RenameEngine` und `TemplateStore` (Traits in der UI-Crate)
 
-**Was der Owner jetzt tun muss:** zentral bauen und testen (Abschnitt 9). Der Code ist **nicht
-kompiliert** — die Regeln dieses Auftrags verbieten jeden Build neben dem Build des Owners.
-
----
-
-## 2. Was ich geändert habe — Datei für Datei
-
-### 2.1 Neu (Kern der Namensbildung)
-
-| Datei | Zeilen | Zweck |
-|---|---:|---|
-| `crates/phocommander-ops/src/template.rs` | 304 | Das Modul: die Bildungsfunktion `form_names`, `rename_pairs`, `name_problems`, die Freigaben, die Pfad-Hilfen. Header mit WHAT/WHY/EXAMPLE und BOUNDARY. |
-| `crates/phocommander-ops/src/template/types.rs` | 533 | Die Daten: `RenameRule` (Format, Ersetzungen, Zähler, Serie), `RenameInput` (Pfad, Größe, Zeit, Prüfsumme, vom Benutzer bestätigte Serie, Zufallswert), `FormedName` (`Named`/`Failed`), `TemplateError` (vier Fehlerarten). |
-| `crates/phocommander-ops/src/template/placeholders.rs` | 370 | Die 17 Platzhalter, das Parsen des Formats (`[name]`, `[ext]`, `[parent]`, `[n]`, `[date]`, `[time]`, `[size]`, `[hash]`, `[rand]`, `[case]`, `[lower]`, `[upper]`, `[title]`, `[series]`, `[season]`, `[episode]`, `[episode_title]`), die Kurz-Prüfsumme, der aus dem Namen abgeleitete Wert und die vier Schreibweisen. |
-| `crates/phocommander-ops/src/template/replace.rs` | 164 | `ReplaceRule` (literal oder regulärer Ausdruck), das Kompilieren der Muster (ein kaputtes Muster ist ein Fehler, kein stiller Wechsel) und das Anwenden in der Reihenfolge der Regeln. |
-| `crates/phocommander-ops/src/template/counter.rs` | 170 | `CounterRule` (Startwert, Schrittweite, Breite, Reihenfolge), `CounterOrder` (Auswahl/Name/Datum), die Nummern der Auswahl, das Schreiben der Nullauffüllung. |
-| `crates/phocommander-ops/src/template/series.rs` | 293 | `SeriesRule`, das Standardformat der Serie, das Erkennen der Staffel und der Folge, der Episodentitel (der Name ohne das Muster), die automatische Breite der Zahlen. |
-| `crates/phocommander-ops/src/template/tests.rs` | 484 | 21 Unit-Tests der öffentlichen Funktionen (WHAT/WHY/EXAMPLE-Stil, kein `unwrap()` im Produktionscode). |
-
-### 2.2 Geändert
-
-| Datei | Änderung | Zeilen |
-|---|---|---:|
-| `crates/phocommander-ops/src/series.rs` | Neu: `SeriesPattern` (Staffel, Folge, **Fundstelle** in Byte) und `detect_series_pattern(name)`. `detect_series_numbers` ruft jetzt diese Funktion auf — die Erkennung bleibt identisch, der Code ist nicht doppelt. Dazu zwei Unit-Tests für die neue Funktion. | 309 (vorher 227) |
-| `crates/phocommander-ops/src/lib.rs` | `pub mod template;`, die Freigaben der neuen Typen und Funktionen, der Modulkopf erwähnt das neue Modul. | 73 (vorher 68) |
-| `crates/phocommander-ops/Cargo.toml` | `regex = { workspace = true }` (FR-31) und `[dev-dependencies] proptest = { workspace = true }` (der Property-Test von FR-33). | 33 (vorher 26) |
-| `Cargo.toml` | Neue Sektion „Text processing" mit `regex = "1"` — der Katalog des Workspace, damit die Version einmal geschrieben wird. | +10 |
-| `Cargo.lock` | Die Abhängigkeiten von `phocommander-ops` um `proptest` und `regex` ergänzt (Handedit, von `cargo metadata --locked` bestätigt, siehe 4.1). | +2 |
-| `docs/WHERE_TO_CHANGE.md` | Neue Zeile „The names of a multiple rename" → `crates/phocommander-ops/src/template.rs`. | +1 |
-| `docs/ARCHITECTURE.md` | Die Zeile „The rename placeholders" zeigt jetzt auf `template.rs` statt auf `rename.rs` (die Ausführung und die Bildung waren vorher vermischt). | 1 Zeile geändert |
-
-### 2.3 Neu (Integrationstests, je ein Ziel nach dem Namen der Abnahmekriterien)
-
-| Datei | Zeilen | Kriterium |
-|---|---:|---|
-| `crates/phocommander-ops/tests/rename_placeholders.rs` | 110 | AC-M1-19 (FR-30) — ein Fall je Platzhalter |
-| `crates/phocommander-ops/tests/rename_search_and_replace.rs` | 91 | AC-M1-20 (FR-31) — Regex an/aus, kaputtes Muster |
-| `crates/phocommander-ops/tests/rename_counter.rs` | 89 | AC-M1-21 (FR-32) — `001`, `002`, `003` |
-| `crates/phocommander-ops/tests/rename_is_deterministic.rs` | 118 | AC-M1-22 (FR-33) — zwei Läufe, versteckte Uhr, versteckter Zufall, Reihenfolge der Aufrufe |
-| `crates/phocommander-ops/tests/rename_properties.rs` | 108 | AC-M1-22 (FR-33) — **echter `proptest`-Property-Test**, drei Eigenschaften |
-| `crates/phocommander-ops/tests/series_detects_season_and_episode.rs` | 97 | AC-M1-26 (FR-37) |
-| `crates/phocommander-ops/tests/series_name_defaults_to_the_parent.rs` | 78 | AC-M1-27 (FR-38) |
-| `crates/phocommander-ops/tests/series_zero_padding.rs` | 100 | AC-M1-28 (FR-39) |
-| `crates/phocommander-ops/tests/rename_reports_forbidden_characters.rs` | 80 | AC-M1-29 (FR-40) — die Engine-Hälfte |
-
-Jede Datei trägt die Kopfzeile mit dem Kommando, das die Abnahme fordert, und
-`#![allow(clippy::unwrap_used, clippy::expect_used)]` — die Konvention der bestehenden
-Integrationstests im Repository.
-
-### 2.4 **Nicht** von mir geändert (Fremdstand im Baum)
-
-`docs/STATUS.md` und `docs/acceptance/M1-ACCEPTANCE.md` waren **schon vor meinem ersten Schreibzugriff
-geändert** (`git status` zu Beginn der Sitzung). Ich habe sie nicht angefasst.
-
----
-
-## 3. Die öffentliche API
-
-| Crate | Modul | Typ / Funktion | Zweck |
-|---|---|---|---|
-| `phocommander-ops` | `template` | `RenameRule` | Die Regel: Format, Ersetzungen, Zähler, Serie. Daten, kein Verhalten. |
-| | | `RenameRule::new` / `with_replacement` / `with_counter` / `with_series` / `effective_format` | Bauen der Regel; das wirksame Format (leer → Standardformat der Serie). |
-| | | `RenameInput` (+ `new`, `with_size`, `with_modified`, `with_checksum`, `with_series`, `with_random`) | Die Fakten einer Datei. Alles, was die Bildung nicht selbst lesen kann. |
-| | | `FormedName` (`Named`/`Failed`) | Das Ergebnis je Datei: der neue Name, der Zielpfad, der Fehler. |
-| | | `FormedName::source` / `name` / `target` / `problem` / `pair` | Zugriff auf das Ergebnis; `pair()` liefert das `RenamePair` für den atomaren Rename. |
-| | | `TemplateError` | `EmptyFormat`, `UnknownValue`, `InvalidPattern`, `InvalidName`. |
-| | | `form_names(rule, inputs, now)` | **Die Hauptfunktion:** aus Eingaben und Regel eine Liste von Zielnamen. Reine Funktion. |
-| | | `rename_pairs(names)` | Die Paare des Renames — `None`, wenn auch nur eine Datei keinen Namen bekam (FR-41). |
-| | | `name_problems(name)` | Die verbotenen Zeichen eines gebildeten Namens mit dem vorgeschlagenen Ersatz (FR-40, Engine-Hälfte). |
-| | `template::counter` | `CounterRule`, `CounterOrder` | Startwert, Schrittweite, Breite, Reihenfolge. |
-| | `template::placeholders` | `Placeholder` (+ `ALL`, `parse`, `as_str`) | Die 17 Platzhalter — die Dialogliste kann sie anzeigen. |
-| | `template::replace` | `ReplaceRule` (`literal`, `pattern`) | Suchen und Ersetzen, literal oder als regulärer Ausdruck. |
-| | `template::series` | `SeriesRule` (+ `STANDARD_FORMAT`) | Die Serienvorlage: Name, Staffel, Folge, Format, Breiten. |
-| `phocommander-ops` | `series` | `SeriesPattern`, `detect_series_pattern` | Die Erkennung **mit Fundstelle** — der Episodentitel braucht sie. |
-
-**Die Signatur, die der Dialog braucht:**
+`docs/WHERE_TO_CHANGE.md` beantwortet die Crate-Frage: *„Does it need to know about pixels,
+widgets or events? → `phocommander-ui`“* und *„no crate below `crates/` may depend on a sibling
+crate“*. Die UI-Crate darf `phocommander-ops` also nicht kennen — genau wie bei `Catalogue`
+und `Formats` ist die Naht ein **Trait in der UI-Crate**, die **Implementierung in der
+Composition Root** (`apps/phocommander-desktop/src/rename.rs`).
 
 ```rust
-pub fn form_names(
-    rule: &RenameRule,
-    inputs: &[RenameInput],
-    now: SystemTime,
-) -> Result<Vec<FormedName>, TemplateError>
+// crates/phocommander-ui/src/rename/engine.rs
+pub trait RenameEngine {
+    fn preview(&self, request: &RenameRequest) -> RenamePreview;
+}
+
+// crates/phocommander-ui/src/rename/template.rs
+pub trait TemplateStore {
+    fn templates(&self) -> Result<Vec<NamedTemplate>, TemplateStoreError>;
+    fn store(&self, template: &NamedTemplate) -> Result<(), TemplateStoreError>;
+}
 ```
 
-`now` kommt vom Aufrufer — nicht aus der Bibliothek. Das ist der Grund, warum die Bildung testbar
-und reproduzierbar ist.
+**Warum so und nicht anders:** die Regel des Dialogs und die Datei-Fakten sind *Daten*, keine
+Verhaltensweise. Die UI-Crate braucht sie, um die Felder zu zeigen, und sie braucht die *Regel*
+des Dialogs, um sie an die Engine zu geben. Hätte die UI-Crate die Typen von `phocommander-ops`
+importiert, wäre die Grenze gebrochen (`scripts/check-crate-boundaries.sh` wäre rot). Mit dem
+Trait trägt die UI-Crate ihre eigene Regel (`crates/phocommander-ui/src/rename/rule.rs`) und
+die Composition Root übersetzt sie (`rule_of`). Das ist dasselbe Muster wie bei `Catalogue`
+(Schlüssel) und `Formats` (Locale-Regeln).
+
+**Die Vorschau muss billig sein.** Zwei Entscheidungen:
+
+1. **Der Dialog fragt die Engine nur, wenn sich die Regel geändert hat.** `RenameDialog`
+   hält ein `dirty`-Flag; `update_preview()` fragt die Engine genau einmal pro Änderung und
+   cached das Ergebnis. Ein Frame, der eine unveränderte Regel zeichnet, kostet **nur das
+   Zeichnen** — der Zähler `engine_calls()` beweist das im Test.
+2. **Die Naht ist eine Frage, keine Rückfrage.** Der Trait gibt die *ganze* Vorschau in einem
+   Rutsch zurück (Zeilen **und** Konflikte), damit die UI nicht zweimal fragt.
+
+**Bekannte Kostengrenze (siehe Abschnitt 8):** die Konfliktplanung des Ops-Crates
+(`plan_renames`) ist O(n²) und ruft das Dateisystem 2n-mal auf. Bei sehr großen Auswahlen
+dominiert sie den Tastendruck. Ich habe das Ops-Crate **nicht** angefasst (es gehört der
+Core-Rolle) — der Vorschlag steht in Abschnitt 8.
+
+### 1.2 FR-34 — die Live-Vorschau
+
+`crates/phocommander-ui/src/rename/dialog.rs` (Zustand) und `crates/phocommander-ui/src/rename/draw.rs`
+(Zeichnung). Die Vorschau zeigt **jede** Datei der Auswahl mit ihrem neuen Namen; eine Datei,
+deren Name nicht gebildet werden kann, zeigt den Grund in der Warnfarbe.
+
+* Die Vorschau entsteht aus **denselben Feldern**, die der Benutzer bearbeitet (`Fields` →
+  `rule()` → `RenameRequest`). Eine Regel und die Felder können nicht auseinanderlaufen.
+* Nur der **sichtbare Ausschnitt** wird gezeichnet (`VISIBLE_ROWS = 12`), der Cursor wird in
+  das Fenster gescrollt (`ensure_cursor_visible`).
+* Die Vorschau folgt **jedem Tastendruck**: `insert()`/`backspace()` setzen das `dirty`-Flag,
+  und die nächste Frame fragt die Engine.
+
+### 1.3 FR-35 — die Konfliktsprung-Liste
+
+* Der Dialog baut aus den Konflikten der Engine eine Liste von **Zeilenindizes** (`conflicts()`).
+  Eine Zeile ist markiert, wenn ein Konflikt ihren Zielpfad **oder** ihren Quellpfad nennt.
+* **F3** und **Shift+F3** sind die Aktionen `rename.conflict_next` und
+  `rename.conflict_previous` — sie stehen seit dem M1-Katalog in `config/keymap.toml`
+  (Tastaturkontext) und in `docs/KEYMAP.md`. Die Auflösung läuft über die Bindungstabelle
+  (`KeymapView::binding_for`), nicht über eine fest verdrahtete Taste: „the surface with the
+  focus decides“ (`docs/KEYMAP.md`, Zeile 88ff.).
+* **Am Ende der Liste bleibt der Cursor auf dem letzten Eintrag** — kein Wrap-around
+  (so verlangt es AC-M1-24).
+* Ist ein Konflikt da, **darf die Umbenennung nicht laufen**: die Umbenennung ist atomar
+  (FR-41), also wird die ganze Auswahl verweigert (`pairs()` liefert `None`).
+
+### 1.4 FR-36 — die benannten Vorlagen
+
+* Der Dialog hält die Liste der Vorlagen (`templates()`), kann eine Vorlage anwenden
+  (`apply_template()` — die Regel erscheint in den Feldern, damit der Benutzer sie sieht) und
+  kann die aktuelle Regel unter einem Namen speichern (`current_template()` + `add_template()`).
+* Ein Name steht für **eine** Regel: ein zweiter Vorlage mit demselben Namen ersetzt das erste.
+* **Wo die Vorlagen liegen**, entscheidet die Composition Root: `FileTemplateStore` schreibt
+  `rename-templates.txt` in das Konfigurationsverzeichnis. Das **Format** der Datei gehört der
+  UI-Crate (`encode_templates`/`decode_templates`), damit die Composition Root nur Bytes
+  bewegt und keine Datei neu erfindet.
+* Das Format ist bewusst schlicht und **streng**: eine unbekannte Zeile ist ein Fehler
+  (`key-unknown:<key>`), kein stillschweigendes Ignorieren — dieselbe Haltung wie bei der
+  Konfigurationsdatei.
+
+### 1.5 Der Dialog in der Shell
+
+`crates/phocommander-ui/src/app/rename.rs`:
+
+* **F2** (`panel.rename`) öffnet den Dialog mit den markierten Einträgen des Panels, das den
+  Fokus hat (ohne Markierung: der Eintrag unter dem Cursor). Das Panel, nicht das andere:
+  FR-16.
+* Solange der Dialog offen ist, **erreicht keine Taste das Panel und den Baum** — der Dialog
+  ist ein Fenster über der Oberfläche.
+* **Enter** bedeutet je nach Fokus: im Namensfeld → Vorlage speichern; in der Vorlagenliste →
+  Vorlage anwenden; im Umschalter → Suchen/ Ersetzen auf regulären Ausdruck umschalten; sonst →
+  die Umbenennung bestätigen.
+* **Esc** schließt den Dialog, ohne etwas umzubenennen.
+* **Tab/Shift+Tab** wandern in einer **festen Reihenfolge** durch die Teile des Dialogs
+  (deterministische Fokusreihenfolge, Abschnitt 6.4 der Spezifikation).
+* Die Pfeiltasten bewegen den Cursor in der Vorschau und in der Vorlagenliste, den Cursor im
+  Textfeld.
 
 ---
 
-## 4. Die Befehle, die ich **wirklich** ausgeführt habe
+## 2. Das Zustandsmodell des Dialogs
 
-Ich habe **keinen** Build, **keinen** Testlauf und **kein** `cargo fmt` ausgelöst (Abschnitt 5).
-Die folgenden drei Kommandos bauen nichts und sind deshalb zulässig; ihre Ausgabe steht im
-Original.
+| Struktur | Felder | Übergänge | Fehlerfälle |
+|---|---|---|---|
+| `RenameDialog` (Zustand, außerhalb von egui) | `side: PanelSide`, `files: Vec<RenameFile>`, `fields: Fields`, `focus: RenameFocus`, `preview: Option<RenamePreview>`, `dirty: bool`, `engine_calls: usize`, `cursor: usize`, `scroll: usize`, `conflicts: Vec<usize>`, `templates: Vec<NamedTemplate>`, `template_cursor: usize` | `new()` → offen · `set_format`/`insert`/`backspace`/`delete`/`set_regex` → `dirty = true` → `update_preview(engine)` fragt **einmal** die Engine und baut `conflicts` neu · `set_focus`/`focus_next` → Fokus wandert, der Cursor des Textfeldes springt ans Ende · `move_cursor`/`move_template_cursor` → Cursor wandert · `jump_to_next_conflict`/`jump_to_previous_conflict` → Cursor auf den nächsten/vorherigen Konflikt · `apply_template`/`add_template` → Vorlage in die Felder bzw. in die Liste · `pairs()` → der Befehl `Command::Rename` | `preview == None` → noch keine Vorschau, `pairs()` liefert `None` · Konflikt in der Liste → `pairs()` liefert `None` (FR-41, atomar) · Zeile ohne Namen → `pairs()` liefert `None` · Regel ohne Format → die Engine antwortet mit `problem`, die Vorschau ist leer · kaputtes Suchmuster → `problem` = `InvalidPattern` · Zählerfeld ohne Zahl → das Feld wird in der Warnfarbe gezeichnet, die Regel nutzt den Standardwert |
+| `Fields` (die Felder der Regel) | `format`, `search`, `replacement`, `regex`, `counter_start`, `counter_step`, `counter_width`, `series_name`, `template_name`, `caret` | `insert`/`backspace`/`delete` → Text und Cursor · `move_caret`/`caret_to_start`/`caret_to_end` → Cursor · `apply_rule` → die Regel einer Vorlage in die Felder · `rule()` → die Regel, die die Engine bekommt | Zählerfeld ohne Zahl → `is_invalid()` meldet es, `rule()` nutzt den Standardwert · Suchtext leer → keine Ersetzungsregel in der Regel |
+| `RenameFocus` (der Fokus) | 11 Teile: Format, Search, Replacement, Regex, CounterStart, CounterStep, CounterWidth, SeriesName, TemplateName, Templates, Preview | `focus_next(backwards)` → der nächste Teil in der festen Reihenfolge | — |
+| `RenamePreview` (die Antwort der Engine) | `rows: Vec<PreviewRow>`, `conflicts: Vec<Conflict>`, `problem: Option<PreviewProblem>` | `may_rename()` → nur wenn kein Konflikt, kein `problem` und jede Zeile einen Namen hat | `problem` = EmptyFormat / UnknownValue / InvalidPattern / InvalidName |
+| `PreviewRow` | `source`, `target: Option<PathBuf>`, `name: Option<String>`, `problem: Option<PreviewProblem>` | `old_name()` → der alte Name für die Anzeige | `name == None` → die Zeile trägt den Grund |
+| `Conflict` | `kind: ConflictKind`, `path: PathBuf` | `message_key()` → der Text aus dem Katalog | TargetExists / DuplicateTarget / MissingSource |
 
-### 4.1 `cargo metadata --locked --offline` — Prüfung der Lock-Datei
+**Ein Fehlerfall, den ich bewusst entschieden habe:** eine Datei, die ihren Namen behält
+(Ziel == Quelle), ist **kein** Paar und wird **nicht** umbenannt. `plan_renames` des
+Ops-Crates meldet für ein solches Paar „target-exists“ — der Dialog würde dann jede Datei als
+Konflikt zeigen, deren Regel sie nicht ändert. Die Composition Root lässt solche Paare aus dem
+Plan (`pairs_of`) und der Dialog ebenfalls (`pairs()`), damit die Anzeige und der Plan
+übereinstimmen.
+
+---
+
+## 3. Die Tastenbelegung des Dialogs
+
+| Vorgabe | Aktion | Kontext | plattformabhängig? | implementiert? | Testname |
+|---|---|---|---|---|---|
+| FR-35 / AC-M1-24 | `rename.conflict_next` (F3) — zum nächsten Konflikt | multiple-rename dialog | nein (der Schlüssel ist in der Bindungstabelle) | ja | `the_conflict_jump_list_is_reachable_with_f3_and_shift_f3` (egui_kittest) + `the_next_conflict_is_reachable_and_the_end_of_the_list_stays` (Unit) |
+| FR-35 / AC-M1-24 | `rename.conflict_previous` (Shift+F3) — zum vorherigen Konflikt | multiple-rename dialog | nein | ja | `the_conflict_jump_list_is_reachable_with_f3_and_shift_f3` + `the_previous_conflict_is_reachable` |
+| FR-35 / AC-M1-24 | am Ende der Liste bleibt der Cursor auf dem letzten Eintrag | multiple-rename dialog | nein | ja | `the_next_conflict_is_reachable_and_the_end_of_the_list_stays` |
+| Tastaturführung | `panel.rename` (F2) — den Dialog öffnen | panel | nein | ja | `the_conflict_jump_list_is_reachable_with_f3_and_shift_f3` |
+| Tastaturführung | Esc — den Dialog schließen, ohne umzubenennen | multiple-rename dialog | nein | ja | (manuell, kein Test) |
+| Tastaturführung | Enter — Vorlage speichern (im Namensfeld), Vorlage anwenden (in der Vorlagenliste), Umbenennung bestätigen (sonst) | multiple-rename dialog | nein | ja | `a_stored_template_can_be_applied_again` (Teil) |
+| Tastaturführung | Tab / Shift+Tab — der Fokus wandert in fester Reihenfolge | multiple-rename dialog | nein | ja | `the_focus_walks_the_dialog_in_a_fixed_order`, `the_backward_focus_stays_at_the_beginning` |
+| Tastaturführung | Pfeiltasten — Cursor in der Vorschau und in der Vorlagenliste; Textcursor im Textfeld | multiple-rename dialog | nein | ja | (manuell) |
+| Tastaturführung | Buchstaben/Ziffern — der Text in das Feld, das den Fokus hat | multiple-rename dialog | nein (die Tastaturbelegung des Systems) | ja | `the_preview_follows_every_change_of_the_rule` |
+| FR-31 | der Umschalter „regulärer Ausdruck" | multiple-rename dialog | nein | ja (Enter im Fokus `Regex`, und die Maus über das Kästchen) | `the_preview_follows_every_change_of_the_rule` (der Umschalter ändert die Regel) |
+| NFR-11 | sichtbare Fokusmarkierung (Rahmen um das Feld, um den Umschalter, um die Zeile) | multiple-rename dialog | nein (Farbe und Stärke kommen aus `Palette`/`Metrics`) | ja | `the_warning_reaches_the_contrast_the_specification_names` (Farbe), manuell (Rahmen) |
+
+**Die Maus ist optional**: jede Aktion des Dialogs ist per Tastatur erreichbar; die Maus ist
+zusätzlich möglich (Umschalter, Klick in ein Feld).
+
+---
+
+## 4. Die Dateiliste
+
+| Pfad | Zeilen | Zweck |
+|---|---|---|
+| `crates/phocommander-ui/src/rename.rs` | 53 | der Modul-Index: die Module und die öffentlichen Namen |
+| `crates/phocommander-ui/src/rename/dialog.rs` | 540 | der Zustand des Dialogs: Felder, Fokus, Vorschau, Sprungliste, Vorlagen |
+| `crates/phocommander-ui/src/rename/focus.rs` | 105 | die Teile des Dialogs in der festen Reihenfolge des Tab-Keys |
+| `crates/phocommander-ui/src/rename/fields.rs` | 287 | die Puffer der Regel, der Cursor, das Lesen und Schreiben des Textes |
+| `crates/phocommander-ui/src/rename/engine.rs` | 576 | die Naht `RenameEngine` und die Typen der Antwort (Vorschau, Zeile, Problem, Konflikt, Paar) |
+| `crates/phocommander-ui/src/rename/engine/tests.rs` | 83 | die Tests der Naht |
+| `crates/phocommander-ui/src/rename/rule.rs` | 441 | die Regel des Dialogs: Format, Ersetzung, Zähler, Serie |
+| `crates/phocommander-ui/src/rename/template.rs` | 526 | die benannten Vorlagen, die Naht `TemplateStore`, das Textformat der Datei |
+| `crates/phocommander-ui/src/rename/draw.rs` | 425 | die Zeichnung: Felder, Umschalter, Vorlagenliste, Vorschau, Hinweiszeile |
+| `crates/phocommander-ui/src/rename/tests.rs` | 357 | die Tests des Zustands (Vorschau, Sprungliste, Vorlagen, Fokus) |
+| `crates/phocommander-ui/src/app/rename.rs` | 380 | die Anbindung an die Shell: öffnen, Tasten, bestätigen, zeichnen |
+| `crates/phocommander-ui/src/app.rs` | 748 | die Felder der Shell (`rename`, `rename_engine`, `template_store`), der Aufruf von `panel.rename`, der Aufruf des Zeichnens |
+| `crates/phocommander-ui/src/app/input.rs` | 275 | die Tasten und der Text gehen an den Dialog, solange er offen ist |
+| `crates/phocommander-ui/src/commands.rs` | 154 | `Command::Rename` trägt jetzt die **Paare** (Quelle → Ziel) statt nur der Pfade |
+| `crates/phocommander-ui/src/i18n/keys.rs` | 563 | 22 neue Übersetzungsschlüssel (`rename-*`) |
+| `crates/phocommander-ui/src/theme.rs` | 307 | die neue Warnfarbe `Palette::warning` (Konflikte und Fehler) |
+| `crates/phocommander-ui/src/lib.rs` | 73 | das Modul `rename` und die öffentlichen Namen |
+| `crates/phocommander-ui/tests/rename_conflict_jump.rs` | 175 | der UI-Test aus AC-M1-24 (F3/Shift+F3 über echte Tastenereignisse) |
+| `apps/phocommander-desktop/src/rename.rs` | 429 | die Composition Root: `OpsRenameEngine` (über `phocommander-ops`) und `FileTemplateStore` |
+| `apps/phocommander-desktop/src/filesystem.rs` | 165 | der Adapter des Dateisystems des Hosts auf `phocommander_ops::port::FileSystem` |
+| `apps/phocommander-desktop/src/main.rs` | 374 | die Verdrahtung von Engine und Vorlagenspeicher in die Anwendung |
+| `apps/phocommander-desktop/src/lib.rs` | 32 | die neuen Module der Composition Root |
+| `crates/phocommander-i18n/locales/{de,en,fr}/rename.ftl` | 27/27/28 | die 22 neuen Texte in drei Sprachen |
+| `crates/phocommander-i18n/src/catalogue.rs` | 543 | die neue Domain `rename` in der Liste der Kataloge |
+| `scripts/check-i18n-keys.py` | — | die neue Domain in der Liste des Gates |
+| `docs/WHERE_TO_CHANGE.md` | — | zwei Zeilen: der Dialog und die Adapter der Composition Root |
+
+**Keine Datei über 600 Zeilen außer `app.rs` (748)** — sie trägt die Begründung im Modulkopf
+(`SIZE:`), wie die anderen vier über dem Zielwert im Repository.
+
+---
+
+## 5. Die Befehle, die ich wirklich ausgeführt habe
+
+Alle Ausgaben sind **Originalausgaben**. Ich habe **kein** `cargo` aufgerufen (Bau-Gate).
+
+### 5.1 `python3 scripts/check-i18n-keys.py` → exit 0
 
 ```
-$ cd /workspace/phocommander && CARGO_HOME=/workspace/.home/.cargo cargo metadata --locked --offline --format-version 1 > /tmp/metadata.json
-exit=0
+locales   : .../crates/phocommander-i18n/locales
+            de: 137 keys
+            en: 137 keys
+            fr: 137 keys
+reference : de (137 keys)
+
+OK    de: the key set is identical to de
+OK    en: the key set is identical to de
+OK    fr: the key set is identical to de
+
+RESULT: PASS — 3 locales hold the same 137 keys
 ```
 
-Die Ausgabe ist ein JSON-Dokument (3.090.921 Bytes). Der relevante Ausschnitt:
+### 5.2 `python3 scripts/check-i18n-hardcoded.py` → exit 0
 
 ```
-$ python3 -c "import json; ..."
-phocommander-ops deps: ['regex', 'thiserror', 'proptest']
-   regex ^1 None
-   proptest ^1 dev
+Files read               : 44
+Visible texts in the code : 0
+RESULT: PASS — the interface layer holds no text of its own.
 ```
 
-Und die Kontrolle, dass Cargo die Lock-Datei **nicht** verändert hat:
+(Der erste Lauf dieses Gates war **rot** — 11 Fehlermeldungen in `rename/template.rs` waren
+englische Sätze im Quelltext. Ich habe sie auf Bezeichner umgestellt (`name-empty`,
+`key-unknown:<key>` …) und das Gate erneut laufen lassen.)
+
+### 5.3 `./scripts/check-crate-boundaries.sh` → exit 0
 
 ```
-$ git diff --stat Cargo.lock
- Cargo.lock | 2 ++
- 1 file changed, 2 insertions(+)
-
-$ git diff Cargo.lock
-@@ -3592,6 +3592,8 @@ dependencies = [
- name = "phocommander-ops"
- version = "0.1.0"
- dependencies = [
-+ "proptest",
-+ "regex",
-  "thiserror 2.0.21",
- ]
+13 path dependencies checked, 0 violations
 ```
 
-**Wichtig für den Owner:** `cargo metadata --locked` läuft mit Exit 0 durch. Der Build mit
-`--locked` (wie er gerade läuft) wird an der Lock-Datei **nicht** scheitern.
-
-### 4.2 `./scripts/check-file-size.sh`
+### 5.4 `./scripts/check-file-size.sh` → exit 0 (mit Warnungen)
 
 ```
-OVER  682 lines  ./crates/phocommander-archive/src/extract.rs
-OVER  674 lines  ./crates/phocommander-ops/src/fake_fs.rs
 OVER  614 lines  ./crates/phocommander-ops/src/progress.rs
-OVER  721 lines  ./crates/phocommander-ui/src/app.rs
+OVER  748 lines  ./crates/phocommander-ui/src/app.rs
 OVER  613 lines  ./crates/phocommander-ui/src/keymap_view.rs
 OVER  651 lines  ./crates/phocommander-ui/src/panel.rs
 
-Source files measured : 164 (extensions: rs)
+Source files measured : 178 (extensions: rs)
 Target value          : 600 lines (warning)
 Absolute maximum      : 900 lines (failure)
 Target-value warnings : 6
 Maximum violations    : 0
 RESULT: PASS with warnings — 6 file(s) exceed the target value of 600 lines.
-        Each of them must name the reason in its module header.
 ```
 
-Keine der sechs Warnungen betrifft eine Datei aus diesem Auftrag — alle sieben neuen Dateien liegen
-unter 600 Zeilen.
-
-### 4.3 `./scripts/check-crate-boundaries.sh`
+### 5.5 `python3 scripts/check-action-ids.py` → exit 0
 
 ```
-Phocommander - crate boundary gate
-rule: apps/* -> platform/* -> crates/*, no crate below crates/ may depend
-      on another crate below crates/, registry dependencies are not checked
+OK    the keyboard bindings match the key table of the specification
+OK    dpad and controller refer to the action palette
+OK    no key is bound to two actions of the same surface
+OK    every action ID is in dotted notation
+OK    every action is referenced in the acceptance criteria or the specification
+OK    the overrides in defaults.toml name known actions
 
-OK    apps/phocommander-desktop -> crates/phocommander-config (apps -> crates)
-OK    apps/phocommander-desktop -> crates/phocommander-core (apps -> crates)
-OK    apps/phocommander-desktop -> crates/phocommander-i18n (apps -> crates)
-OK    apps/phocommander-desktop -> crates/phocommander-ops (apps -> crates)
-OK    apps/phocommander-desktop -> platform/phocommander-platform (apps -> platform)
-OK    apps/phocommander-desktop -> crates/phocommander-ui (apps -> crates)
-OK    apps/phocommander-desktop -> crates/phocommander-viewer (apps -> crates)
-OK    platform/phocommander-platform -> crates/phocommander-core (platform -> crates)
-OK    tests -> crates/phocommander-archive (tests -> crates)
-OK    tests -> crates/phocommander-config (tests -> crates)
-OK    tests -> crates/phocommander-core (tests -> crates)
-OK    tests -> crates/phocommander-keymap (tests -> crates)
-OK    tests -> crates/phocommander-ui (tests -> crates)
-
-13 path dependencies checked, 0 violations
+RESULT: PASS — 9 of 9 checks passed
 ```
 
-`phocommander-ops` hängt an keinem Geschwister-Crate ✓ — die Abhängigkeit auf `regex` ist eine
-Registry-Abhängigkeit und wird vom Gate nicht geprüft (so gewollt).
-
-### 4.4 `python3 scripts/check-links.py`
+### 5.6 `python3 scripts/check-keymap-consistency.py` → exit 0
 
 ```
-docs/user-guide/multi-rename.en.md:10      ../REQUIREMENTS.md                                                                                                                   ok  (resolves)
-docs/user-guide/multi-rename.en.md:11      ../KEYMAP.md                                                                                                                         ok  (resolves)
-docs/user-guide/multi-rename.en.md:193     getting-started.en.md                                                                                                                ok  (resolves)
-docs/user-guide/multi-rename.en.md:194     ../KEYMAP.md                                                                                                                         ok  (resolves)
-docs/user-guide/multi-rename.en.md:195     ../glossary.md                                                                                                                       ok  (resolves)
-tests/README.md:3                          ../docs/REQUIREMENTS.md                                                                                                              ok  (resolves)
-tests/README.md:5                          ../docs/ACCEPTANCE-CRITERIA.md                                                                                                       ok  (resolves)
-tests/security/README.md:3                 ../../docs/REQUIREMENTS.md                                                                                                            ok  (resolves)
-tests/security/README.md:5                 ../../docs/security/THREAT_MODEL.md                                                                                                  ok  (resolves)
+Undocumented deviations: 0
+RESULT: PASS — specification, catalogue and reference agree.
+```
 
-Markdown files scanned : 45
+### 5.7 `python3 scripts/check-requirement-ids.py` → exit 0
+
+```
+OK    every row carries the seven columns of the catalogue
+OK    every source names the line of the requirement
+OK    every acceptance criterion exists in the acceptance document
+
+RESULT: PASS — 7 of 7 checks passed
+```
+
+### 5.8 `python3 scripts/check-docs-links.py` → exit 0
+
+```
+Markdown files scanned : 46
 Repository links checked: 159
 External links skipped : 20
 Broken links           : 0
 RESULT: PASS — every repository link resolves.
 ```
 
-### 4.5 Was ich **nicht** gemessen habe (und warum)
+### 5.9 Die Kontraste (NFR-11) — mit Python gerechnet
 
-| Kommando | Status | Grund |
+```
+light warning  #a83a00 on #ffffff : 6.42
+dark  warning  #ffa85c on #242424 : 8.14
+light focus    #0b57d0 on #ffffff : 6.39
+dark  focus    #8ab4f8 on #242424 : 7.37
+light text     #1a1a1a on #ffffff : 17.4
+dark  text     #e8e8e8 on #242424 : 12.67
+```
+
+Die Warnfarbe (neu, für die Konflikte und die Fehler) erreicht **6,42:1** (hell) und **8,14:1**
+(dunkel) — beide über den geforderten 4,5:1 für Text. Der Fokusrahmen erreicht 6,39:1 und
+7,37:1 (gefordert: 3:1). Der Test
+`the_warning_reaches_the_contrast_the_specification_names` in `theme.rs` prüft das im
+Testlauf — **der Test ist nicht gelaufen**, siehe Abschnitt 7.
+
+### 5.10 Die Übereinstimmung der Übersetzungsschlüssel (eigene Prüfung)
+Ein Skript hat die 129 `TextKey`-Werte der UI-Crate mit den Katalogen verglichen:
+
+```
+UI keys: 129
+--- de: catalogue 137 keys
+   in the UI but not in the catalogue: []
+   in the catalogue but not in the UI: ['error-binding-empty', ...  'panel-undo-notice']
+--- en: catalogue 137 keys
+   in the UI but not in the catalogue: []
+--- fr: catalogue 137 keys
+   in the UI but not in the catalogue: []
+```
+
+Die acht Schlüssel, die nur im Katalog stehen, sind die Fehlermeldungen, die die UI-Crate
+**als Zeichenkette** benutzt (z. B. `error-transfer-same-panel`) — so war es schon vorher.
+
+### 5.11 Die zweite, Compiler-nahe Prüfung
+
+Weil ich nicht bauen durfte, habe ich den Code zusätzlich **von Hand auf Leihfehler (E0503)
+geprüft** — und dabei einen echten Fehler gefunden: in `rename/fields.rs` rief
+`self.buffer_mut(focus)` den Puffer des Feldes mutabel und las danach `self.caret`. Der Cursor
+ist ein Teil desselben `Fields`, also war die zweite Leihe ein Fehler. Die drei Methoden
+(`insert`, `backspace`, `delete`) lesen den Cursor jetzt **vor** der mutablen Leihe und
+schreiben ihn **nach** ihr Ende — dasselbe Muster wie in `dialog.rs::write_to_field`.
+
+Eine zweite Rolle hat denselben Fehler unabhängig gefunden und mir die Zeilen gemeldet; die
+Korrektur ist bestätigt. **Weitere Compilerfehler kann ich nicht ausschließen** — das ist der
+Grund, warum der Build beim Owner bleiben muss.
+
+---
+
+## 6. Die Tests, die ich geschrieben habe
+
+| Test | Datei | Was er beweist |
 |---|---|---|
-| `cargo test --workspace` | **nicht ausgeführt** | Auftrag: „Kein `cargo build`, kein `cargo test`" — die Sandbox hat 3 GB RAM, ein zweiter Build neben dem des Owners bricht beide ab. Zum Zeitpunkt meiner Messung lief ein `cargo test --workspace --locked` des Owners. |
-| `cargo clippy --workspace --all-targets -- -D warnings` | **nicht ausgeführt** | Wie oben. |
-| `cargo fmt --all --check` | **nicht ausgeführt** | Wie oben. Der Code ist von Hand in der rustfmt-Näherung geschrieben; **die Formatierung ist ungeprüft**. Bitte vor dem Gate `cargo fmt --all` laufen lassen. |
-| `cargo deny check` / `cargo audit` | **nicht ausgeführt** | Wie oben. Für `regex` (MIT OR Apache-2.0, kein C-Anteil, bereits im Abhängigkeitsbaum) ist die Lizenzprüfung trotzdem Pflicht (Abschnitt 5.8 der Spezifikation). |
-| `cargo test --doc -p phocommander-ops` | **nicht ausgeführt** | Wie oben. Die Doctests der neuen Dateien sind geschrieben, aber ungeprüft. |
+| `the_preview_follows_every_change_of_the_rule` | `rename/tests.rs` | die Vorschau folgt jeder Änderung der Regel (FR-34) |
+| `the_engine_is_not_asked_again_when_nothing_changed` | `rename/tests.rs` | die Engine wird **einmal pro Änderung** gefragt, nicht pro Frame |
+| `a_conflict_is_marked_and_the_jump_list_names_it` | `rename/tests.rs` | ein Konflikt ist markiert und steht in der Sprungliste (FR-35) |
+| `the_next_conflict_is_reachable_and_the_end_of_the_list_stays` | `rename/tests.rs` | F3 springt weiter; am Ende bleibt der Cursor (AC-M1-24) |
+| `the_previous_conflict_is_reachable` | `rename/tests.rs` | Shift+F3 springt zurück |
+| `the_rename_is_refused_while_a_conflict_is_on_the_list` | `rename/tests.rs` | ein Konflikt verweigert die ganze Umbenennung (FR-41) |
+| `a_file_that_keeps_its_name_is_not_renamed` | `rename/tests.rs` | eine Datei, die ihren Namen behält, wird nicht umbenannt |
+| `a_stored_template_can_be_applied_again` | `rename/tests.rs` | eine gespeicherte Vorlage lässt sich wieder anwenden (FR-36) |
+| `a_template_with_the_same_name_replaces_the_old_one` | `rename/tests.rs` | ein Name steht für eine Regel |
+| `the_focus_walks_the_dialog_in_a_fixed_order` | `rename/tests.rs` | die Fokusreihenfolge ist fest (NFR-11, Abschnitt 6.4) |
+| `the_name_of_a_template_does_not_change_the_rule` | `rename/tests.rs` | der Name einer Vorlage ändert die Vorschau nicht |
+| `a_template_survives_the_round_trip_through_the_text` | `rename/template.rs` | die Vorlage übersteht den Weg in die Datei und zurück (FR-36) |
+| `a_line_with_an_unknown_key_is_an_error` | `rename/template.rs` | ein Tippfehler in der Datei wird gemeldet, nicht ignoriert |
+| `the_preview_is_what_the_engine_forms` | `apps/.../rename.rs` | **die Vorschau der Composition Root ist genau die, die `phocommander_ops::template::form_names` bildet** |
+| `a_target_that_exists_is_a_conflict` | `apps/.../rename.rs` | ein belegter Zielname wird als Konflikt gemeldet (FR-35) |
+| `two_files_that_want_the_same_name_are_a_conflict` | `apps/.../rename.rs` | zwei Dateien mit demselben Wunschnamen sind ein Konflikt |
+| `a_rule_without_a_format_is_a_problem_of_the_whole_rule` | `apps/.../rename.rs` | eine Regel ohne Format wird als Grund der ganzen Regel gemeldet |
+| `a_stored_template_is_read_back` | `apps/.../rename.rs` | die gespeicherte Vorlage kommt wieder aus der Datei |
+| `the_conflict_jump_list_is_reachable_with_f3_and_shift_f3` | `tests/rename_conflict_jump.rs` | der **UI-Test** aus AC-M1-24: F2 öffnet, F3 springt, F3 am Ende bleibt, Shift+F3 springt zurück |
+
+**Die beiden Tests, die die Aufgabenstellung verlangt:**
+
+* *„dass die Vorschau dem entspricht, was die Engine erzeugt“* →
+  `the_preview_is_what_the_engine_forms` in `apps/phocommander-desktop/src/rename.rs`: der
+  Adapter bildet dieselbe Frage, die der Dialog stellt, und der Test vergleicht die Namen der
+  Vorschau mit den Namen von `form_names` desselben Regelsatzes.
+* *„dass ein Konflikt in der Liste markiert und über F3 erreichbar ist“* →
+  `the_conflict_jump_list_is_reachable_with_f3_and_shift_f3` (egui_kittest, echte
+  Tastenereignisse) **und** die Unit-Tests der Sprungliste.
+* *„dass eine gespeicherte Vorlage wieder angewendet werden kann“* →
+  `a_stored_template_can_be_applied_again` (Dialog) **und** `a_stored_template_is_read_back`
+  (Datei) **und** `a_template_survives_the_round_trip_through_the_text` (Format).
 
 ---
 
-## 5. Warum ich nicht gebaut habe — und was das für die Übergabe heißt
+## 7. Was ich **nicht** getan habe — und warum
 
-Die Regel „kein `cargo build`, kein `cargo test`, kein `cargo fmt`" ist im Auftrag ausdrücklich mit
-dem Grund begründet: 3 GB RAM, ein zweiter Build bricht beide ab, heute Nachmittag sind vier
-Agenten genau daran hängengeblieben. Zum Zeitpunkt meiner Arbeit lief der Build des Owners:
-
-```
-202725  0.5  3.7 338964 119528 ?  Sl  13:15 /workspace/.home/.rustup/.../cargo test --workspace --locked
-204956 97.6 22.6 1334092 713368 ?  Sl  13:20 /workspace/.home/.rustup/.../rustc --crate-name x11rb_protocol ...
-```
-
-**Folge für den Owner:** Der gelieferte Code ist **nicht kompiliert**. Ein Fehler im ersten Build
-kann eine Stelle betreffen, die ich nicht sehen konnte — in einem mehrtausendzeiligen Baum ist das
-nicht auszuschließen. Bitte den Build als ersten Schritt laufen lassen; die wahrscheinlichsten
-Stellen sind in Abschnitt 9.2 genannt.
-
-Der Erschütterungsbeweis der drei Gates (Datei-Größe, Crate-Grenzen, Links) ist in Abschnitt 4
-geführt — diese Gates bauen nichts und sind echt gemessen.
-
----
-
-## 6. Testabdeckungsmatrix
-
-| Bereich | getestet? | Testdatei | Testname | Lücke |
-|---|---|---|---|---|
-| FR-30 Platzhalter (13 Stück) | ja | `tests/rename_placeholders.rs` | `rename_placeholders` | Der Zufallswert wird auf Länge, Hex und Gleichheit geprüft, **nicht** auf einen festen Wert — er ist per Definition vom Namen abgeleitet (siehe 8.1). |
-| FR-30 Zähler-Platzhalter | ja | `tests/rename_placeholders.rs` | `the_counter_placeholder_carries_the_number_of_the_counter` | — |
-| FR-30 Zufallswert (zwei Dateien) | ja | `tests/rename_placeholders.rs` | `the_random_value_of_two_files_differs` | — |
-| FR-31 Suche literal / Regex | ja | `tests/rename_search_and_replace.rs` | `rename_search_and_replace`, `a_search_that_is_not_a_regular_expression_matches_the_text` | — |
-| FR-31 kaputtes Muster | ja | `tests/rename_search_and_replace.rs` | `a_broken_pattern_produces_an_error_and_changes_no_name` | — |
-| FR-32 Zähler (Start, Schritt, Breite) | ja | `tests/rename_counter.rs` | `rename_counter`, `the_counter_starts_at_the_configured_value_and_grows_by_the_step` | — |
-| FR-32 Reihenfolge nach Name | ja | `tests/rename_counter.rs` | `the_counter_can_count_by_the_name` | Die Reihenfolge nach **Datum** ist implementiert, aber nicht als Integrationstest abgesichert — nur im Code. **Lücke.** |
-| FR-33 Determinismus (zwei Läufe) | ja | `tests/rename_is_deterministic.rs` | `rename_is_deterministic` | — |
-| FR-33 keine versteckte Uhr | ja | `tests/rename_is_deterministic.rs` | `the_result_does_not_depend_on_a_hidden_clock` | — |
-| FR-33 kein versteckter Zufall | ja | `tests/rename_is_deterministic.rs` | `the_result_does_not_depend_on_a_hidden_random_source` | — |
-| FR-33 keine globale Lage | ja | `tests/rename_is_deterministic.rs` | `the_result_does_not_depend_on_the_order_of_the_calls` | — |
-| FR-33 Property-Test | ja | `tests/rename_properties.rs` | `the_result_is_a_function_of_the_input`, `the_counter_numbers_the_files_in_a_row`, `a_file_that_cannot_be_named_does_not_stop_the_others` | **Echter `proptest`-Test**, 100 Fälle je Eigenschaft ( `--proptest 100`). |
-| FR-37 Staffel und Folge | ja | `tests/series_detects_season_and_episode.rs` | `series_detects_season_and_episode`, `the_engine_uses_the_numbers_that_it_found_in_the_name`, `a_file_without_a_pattern_carries_no_numbers` | — |
-| FR-38 Serienname aus dem Elternverzeichnis | ja | `tests/series_name_defaults_to_the_parent.rs` | `series_name_defaults_to_the_parent`, `the_name_of_the_series_can_be_overridden` | — |
-| FR-39 Nullauffüllung, wachsende Breite | ja | `tests/series_zero_padding.rs` | `series_zero_padding`, `the_width_grows_with_the_largest_number_of_the_selection`, `the_width_of_the_season_grows_as_well` | — |
-| FR-40 verbotene Zeichen (Engine) | ja | `tests/rename_reports_forbidden_characters.rs` | `rename_reports_forbidden_characters`, `the_replacement_of_a_forbidden_character_is_allowed`, `a_name_without_a_forbidden_character_reports_nothing`, `a_device_name_of_windows_is_reported` | Der Teil „der Rename läuft nicht, bevor der Benutzer bestätigt" gehört dem Dialog. |
-| Fehler: Wert unbekannt | ja | `src/template/tests.rs` | `a_value_that_the_caller_did_not_supply_is_reported` | — |
-| Fehler: kein Format | ja | `src/template/tests.rs` | `a_rule_without_a_format_is_refused` | — |
-| Fehler: Trenner im Namen | ja | `src/template/tests.rs` | `a_name_with_a_separator_is_refused` | — |
-| Paare des Renames / Atomizität | ja | `src/template/tests.rs` | `the_pairs_of_the_rename_are_built_from_the_names`, `a_selection_with_a_file_that_could_not_be_named_has_no_pairs` | Die Atomizität der Ausführung selbst (FR-41, M2) liegt in `rename.rs` und ist nicht meine Aufgabe. |
-| Öffentliche Funktionen (jede hat einen Test) | ja | `src/template/tests.rs` + `tests/*.rs` | 21 Unit-Tests + 21 Integrationstests | — |
-| FR-34 Vorschau / FR-35 Konfliktsprung / FR-36 Vorlagen | **nein** | — | — | **Bewusst nicht im Umfang** — der Dialog ist ein eigener Auftrag. |
-| Die geschweiften Klammern der benannten Vorlagen (E13) | **nein** | — | — | **Offene Frage 8.3** — die Engine spricht die eckigen Klammern des Dialogs. |
-
----
-
-## 7. Der Determinismus-Nachweis (FR-33)
-
-**Die Aussage.** `form_names` ist eine reine Funktion von `(Regel, Eingaben, Zeit)`. Es gibt keine
-globale Lage, keine Uhr in der Bibliothek und keine Zufallsquelle, die nicht erklärt ist.
-
-**Wie das erreicht wurde — vier Entscheidungen:**
-
-1. **Die Uhr kommt vom Aufrufer.** `form_names(rule, inputs, now)` — der Parameter `now: SystemTime`
-   wird von oben gereicht. Ohne das wäre die Bildung nicht testbar und nicht reproduzierbar.
-2. **Die Fakten kommen vom Aufrufer.** `RenameInput` trägt Größe (`Option<u64>`), Zeit der letzten
-   Änderung und Prüfsumme (`Option<u64>`). Die Bibliothek liest **keine** Datei. Ein fehlender Wert
-   ist ein Fehler (`UnknownValue`), kein stiller Leerwert.
-3. **Der „Zufallswert" ist abgeleitet, nicht gezogen.** `[rand]` = FNV-1a über den Dateinamen,
-   auf acht Hexadezimalstellen gekürzt. FNV-1a ist ein fester, dokumentierter Algorithmus — der
-   `DefaultHasher` der Standardbibliothek ist es **nicht** (sein Ergebnis ist über die Versionen
-   des Compilers nicht garantiert stabil); das steht im Kommentar der Funktion.
-4. **Die Reihenfolge ist total.** Sortierungen (`CounterOrder::Name`, `CounterOrder::Date`) sind
-   *stabile* Sortierungen: gleiche Dateien behalten die Reihenfolge der Auswahl. Es gibt keine
-   Gleichheit, die zwei Dateien ohne Entscheidung liegen lässt.
-
-**Der Beweis in den Tests.** `tests/rename_is_deterministic.rs` bildet dieselbe Regel zweimal über
-dieselben Dateien ab und vergleicht die Ergebnisse; zusätzlich prüft es, dass eine andere Regel
-zwischen zwei Läufen nichts verändert, dass eine andere Uhr ohne `[date]`/`[time]` nichts verändert
-und dass der Zufallswert gleich bleibt. `tests/rename_properties.rs` ist der **echte
-`proptest`-Property-Test** der Spezifikation: er zieht das Format, den Schritt, die Breite und die
-Dateinamen aus dem Generator, bildet jeden Fall **zweimal** ab und vergleicht — 100 Fälle je
-Eigenschaft (`--proptest 100`).
-
-**Ausführen:**
-
-```bash
-cargo test -p phocommander-ops --test rename_is_deterministic -- --exact
-cargo test -p phocommander-ops --test rename_properties -- --proptest 100
-```
-
-**Erwartetes Ergebnis:** `test result: ok.` für beide Ziele. *Nicht gemessen* — siehe Abschnitt 5.
-
----
-
-## 8. Die Entscheidungen, die ich getroffen habe (mit Begründung)
-
-### 8.1 Der Zufallswert — eine Abweichung von AC-M1-19
-
-`AC-M1-19` verlangt: „The random value differs between two runs." `FR-33` verlangt: „The rename
-result is deterministic: the same input always yields the same output." **Beides zusammen ist
-unmöglich.**
-
-Ich habe **FR-33** umgesetzt, weil der Auftrag die Determinismus als den Kern benennt und weil
-ein Name, der sich bei jedem Lauf ändert, für einen Benutzer wertlos ist. Der Ausweg für die
-Absicht von AC-M1-19 ist offen: `RenameInput::with_random(value)` — der Aufrufer (der Dialog) darf
-einen echten Zufallswert **einspeisen**; die Bibliothek bleibt eine reine Funktion, und der
-Zufallswert ändert sich dann, weil sich die *Eingabe* geändert hat.
-
-**Das braucht eine Entscheidung des Owners:** entweder AC-M1-19 wird auf „the random value is
-derived from the name and therefore the same in two runs" korrigiert, oder der Dialog zeichnet den
-Wert und die Zufallsquelle wird dort deklariert.
-
-### 8.2 Die Reihenfolge der Auswertung — Platzhalter, Ersetzen, Zähler
-
-Glossar: „Platzhalter werden vor den Ersetzungsregeln und dem Zähler ausgewertet." Benutzerhandbuch
-§3: „The three parts of the rule are evaluated in this order: Placeholders, Replace, Counter."
-
-Der Zähler wird also **zuletzt** geschrieben: eine Ersetzungsregel kann eine Nummer nicht
-verfälschen. Technisch steht zwischen den Phasen ein Zeichen, das in einem Dateinamen nicht
-vorkommen kann (`\u{0}`), damit die Ersetzung den Zähler nicht beschädigen kann. Eine Regel **ohne**
-Zähler lässt das Platzhalterzeichen `[n]` als Text im Namen stehen — der Benutzer sieht im
-Vorschau, dass der Zähler fehlt.
-
-### 8.3 Der Dialekt der Vorlagen — nur die eckigen Klammern
-
-Nach E13 benutzt der Dialog eckige, die benannten Vorlagen geschweifte Klammern. Die Engine
-spricht **die eckigen Klammern des Dialogs**; die geschweiften Klammern der fünf Vorlagen in
-`config/templates/` sind **nicht** implementiert. Die Zuordnung ist eine Zeile:
-
-| Vorlagenfeld | Platzhalter der Engine |
+| Nicht getan | Grund |
 |---|---|
-| `{serie}` | `[series]` |
-| `{staffel}` | `[season]` |
-| `{episode}` | `[episode]` |
-| `{titel}` | `[episode_title]` (der Name der Datei ohne das Muster `SxxEyy`) |
-| `{format}` | `[ext]` |
-| `{n}` | `[n]` (die Breite kommt aus der Zählerregel) |
-| `{date}` | `[date]` |
-| `{name}`, `{parent}`, `{size}`, `{hash}`, `{rand}` | gleichnamig |
-
-Die Zuordnung gehört in die Schicht, die beide Welten kennt — der Dialog (er darf `crates/*`
-benutzen). `phocommander-config` darf `phocommander-ops` **nicht** benutzen (Geschwister-Regel),
-die Zuordnung kann also nicht im Konfigurations-Crate liegen.
-
-### 8.4 Die Namen der Serien-Platzhalter
-
-`[series]`, `[season]`, `[episode]`, `[episode_title]`. Bewusst **englisch** (wie die übrigen
-Platzhalter des Dialogs) und **nicht** `[title]` — das ist laut Glossar die Schreibweise „Title
-Case" und keine Episodenbezeichnung.
-
-### 8.5 Der Episodentitel
-
-„The.Expanse.S01E03.avi" → der Episodentitel ist „The.Expanse" — der Name der Datei **ohne** das
-Muster und ohne die Trenner an der Naht. Das ist die dokumentierte Lesart („offers the rest of the
-name as the episode title").
-
-### 8.6 Die Breite der Serienzahlen
-
-Die Breite der Staffel und die Breite der Folge werden **getrennt** berechnet: die Breite ist das
-Maximum der Ziffernzahl der jeweiligen Zahl in der Auswahl, mindestens die Breite der Regel
-(Vorgabe 2). Deshalb wird aus `S01E099` und `S01E100` genau so, wie die Abnahme es fordert.
-
-### 8.7 Der Zähler zählt alle Dateien der Auswahl
-
-Auch die Dateien, deren Staffel und Folge bereits im Namen stehen, bekommen eine Nummer. Für die
-Episodennummer einer Datei **ohne** Muster ist der Zähler die Quelle; das entspricht dem Ablauf im
-Benutzerhandbuch (der Benutzer gibt die erste Nummer ein, der Zähler läuft weiter).
-
-### 8.8 Die Kurz-Prüfsumme
-
-`[hash]` = die ersten acht Zeichen der Prüfsumme in Hexadezimal, ohne führende Nullen
-(`format!("{:x}")`, nicht `{:08x}`) — bei einer 32-Bit-Prüfsumme ist das die ganze Summe, bei einer
-64-Bit-Prüfsumme die obere Hälfte.
+| `cargo build`, `cargo test`, `cargo fmt`, `cargo clippy` | **Bau-Gate des Auftrags**: ein zweiter Build neben dem des Owners bricht beide ab (3 GB RAM). Der Code ist deshalb **nicht übersetzt** — er kann Fehler enthalten, die nur der Compiler findet. **Hinweis für den Build:** jeder `cargo`-Aufruf braucht `< /dev/null` (das stdin enthielt sonst die Ausgabe des vorherigen Kommandos, und `rustc -` las sie als Quelltext). |
+| Die Zeichendauer bei 10.000 und 100.000 Einträgen messen | Ohne Build gibt es keine Messung. Ich schreibe keine Zahl, die ich nicht gemessen habe. **Was ich stattdessen getan habe:** die Vorschau zeichnet nur 12 Zeilen (`VISIBLE_ROWS`), und die Engine wird nur bei einer Änderung der Regel gefragt (`dirty` + `engine_calls()`). **Offener Punkt:** die *Bildrate* des Dialogs ist damit nicht gemessen (NFR-01/NFR-02). |
+| Der UI-Test aus AC-M1-24 ausführen (`cargo test -p phocommander-ui --test rename_conflict_jump -- --exact`) | Ohne Build nicht möglich. Der Test **ist geschrieben** und wartet auf den Lauf des Owners. |
+| Die Umbenennung selbst ausführen | `Command::Rename` trägt jetzt die Paare (Quelle → Ziel). Die Desktop-App führt die Befehle noch nicht aus — das ist die Arbeit der Kern-Rolle (die App ist bisher eine Hülle). Die Brücke steht: `apps/phocommander-desktop/src/rename.rs` übersetzt die Paare in `phocommander_ops::rename::execute_renames`. |
+| FR-40 (die verbotenen Zeichen der Zielplattform) in der Oberfläche | Die Engine meldet sie (`phocommander_ops::names`), aber die Naht der Vorschau kennt heute nur die vier Gründe der Engine. Die Anzeige der verbotenen Zeichen gehört in die Regel der UI (`docs/REQUIREMENTS.md` FR-40) und ist nicht Teil von FR-34/35/36. |
+| `config/templates/*.toml` (die mitgelieferten Vorlagen) in den Dialog laden | Die mitgelieferten Vorlagen haben ein **anderes Format** (geschweifte Klammern, Erkennungsregeln) und gehören zur Konfiguration (`config/templates/`, Schema des Config-Crates). Der Dialog benutzt sein eigenes, strenges Format für die Vorlagen des Benutzers. Die Zusammenführung der beiden Formate ist eine Owner-Entscheidung (Abschnitt 8). |
+| `docs/REQUIREMENTS.md`, `docs/ACCEPTANCE-CRITERIA.md`, `docs/STATUS.md` aktualisieren | Diese Dokumente gehören der Produkt- und der QA-Rolle. Ich habe `docs/WHERE_TO_CHANGE.md` ergänzt (das verlangt die Datei selbst für jede neue Datei). |
 
 ---
 
-## 9. Offene Punkte und das, was der Owner tun muss
+## 8. Offene Punkte für eine Owner-Entscheidung
 
-### 9.1 Der Owner muss bauen und messen
-
-```bash
-cargo fmt --all                       # die Formatierung ist ungeprüft (Abschnitt 4.5)
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace --all-features
-cargo test -p phocommander-ops --test rename_placeholders -- --exact
-cargo test -p phocommander-ops --test rename_search_and_replace -- --exact
-cargo test -p phocommander-ops --test rename_counter -- --exact
-cargo test -p phocommander-ops --test rename_is_deterministic -- --exact
-cargo test -p phocommander-ops --test rename_properties -- --proptest 100
-cargo test -p phocommander-ops --test series_detects_season_and_episode -- --exact
-cargo test -p phocommander-ops --test series_name_defaults_to_the_parent -- --exact
-cargo test -p phocommander-ops --test series_zero_padding -- --exact
-cargo test -p phocommander-ops --test rename_reports_forbidden_characters -- --exact
-cargo deny check && cargo audit       # die neue Abhängigkeit regex braucht die Lizenzprüfung (§5.8)
-```
-
-Die Testziele sind so benannt, dass die Abnahmekriterien mit `--exact` genau einen Test treffen:
-`cargo test -p phocommander-ops --test rename_counter -- --exact` führt den Test
-`rename_counter` aus.
-
-### 9.2 Wo ein Fehler am wahrscheinlichsten ist
-
-Da ich nicht bauen durfte, nenne ich die Stellen, an denen ich die größte Unsicherheit habe:
-
-1. `template/types.rs` — der `thiserror`-Aufbau von `TemplateError` und die `Display`-Zeilen der
-   Fehler (Zeilen 495 ff.).
-2. `template/placeholders.rs` — die `match`-Arme in `value_of` (17 Arme, alle Varianten der
-   `Placeholder`-Enum).
-3. `template/series.rs` — die Byte-Offsets des Musters und der Schnitt mit `base[..pattern.start]`
-   (der Schutz `pattern.end > base.len()` ist eingebaut, damit kein panic entsteht).
-4. Die Formatierung: `cargo fmt --all` bitte zuerst laufen lassen, dann `cargo fmt --all --check`.
-
-### 9.3 Entscheidungen, die der Owner braucht
-
-| # | Frage | Mein Vorschlag | Warum es eine Entscheidung ist |
-|---|---|---|---|
-| 1 | AC-M1-19 („der Zufallswert unterscheidet sich zwischen zwei Läufen") gegen FR-33 (Determinismus) | AC-M1-19 auf „abgeleitet vom Namen, also in zwei Läufen gleich" korrigieren; der Dialog speist einen echten Zufallswert über `RenameInput::with_random` ein | Zwei Kriterien widersprechen sich. Die Spezifikation ist die Quelle; ein Kriterium darf nicht gegen die Anforderung laufen. |
-| 2 | Die geschweiften Klammern der benannten Vorlagen (E13) | Die Zuordnung (8.3) in den Dialog legen | FR-36 gehört einem anderen Auftrag; die Engine spricht den Dialog-Dialekt. |
-| 3 | Der Zähler zählt auch die Dateien mit erkannter Staffel/Episode (8.7) | So lassen | Das Benutzerhandbuch beschreibt den Ablauf nur für Dateien **ohne** Muster. |
-| 4 | Der Episodentitel ist der Name ohne das Muster (8.5) | So lassen | Eine Alternative wäre „der ganze Name" — dann hieße die Datei „... - The.Expanse.S01E03.avi". |
-| 5 | `regex` als neue Abhängigkeit | Behalten | Sie ist bereits im Abhängigkeitsbaum des Workspace, MIT/Apache-2.0, ohne C-Anteil. §5.8 verlangt trotzdem die Lizenzprüfung und eine Begründung — dieses Dokument ist die Begründung. |
-| 6 | Die Reihenfolge der Auswertung (8.2) | So lassen (Platzhalter → Ersetzen → Zähler) | Steht so im Glossar und im Benutzerhandbuch; die Wirkung ist, dass der Zähler die Ersetzung überlebt. |
-
-### 9.4 Was der nächste Auftrag (der Dialog) von mir bekommt
-
-* `form_names(&rule, &inputs, now) -> Result<Vec<FormedName>, TemplateError>` — die Vorschau
-  (FR-34) ist ein Aufruf dieser Funktion je Änderung der Regel.
-* `FormedName::problem()` — der Fehler je Datei (ein Datei mit unbekanntem `[hash]` blockiert die
-  anderen nicht).
-* `name_problems(name)` — die verbotenen Zeichen mit dem vorgeschlagenen Ersatz (FR-40, die
-  Engine-Hälfte).
-* `rename_pairs(&names)` — `None`, wenn auch nur eine Datei keinen Namen bekam; der Dialog soll
-  dann gar nichts anbieten (FR-41).
-* `Placeholder::ALL` — die Liste für die Menüleiste des Dialogs.
-* `SeriesRule` + `detect_series_pattern` — die Vorbelegung der Staffel und der Folge (FR-37) und
-  der Serienname aus dem Elternverzeichnis (FR-38).
-
-**Was der Dialog zusätzlich bauen muss:** die Konfliktsprung-Liste (FR-35), die Speicherung der
-Vorlagen (FR-36) und die Zuordnung der geschweiften Klammern (8.3).
+1. **Die Kosten der Konfliktplanung bei sehr großen Auswahlen.** `plan_renames` des
+   Ops-Crates ist O(n²) (er sucht für jedes Paar das Paar, das den Zielnamen freigibt) und
+   ruft das Dateisystem 2n-mal auf (`metadata` für Quelle und Ziel). Bei 10.000 Dateien sind
+   das 20.000 Dateisystemaufrufe **pro Tastendruck**; bei 100.000 Dateien ist die
+   Vorschau nicht mehr bedienbar. **Mein Vorschlag:** die Prüfung auf doppelte Ziele in
+   `phocommander-ops` mit einer `HashMap` linear machen (O(n)) und dem Adapter einen
+   zwischengespeicherten Verzeichniseintrag geben, damit die `metadata`-Aufrufe nicht bei
+   jedem Tastendruck wiederholt werden. Ich habe das Ops-Crate **nicht** angefasst, weil es
+   der Core-Rolle gehört und der Auftrag hier die Oberfläche war.
+2. **Zwei Formate für Vorlagen.** Die mitgelieferten Vorlagen (`config/templates/*.toml`,
+   geschweifte Klammern, Erkennungsregeln, Seriennummern) und die Vorlagen des Benutzers
+   (mein Textformat) sind zwei Sprachen. Sollen die mitgelieferten Vorlagen im Dialog
+   wählbar sein? Dann braucht es eine Übersetzung zwischen den Formaten — am besten im
+   Config-Crate, das die Schema-Verantwortung hat (AC-M1-25).
+3. **F2 bei genau einer Auswahl.** `docs/KEYMAP.md` sagt: „With more than one entry selected,
+   the multiple-rename dialog opens instead of the single rename field.“ Mein Dialog öffnet
+   sich **immer** (mit einer Zeile, wenn nur eine Datei markiert ist), weil das
+   Einzelsummen-Feld im Code noch nicht existiert. Ist das so gewollt, oder soll F2 bei
+   genau einer Datei zunächst gar nichts tun?
+4. **Eine Aktion für das Speichern einer Vorlage.** Das Speichern hängt heute an der
+   Enter-Taste im Namensfeld (kontextabhängig). Ein eigenes `rename.template_save` im
+   Katalog (z. B. Ctrl+S) wäre eindeutiger, verlangt aber eine Zeile in
+   `config/keymap.toml`, eine in `docs/KEYMAP.md` und eine Aktion in `actions.rs`.
+5. **`Command::Rename` trägt jetzt Paare statt Pfade.** Das ist eine Änderung der
+   öffentlichen Schnittstelle der UI-Crate (die Desktop-App benutzt den Befehl noch nicht).
+   Die Form ist die bessere, aber sie muss mit der Core-Rolle abgestimmt werden, wenn der
+   Befehl dort ausgeführt wird.
+6. **Die Reihenfolge der Prioritäten.** Die Vorschau ist der Kern; die Sprungliste und die
+   Vorlagen sind fertig. Was zuerst an den Owner: der Bau, der Testlauf oder die Abstimmung
+   der offenen Punkte?
 
 ---
 
-## 10. Die Liste der Dateien im Baum (Übergabe wie gefordert)
+## 9. Der Patch
 
-```
-crates/phocommander-ops/src/template.rs                       (neu,   304 Zeilen)
-crates/phocommander-ops/src/template/types.rs                 (neu,   533 Zeilen)
-crates/phocommander-ops/src/template/placeholders.rs          (neu,   370 Zeilen)
-crates/phocommander-ops/src/template/replace.rs               (neu,   164 Zeilen)
-crates/phocommander-ops/src/template/counter.rs               (neu,   170 Zeilen)
-crates/phocommander-ops/src/template/series.rs                (neu,   293 Zeilen)
-crates/phocommander-ops/src/template/tests.rs                 (neu,   484 Zeilen)
-crates/phocommander-ops/src/series.rs                         (geänd., 309 Zeilen)
-crates/phocommander-ops/src/lib.rs                            (geänd.,  73 Zeilen)
-crates/phocommander-ops/Cargo.toml                           (geänd.,  33 Zeilen)
-crates/phocommander-ops/tests/rename_placeholders.rs          (neu,   110 Zeilen)
-crates/phocommander-ops/tests/rename_search_and_replace.rs   (neu,    91 Zeilen)
-crates/phocommander-ops/tests/rename_counter.rs               (neu,    89 Zeilen)
-crates/phocommander-ops/tests/rename_is_deterministic.rs      (neu,   118 Zeilen)
-crates/phocommander-ops/tests/rename_properties.rs            (neu,   108 Zeilen)
-crates/phocommander-ops/tests/series_detects_season_and_episode.rs (neu, 97 Zeilen)
-crates/phocommander-ops/tests/series_name_defaults_to_the_parent.rs (neu, 78 Zeilen)
-crates/phocommander-ops/tests/series_zero_padding.rs          (neu,   100 Zeilen)
-crates/phocommander-ops/tests/rename_reports_forbidden_characters.rs (neu, 80 Zeilen)
-Cargo.toml                                                   (geänd., +10 Zeilen)
-Cargo.lock                                                   (geänd.,  +2 Zeilen)
-docs/WHERE_TO_CHANGE.md                                      (geänd.,  +1 Zeile)
-docs/ARCHITECTURE.md                                         (geänd.,  1 Zeile)
-deliverable.md                                               (neu)
-deliverable.core-engineer-rename.md                          (neu, identische Kopie)
-```
-
-`docs/REQUIREMENTS.md` wurde **nicht** verändert — die Spezifikation ist die Quelle, und die
-Abweichung (8.1) ist hier beschrieben, nicht dort korrigiert.
+`deliverable.ui-engineer-rename.patch` — 28 Dateien, +4903 / −17 (ohne die Dateien, die andere
+Rollen parallel angefasst haben: `scripts/check-gates-negative.sh` gehört einer anderen Rolle
+und ist **nicht** im Patch).
