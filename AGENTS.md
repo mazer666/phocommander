@@ -112,8 +112,12 @@ yet. Write the safe version and explain the trade-off in the handover.
 
 | Limit | Value | Meaning |
 |---|---|---|
-| Soft | 400 lines | A source file above this needs a reason, and the reason belongs in the module header. |
-| Hard | 550 lines | A source file above this is rejected by review. Split it. |
+| Soft | 600 lines | A source file above this needs a reason, and the reason belongs in the module header. |
+| Hard | 900 lines | A source file above this is rejected by the gate `scripts/check-file-size.sh`. Split it. |
+
+The two values are the ones of NFR-14 of the specification and the ones the
+gate measures. An earlier version of this file named 400 and 550 — that was a
+disagreement with the specification, and the specification wins.
 
 Splitting means splitting along a responsibility, not mechanically. A 600-line file
 usually contains two modules that never talk to each other.
@@ -268,7 +272,44 @@ a handover that mentions only the "interesting" files hides the rest.
 
 ---
 
-## 9. Checks before you hand over
+## 9. The sandbox has three gigabytes of memory
+
+The build environment of this project has **3 GB of RAM** and a **slow network
+volume** on which the repository lives. Three rules come from that, and every one
+of them was learned the hard way.
+
+**One cargo process in the workspace.** Two builds at the same time kill both —
+the linker is stopped with `ld terminated with signal 9 [Killed]`. Give every
+worker its own `CARGO_HOME` and its own `CARGO_TARGET_DIR` on a local disk, and
+never let two builds run at the same time. A build on the network volume also
+fails with `NFS do not support locking` when it wants the advisory database of
+`cargo deny`.
+
+**Do not build.** Write the files and report what you wrote. The owner builds,
+tests and measures. A worker that builds holds gigabytes of the target
+directory and slows every other worker down; a worker that builds and then
+waits for a result that never arrives is a worker that hangs. If you need a
+measurement, say which command produces it and what the result should look
+like.
+
+**Clear the target directories after a milestone.** A day of parallel work left
+**20 GB** of target directories in `/tmp`. The space was needed by the next
+build, and the volume was blocked until they were gone.
+
+Two more things that cost an afternoon:
+
+- **The executable bit is part of the tree, not part of the file.** A way of
+  writing that does not carry the mode loses it, and a gate script that lost it
+  cannot be run. Run `./scripts/restore-executable-bits.sh` after every update
+  of the tree.
+- **The negative gate test builds in a target directory of its own.** A test
+  binary carries the path of the repository it was built in. A binary that was
+  built in the copy of the negative test looks for the configuration of the
+  copy — and the copy is gone when the script ends.
+
+---
+
+## 10. Checks before you hand over
 
 ```bash
 cargo fmt --all --check
@@ -283,7 +324,7 @@ python3 scripts/check-links.py
 - [ ] No stub, no `todo!()`, no fake return value, no placeholder page.
 - [ ] No `unwrap()`/`expect()` on a path reachable from outside the module.
 - [ ] No `unsafe`.
-- [ ] No source file above 400 lines without a documented reason; none above 550.
+- [ ] No source file above 600 lines without a documented reason; none above 900.
 - [ ] Every new or changed public function has a unit test.
 - [ ] Every hardening has a negative test that performs the attack.
 - [ ] Every public function has a WHAT / WHY / EXAMPLE doc comment.
