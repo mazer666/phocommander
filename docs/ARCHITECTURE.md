@@ -370,7 +370,7 @@ The short answer for a contributor who is about to change something.
 | The binding of a key | `config/keymap.toml` | Binding |
 | The list of actions | `crates/phocommander-keymap/src/catalog.rs` | Binding |
 | The copy modes | `crates/phocommander-ops/src/copy.rs` | Operations |
-| The rename placeholders | `crates/phocommander-ops/src/rename.rs` | Operations |
+| The rename placeholders | `crates/phocommander-ops/src/template.rs` | Operations |
 | The state of a running job | `crates/phocommander-ops/src/job.rs` | Operations |
 | The extraction rules | `crates/phocommander-archive/src/extract.rs` | Archive |
 | The limits of an extraction | `crates/phocommander-archive/src/limits.rs` | Archive |
