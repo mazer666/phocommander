@@ -239,8 +239,10 @@ fn draw_tabs(
         |ui| {
             for index in 0..panel.tab_count() {
                 let selected = index == panel.active_tab_index();
-                let label =
-                    texts.get_with(TextKey::PanelTab, &[Argument::Number((index + 1) as u64)]);
+                let label = texts.get_with(
+                    TextKey::PanelTab,
+                    &[Argument::named("number", &(index + 1).to_string())],
+                );
                 let response = ui.selectable_label(selected, label);
                 if response.clicked() {
                     requested.push(Request::SwitchTab(index));
@@ -325,7 +327,7 @@ fn draw_filter_line(
             ui.label(
                 RichText::new(texts.get_with(
                     TextKey::PanelFilterMatches,
-                    &[Argument::Number(matches as u64)],
+                    &[Argument::count(matches as u64)],
                 ))
                 .color(palette.text),
             );

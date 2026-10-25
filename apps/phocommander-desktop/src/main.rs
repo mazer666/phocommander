@@ -11,14 +11,15 @@
 //! EXAMPLE: `cargo run -p phocommander-desktop`
 
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use phocommander_config::{
-    Config, ConfigNotice, EffectiveSecurity, Language, NoticeSeverity, resolve_security,
+    Config, ConfigNotice, EffectiveSecurity, NoticeSeverity, resolve_security,
 };
-use phocommander_desktop::catalogue::TranslatorCatalogue;
+use phocommander_desktop::desktop::DesktopApp;
+use phocommander_desktop::language::{ConfigWatcher, InterfaceLanguage, locale_of};
 use phocommander_desktop::security::SecurityPlan;
-use phocommander_i18n::{Locale, Translator};
 use phocommander_platform::config_directory;
 use phocommander_ui::{
     Context, KeymapView, Metrics, Platform, Theme, WorkSurface, WorkSurfaceApp, visuals,
@@ -55,16 +56,43 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Phocommander",
         options,
-        Box::new(|_creation| Ok(Box::new(build_application(&config)))),
+        Box::new(|_creation| Ok(Box::new(build_desktop_app(&config)))),
     )
 }
 
-/// Baut die Anwendung.
+/// Builds the application of the desktop build.
 ///
-/// WHY: die Funktion baut alles zusammen, was die Oberfläche braucht — die
-///       Oberfläche selbst, die Tastenbelegung, den Katalog der Texte, das
-///       Thema und die Maße der Plattform. Sie ist die einzige Stelle, an der
-///       diese Teile zusammenkommen.
+/// WHY: the application of the desktop build holds the shell of the interface
+///       and the watcher of the configuration file beside it. The watcher is
+///       what lets the language of the interface change while the program
+///       runs — the user writes the choice into the configuration file, and
+///       the interface follows (FR-124).
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_config::Config;
+/// use phocommander_desktop::build_desktop_app;
+///
+/// let app = build_desktop_app(&Config::safe());
+/// // WHY: die Anwendung ist gebaut und kann gezeichnet werden.
+/// let _ = app;
+/// ```
+pub fn build_desktop_app(config: &Config) -> DesktopApp {
+    let locale = locale_of(config.general.language);
+    let watcher = match configuration_path() {
+        Some(path) => ConfigWatcher::new(path),
+        None => ConfigWatcher::without_file(),
+    };
+
+    DesktopApp::new(build_application(config), locale, watcher)
+}
+
+/// Builds the application.
+///
+/// WHY: the function builds everything that the surface needs — the surface
+///       itself, the keymap, the catalog of the texts, the formats of the
+///       values, the theme and the dimensions of the platform. It is the
+///       only place where these parts come together.
 ///
 /// EXAMPLE:
 /// ```no_run
@@ -82,33 +110,29 @@ pub fn build_application(config: &Config) -> WorkSurfaceApp {
     );
 
     let keymap = read_keymap().unwrap_or_default();
-    let catalogue = TranslatorCatalogue::new(build_translator(config));
     let metrics = Metrics::for_platform(host_platform());
 
-    WorkSurfaceApp::new(surface, keymap, Box::new(catalogue))
+    // WHY: the language of the interface is the catalogue of the texts and
+    //       the formats of the values. Both belong to the language, and the
+    //       shell takes both of them (FR-05, FR-123).
+    let mut language = InterfaceLanguage::of(locale_of(config.general.language));
+
+    WorkSurfaceApp::new(surface, keymap, language.take_catalogue())
+        .with_formats(language.take_formats())
         .with_theme(Theme::Dark)
         .with_metrics(metrics)
         .with_context(Context::Keyboard)
 }
 
-/// Baut den Übersetzer der Oberfläche.
+/// The path of the configuration file, if the configuration directory can be
+/// found.
 ///
-/// WHY: die Sprache der Oberfläche folgt der Einstellung der
-///       Konfigurationsdatei. Eine Sprache, die es nicht gibt, führt zu
-///       Englisch, weil Englisch der letzte Schritt der Kette ist.
-fn build_translator(config: &Config) -> Translator {
-    // WHY: the language of the interface follows the setting of the
-    //       configuration file. A language that the product does not ship
-    //       leads to English, because English is the last step of the chain
-    //       of the lookup.
-    let locale = match config.general.language {
-        Language::De => Locale::of("de"),
-        Language::En => Locale::english(),
-        Language::System => Locale::from_system(),
-    };
-
-    Translator::new(locale)
-        .unwrap_or_else(|_| Translator::new(Locale::english()).unwrap_or_else(|_| unreachable!()))
+/// WHY: the program reads the file at the start and the watcher looks at it
+///       while the program runs. Both ask the same place, so that the file
+///       that is watched is the file that is read.
+fn configuration_path() -> Option<PathBuf> {
+    let directory = config_directory().ok()?;
+    Some(directory.join(CONFIGURATION_FILE_NAME))
 }
 
 /// The platform of the machine, as the interface names it.

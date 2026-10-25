@@ -26,6 +26,7 @@ pub mod panel;
 use egui::{Rect, Vec2};
 
 use crate::commands::Request;
+use crate::format::Formats;
 use crate::i18n::Texts;
 use crate::layout::{LayoutProfile, PanelStructure};
 use crate::metrics::Metrics;
@@ -38,13 +39,14 @@ pub(crate) const SEPARATOR_WIDTH: f32 = 1.0;
 
 /// Everything the drawing needs besides the thing that is drawn.
 ///
-/// WHY: every part of the surface needs the same five things: the measures
+/// WHY: every part of the surface needs the same six things: the measures
 ///       of the platform, the colours of the theme, the texts of the
-///       catalogue, the profile of the layout and the place where the
-///       requests of the user are collected. Carrying them as five
-///       parameters would make every signature long and unreadable, and it
-///       would make it easy to mix two of them up. The bundle names them
-///       once, and every drawing function reads what it needs from it.
+///       catalogue, the formats of the locale, the profile of the layout and
+///       the place where the requests of the user are collected. Carrying
+///       them as six parameters would make every signature long and
+///       unreadable, and it would make it easy to mix two of them up. The
+///       bundle names them once, and every drawing function reads what it
+///       needs from it.
 ///
 // BOUNDARY: the bundle is an internal helper of the drawing. It is not a
 //       part of the public surface of the crate, because a caller outside the
@@ -60,6 +62,13 @@ pub(crate) struct DrawStyle<'texts> {
     /// The texts of the catalogue in the language of the interface.
     pub(crate) texts: &'texts Texts<'texts>,
 
+    /// The formats of the locale of the interface.
+    ///
+    /// WHY: the sizes and the dates of the file list are written the way the
+    ///       locale of the user writes them (FR-123). The drawing therefore
+    ///       asks the formats and writes no rule of a locale itself.
+    pub(crate) formats: &'texts dyn Formats,
+
     /// The profile of the layout: which areas exist and how they are placed.
     pub(crate) profile: &'texts LayoutProfile,
 }
@@ -70,12 +79,14 @@ impl<'texts> DrawStyle<'texts> {
         metrics: &'texts Metrics,
         palette: &'texts Palette,
         texts: &'texts Texts<'texts>,
+        formats: &'texts dyn Formats,
         profile: &'texts LayoutProfile,
     ) -> Self {
         Self {
             metrics,
             palette,
             texts,
+            formats,
             profile,
         }
     }

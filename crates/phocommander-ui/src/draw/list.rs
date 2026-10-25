@@ -214,8 +214,12 @@ pub(crate) fn draw_list(
         for column in &layout.columns {
             let (text, color) = match column {
                 Column::Name => (row.name().to_string(), text_color),
-                Column::Size => (row.size_text(), dimmed),
-                Column::Date => (row.date_text(), dimmed),
+                // WHY: the size and the date are written the way the locale
+                //       of the user writes them (FR-123). The drawing asks
+                //       the formats of the interface and knows no rule of a
+                //       locale itself.
+                Column::Size => (row.size_text(style.formats), dimmed),
+                Column::Date => (row.date_text(style.formats), dimmed),
                 Column::Type => (texts.get(row.type_key()), dimmed),
             };
 
