@@ -27,16 +27,16 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 | Was | Stand |
 |---|---|
 | **Die Abnahme von M1** | Die dritte Messung ist geschrieben. Drei Gründe bleiben: das manuelle Protokoll auf einem macOS-Gerät, die Benchmarks der Spezifikation und der Eigenschaftstest der Umbenennung |
-| **Der Meilenstein M2b** | Die Kataloge sind synchron, das Gate gegen hartkodierte Texte steht, die Fehlermeldungen werden übersetzt. Offen: die lokalisierte Formatierung in der Oberfläche und der Sprachwechsel zur Laufzeit |
+| **Der Meilenstein M2b** | Die Kataloge sind synchron, das Gate gegen hartkodierte Texte steht, die Fehlermeldungen werden übersetzt, die Größen und Daten folgen der Sprache, und der Sprachwechsel erreicht die Oberfläche im nächsten Frame. Offen: der Auslöser des Wechsels — die Konfigurationsdatei wird einmal pro Sekunde gelesen, ein Menüeintrag wäre die dauerhafte Lösung |
 | **Der Meilenstein M3** | Beginnt nach M2b — Windows, Linux und BSD |
 
 ## 3. Der gemessene Stand
 
 | Was | Zahl |
 |---|---|
-| Tests | **974 grün, 0 rot, 0 übersprungen** |
-| Testbinäre | 48 |
-| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün |
+| Tests | **1025 grün, 0 rot, 0 übersprungen** |
+| Testbinäre | 49 |
+| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 25.10.2026: **PASS** |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
 | Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
@@ -75,6 +75,12 @@ gefunden — im Code und in den Tests:
 17. Die Erkennung des Formats kannte **kein komprimiertes TAR** — die vier Komprimierungen des Adapters waren über die öffentliche API unerreichbar.
 18. Die Datei `keymap_view.rs` war auf 999 Zeilen gewachsen und damit über dem Maximum von 900. Sie ist jetzt geteilt: die Eingabe in `keymap_view/stroke.rs`, die Belegung in `keymap_view.rs`.
 19. Der Negativtest benutzte das zentrale Zielverzeichnis und verunreinigte die Binaries.
+20. `AGENTS.md` nannte 400 und 550 Zeilen, wo die Spezifikation (NFR-14) und das Gate 600 und 900 sagen. Die Datei sagt selbst, dass die Spezifikation gewinnt.
+21. Drei Gate-Skripte hatten auf GitHub das Ausführungsbit verloren. Der Weg, der den Inhalt schreibt, trägt den Modus nicht — deshalb gibt es jetzt `scripts/restore-executable-bits.sh`.
+22. Das Modul `format` des i18n-Crates war **nie kompiliert** — es war nicht deklariert. Der erste Build des Crates wäre rot gewesen.
+23. Fluent registriert seine eingebauten Funktionen **nicht** von selbst. `NUMBER($count)` war deshalb eine unbekannte Funktion, und die Nachricht fiel auf den Schlüssel zurück.
+24. Fluent 0.16 schreibt eine Zahl **ohne** die Trennzeichen der Sprache — das Feld `use_grouping` existiert, wird aber nicht benutzt. Die Zahlen der Oberfläche tragen die Trennzeichen jetzt, weil der i18n-Crate sie selbst mit den Regeln von CLDR formatiert.
+25. Ein Argument der Oberfläche hatte **keinen Namen**. Der Katalog konnte die Werte nicht zuordnen, und ein Argument, das zwei Zahlen trägt, wäre nicht zuordenbar gewesen.
 
 ## 5. Die Regeln, die aus diesem Meilenstein folgen
 
@@ -87,13 +93,14 @@ genauso leicht zu brechen sind:
 | **Der Negativtest baut in ein Zielverzeichnis von sich.** | Ein Testbinary trägt den Pfad des Repositorys, in dem es gebaut wurde. Ein Binary aus der Kopie sucht die Konfiguration der Kopie — und die ist weg, wenn das Skript endet. |
 | **Die Agenten bauen nicht.** Sie schreiben, die Leitende Instanz baut und prüft. | Ein Bau in einem fremden Verzeichnis frisst 1 bis 5 GB und blockiert das NAS-Volume, auf dem das Repository liegt. |
 | **Nach jedem Meilenstein wird aufgeräumt.** | Am Ende dieses Tages lagen 20 GB Target-Verzeichnisse in `/tmp`. |
+| **Nach jedem `git reset` das Ausführungsbit wiederherstellen.** | `./scripts/restore-executable-bits.sh` — der Weg, der den Inhalt schreibt, trägt den Modus nicht. |
 | **Ein Gate, das nie rot war, ist ein Wunsch.** | Jedes neue Gate gehört in `check-gates-negative.sh`, mit einem eingebauten Defekt. |
 
 ## 6. Was als Nächstes kommt
 
 | # | Was | Warum |
 |---|---|---|
-| 1 | Den Meilenstein M2b abschließen | Die Kataloge sind synchron, das Gate steht, die Fehlermeldungen werden übersetzt. Offen sind die lokalisierte Formatierung in der Oberfläche und der Wechsel zur Laufzeit |
+| 1 | Den Auslöser des Sprachwechsels festlegen | Der Desktop-Build liest die Konfigurationsdatei einmal pro Sekunde. Ein Eintrag in der nativen Menüleiste wäre die dauerhafte Lösung — `muda` kommt mit M3 |
 | 2 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
 | 3 | Den Eigenschaftstest der Umbenennung schreiben | FR-33 verlangt ihn ausdrücklich |
 | 4 | Den Meilenstein M3 beginnen — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft |
@@ -106,6 +113,7 @@ genauso leicht zu brechen sind:
 | Wie läuft das manuelle Protokoll auf einem echten macOS-Gerät? | Die Sandbox hat ein Linux-System und keinen Bildschirm. Die Abnahme von M1 braucht dieses Protokoll. |
 | Welche Zertifikate tragen die Binaries? | Windows braucht ein Code-Signing-Zertifikat, macOS einen Developer ID. Beides kostet Geld und braucht eine Entscheidung des Eigentümers. |
 | Das Zielverzeichnis der Tests liegt auf einem NAS-Volume | Jeder Build zahlt die Latenz des Volumes. Eine lokale Ablage wäre schneller — wenn die Sandbox sie anbietet. |
+| Der Eigenschaftstest der Umbenennung (FR-33) | Die Spezifikation nennt ihn ausdrücklich. Er ist der letzte fehlende Test der Abnahme von M1. |
 | Soll die Dateiendung ein Merkmal sein? | **Nein**, entschieden am 25.10.2026: die Endung bleibt ein Hinweis. Die Magic Bytes entscheiden. Eine Datei, die `.zip` heißt und kein ZIP ist, soll als das erkannt werden, was sie ist. |
 | Verschlüsselte Container (FR-68) | Nicht angefasst. Der Meilenstein M1 umfasst die unverschlüsselten Formate; die verschlüsselten kommen mit dem Umgang mit den Passwörtern. |
 

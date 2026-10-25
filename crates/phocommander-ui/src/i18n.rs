@@ -38,12 +38,101 @@ pub use keys::TextKey;
 /// the argument `total`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Argument<'a> {
-    /// The number of the message — the count of the entries, for example.
-    Number(u64),
+    /// A number with the name that the message expects — `{ $count }` in the
+    /// catalogue, for example.
+    ///
+    /// WHY: the name belongs to the argument and not to the caller of the
+    ///       catalogue. The message of the catalogue decides which name a
+    ///       value carries, and the catalogue of the product translates the
+    ///       name into the placeholder of its own language. An argument
+    ///       without a name would have to be guessed by the adapter, and the
+    ///       guess would be wrong as soon as a message carries two numbers.
+    Number {
+        /// The name that the message expects.
+        name: &'a str,
 
-    /// The number the message compares with — the number of the entries of
-    /// the directory, for example.
-    Total(u64),
+        /// The value.
+        value: u64,
+    },
+
+    /// A text with the name that the message expects.
+    Text {
+        /// The name that the message expects.
+        name: &'a str,
+
+        /// The value.
+        value: &'a str,
+    },
+}
+
+impl<'a> Argument<'a> {
+    /// The number of entries of a message.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Argument;
+    ///
+    /// let argument = Argument::count(7);
+    /// assert_eq!(argument.name(), "count");
+    /// ```
+    pub fn count(value: u64) -> Self {
+        Self::Number {
+            name: "count",
+            value,
+        }
+    }
+
+    /// The number that a message compares its count with.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Argument;
+    ///
+    /// let argument = Argument::total(9);
+    /// assert_eq!(argument.name(), "total");
+    /// ```
+    pub fn total(value: u64) -> Self {
+        Self::Number {
+            name: "total",
+            value,
+        }
+    }
+
+    /// A text with the name that the message expects.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Argument;
+    ///
+    /// let argument = Argument::named("side", "left");
+    /// assert_eq!(argument.name(), "side");
+    /// ```
+    pub fn named(name: &'a str, value: &'a str) -> Self {
+        Self::Text { name, value }
+    }
+
+    /// The name that the message expects.
+    pub fn name(&self) -> &'a str {
+        match self {
+            Self::Number { name, .. } => name,
+            Self::Text { name, .. } => name,
+        }
+    }
+
+    /// The value of the argument.
+    pub fn value(&self) -> ArgumentValue<'a> {
+        match self {
+            Self::Number { value, .. } => ArgumentValue::Number(*value),
+            Self::Text { value, .. } => ArgumentValue::Text(value),
+        }
+    }
+}
+
+/// The value of an argument of a message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArgumentValue<'a> {
+    /// A number.
+    Number(u64),
 
     /// A text.
     Text(&'a str),
@@ -197,7 +286,7 @@ mod tests {
         let texts = Texts::new(&counting);
 
         // act
-        let text = texts.get_with(TextKey::PanelStatusEntries, &[Argument::Number(7)]);
+        let text = texts.get_with(TextKey::PanelStatusEntries, &[Argument::count(7)]);
 
         // assert
         assert_eq!(text, "7 entries");

@@ -267,7 +267,7 @@ fn the_message_of_an_error_comes_from_the_catalogue_and_not_from_the_source() {
     let app = app_with_catalogue(Box::new(German));
 
     // act
-    let text = app.message_of_error("error-transfer-same-panel", &["left".to_string()]);
+    let text = app.message_of_error("error-transfer-same-panel", &[("side", "left".to_string())]);
 
     // assert
     assert_eq!(text, "Das Panel darf nicht zweimal Ziel sein.");
