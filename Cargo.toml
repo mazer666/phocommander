@@ -136,7 +136,17 @@ criterion = "0.8"
 # ---------------------------------------------------------------------------
 # Platform integration and capability-restricted file access.
 # ---------------------------------------------------------------------------
-cap-std = "4"
+# The access to the destination of the extraction happens relative to a
+# descriptor of the directory, so that a path that is swapped in between the
+# check and the write cannot redirect the write out of the destination
+# (ADR-0004, decision 6).
+#
+# The crate `rustix` offers that access without a single line of unsafe code,
+# and it builds with the stable compiler. The crate `cap-std` would have
+# needed a nightly compiler: it asks the compiler for properties that the
+# stable compiler does not allow, and every version of it does so — the old
+# ones through a `rustix` that uses a compiler attribute that was removed from
+# the compiler years ago.
 rustix = "1"
 camino = "1"
 dirs = "7"
@@ -163,3 +173,5 @@ unwrap_used = "deny"
 expect_used = "deny"
 todo = "deny"
 unimplemented = "deny"
+
+
