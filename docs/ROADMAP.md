@@ -152,11 +152,6 @@ einem Interface, das sich der Kontext anpasst.
 | Der Verzeichnisvergleich auf Inhalt, Datum und Größe | `phocommander-ops` | in Arbeit |
 | Das Rückgängig, mit der sichtbaren Einschränkung | `phocommander-ops` | in Arbeit |
 | Die Archivprüfung ohne Entpacken | `phocommander-archive` | in Arbeit |
-| Englisch und Deutsch vollständig, mit identischem Schlüsselsatz | `phocommander-i18n` | in Arbeit |
-| Die Sprachkette: angefordert → Kette → Englisch → der Schlüssel selbst | `phocommander-i18n` | in Arbeit |
-| Die Sprache ist zur Laufzeit umschaltbar, ohne Neustart | `phocommander-i18n` | in Arbeit |
-| Eine dritte Sprache kommt ohne Codeänderung aus | `phocommander-i18n` | in Arbeit — `locales/fr/` |
-| Die Zahlen-, Größen-, Datums- und Zeitformate folgen dem System | `phocommander-i18n` | in Arbeit |
 | Die Interface-Profile `clean` und `full` sind wirksam, nicht nur beschrieben | `config/profiles/` | in Arbeit |
 | Jede Aktion einzeln schaltbar: `visible`, `palette`, `hidden` | `phocommander-ui` | in Arbeit |
 | Ein Profil enthält nur Oberflächenentscheidungen | `scripts/check-interface-profiles.py` | in Arbeit |
@@ -176,12 +171,12 @@ nur halb übersetzt ist, ist schlimmer als ein Release in einer Sprache.
 |---|---|---|
 | Die elf gemeinsamen Regeln R-01 bis R-21 | alle Gates | offen — wird am Ende gemessen |
 | **Kein hartkodierter Text in der Oberfläche** — jedes sichtbare Wort läuft über einen Schlüssel | Prüfskript über die Oberflächen-Crates | offen |
-| Englisch und Deutsch sind vollständig, mit **identischem Schlüsselsatz** | `scripts/check-i18n-parity.py` | offen |
-| Die Kette der Sprachsuche: angefordert → Sprachkette → Englisch → **der Schlüssel selbst** | `phocommander-i18n`, Test je Stufe | offen |
-| Ein fehlender Schlüssel ergibt **nie** einen leeren Text | Test | offen |
-| Die Sprache ist zur Laufzeit umschaltbar, ohne Neustart; die Oberfläche aktualisiert sich sofort | Test | offen |
-| Zahlen, Größen, Datums- und Zeitangaben folgen dem System der Sprache | `phocommander-i18n`, `icu` | offen |
-| **Eine dritte Sprache kommt ohne Codeänderung aus** — nur ein Katalogverzeichnis | `locales/fr/` | offen |
+| Englisch und Deutsch sind vollständig, mit **identischem Schlüsselsatz** | `scripts/check-i18n-parity.py` | in Arbeit |
+| Die Kette der Sprachsuche: angefordert → Sprachkette → Englisch → **der Schlüssel selbst** | `phocommander-i18n`, Test je Stufe | in Arbeit |
+| Ein fehlender Schlüssel ergibt **nie** einen leeren Text | Test | in Arbeit |
+| Die Sprache ist zur Laufzeit umschaltbar, ohne Neustart; die Oberfläche aktualisiert sich sofort | Test | in Arbeit |
+| Zahlen, Größen-, Datums- und Zeitangaben folgen dem System der Sprache | `phocommander-i18n`, `icu` | in Arbeit |
+| **Eine dritte Sprache kommt ohne Codeänderung aus** — nur ein Katalogverzeichnis | `locales/fr/` | in Arbeit |
 | Die Oberflächensprache und die Sprache der Dateinamen sind unabhängig | Test | offen |
 | Die Sprachdateien sind nach Themen getrennt, damit ein Übersetzer nicht den ganzen Code liest | `locales/<sprache>/*.ftl` | offen |
 | Die Benutzerdokumentation existiert in beiden Sprachen | `docs/user-guide/` | offen |
