@@ -41,7 +41,7 @@ struct Locales;
 /// WHY: the catalogue is split by domain so that a translator can work on the
 /// file manager without touching the viewer or the settings (section 8.2 of
 /// the specification).
-const DOMAINS: [&str; 5] = ["common", "actions", "panel", "viewer", "palette"];
+const DOMAINS: [&str; 6] = ["common", "actions", "panel", "viewer", "palette", "rename"];
 
 /// The directories that hold the embedded catalogues.
 ///

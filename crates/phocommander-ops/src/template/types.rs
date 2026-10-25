@@ -152,6 +152,43 @@ impl RenameRule {
             None => "",
         }
     }
+
+    /// The counter of the rule.
+    ///
+    /// WHY: a format that carries the placeholder of the counter and no
+    ///       counter of its own gets the standard counter. A user who writes
+    ///       `[n]` expects `001` and not the literal text `[n]` in the name
+    ///       of every file of the selection. A format without the
+    ///       placeholder gets no counter at all, because nothing would use
+    ///       it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::template::RenameRule;
+    ///
+    /// let rule = RenameRule::new("[name]_[n].[ext]");
+    /// let counter = rule.counter().expect("the format carries the counter");
+    /// assert_eq!(counter.start, 1);
+    /// assert_eq!(counter.width, 3);
+    /// ```
+    pub fn counter(&self) -> Option<&CounterRule> {
+        match &self.counter {
+            Some(counter) => Some(counter),
+            None => {
+                if self.effective_format().contains("[n]") {
+                    self.standard_counter()
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    /// The standard counter, kept so that it can be handed out by reference.
+    fn standard_counter(&self) -> Option<&CounterRule> {
+        static STANDARD: std::sync::OnceLock<CounterRule> = std::sync::OnceLock::new();
+        Some(STANDARD.get_or_init(CounterRule::default))
+    }
 }
 
 /// What the formation knows about one file of the selection.
