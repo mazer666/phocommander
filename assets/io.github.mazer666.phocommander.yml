@@ -1,0 +1,75 @@
+# The Flatpak manifest of Phocommander.
+#
+# WHAT: the recipe that describes the Flatpak of the application: the runtime
+#       it needs, the sandbox permissions it asks for, the way it is built and
+#       the files that go into the package.
+# WHY:  the manifest is the place where the sandbox of the application is
+#       written down, and the sandbox is what a user of a distribution checks
+#       before he installs the program. The permissions below are the ones
+#       the program uses and nothing else:
+#
+#         --socket=wayland, --socket=fallback-x11  the window of the program
+#         --share=ipc                             the shared memory of X11
+#         --device=dri                            the graphics card
+#         --filesystem=home                       the files of the user and
+#                                                 the configuration of the
+#                                                 program in ~/.config
+#
+#       There is no --share=network. The program opens no connection at
+#       start-up and sends nothing anywhere, and a permission that the
+#       program does not use would be a permission that the user cannot
+#       check (FR-02, FR-03, NFR-27).
+#
+#       The file is read by flatpak-builder; the guide that explains the
+#       build is docs/guides/linux-flatpak.md.
+#
+# EXAMPLE:
+#       flatpak-builder --user --install --force-clean build \
+#           assets/io.github.mazer666.phocommander.yml
+
+app-id: io.github.mazer666.phocommander
+runtime: org.freedesktop.Platform
+runtime-version: '26.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: phocommander-desktop
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --filesystem=home
+
+cleanup:
+  - /share/applications/mimeinfo.cache
+  - /share/icons/hicolor/icon-theme.cache
+  - '*.la'
+  - '*.a'
+
+modules:
+  - name: phocommander
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/phocommander/cargo
+    build-commands:
+      # WHY: the crates are fetched before the build, so that the build itself
+      # does not depend on the network and fails fast when a crate is missing.
+      - cargo fetch --manifest-path Cargo.toml --verbose
+      - cargo build --release --bin phocommander-desktop --verbose
+      # WHY: the icon, the desktop entry and the metadata carry the name of
+      # the application identifier, because that is the only name the sandbox
+      # looks for.
+      - install -Dpm0755 -t "${FLATPAK_DEST}/bin/" target/release/phocommander-desktop
+      - install -Dpm0644 -t "${FLATPAK_DEST}/share/applications/" assets/io.github.mazer666.phocommander.desktop
+      - install -Dpm0644 -t "${FLATPAK_DEST}/share/metainfo/" assets/io.github.mazer666.phocommander.metainfo.xml
+      - install -Dpm0644 -t "${FLATPAK_DEST}/share/icons/hicolor/scalable/apps/" assets/phocommander.svg
+    sources:
+      # WHY: the package is built from the working tree, so that the manifest
+      # can be built and checked without a release. The release build uses the
+      # archive of the release instead; the guide names the line that changes.
+      - type: dir
+        path: .

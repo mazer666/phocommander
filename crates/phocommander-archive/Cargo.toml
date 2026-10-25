@@ -23,7 +23,12 @@ repository.workspace = true
 # The capability-based directory handle. Every access of the extraction
 # happens relative to the opened destination directory, so that a symbolic
 # link cannot redirect a write out of it (ADR-0004, decision 6).
-cap-std = { workspace = true }
+# The access to the destination of the extraction happens relative to a
+# descriptor of the directory, not over a path that is resolved a second time
+# (ADR-0004, decision 6). The crate `rustix` offers that access without a
+# single line of unsafe code, and it builds with the stable compiler — the
+# crate `cap-std` would have needed a nightly one.
+rustix = { workspace = true }
 # The container formats of FR-67.
 sevenz-rust2 = { workspace = true }
 tar = { workspace = true }

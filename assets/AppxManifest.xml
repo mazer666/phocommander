@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The package manifest of the MSIX package of Phocommander.
+
+  WHAT: the description of the package that Windows reads when the package is
+        installed: the identity of the package, the files it contains, the
+        capability it asks for and the program it starts.
+  WHY:  the manifest is the only place where the package declares what it
+        wants. It asks for exactly one capability — `runFullTrust`, which a
+        desktop program needs and which the operating system only grants to a
+        program that is signed. It asks for no file system access, because the
+        program runs with the rights of the user who starts it, and it asks
+        for no network, because the program opens no connection.
+
+        The publisher is the subject of the certificate that signs the package.
+        Windows refuses a package whose publisher and certificate do not match
+        character by character, so the two must be changed together when the
+        owner buys the certificate.
+
+        The executable carries an application manifest that declares the
+        program as `longPathAware`, so that paths longer than MAX_PATH work.
+        That application manifest belongs to the executable, not to this file,
+        and the Windows port of the milestone M3 delivers it.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="Phocommander"
+    Publisher="CN=Phocommander, O=Phocommander"
+    Version="0.1.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Phocommander</DisplayName>
+    <PublisherDisplayName>Phocommander</PublisherDisplayName>
+    <Description>Two-pane file manager with a built-in viewer</Description>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily
+      Name="Windows.Desktop"
+      MinVersion="10.0.19041.0"
+      MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Capabilities>
+    <!-- A desktop program needs the full trust of the user who starts it.
+         There is no other capability in this manifest: the program reads the
+         files the user opens, and it opens no network connection. -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+  <Applications>
+    <Application
+      Id="Phocommander"
+      Executable="phocommander-desktop.exe"
+      EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Phocommander"
+        Description="Two-pane file manager with a built-in viewer"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          ShortName="Phocommander" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+</Package>

@@ -27,7 +27,9 @@ pub mod catalogue;
 pub mod desktop;
 pub mod filesystem;
 pub mod language;
+pub mod linux;
 pub mod rename;
 pub mod security;
+pub mod windows;
 
 pub use security::SecurityPlan;

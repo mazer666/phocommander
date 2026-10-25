@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  The application manifest of the Windows build of Phocommander.
+
+  WHAT: the declaration that the program can handle long paths.
+  WHY: Windows limits a path to 260 characters, and only a program that
+       declares "longPathAware" in its manifest may use the longer paths of
+       the system. The setting "LongPathsEnabled" of the system has to be 1
+       as well; the declaration alone does not lift the limit.
+
+       The form of the element is the one that Microsoft documents for the
+       manifest of an application:
+       https://learn.microsoft.com/en-us/windows/win32/sbscs/application-manifests#longpathaware
+       and the rules of the limit are here:
+       https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+
+  EXAMPLE: the build script of the application reads this file and writes it
+            into the executable as the resource 1 of the type 24 (RT_MANIFEST).
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+  <assemblyIdentity type="win32" name="Phocommander" version="1.0.0.0" processorArchitecture="*"/>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <asmv3:application>
+    <asmv3:windowsSettings xmlns:ws2="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
+      <ws2:longPathAware>true</ws2:longPathAware>
+    </asmv3:windowsSettings>
+  </asmv3:application>
+</assembly>

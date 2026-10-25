@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The icon of Phocommander.
+
+  WHAT: the picture that identifies the application in a launcher, in a file
+        manager and in a package of a distribution. It shows the two panels
+        side by side, which is the shape of the product.
+  WHY:  every package of the three desktop platforms needs an icon — the
+        Windows package needs the logos of the manifest, the Flatpak needs an
+        icon in the icon theme, the AppImage needs one in the root of the
+        AppDir, and the packages of the distributions need one in
+        /usr/share/icons. A single file serves all of them, so that the four
+        packages cannot drift apart.
+  EXAMPLE:
+      convert -background none -resize 512x512 assets/phocommander.svg \
+              assets/phocommander.png
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Phocommander</title>
+  <rect x="0" y="0" width="512" height="512" rx="96" ry="96" fill="#22303c"/>
+  <g fill="none" stroke="#4c8eda" stroke-width="16" stroke-linejoin="round">
+    <rect x="72" y="120" width="160" height="272" rx="16" ry="16"/>
+  </g>
+  <g fill="none" stroke="#63b3ed" stroke-width="16" stroke-linejoin="round">
+    <rect x="280" y="120" width="160" height="272" rx="16" ry="16"/>
+  </g>
+  <g fill="#f4f7fa">
+    <rect x="96" y="152" width="112" height="20" rx="10" ry="10"/>
+    <rect x="96" y="196" width="80" height="20" rx="10" ry="10"/>
+    <rect x="96" y="240" width="112" height="20" rx="10" ry="10"/>
+    <rect x="96" y="284" width="64" height="20" rx="10" ry="10"/>
+    <rect x="304" y="152" width="112" height="20" rx="10" ry="10"/>
+    <rect x="304" y="196" width="96" height="20" rx="10" ry="10"/>
+    <rect x="304" y="240" width="64" height="20" rx="10" ry="10"/>
+    <rect x="304" y="284" width="112" height="20" rx="10" ry="10"/>
+  </g>
+</svg>

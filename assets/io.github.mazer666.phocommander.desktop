@@ -1,0 +1,35 @@
+# The desktop entry of Phocommander.
+#
+# WHAT: the metadata that a Linux desktop reads to offer the application in
+#       the menu of the system, to place its icon and to start it.
+# WHY:  the file is the single source for the three Linux packages — the
+#       Flatpak, the AppImage and the packages of the distributions. A second
+#       copy of these lines could drift away from the first one, and a desktop
+#       entry with a wrong name is an application that does not start.
+#
+#       The name of the icon is the application identifier of the Flatpak.
+#       Flatpak only finds an icon when the file and the name in this file
+#       carry the identifier, and the same name works for the AppImage and
+#       for the packages of the distributions.
+#
+#       The command is the name of the binary that the build produces. The
+#       build does not rename it, so that the name in this file and the name
+#       in the target directory cannot drift apart.
+#
+# EXAMPLE:
+#       install -Dm644 assets/io.github.mazer666.phocommander.desktop \
+#           /usr/share/applications/io.github.mazer666.phocommander.desktop
+
+[Desktop Entry]
+Type=Application
+Version=1.4
+Name=Phocommander
+Name[de]=Phocommander
+Comment=Two-pane file manager with a built-in viewer
+Comment[de]=Dateimanager mit zwei Fenstern und eingebautem Betrachter
+Exec=phocommander-desktop
+Icon=io.github.mazer666.phocommander
+Terminal=false
+Categories=System;FileTools;FileManager;
+Keywords=file;manager;directory;browser;
+StartupNotify=true
