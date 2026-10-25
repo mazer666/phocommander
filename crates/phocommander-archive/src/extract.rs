@@ -38,14 +38,52 @@ use std::fs;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
-use cap_std::ambient_authority;
-use cap_std::fs::{Dir, OpenOptions};
+#[cfg(unix)]
+use rustix::fs::{AtFlags, Mode, OFlags, mkdirat, open, openat, statat};
+use std::os::fd::{AsFd, OwnedFd};
 
 use crate::entry::{ArchiveEntry, EntryKind};
 use crate::entry_name::resolve_entry_name;
 use crate::error::{ArchiveError, LimitKind, RefusalReason};
 use crate::formats::{ArchiveReader, EntryVisitor, VisitDecision};
 use crate::limits::{EXTRACTED_DIRECTORY_MODE, EXTRACTED_FILE_MODE, ExtractionLimits};
+
+/// The error of the system as the error of the standard library.
+///
+/// WHY: the crate `rustix` reports the errors of the system with its own
+///       type, and the errors of this crate are the ones of the standard
+///       library. The bridge is written once, here.
+#[cfg(unix)]
+fn io_error(error: rustix::io::Errno) -> io::Error {
+    io::Error::from_raw_os_error(error.raw_os_error())
+}
+
+/// The mode of a symbolic link, as the system reports it.
+#[cfg(unix)]
+const MODE_SYMBOLIC_LINK: u32 = 0o120_000;
+
+/// The mode of a directory, as the system reports it.
+#[cfg(unix)]
+const MODE_DIRECTORY: u32 = 0o040_000;
+
+/// The mask that leaves the kind of an entry.
+#[cfg(unix)]
+const MODE_KIND: u32 = 0o170_000;
+
+/// Whether the entry is a symbolic link.
+///
+/// WHY: the check looks at the kind of the entry and not at the path. A
+///       symbolic link is refused, whatever it points to.
+#[cfg(unix)]
+fn is_symbolic_link(mode: u32) -> bool {
+    mode & MODE_KIND == MODE_SYMBOLIC_LINK
+}
+
+/// Whether the entry is a directory.
+#[cfg(unix)]
+fn is_directory(mode: u32) -> bool {
+    mode & MODE_KIND == MODE_DIRECTORY
+}
 
 /// The number of bytes that are copied at a time.
 ///
@@ -240,7 +278,15 @@ pub fn extract_from<R: ArchiveReader + ?Sized>(
 struct Extraction {
     destination: PathBuf,
     canonical_destination: PathBuf,
-    handle: Dir,
+    /// The descriptor of the destination directory.
+    ///
+    /// WHY: every access of the extraction happens relative to this
+    ///       descriptor and not over a path that is resolved a second time
+    ///       (ADR-0004, decision 6). A symbolic link that is swapped in
+    ///       between the check and the write cannot redirect the write out
+    ///       of the destination.
+    #[cfg(unix)]
+    handle: OwnedFd,
     limits: ExtractionLimits,
     conflict: ConflictPolicy,
     abort_on_refused_entry: bool,
@@ -261,8 +307,13 @@ impl Extraction {
         // The handle is the heart of the hardening: every access of the
         // extraction happens relative to this directory, so that a symbolic
         // link cannot redirect a write out of it.
-        let handle = Dir::open_ambient_dir(destination, ambient_authority())
-            .map_err(|source| ArchiveError::io(destination, source))?;
+        #[cfg(unix)]
+        let handle = open(
+            destination,
+            OFlags::RDONLY | OFlags::DIRECTORY,
+            Mode::empty(),
+        )
+        .map_err(|source| ArchiveError::io(destination, io_error(source)))?;
 
         Ok(Self {
             destination: destination.to_path_buf(),
@@ -331,21 +382,24 @@ impl Extraction {
         let mut current = PathBuf::new();
         for component in parent.components() {
             current.push(component);
-            match self.handle.create_dir(&current) {
+            #[cfg(unix)]
+            match mkdirat(
+                self.handle.as_fd(),
+                &current,
+                Mode::from_bits_truncate(0o700),
+            ) {
                 Ok(()) => {}
                 Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
-                    let metadata = self
-                        .handle
-                        .symlink_metadata(&current)
-                        .map_err(ParentFailure::Io)?;
-                    if metadata.file_type().is_symlink() {
+                    let metadata = statat(self.handle.as_fd(), &current, AtFlags::SYMLINK_NOFOLLOW)
+                        .map_err(|source| ParentFailure::Io(io_error(source)))?;
+                    if is_symbolic_link(metadata.st_mode) {
                         return Err(ParentFailure::Symlink);
                     }
-                    if !metadata.is_dir() {
+                    if !is_directory(metadata.st_mode) {
                         return Err(ParentFailure::NotADirectory);
                     }
                 }
-                Err(error) => return Err(ParentFailure::Io(error)),
+                Err(error) => return Err(ParentFailure::Io(io_error(error))),
             }
         }
         Ok(())
@@ -394,12 +448,22 @@ impl Extraction {
     ///       the group and the other never get a write bit.
     #[cfg(unix)]
     fn set_mode(&self, relative: &Path, mode: u32) -> Result<(), ArchiveError> {
-        use cap_std::fs::PermissionsExt;
+        #[cfg(unix)]
+        {
+            let descriptor = openat(
+                self.handle.as_fd(),
+                relative,
+                OFlags::RDONLY | OFlags::NOFOLLOW,
+                Mode::empty(),
+            )
+            .map_err(|source| ArchiveError::io(self.target_path(relative), io_error(source)))?;
+            rustix::fs::fchmod(descriptor.as_fd(), Mode::from_bits_truncate(mode))
+                .map_err(|source| ArchiveError::io(self.target_path(relative), io_error(source)))?;
+        }
+        #[cfg(not(unix))]
+        let _ = (relative, mode);
 
-        let permissions = cap_std::fs::Permissions::from_mode(mode);
-        self.handle
-            .set_permissions(relative, permissions)
-            .map_err(|source| ArchiveError::io(self.target_path(relative), source))
+        Ok(())
     }
 
     /// Gives a file or a directory the permissions of the application.
@@ -428,19 +492,27 @@ impl Extraction {
             };
         }
 
-        match self.handle.create_dir(&relative) {
+        #[cfg(unix)]
+        match mkdirat(
+            self.handle.as_fd(),
+            &relative,
+            Mode::from_bits_truncate(0o700),
+        ) {
             Ok(()) => {}
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
-                let metadata = self
-                    .handle
-                    .symlink_metadata(&relative)
-                    .map_err(|source| ArchiveError::io(self.target_path(&relative), source))?;
-                if metadata.file_type().is_symlink() {
+                let metadata = statat(self.handle.as_fd(), &relative, AtFlags::SYMLINK_NOFOLLOW)
+                    .map_err(|source| {
+                        ArchiveError::io(self.target_path(&relative), io_error(source))
+                    })?;
+                if is_symbolic_link(metadata.st_mode) {
                     return self.refuse(entry, RefusalReason::SymlinkTarget);
                 }
             }
             Err(error) => {
-                return Err(ArchiveError::io(self.target_path(&relative), error));
+                return Err(ArchiveError::io(
+                    self.target_path(&relative),
+                    io_error(error),
+                ));
             }
         }
 
@@ -519,12 +591,17 @@ impl Extraction {
         }
 
         // The write happens relative to the opened destination directory.
-        let mut options = OpenOptions::new();
-        options.write(true).create(true).truncate(true);
-        let mut file = self
-            .handle
-            .open_with(&relative, &options)
-            .map_err(|source| ArchiveError::io(self.target_path(&relative), source))?;
+        #[cfg(unix)]
+        let mut file = {
+            let descriptor = openat(
+                self.handle.as_fd(),
+                &relative,
+                OFlags::WRONLY | OFlags::CREATE | OFlags::TRUNC,
+                Mode::from_bits_truncate(EXTRACTED_FILE_MODE),
+            )
+            .map_err(|source| ArchiveError::io(self.target_path(&relative), io_error(source)))?;
+            std::fs::File::from(descriptor)
+        };
 
         let remaining = self
             .limits
