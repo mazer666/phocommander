@@ -41,7 +41,7 @@ use crate::actions::Action;
 use crate::commands::{Command, Request};
 use crate::context::Context;
 use crate::draw;
-use crate::i18n::{Catalogue, Texts};
+use crate::i18n::{Argument, Catalogue, Texts};
 use crate::input::PrimaryModifier;
 use crate::jobs::JobSource;
 use crate::keymap_view::KeymapView;
@@ -487,6 +487,27 @@ impl WorkSurfaceApp {
         self.commands.push(Command::LoadDirectory { side, path });
     }
 
+    /// Reads the message of an error from the catalogue.
+    ///
+    /// WHY: the status line of the surface shows the message of an error, and
+    ///       the message comes from the catalogue. A catalogue that does not
+    ///       know the key answers with the key itself, which is visible and
+    ///       can be diagnosed — never with an empty line (FR-122).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::app::WorkSurfaceApp;
+    /// ```
+    fn message_of_error(&self, key: &str, arguments: &[String]) -> String {
+        let arguments: Vec<Argument<'_>> = arguments
+            .iter()
+            .map(|value| Argument::Text(value.as_str()))
+            .collect();
+        self.catalogue
+            .lookup_with(key, &arguments)
+            .unwrap_or_else(|| key.to_string())
+    }
+
     /// Builds the request that transfers the marked entries into the other
     /// panel.
     ///
@@ -498,7 +519,10 @@ impl WorkSurfaceApp {
         let transfer = match self.surface.transfer_to_other() {
             Ok(transfer) => transfer,
             Err(error) => {
-                self.status = Some(error.to_string());
+                // WHY: the message of the error is read from the catalogue, so
+                //       that it speaks the language of the interface (FR-05).
+                self.status =
+                    Some(self.message_of_error(error.message_key(), &error.message_arguments()));
                 return;
             }
         };

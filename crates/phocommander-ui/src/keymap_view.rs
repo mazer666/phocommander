@@ -318,11 +318,22 @@ impl KeyStroke {
     /// # }
     /// ```
     pub fn parse(text: &str) -> Result<Self, BindingError> {
+        // WHY: the text is checked before it is split. A text that carries
+        //       nothing at all is not a binding that names an unknown key —
+        //       it is a binding that is empty, and the message of the
+        //       catalogue says so.
+        if text.trim().is_empty() {
+            return Err(BindingError::Malformed {
+                binding: text.to_string(),
+                reason: MalformedReason::Empty,
+            });
+        }
+
         let parts = split_parts(text);
         if parts.is_empty() {
             return Err(BindingError::Malformed {
                 binding: text.to_string(),
-                reason: "the binding is empty".to_string(),
+                reason: MalformedReason::Empty,
             });
         }
 
@@ -338,7 +349,7 @@ impl KeyStroke {
                     if key.is_some() {
                         return Err(BindingError::Malformed {
                             binding: text.to_string(),
-                            reason: format!("the binding names the key {name} twice"),
+                            reason: MalformedReason::KeyTwice(name.to_string()),
                         });
                     }
                     let parsed = Key::from_name(name).ok_or_else(|| BindingError::UnknownKey {
@@ -352,7 +363,7 @@ impl KeyStroke {
 
         let key = key.ok_or_else(|| BindingError::Malformed {
             binding: text.to_string(),
-            reason: "the binding names no key".to_string(),
+            reason: MalformedReason::NoKey,
         })?;
 
         Ok(Self { key, modifiers })
@@ -416,7 +427,7 @@ impl Binding {
             if entry.is_empty() {
                 return Err(BindingError::Malformed {
                     binding: text.to_string(),
-                    reason: "the palette entry has no name".to_string(),
+                    reason: MalformedReason::EmptyPaletteEntry,
                 });
             }
             return Ok(Binding::Palette(entry.to_string()));
@@ -694,8 +705,116 @@ pub enum BindingError {
         binding: String,
 
         /// The reason why it was refused.
-        reason: String,
+        reason: MalformedReason,
     },
+}
+
+impl BindingError {
+    /// The key of the catalogue that carries the message of this error.
+    ///
+    /// WHY: the message of an error reaches the user through the status line
+    ///       of the surface. A message that is written down in the source
+    ///       stays English in a German interface (FR-05, section 8.4). The
+    ///       error therefore names the key of the catalogue, and the surface
+    ///       reads the text from there.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::BindingError;
+    ///
+    /// let error = BindingError::UnknownAction {
+    ///     identifier: "panel.copy".to_string(),
+    /// };
+    /// assert_eq!(error.message_key(), "error-binding-unknown-action");
+    /// ```
+    pub fn message_key(&self) -> &'static str {
+        match self {
+            Self::UnknownAction { .. } => "error-binding-unknown-action",
+            Self::UnknownKey { .. } => "error-binding-unknown-key",
+            Self::Malformed { reason, .. } => reason.message_key(),
+        }
+    }
+
+    /// The values that the message of this error carries.
+    ///
+    /// WHY: the message of the catalogue has placeholders for the values that
+    ///       the error knows — the identifier of the action, the name of the
+    ///       key. The values are handed over in the order in which the
+    ///       catalogue expects them.
+    pub fn message_arguments(&self) -> Vec<String> {
+        match self {
+            Self::UnknownAction { identifier } => vec![identifier.clone()],
+            Self::UnknownKey { binding, key } => vec![binding.clone(), key.clone()],
+            Self::Malformed { binding, reason } => {
+                let mut values = vec![binding.clone()];
+                values.extend(reason.message_arguments());
+                values
+            }
+        }
+    }
+}
+
+/// The reasons why a binding could not be read.
+///
+/// WHY: every reason is a case of its own, and every case has a message of
+///       its own in the catalogue. A free text as the reason would make the
+///       message of the surface depend on the wording of the source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MalformedReason {
+    /// The binding carries no part at all.
+    Empty,
+
+    /// The binding names the same key twice. The name of the key is carried
+    /// along, because the message names it.
+    KeyTwice(String),
+
+    /// The binding names no key at all.
+    NoKey,
+
+    /// The entry of the action palette carries no name.
+    EmptyPaletteEntry,
+}
+
+impl MalformedReason {
+    /// The key of the catalogue that carries the message of this reason.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::keymap_view::MalformedReason;
+    ///
+    /// assert_eq!(
+    ///     MalformedReason::Empty.message_key(),
+    ///     "error-binding-empty"
+    /// );
+    /// ```
+    pub fn message_key(&self) -> &'static str {
+        match self {
+            Self::Empty => "error-binding-empty",
+            Self::KeyTwice(_) => "error-binding-key-twice",
+            Self::NoKey => "error-binding-no-key",
+            Self::EmptyPaletteEntry => "error-binding-empty-palette-entry",
+        }
+    }
+
+    /// The values that the message of this reason carries.
+    pub fn message_arguments(&self) -> Vec<String> {
+        match self {
+            Self::KeyTwice(name) => vec![name.clone()],
+            _ => Vec::new(),
+        }
+    }
+}
+
+impl std::fmt::Display for MalformedReason {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Self::Empty => "the binding is empty",
+            Self::KeyTwice(_) => "the binding names the key twice",
+            Self::NoKey => "the binding names no key",
+            Self::EmptyPaletteEntry => "the palette entry has no name",
+        };
+        write!(formatter, "{text}")
+    }
 }
 
 #[cfg(test)]
