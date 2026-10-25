@@ -61,3 +61,13 @@ panel-view-details = Details
 panel-view-compact = Compact
 panel-focus = Focused panel
 panel-undo-notice = Undo removes the copies only; the previous state is not restored.
+
+# The messages of the errors of the surface.
+
+error-binding-empty = The binding is empty.
+error-binding-key-twice = The binding names the key { $key } twice.
+error-binding-no-key = The binding names no key.
+error-binding-empty-palette-entry = The entry of the action palette carries no name.
+error-binding-unknown-action = The action { $identifier } is not part of the catalogue.
+error-binding-unknown-key = The binding { $binding } names the unknown key { $key }.
+error-transfer-same-panel = The { $side } panel cannot be the source and the destination of a transfer at the same time.
