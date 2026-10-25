@@ -54,6 +54,10 @@ name = "config_defaults"
 path = "integration/config_defaults.rs"
 
 [[test]]
+name = "directory_entries"
+path = "integration/directory_entries.rs"
+
+[[test]]
 name = "core_limits"
 path = "integration/core_limits.rs"
 

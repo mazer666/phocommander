@@ -1,44 +1,35 @@
-//! Integration test: the directory model of the core crate.
+//! The entries of a listed directory.
 //!
-//! **STATUS: waiting for the implementation.** The file system model — the
-//! entry structure and the listing of a directory — arrives with the file
-//! operations in milestone M1 (`crates/phocommander-ops`, `phocommander-core`).
-//! Until it exists, this test cannot be compiled, and a test that cannot be
-//! compiled is not a test: it is a piece of text.
-//!
-//! It is therefore **not** registered as a target of the test package. As soon
-//! as the API below exists, one line in `tests/Cargo.toml` makes it part of
-//! the gate:
-//!
-//! ```toml
-//! [[test]]
-//! name = "directory_entries"
-//! path = "integration/directory_entries.rs"
-//! ```
-//!
-//! The expected API, as far as it is fixed today:
-//!
-//! ```text
-//! phocommander_core::fs::Entry
-//!     name:        String          — the name of the entry, without the directory
-//!     path:        PathBuf         — the full path of the entry
-//!     size:        u64             — the size in bytes
-//!     is_directory: bool           — whether the entry is a directory
-//!
-//! phocommander_core::fs::list_directory(path: &Path) -> Result<Vec<Entry>, Error>
-//! ```
-//!
-//! The sort order — by name, case-insensitive, directories first — is the
-//! order the specification describes for the file list and the order the
-//! benchmark of `benches/directory_listing.rs` measures.
-//!
+//! WHAT: the test of the listing of a directory — that it holds every entry,
+//!       that the name of an entry carries no path and that a directory that
+//!       does not exist is an error and not a panic.
+//! WHY: the listing is the first thing the user sees, and a listing that
+//!       loses an entry or that panics on a missing directory is a fault that
+//!       the user notices at once.
 //! EXAMPLE:
 //! ```text
 //! cargo test -p phocommander-integration-tests --test directory_entries
 //! ```
 
-use phocommander_core::fs::{Entry, list_directory};
+use std::path::Path;
+
+use phocommander_core::source::Source;
+use phocommander_core::{LocalSource, entry::Entry};
 use phocommander_testkit::TempTree;
+
+/// The source that lists the directory of the tree.
+fn source_of(tree: &TempTree) -> LocalSource {
+    LocalSource::rooted(tree.path())
+}
+
+/// The entries of the directory, or a panic with the reason.
+fn list(tree: &TempTree) -> Vec<Entry> {
+    let source = source_of(tree);
+    match source.list(Path::new("")) {
+        Ok(entries) => entries,
+        Err(error) => panic!("the directory could not be listed: {error}"),
+    }
+}
 
 #[test]
 fn the_listing_holds_every_entry_of_the_directory() {
@@ -47,45 +38,51 @@ fn the_listing_holds_every_entry_of_the_directory() {
         Ok(tree) => tree,
         Err(error) => panic!("the temporary directory could not be created: {error}"),
     };
-    tree.create_tree(&["beta.txt", "alpha.txt", "gamma/"]);
+    tree.create_tree(&["beta.txt", "alpha.txt"]);
+    // WHY: the testkit writes files. A directory is therefore created here,
+    //       so that the listing holds a file and a directory at the same
+    //       time.
+    std::fs::create_dir(tree.path().join("gamma"))
+        .unwrap_or_else(|error| panic!("the directory could not be created: {error}"));
 
     // act
-    let entries = match list_directory(tree.path()) {
-        Ok(entries) => entries,
-        Err(error) => panic!("the directory could not be listed: {error}"),
-    };
+    let entries = list(&tree);
 
     // assert
-    let names: Vec<&str> = entries
-        .iter()
-        .map(|entry: &Entry| entry.name.as_str())
-        .collect();
+    let names: Vec<&str> = entries.iter().map(|entry| entry.name.as_str()).collect();
     assert_eq!(names.len(), 3, "the listing holds {names:?}");
+    assert!(names.contains(&"alpha.txt"), "the listing holds {names:?}");
+    assert!(names.contains(&"beta.txt"), "the listing holds {names:?}");
+    assert!(names.contains(&"gamma"), "the listing holds {names:?}");
 }
 
 #[test]
-fn the_entry_carries_the_path_inside_the_listed_directory() {
+fn the_name_of_an_entry_carries_no_path() {
     // arrange
-    let tree = match TempTree::new("listing") {
+    let tree = match TempTree::new("listing-names") {
         Ok(tree) => tree,
         Err(error) => panic!("the temporary directory could not be created: {error}"),
     };
     tree.create_tree(&["alpha.txt"]);
 
     // act
-    let entries = match list_directory(tree.path()) {
-        Ok(entries) => entries,
-        Err(error) => panic!("the directory could not be listed: {error}"),
-    };
+    let entries = list(&tree);
 
     // assert
+    // WHY: the name of an entry is what the list shows. A name that carried
+    //       a path would make the list unreadable, and a source that is
+    //       remote has no path to offer.
     for entry in &entries {
         assert!(
-            entry.path.starts_with(tree.path()),
-            "the entry {:?} points outside of the listed directory",
+            !entry.name.contains('/'),
+            "the name {:?} carries a separator",
             entry.name
         );
-        assert!(!entry.name.contains('/'), "the name carries a separator");
+        assert!(
+            !entry.name.contains('\\'),
+            "the name {:?} carries a separator",
+            entry.name
+        );
     }
 }
 
@@ -96,10 +93,10 @@ fn a_directory_that_does_not_exist_is_an_error_and_not_a_panic() {
         Ok(tree) => tree,
         Err(error) => panic!("the temporary directory could not be created: {error}"),
     };
-    let missing = tree.path().join("does-not-exist");
+    let source = LocalSource::rooted(tree.path().join("does-not-exist"));
 
     // act
-    let result = list_directory(&missing);
+    let result = source.list(Path::new(""));
 
     // assert
     assert!(

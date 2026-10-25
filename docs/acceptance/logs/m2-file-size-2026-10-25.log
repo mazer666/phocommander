@@ -1,0 +1,14 @@
+OVER  682 lines  ./crates/phocommander-archive/src/extract.rs
+OVER  674 lines  ./crates/phocommander-ops/src/fake_fs.rs
+OVER  614 lines  ./crates/phocommander-ops/src/progress.rs
+OVER  641 lines  ./crates/phocommander-ui/src/app.rs
+OVER  880 lines  ./crates/phocommander-ui/src/keymap_view.rs
+OVER  651 lines  ./crates/phocommander-ui/src/panel.rs
+
+Source files measured : 140 (extensions: rs)
+Target value          : 600 lines (warning)
+Absolute maximum      : 900 lines (failure)
+Target-value warnings : 6
+Maximum violations    : 0
+RESULT: PASS with warnings — 6 file(s) exceed the target value of 600 lines.
+        Each of them must name the reason in its module header.

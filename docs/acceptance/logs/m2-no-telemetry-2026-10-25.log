@@ -1,0 +1,6 @@
+
+Manifests scanned     : 16
+Dependency names read : 87
+Forbidden crate names : 48
+Violations            : 0
+RESULT: PASS — no dependency of the telemetry or analytics category is referenced.
