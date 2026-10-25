@@ -22,12 +22,24 @@ cd "$ROOT"
 
 restored=0
 
-# WHY: the list is read from the tree of Git, because the tree is the truth
-#       about which scripts are meant to be run directly.
-while read -r mode path; do
-    if [ "$mode" != "100755" ]; then
-        continue
-    fi
+# WHY: the list is written down here and not read from the tree of Git. A
+#       way of writing that does not carry the mode loses it — in the tree as
+#       well as on the disk — and a script that reads its own list from the
+#       tree would then restore nothing. The list of the scripts that are run
+#       directly does not change often.
+SCRIPTS=(
+    "scripts/cargo.sh"
+    "scripts/check-crate-boundaries.sh"
+    "scripts/check-docs-links.py"
+    "scripts/check-file-size.sh"
+    "scripts/check-gates-negative.sh"
+    "scripts/check-links.py"
+    "scripts/check-no-telemetry.sh"
+    "scripts/qa-env.sh"
+    "scripts/restore-executable-bits.sh"
+)
+
+for path in "${SCRIPTS[@]}"; do
     if [ ! -f "$path" ]; then
         echo "  $path: the file is not in the working tree"
         continue
@@ -37,6 +49,6 @@ while read -r mode path; do
         echo "  $path: the executable bit is set again"
         restored=$((restored + 1))
     fi
-done < <(git ls-tree -r HEAD scripts/ | awk '{print $1, $4}')
+done
 
 echo "Scripts made executable again: ${restored}"
