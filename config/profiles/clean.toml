@@ -1,0 +1,82 @@
+# Phocommander — interface profile "clean" (shipped).
+#
+# WHAT: this file is the built-in profile `clean`. It is the interface with
+#       the least furniture: the two panels with their path, their file list
+#       and the command line, and nothing else.
+# WHY: the product principle "clutter-free" asks for a start screen that is
+#       the work surface and not a landing page. A user who knows the keys
+#       wants nothing between them and the files. The profile removes the
+#       furniture, never the capability (specification, section 7.4).
+# EXAMPLE: copy this file to the configuration directory under the name
+#          `clean.toml` and select it in the settings, or edit the copy to
+#          hide a single command further.
+#
+# The file format is TOML. A profile is a plain file in the configuration
+# directory; it contains interface decisions only — no paths, no history, no
+# credentials (requirement FR-145).
+#
+# Location of the active profile directory:
+#   macOS:      ~/Library/Application Support/Phocommander/profiles/
+#   Windows:    %APPDATA%\Phocommander\profiles\
+#   Linux/BSD:  $XDG_CONFIG_HOME/phocommander/profiles/
+#   Android:    app sandbox
+#   iPadOS:     app sandbox
+
+# The name of the profile. It is the identifier under which the profile is
+# selected in the settings and under which it is exported.
+name = "clean"
+
+# One line that says what this profile changes. The setting that selects the
+# profile shows this text, so the user sees the consequence before choosing.
+description = "Only the two panels, the path, the file list and the command line."
+
+# Which areas of the interface exist in this profile.
+[panels]
+# The toolbar with the icon buttons. It is the largest piece of furniture of
+# the classic file manager and the first thing this profile removes.
+show_toolbar = false
+# The directory tree beside a panel. The profile removes it; the tree can be
+# reached again at any time through the command of the action palette.
+show_directory_tree = false
+# The quick view, the third area that previews the marked file. It is a
+# permanent area, and the profile removes it.
+show_quick_view = false
+# The list of the running operations. The profile removes the permanent list;
+# the state of a running operation stays visible in the status bar.
+show_job_list = false
+# The status bar of the active panel. It stays switched on, because it carries
+# the job cue: the state, the progress, the rate and the current item of a
+# running operation (specification, section 6.10). A user must never have to
+# hunt for a running copy.
+show_status_bar = true
+# The menu bar. On macOS it is the native menu of the operating system. The
+# profile removes it from the window; every entry of the menu stays reachable
+# through the action palette.
+show_menu_bar = false
+# The command line at the lower edge of a panel. It belongs to the frame of a
+# panel and is therefore always present. It is named here as well, so that the
+# decision is visible instead of implied.
+show_command_line = true
+
+# How the commands are presented.
+[commands]
+# "palette" means: the commands are not written on the surface, they stay
+# reachable through the action palette. "visible" means: every command is
+# written where it belongs. "hidden" removes a command from every menu and
+# from the palette, and it is used only for a command that would act on an
+# area this profile removes.
+#
+# This profile uses "palette": it removes the furniture, never the capability.
+visibility = "palette"
+
+# Per-command overrides of this profile.
+[display]
+# The commands that are hidden in this profile. A command that is visible by
+# default can be hidden here, and a command that is hidden by default can be
+# made visible.
+#
+# The list is empty on purpose. The action palette keeps every command
+# reachable, and hiding a command would remove a capability (specification,
+# section 7.4). A command belongs into this list only when it would act on an
+# area that this profile removes and would therefore do nothing.
+hidden = []
