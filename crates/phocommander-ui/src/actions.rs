@@ -134,7 +134,7 @@ impl Action {
 /// {docs/KEYMAP.md}. The gate of the integration tests compares the three
 /// descriptions, so that a new command cannot appear in the code without
 /// appearing in the documentation.
-const ACTIONS: [Action; 37] = [
+const ACTIONS: [Action; 44] = [
     Action {
         id: "panel.rename",
         category: ActionCategory::File,
@@ -261,6 +261,41 @@ const ACTIONS: [Action; 37] = [
         label: TextKey::ActionPanelPrevTab,
     },
     Action {
+        id: "panel.tab.new",
+        category: ActionCategory::Navigate,
+        label: TextKey::ActionPanelTabNew,
+    },
+    Action {
+        id: "panel.tab.close",
+        category: ActionCategory::Navigate,
+        label: TextKey::ActionPanelTabClose,
+    },
+    Action {
+        id: "panel.tab.move_to_other",
+        category: ActionCategory::Navigate,
+        label: TextKey::ActionPanelTabMoveToOther,
+    },
+    Action {
+        id: "panel.layout.toggle",
+        category: ActionCategory::View,
+        label: TextKey::ActionPanelLayoutToggle,
+    },
+    Action {
+        id: "panel.tree.toggle",
+        category: ActionCategory::View,
+        label: TextKey::ActionPanelTreeToggle,
+    },
+    Action {
+        id: "panel.quick_view.toggle",
+        category: ActionCategory::View,
+        label: TextKey::ActionPanelQuickViewToggle,
+    },
+    Action {
+        id: "panel.job_list.toggle",
+        category: ActionCategory::View,
+        label: TextKey::ActionPanelJobListToggle,
+    },
+    Action {
         id: "selection.toggle",
         category: ActionCategory::Selection,
         label: TextKey::ActionSelectionToggle,
@@ -322,6 +357,113 @@ const ACTIONS: [Action; 37] = [
     },
 ];
 
+/// A group of the menu bar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MenuGroup {
+    /// The title of the group.
+    pub title: TextKey,
+
+    /// The identifiers of the actions of the group, in the order in which
+    /// they are shown.
+    pub actions: &'static [&'static str],
+}
+
+/// The groups of the menu bar.
+///
+/// WHY: the menu bar is the place where every command is visible at once.
+/// The groups are the ones of the reference product — the file operations,
+/// the commands of the panel, the commands of the view and the commands of
+/// the application — so that the user finds a command in the place he
+/// expects it. Every entry names an action of the catalogue, and the
+/// catalogue therefore stays the single place where a command exists.
+const MENU_GROUPS: [MenuGroup; 4] = [
+    MenuGroup {
+        title: TextKey::MenuFile,
+        actions: &[
+            "panel.rename",
+            "panel.view",
+            "panel.edit",
+            "panel.copy",
+            "panel.move",
+            "panel.mkdir",
+            "panel.delete",
+        ],
+    },
+    MenuGroup {
+        title: TextKey::MenuPanel,
+        actions: &[
+            "panel.switch",
+            "panel.reload",
+            "panel.swap",
+            "panel.open_in_other",
+            "panel.tab.new",
+            "panel.tab.close",
+            "panel.tab.move_to_other",
+        ],
+    },
+    MenuGroup {
+        title: TextKey::MenuView,
+        actions: &[
+            "panel.filter",
+            "panel.tree.toggle",
+            "panel.quick_view.toggle",
+            "panel.job_list.toggle",
+            "panel.layout.toggle",
+        ],
+    },
+    MenuGroup {
+        title: TextKey::MenuApplication,
+        actions: &["app.menu", "app.quit"],
+    },
+];
+
+/// The actions of the toolbar, in the order in which they are shown.
+///
+/// WHY: the toolbar carries the commands that are used the most often. The
+/// list is short on purpose: a toolbar with thirty buttons is a second
+/// menu bar, and the menu bar already exists.
+const TOOLBAR_ACTIONS: [&str; 9] = [
+    "panel.view",
+    "panel.copy",
+    "panel.move",
+    "panel.mkdir",
+    "panel.rename",
+    "panel.delete",
+    "panel.tab.new",
+    "panel.tree.toggle",
+    "panel.quick_view.toggle",
+];
+
+impl Action {
+    /// The groups of the menu bar.
+    ///
+    /// WHY: the menu bar is built from the catalogue and not from a list of
+    /// labels of its own. A command that is added to the catalogue is
+    /// therefore reachable through the menu without a second change.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Action;
+    ///
+    /// assert!(!Action::menu_groups().is_empty());
+    /// ```
+    pub fn menu_groups() -> &'static [MenuGroup] {
+        &MENU_GROUPS
+    }
+
+    /// The actions of the toolbar, in the order in which they are shown.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::Action;
+    ///
+    /// assert!(!Action::toolbar_actions().is_empty());
+    /// ```
+    pub fn toolbar_actions() -> &'static [&'static str] {
+        &TOOLBAR_ACTIONS
+    }
+}
+
 #[cfg(test)]
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
@@ -372,11 +514,38 @@ mod tests {
         let identifiers: Vec<&str> = Action::all().iter().map(|action| action.id()).collect();
 
         // assert
-        assert_eq!(identifiers.len(), 37);
+        assert_eq!(identifiers.len(), 44);
         assert!(identifiers.contains(&"palette.open"));
         assert!(identifiers.contains(&"panel.tab.9"));
         assert!(identifiers.contains(&"rename.conflict_previous"));
         assert!(identifiers.contains(&"panel.filter"));
+        assert!(identifiers.contains(&"panel.tab.new"));
+        assert!(identifiers.contains(&"panel.tab.close"));
+        assert!(identifiers.contains(&"panel.tab.move_to_other"));
+        assert!(identifiers.contains(&"panel.layout.toggle"));
+        assert!(identifiers.contains(&"panel.tree.toggle"));
+        assert!(identifiers.contains(&"panel.quick_view.toggle"));
+        assert!(identifiers.contains(&"panel.job_list.toggle"));
+    }
+
+    #[test]
+    fn every_entry_of_the_menu_and_of_the_toolbar_names_an_action() {
+        // WHY: a menu entry that names an action the catalogue does not
+        // hold would be a button that does nothing.
+        // act
+        let mut named: Vec<&str> = Vec::new();
+        for group in Action::menu_groups() {
+            named.extend(group.actions.iter().copied());
+        }
+        named.extend(Action::toolbar_actions().iter().copied());
+
+        // assert
+        for identifier in named {
+            assert!(
+                Action::from_id(identifier).is_some(),
+                "the catalogue does not hold the action {identifier}"
+            );
+        }
     }
 
     #[test]

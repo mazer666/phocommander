@@ -77,6 +77,18 @@ SPECIFICATION_BINDINGS = {
 DERIVED_BINDINGS = {
     "panel.prev_tab": "Ctrl+Shift+Tab",
     "panel.filter": "Ctrl+F",
+    # The commands of the work surface of milestone M2: the tabs, the
+    # arrangement of the two panels, the tree of the directories, the quick
+    # view and the list of the jobs. The specification names the functions
+    # in FR-11 to FR-15 and FR-106 and names no key for them; the bindings
+    # below are the completion of the classic set.
+    "panel.tab.new": "Ctrl+T",
+    "panel.tab.close": "Ctrl+W",
+    "panel.tab.move_to_other": "Ctrl+Shift+M",
+    "panel.layout.toggle": "Ctrl+Shift+L",
+    "panel.tree.toggle": "Ctrl+B",
+    "panel.quick_view.toggle": "Ctrl+Q",
+    "panel.job_list.toggle": "Ctrl+J",
 }
 
 # The action IDs that are not part of the catalogue but of the surface.

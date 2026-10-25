@@ -31,25 +31,35 @@ pub mod draw;
 pub mod filter;
 pub mod i18n;
 pub mod input;
+pub mod jobs;
 pub mod keymap_view;
+pub mod layout;
 pub mod listing;
 pub mod metrics;
 pub mod panel;
+pub mod preview;
 pub mod refresh;
 pub mod surface;
 pub mod theme;
+pub mod undo;
 
-pub use actions::{Action, ActionCategory};
+pub use actions::{Action, ActionCategory, MenuGroup};
 pub use app::WorkSurfaceApp;
-pub use commands::Command;
+pub use commands::{Command, Request};
 pub use context::Context;
 pub use filter::{Filter, FilterDepth, FilterField, FilterKind, FilterPattern};
 pub use i18n::{Argument, Catalogue, TextKey, Texts};
 pub use input::PrimaryModifier;
+pub use jobs::{JobKind, JobSource, JobState, JobSummary};
 pub use keymap_view::{Binding, BindingError, InputEvent, Key, KeyStroke, KeymapView, Modifiers};
+pub use layout::{LayoutProfile, PanelArrangement, PanelStructure, VisibleAreas};
 pub use listing::{Entry, EntryKind, ListingState, Sort, SortDirection, SortKey};
 pub use metrics::{Metrics, Platform};
-pub use panel::{Column, PanelSide, PanelState, Selection, Tab, ViewMode};
+pub use panel::{
+    Column, DirectoryTree, PanelFocus, PanelSide, PanelState, Selection, Tab, ViewMode,
+};
+pub use preview::{Preview, PreviewSource, QuickView};
 pub use refresh::RefreshPolicy;
 pub use surface::{MarkedEntry, PanelError, PanelPair, TransferRequest, WorkSurface};
 pub use theme::{Palette, Theme, contrast_ratio, visuals};
+pub use undo::{UndoAvailability, UndoScope};

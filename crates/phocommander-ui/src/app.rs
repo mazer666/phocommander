@@ -8,6 +8,11 @@
 //!       the action and draws the result — and it performs no file
 //!       operation itself: every operation leaves the surface as a
 //!       [`Command`] with its source and its destination named.
+//! SIZE: the shell is the place where the panels, the binding table and the
+//!       catalogue of the texts meet. The resolution of an event, the
+//!       dispatch of the action and the drawing belong to the same flow,
+//!       and a split would hide the order of the three steps.
+//!
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ui::app::WorkSurfaceApp;
@@ -28,19 +33,25 @@
 //! assert!(app.commands().is_empty());
 //! ```
 
+mod input;
+
 use std::path::PathBuf;
 
 use crate::actions::Action;
-use crate::commands::Command;
+use crate::commands::{Command, Request};
 use crate::context::Context;
 use crate::draw;
 use crate::i18n::{Catalogue, Texts};
-use crate::input::{PrimaryModifier, stroke_of};
-use crate::keymap_view::{InputEvent, Key, KeyStroke, KeymapView};
+use crate::input::PrimaryModifier;
+use crate::jobs::JobSource;
+use crate::keymap_view::KeymapView;
+use crate::layout::{LayoutProfile, PanelStructure};
 use crate::metrics::{Metrics, Platform};
+use crate::preview::PreviewSource;
 use crate::refresh::RefreshPolicy;
-use crate::surface::WorkSurface;
+use crate::surface::{TransferRequest, WorkSurface};
 use crate::theme::{Palette, Theme};
+use crate::undo::UndoAvailability;
 
 /// The application shell of the work surface.
 pub struct WorkSurfaceApp {
@@ -56,6 +67,21 @@ pub struct WorkSurfaceApp {
     activity: u64,
     visible_rows: usize,
     refresh_policy: RefreshPolicy,
+    preview_source: Option<Box<dyn PreviewSource>>,
+    job_source: Option<Box<dyn JobSource>>,
+    pending_transfer: Option<PendingTransfer>,
+    undo: UndoAvailability,
+}
+
+/// A transfer that waits for the confirmation of the user.
+///
+/// WHY: on a television only one panel is visible, and the panel that
+/// receives the entries appears as an overlay. The transfer starts when the
+/// user confirms the destination and never before (FR-16).
+#[derive(Debug)]
+struct PendingTransfer {
+    copy: bool,
+    transfer: TransferRequest,
 }
 
 impl WorkSurfaceApp {
@@ -74,7 +100,69 @@ impl WorkSurfaceApp {
             activity: 0,
             visible_rows: 20,
             refresh_policy: RefreshPolicy::strict(),
+            preview_source: None,
+            job_source: None,
+            pending_transfer: None,
+            undo: UndoAvailability::Unavailable,
         }
+    }
+
+    /// The shell with an undo that can be taken back.
+    ///
+    /// WHY: the undo of the specification is deliberately incomplete (FR-26).
+    ///       The surface therefore shows the notice of the undo area as long
+    ///       as an undo is on offer, and the notice names the limitation: the
+    ///       undo removes the copies and restores nothing.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::app::WorkSurfaceApp;
+    /// use phocommander_ui::undo::{UndoAvailability, UndoScope};
+    /// # use phocommander_ui::{Catalogue, WorkSurface};
+    /// # use phocommander_ui::keymap_view::KeymapView;
+    /// # use std::path::PathBuf;
+    /// # struct Empty;
+    /// # impl Catalogue for Empty {
+    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::i18n::Argument<'_>]) -> Option<String> {
+    /// #         None
+    /// #     }
+    /// # }
+    /// let app = WorkSurfaceApp::new(
+    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
+    ///     KeymapView::default(),
+    ///     Box::new(Empty),
+    /// )
+    /// .with_undo_availability(UndoAvailability::available(UndoScope::RemovesCopiesOnly));
+    /// assert!(app.undo_availability().is_available());
+    /// ```
+    pub fn with_undo_availability(mut self, undo: UndoAvailability) -> Self {
+        self.undo = undo;
+        self
+    }
+
+    /// The undo that the surface can take back.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::app::WorkSurfaceApp;
+    /// # use phocommander_ui::{Catalogue, WorkSurface};
+    /// # use phocommander_ui::keymap_view::KeymapView;
+    /// # use std::path::PathBuf;
+    /// # struct Empty;
+    /// # impl Catalogue for Empty {
+    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::i18n::Argument<'_>]) -> Option<String> {
+    /// #         None
+    /// #     }
+    /// # }
+    /// let app = WorkSurfaceApp::new(
+    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
+    ///     KeymapView::default(),
+    ///     Box::new(Empty),
+    /// );
+    /// assert!(!app.undo_availability().is_available());
+    /// ```
+    pub fn undo_availability(&self) -> &UndoAvailability {
+        &self.undo
     }
 
     /// The shell with another rule for reading a directory again.
@@ -159,6 +247,27 @@ impl WorkSurfaceApp {
         self
     }
 
+    /// The shell with a source for the quick view.
+    ///
+    /// WHY: the quick view reads the marked file through the reader of the
+    /// viewer (FR-15). The interface crate may not depend on the viewer
+    /// crate, so the composition root hands the reader over as the trait
+    /// that the seam declares.
+    pub fn with_preview_source(mut self, source: Box<dyn PreviewSource>) -> Self {
+        self.preview_source = Some(source);
+        self
+    }
+
+    /// The shell with a source for the list of the jobs.
+    ///
+    /// WHY: the list of the jobs shows what the queue of the operations
+    /// does. The queue reaches the surface as a list of summaries, because
+    /// the interface crate may not depend on the operations crate.
+    pub fn with_job_source(mut self, source: Box<dyn JobSource>) -> Self {
+        self.job_source = Some(source);
+        self
+    }
+
     /// The work surface.
     pub fn surface(&self) -> &WorkSurface {
         &self.surface
@@ -196,111 +305,26 @@ impl WorkSurfaceApp {
         self.activity
     }
 
+    /// The layout of the surface in the context of the shell.
+    ///
+    /// WHY: the profile is the answer to "how does the surface look in
+    /// this context" (FR-106). The drawing asks for it and never asks for
+    /// the context itself.
+    pub fn profile(&self) -> LayoutProfile {
+        LayoutProfile::for_context(self.context, &self.metrics)
+    }
+
     /// Draws the work surface and resolves the input of the frame.
     pub fn update(&mut self, ui: &mut egui::Ui) {
         // WHY: the index of the filter is rebuilt when the directory or the
         // filter changed. The check is cheap and happens before the input
         // is resolved, so that the cursor and the list always agree.
         self.surface.refresh();
+        self.surface.apply_profile(&self.profile());
         self.resolve_input(ui.ctx());
+        self.update_quick_view();
+        self.update_jobs();
         self.draw(ui);
-    }
-
-    /// Resolves the input of the frame into actions and carries them out.
-    fn resolve_input(&mut self, ctx: &egui::Context) {
-        let events: Vec<egui::Event> = ctx.input(|input| input.events.clone());
-        let primary = self.primary;
-
-        for event in events {
-            // WHY: the characters of the filter field arrive as a text
-            // event and not as a key event, because the keyboard layout of
-            // the user decides which characters a key produces.
-            if let egui::Event::Text(text) = &event
-                && self.filter_is_editing()
-            {
-                self.surface.active_mut().filter_insert(text);
-                continue;
-            }
-
-            let egui::Event::Key {
-                key,
-                modifiers,
-                pressed: true,
-                repeat: false,
-                ..
-            } = event
-            else {
-                continue;
-            };
-
-            let Some(stroke) = stroke_of(key, modifiers, primary) else {
-                continue;
-            };
-
-            // WHY: the field that has the focus takes the keys that belong
-            // to it. The escape key empties the field and hides it, the
-            // enter key confirms the filter and keeps it (FR-74a).
-            if self.filter_is_editing() && self.filter_key(stroke) {
-                continue;
-            }
-
-            let action = self.keymap.resolve(self.context, &InputEvent::Key(stroke));
-            if let Some(action) = action {
-                self.dispatch(action);
-                continue;
-            }
-
-            self.move_cursor(stroke);
-        }
-    }
-
-    /// Whether the panel that has the focus is editing its filter.
-    fn filter_is_editing(&self) -> bool {
-        self.surface.active().is_filter_editing()
-    }
-
-    /// Carries out a key stroke in the filter field.
-    ///
-    /// WHY: while the field is being edited, the keys that belong to the
-    /// field must not reach the actions of the panel. The method answers
-    /// whether it has used the key.
-    fn filter_key(&mut self, stroke: KeyStroke) -> bool {
-        let panel = self.surface.active_mut();
-        match stroke.key {
-            Key::Escape => {
-                panel.cancel_filter();
-                true
-            }
-            Key::Enter => {
-                panel.confirm_filter();
-                true
-            }
-            Key::Backspace => {
-                panel.filter_backspace();
-                true
-            }
-            Key::Delete => {
-                panel.filter_delete();
-                true
-            }
-            Key::ArrowLeft => {
-                panel.filter_move_caret(-1);
-                true
-            }
-            Key::ArrowRight => {
-                panel.filter_move_caret(1);
-                true
-            }
-            Key::Home => {
-                panel.filter_caret_to_start();
-                true
-            }
-            Key::End => {
-                panel.filter_caret_to_end();
-                true
-            }
-            _ => false,
-        }
     }
 
     /// Carries out an action.
@@ -372,6 +396,25 @@ impl WorkSurfaceApp {
             "panel.filter" => self.surface.active_mut().open_filter(),
             "panel.next_tab" => self.surface.active_mut().next_tab(),
             "panel.prev_tab" => self.surface.active_mut().previous_tab(),
+            "panel.tab.new" => self.surface.active_mut().new_tab(),
+            "panel.tab.close" => {
+                self.surface.active_mut().close_tab();
+            }
+            "panel.tab.move_to_other" => {
+                self.surface.move_active_tab_to_other();
+            }
+            "panel.layout.toggle" => {
+                self.surface.toggle_arrangement(&self.profile());
+            }
+            "panel.tree.toggle" => {
+                self.surface.active_mut().toggle_tree();
+            }
+            "panel.quick_view.toggle" => {
+                self.surface.quick_view_mut().toggle();
+            }
+            "panel.job_list.toggle" => {
+                self.surface.toggle_job_list();
+            }
             "selection.toggle" => self.surface.active_mut().toggle_at_cursor(),
             "selection.all" => self.surface.active_mut().select_all(),
             "selection.none" => self.surface.active_mut().clear_selection(),
@@ -401,6 +444,28 @@ impl WorkSurfaceApp {
         }
     }
 
+    /// Carries out a request of the drawing.
+    ///
+    /// WHY: the drawing reads the state and never changes it. A click is
+    /// therefore a request, and the shell carries it out like an action
+    /// that came from the keyboard.
+    fn handle_request(&mut self, request: Request) {
+        self.activity += 1;
+        match request {
+            Request::Action(action) => self.dispatch(action),
+            Request::SwitchTab(index) => {
+                self.surface.active_mut().switch_tab(index);
+            }
+            Request::CloseTab(index) => {
+                self.surface.active_mut().close_tab_at(index);
+            }
+            Request::OpenDirectory(path) => {
+                let side = self.surface.active_side();
+                self.commands.push(Command::LoadDirectory { side, path });
+            }
+        }
+    }
+
     /// Reports an action that this milestone does not carry out.
     fn defer(&mut self, action: Action) {
         self.commands.push(Command::Deferred { action });
@@ -424,6 +489,11 @@ impl WorkSurfaceApp {
 
     /// Builds the request that transfers the marked entries into the other
     /// panel.
+    ///
+    /// WHY: on a television only one panel is visible. The panel that
+    /// receives the entries appears as an overlay there, and the user
+    /// confirms the destination with the confirm key — the transfer never
+    /// starts without the destination the user has seen (FR-16).
     fn request_transfer(&mut self, copy: bool) {
         let transfer = match self.surface.transfer_to_other() {
             Ok(transfer) => transfer,
@@ -432,6 +502,13 @@ impl WorkSurfaceApp {
                 return;
             }
         };
+
+        if self.profile().structure() == PanelStructure::SinglePanelWithOverlay {
+            self.pending_transfer = Some(PendingTransfer { copy, transfer });
+            let other = self.surface.active_side().other();
+            self.surface.set_overlay(Some(other));
+            return;
+        }
 
         if copy {
             self.commands.push(Command::Copy { transfer });
@@ -449,66 +526,56 @@ impl WorkSurfaceApp {
             .collect()
     }
 
-    /// Moves the cursor with the keys of the navigation.
+    /// Reads the content of the marked file for the quick view.
     ///
-    /// WHY: the catalogue of the specification names no action for moving
-    /// the cursor, and a file list that cannot be walked is not a file
-    /// manager. The keys of the navigation are therefore handled by the
-    /// surface itself. The deviation is reported in the handover of this
-    /// milestone, and the owner decides whether the catalogue grows the
-    /// actions `panel.cursor.*` or the surface keeps this behaviour.
-    fn move_cursor(&mut self, stroke: KeyStroke) {
-        if !stroke.modifiers.is_empty() {
+    /// WHY: the quick view reads exactly one file — the marked one — and
+    /// the reader of the viewer refuses the read when the rule
+    /// "read_only_on_demand" is in force (FR-15, section 9.7).
+    fn update_quick_view(&mut self) {
+        if !self.surface.quick_view().is_visible() {
             return;
         }
-
-        let rows: isize = match stroke.key {
-            Key::ArrowUp => -1,
-            Key::ArrowDown => 1,
-            Key::PageUp => -10,
-            Key::PageDown => 10,
-            Key::Home => return self.move_cursor_to(0),
-            Key::End => return self.move_cursor_to_last(),
-            _ => return,
+        let path: Option<PathBuf> = {
+            let panel = self.surface.active();
+            panel
+                .marked_entries()
+                .first()
+                .map(|entry| panel.path().join(&entry.name))
         };
-
-        let visible = self.visible_rows();
-        let panel = self.surface.active_mut();
-        panel.move_cursor(rows);
-        panel.ensure_cursor_visible(visible);
+        let WorkSurfaceApp {
+            surface,
+            preview_source,
+            ..
+        } = self;
+        if let Some(source) = preview_source.as_deref() {
+            surface.quick_view_mut().update(source, path.as_deref());
+        }
     }
 
-    /// Moves the cursor to the first entry.
-    fn move_cursor_to(&mut self, row: usize) {
-        let visible = self.visible_rows();
-        let panel = self.surface.active_mut();
-        panel.set_cursor_row(row);
-        panel.ensure_cursor_visible(visible);
-    }
-
-    /// Moves the cursor to the last entry.
-    fn move_cursor_to_last(&mut self) {
-        let last = self.surface.active().row_count().saturating_sub(1);
-        self.move_cursor_to(last);
-    }
-
-    /// The number of rows that fit on the screen.
-    ///
-    /// WHY: the number is known after the drawing, because the height of the
-    /// list is known then. The shell keeps the number of the last frame and
-    /// uses it to scroll the cursor into the window.
-    fn visible_rows(&self) -> usize {
-        self.visible_rows.max(1)
+    /// Reads the rows of the list of the jobs.
+    fn update_jobs(&mut self) {
+        let WorkSurfaceApp {
+            surface,
+            job_source,
+            ..
+        } = self;
+        if let Some(source) = job_source.as_deref() {
+            surface.set_jobs(source.summaries());
+        }
     }
 
     /// Draws the work surface.
     fn draw(&mut self, ui: &mut egui::Ui) {
         let palette = self.palette();
+        let profile = self.profile();
+        // WHY: the notice is read before the fields of the shell are
+        // borrowed, so that the text of the undo area is known when the
+        // surface is drawn.
+        let undo_notice = self.undo.notice(self.catalogue.as_ref());
         let WorkSurfaceApp {
             surface,
             catalogue,
             metrics,
-            context,
             status,
             visible_rows,
             ..
@@ -518,16 +585,23 @@ impl WorkSurfaceApp {
         ui.painter()
             .rect_filled(ui.max_rect(), 0.0, palette.background);
 
+        let mut requested: Vec<Request> = Vec::new();
+        // WHY: the bundle carries everything the drawing needs besides the
+        //       surface itself. It is built once per frame.
+        let style = draw::DrawStyle::new(metrics, &palette, &texts, &profile);
         let rows = draw::draw_surface(
             ui,
             surface,
-            metrics,
-            &palette,
-            &texts,
-            *context,
+            &style,
             status.as_deref(),
+            undo_notice.as_deref(),
+            &mut requested,
         );
         *visible_rows = rows.max(1);
+
+        for request in requested {
+            self.handle_request(request);
+        }
     }
 
     /// The colours of the work surface.

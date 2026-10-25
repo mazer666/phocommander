@@ -66,6 +66,17 @@ EXTRA_BINDINGS: dict[str, str] = {
     "panel.open_in_other": "Ctrl+Enter",
     "panel.next_tab": "Ctrl+Tab",
     "panel.filter": "Ctrl+F",
+    # The commands of the work surface of milestone M2 — the tabs, the
+    # arrangement of the two panels, the tree of the directories, the quick
+    # view and the list of the jobs. The specification names the functions
+    # in FR-11 to FR-15 and in FR-106 and names no key for them.
+    "panel.tab.new": "Ctrl+T",
+    "panel.tab.close": "Ctrl+W",
+    "panel.tab.move_to_other": "Ctrl+Shift+M",
+    "panel.layout.toggle": "Ctrl+Shift+L",
+    "panel.tree.toggle": "Ctrl+B",
+    "panel.quick_view.toggle": "Ctrl+Q",
+    "panel.job_list.toggle": "Ctrl+J",
     "selection.toggle": "Ins",
     "selection.all": "Ctrl+A",
     "selection.none": "Ctrl+Num-",

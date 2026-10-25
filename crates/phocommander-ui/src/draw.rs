@@ -1,558 +1,275 @@
 //! The drawing of the work surface.
 //!
-//! WHAT: the drawing of the two panels, of their file lists, of the line
-//!       with the filter field and of the status line.
+//! WHAT: the drawing of the two panels, of their file lists, of the areas
+//!       around them and of the status line.
 //! WHY: the drawing reads the state and never changes it — the state is
 //!       changed by the commands of the shell. The file list draws only the
 //!       rows that are visible, so that a directory with a hundred thousand
 //!       entries costs the same in every frame as a directory with thirty
-//!       entries (FR-106, NFR-01). The filter field is a line of the panel
-//!       and not a window above it, because the filter belongs to the panel
-//!       (FR-74a).
+//!       entries (FR-106, NFR-01). The layout of the surface comes from the
+//!       profile of the context, so that the drawing code carries no
+//!       condition on the context at all (FR-106). Every button of the
+//!       interface collects the action it stands for and hands it to the
+//!       shell, which carries it out — the drawing never acts on its own.
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ui::i18n::TextKey;
 //!
 //! assert_eq!(phocommander_ui::TextKey::PanelColumnSize, TextKey::PanelColumnSize);
-//! assert_ne!(TextKey::PanelColumnSize, TextKey::PanelColumnName);
+//! assert_ne!(phocommander_ui::TextKey::PanelColumnSize, TextKey::PanelColumnName);
 //! ```
 
-use egui::{Align, Color32, FontId, Rect, RichText, Stroke, Ui, Vec2};
+pub mod areas;
+pub mod list;
+pub mod panel;
 
-use crate::context::Context;
-use crate::i18n::{Argument, TextKey, Texts};
+use egui::{Rect, Vec2};
+
+use crate::commands::Request;
+use crate::i18n::Texts;
+use crate::layout::{LayoutProfile, PanelStructure};
 use crate::metrics::Metrics;
-use crate::panel::{Column, PanelSide, PanelState, ViewMode};
+use crate::panel::PanelSide;
 use crate::surface::WorkSurface;
 use crate::theme::Palette;
 
 /// The width of the line that separates two areas.
-const SEPARATOR_WIDTH: f32 = 1.0;
+pub(crate) const SEPARATOR_WIDTH: f32 = 1.0;
+
+/// Everything the drawing needs besides the thing that is drawn.
+///
+/// WHY: every part of the surface needs the same five things: the measures
+///       of the platform, the colours of the theme, the texts of the
+///       catalogue, the profile of the layout and the place where the
+///       requests of the user are collected. Carrying them as five
+///       parameters would make every signature long and unreadable, and it
+///       would make it easy to mix two of them up. The bundle names them
+///       once, and every drawing function reads what it needs from it.
+///
+// BOUNDARY: the bundle is an internal helper of the drawing. It is not a
+//       part of the public surface of the crate, because a caller outside the
+//       crate does not draw a panel of its own.
+pub(crate) struct DrawStyle<'texts> {
+    /// The measures of the platform: the height of a row, the width of a
+    /// scrollbar and the size of the touch targets.
+    pub(crate) metrics: &'texts Metrics,
+
+    /// The colours of the theme.
+    pub(crate) palette: &'texts Palette,
+
+    /// The texts of the catalogue in the language of the interface.
+    pub(crate) texts: &'texts Texts<'texts>,
+
+    /// The profile of the layout: which areas exist and how they are placed.
+    pub(crate) profile: &'texts LayoutProfile,
+}
+
+impl<'texts> DrawStyle<'texts> {
+    /// Builds the bundle.
+    pub(crate) fn new(
+        metrics: &'texts Metrics,
+        palette: &'texts Palette,
+        texts: &'texts Texts<'texts>,
+        profile: &'texts LayoutProfile,
+    ) -> Self {
+        Self {
+            metrics,
+            palette,
+            texts,
+            profile,
+        }
+    }
+}
 
 /// Draws the whole work surface.
 ///
 /// WHY: the layout follows the context, not only the colours: two panels
-/// side by side on the desktop, one panel on a television and on a tablet
-/// (section 6.5, FR-106).
-///
-/// EXAMPLE:
-/// ```no_run
-/// use phocommander_ui::context::Context;
-/// use phocommander_ui::panel::PanelSide;
-///
-/// assert!(!Context::Keyboard.shows_one_panel());
-/// assert_eq!(PanelSide::Left.other(), PanelSide::Right);
-/// ```
+/// side by side on the desktop, the panels stacked on a tablet, one panel
+/// and an overlay on a television and a spatial arrangement with a
+/// controller (section 6.5, FR-106). The profile answers how the surface
+/// is built, and the drawing code asks it.
 pub(crate) fn draw_surface(
-    ui: &mut Ui,
+    ui: &mut egui::Ui,
     surface: &WorkSurface,
-    metrics: &Metrics,
-    palette: &Palette,
-    texts: &Texts<'_>,
-    context: Context,
+    style: &DrawStyle<'_>,
     status: Option<&str>,
+    undo_notice: Option<&str>,
+    requested: &mut Vec<Request>,
 ) -> usize {
-    let status_height = metrics.row_height() + 8.0;
-    let panels_height = (ui.available_height() - status_height).max(metrics.row_height());
+    // WHY: the bundle is unpacked once, so that the body of the function
+    //       reads as it did before. The names are the names of the parts.
+    let metrics = style.metrics;
+    let texts = style.texts;
+    let profile = style.profile;
 
-    let mut visible_rows = 0;
+    let area = ui.max_rect();
+    let row = metrics.row_height();
 
-    ui.vertical(|ui| {
-        ui.spacing_mut().item_spacing.y = 0.0;
-        ui.allocate_ui(Vec2::new(ui.available_width(), panels_height), |ui| {
-            if context.shows_one_panel() {
-                let active = surface.active_side();
-                visible_rows = draw_panel(ui, surface, active, metrics, palette, texts);
-            } else {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 6.0;
-                    let left = draw_panel(ui, surface, PanelSide::Left, metrics, palette, texts);
-                    let right = draw_panel(ui, surface, PanelSide::Right, metrics, palette, texts);
-                    visible_rows = left.min(right);
-                });
-            }
-        });
+    let menu_height = if profile.areas().menu_bar() { row } else { 0.0 };
+    let toolbar_height = if profile.areas().toolbar() { row } else { 0.0 };
+    let job_height = if profile.areas().job_list() && surface.is_job_list_visible() {
+        row * 3.0
+    } else {
+        0.0
+    };
+    let status_height = if profile.areas().status_bar() {
+        row
+    } else {
+        0.0
+    };
+    let furniture = menu_height + toolbar_height + job_height + status_height;
 
-        ui.allocate_ui(Vec2::new(ui.available_width(), status_height), |ui| {
-            // WHY: the line that separates the panels from the status line
-            // is the same line as the one that separates the header of the
-            // list from the list. One separator, one colour, one width.
-            let separator = Rect::from_min_size(
-                ui.min_rect().min,
-                Vec2::new(ui.available_width(), SEPARATOR_WIDTH),
-            );
-            ui.painter().hline(
-                egui::emath::Rangef::new(separator.left(), separator.right()),
-                separator.top(),
-                Stroke::new(SEPARATOR_WIDTH, palette.separator),
-            );
-            ui.advance_cursor_after_rect(separator);
-            draw_status_bar(ui, surface, palette, texts, status);
-        });
-    });
+    let mut y = area.min.y;
+
+    if menu_height > 0.0 {
+        let rect = Rect::from_min_size(
+            egui::pos2(area.min.x, y),
+            Vec2::new(area.width(), menu_height),
+        );
+        y += menu_height;
+        areas::draw_menu_bar(ui, rect, texts, requested);
+    }
+
+    if toolbar_height > 0.0 {
+        let rect = Rect::from_min_size(
+            egui::pos2(area.min.x, y),
+            Vec2::new(area.width(), toolbar_height),
+        );
+        y += toolbar_height;
+        areas::draw_toolbar(ui, rect, texts, requested);
+    }
+
+    // WHY: the quick view is the third area of the surface. It stands at
+    // the right of the panels and takes its width from the profile.
+    let quick_width = if profile.areas().quick_view() && surface.quick_view().is_visible() {
+        profile.quick_view_width()
+    } else {
+        0.0
+    };
+
+    let panels_height = (area.height() - furniture).max(row);
+    let panels_width = (area.width() - quick_width).max(row);
+    let panels_rect = Rect::from_min_size(
+        egui::pos2(area.min.x, y),
+        Vec2::new(panels_width, panels_height),
+    );
+    y += panels_height;
+
+    let visible_rows = draw_panels(ui, surface, panels_rect, style, requested);
+
+    if quick_width > 0.0 {
+        let rect = Rect::from_min_size(
+            egui::pos2(
+                area.min.x + panels_width,
+                area.min.y + menu_height + toolbar_height,
+            ),
+            Vec2::new(quick_width, panels_height),
+        );
+        areas::draw_quick_view(ui, rect, surface, style);
+    }
+
+    if job_height > 0.0 {
+        let rect = Rect::from_min_size(
+            egui::pos2(area.min.x, y),
+            Vec2::new(area.width(), job_height),
+        );
+        y += job_height;
+        areas::draw_job_list(ui, rect, surface, style);
+    }
+
+    if status_height > 0.0 {
+        let rect = Rect::from_min_size(
+            egui::pos2(area.min.x, y),
+            Vec2::new(area.width(), status_height),
+        );
+        areas::draw_status_bar(ui, rect, surface, style, status, undo_notice);
+    }
 
     visible_rows
 }
 
-/// The places of the columns of the file list.
+/// Draws the two panels in the place the layout gives them.
 ///
-/// WHY: the header of a column has to stand over its column, and the rows
-/// have to use the same places as the header. The layout is therefore
-/// computed once and handed to both.
-struct ColumnLayout {
-    columns: Vec<Column>,
-    name_width: f32,
-    size_width: f32,
-    date_width: f32,
-    type_width: f32,
-    width: f32,
-}
-
-impl ColumnLayout {
-    /// The layout of the columns that are shown.
-    fn new(columns: &[Column], metrics: &Metrics, width: f32) -> Self {
-        let size_width = metrics.column_size_width();
-        let date_width = metrics.column_date_width();
-        let type_width = metrics.column_type_width();
-        let fixed: f32 = columns
-            .iter()
-            .map(|column| match column {
-                Column::Name => 0.0,
-                Column::Size => size_width,
-                Column::Date => date_width,
-                Column::Type => type_width,
-            })
-            .sum();
-
-        Self {
-            columns: columns.to_vec(),
-            name_width: (width - fixed - 8.0).max(60.0),
-            size_width,
-            date_width,
-            type_width,
-            width,
-        }
-    }
-
-    /// The width of a column.
-    fn width_of(&self, column: Column) -> f32 {
-        match column {
-            Column::Name => self.name_width,
-            Column::Size => self.size_width,
-            Column::Date => self.date_width,
-            Column::Type => self.type_width,
-        }
-    }
-
-    /// The place of a column in a row of the list.
-    fn cell(&self, column: Column, left: f32, top: f32, height: f32) -> Rect {
-        let mut x = left;
-        for candidate in &self.columns {
-            if *candidate == column {
-                break;
-            }
-            x += self.width_of(*candidate);
-        }
-        Rect::from_min_size(egui::pos2(x, top), Vec2::new(self.width_of(column), height))
-    }
-}
-
-/// Draws one panel with its path, its tabs, its filter and its file list.
-fn draw_panel(
-    ui: &mut Ui,
+/// WHY: the structure of the profile decides how many panels are visible
+/// and how they are placed. The arrangement — next to each other or below
+/// each other — is the decision of the user and is asked of the surface.
+fn draw_panels(
+    ui: &mut egui::Ui,
     surface: &WorkSurface,
-    side: PanelSide,
-    metrics: &Metrics,
-    palette: &Palette,
-    texts: &Texts<'_>,
+    rect: Rect,
+    style: &DrawStyle<'_>,
+    requested: &mut Vec<Request>,
 ) -> usize {
-    let panel = surface.panel(side);
-    let focused = surface.active_side() == side;
+    // WHY: the bundle is unpacked once, so that the body of the function
+    //       reads as it did before. The names are the names of the parts.
+    let profile = style.profile;
 
-    // WHY: the panel that has the focus carries the frame of the focus —
-    // the same colour and the same width as the frame around the cursor.
-    // The panel without the focus carries a neutral line, so that the
-    // focus is visible on the surface and not everywhere (NFR-11).
-    let stroke = if focused {
-        Stroke::new(metrics.focus_frame_width(), palette.focus_frame)
-    } else {
-        Stroke::new(SEPARATOR_WIDTH, palette.separator)
-    };
-
-    let frame = egui::Frame::new()
-        .fill(palette.panel)
-        .stroke(stroke)
-        .inner_margin(6.0);
-
-    frame
-        .show(ui, |ui| {
-            draw_panel_header(ui, panel, side, palette, texts);
-            draw_filter_line(ui, panel, metrics, palette, texts);
-
-            let shown = if panel.view() == ViewMode::Compact {
-                vec![Column::Name]
-            } else {
-                panel.columns().to_vec()
-            };
-            let layout = ColumnLayout::new(&shown, metrics, ui.available_width());
-
-            draw_column_headers(ui, panel, &layout, metrics, palette, texts);
-            draw_list(ui, panel, &layout, metrics, palette, texts)
-        })
-        .inner
-}
-
-/// Draws the title, the path and the tabs of a panel.
-fn draw_panel_header(
-    ui: &mut Ui,
-    panel: &PanelState,
-    side: PanelSide,
-    palette: &Palette,
-    texts: &Texts<'_>,
-) {
-    ui.horizontal(|ui| {
-        let title = match side {
-            PanelSide::Left => TextKey::PanelTitleLeft,
-            PanelSide::Right => TextKey::PanelTitleRight,
-        };
-        ui.label(RichText::new(texts.get(title)).strong());
-        ui.label(RichText::new(panel.path().display().to_string()).color(palette.text_dimmed));
-    });
-
-    if panel.tab_count() > 1 {
-        ui.horizontal(|ui| {
-            for index in 0..panel.tab_count() {
-                let selected = index == panel.active_tab_index();
-                let label =
-                    texts.get_with(TextKey::PanelTab, &[Argument::Number((index + 1) as u64)]);
-                let _ = ui.selectable_label(selected, label);
-            }
-        });
-    }
-
-    // WHY: the line that separates the header of the panel from its
-    // content is the same line as the one above the status line.
-    let separator = Rect::from_min_size(
-        ui.min_rect().min,
-        Vec2::new(ui.available_width(), SEPARATOR_WIDTH),
-    );
-    ui.painter().hline(
-        egui::emath::Rangef::new(separator.left(), separator.right()),
-        separator.top(),
-        Stroke::new(SEPARATOR_WIDTH, palette.separator),
-    );
-    ui.advance_cursor_after_rect(separator);
-}
-
-/// Draws the line with the filter field of a panel.
-///
-/// WHY: the filter belongs to the panel and not to a window above it. The
-/// user types in the panel and sees at once what is left of the list
-/// (FR-74a). The line shows the field, the number of the entries that pass
-/// the filter (FR-74e) and the pattern language that is in use.
-fn draw_filter_line(
-    ui: &mut Ui,
-    panel: &PanelState,
-    metrics: &Metrics,
-    palette: &Palette,
-    texts: &Texts<'_>,
-) {
-    if !panel.is_filter_visible() {
-        return;
-    }
-
-    let height = metrics.row_height();
-    let font = FontId::proportional(metrics.font_size());
-    let editing = panel.is_filter_editing();
-    let empty = panel.filter_text().is_empty();
-
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 8.0;
-        ui.spacing_mut().item_spacing.y = 0.0;
-
-        ui.label(RichText::new(texts.get(TextKey::PanelFilterLabel)).color(palette.text_dimmed));
-
-        let text = if empty {
-            texts.get(TextKey::PanelFilterPlaceholder)
-        } else {
-            panel.filter_text().to_string()
-        };
-        let color = if empty {
-            palette.text_dimmed
-        } else {
-            palette.text
-        };
-        let width = (ui.available_width() * 0.4).clamp(120.0, 420.0);
-        let response = ui.add_sized(
-            [width, height],
-            egui::Label::new(RichText::new(text).color(color)).truncate(),
-        );
-
-        if editing {
-            // WHY: the frame of the focus is drawn around the field, with
-            // the same colour and the same width as the frame around the
-            // cursor. A field that has the focus is therefore visible at a
-            // glance (NFR-11).
-            ui.painter().rect_stroke(
-                response.rect,
-                0.0,
-                Stroke::new(metrics.focus_frame_width(), palette.focus_frame),
-                egui::StrokeKind::Inside,
-            );
-            let caret = caret_place(ui, panel, response.rect, font);
-            ui.painter().vline(
-                caret,
-                response.rect.y_range(),
-                Stroke::new(SEPARATOR_WIDTH, palette.focus_frame),
-            );
-        }
-
-        let matches = panel.matching_count();
-        ui.label(
-            RichText::new(texts.get_with(
-                TextKey::PanelFilterMatches,
-                &[Argument::Number(matches as u64)],
-            ))
-            .color(palette.text),
-        );
-
-        ui.label(RichText::new(texts.get(TextKey::PanelFilterGrammar)).color(palette.text_dimmed));
-    });
-}
-
-/// The place of the caret in the filter field.
-fn caret_place(ui: &Ui, panel: &PanelState, rect: Rect, font: FontId) -> f32 {
-    let prefix: String = panel
-        .filter_text()
-        .chars()
-        .take(panel.filter_caret())
-        .collect();
-    let width = ui
-        .ctx()
-        .fonts_mut(|fonts| fonts.layout_no_wrap(prefix, font, Color32::WHITE).size().x);
-    rect.left() + width
-}
-
-/// Draws the headers of the columns of the file list.
-///
-/// WHY: the headers stand over their columns and they do not scroll with
-/// the list — one decision and not two. The names of the columns are
-/// visible texts and go through a translation key (FR-05). The set of the
-/// columns is the one the user configured (FR-17).
-fn draw_column_headers(
-    ui: &mut Ui,
-    panel: &PanelState,
-    layout: &ColumnLayout,
-    metrics: &Metrics,
-    palette: &Palette,
-    texts: &Texts<'_>,
-) {
-    if panel.view() != ViewMode::Details {
-        return;
-    }
-
-    let height = metrics.row_height();
-    let left = ui.min_rect().left();
-    let top = ui.min_rect().top();
-    let rect = Rect::from_min_size(egui::pos2(left, top), Vec2::new(layout.width, height));
-    ui.advance_cursor_after_rect(rect);
-
-    for column in &layout.columns {
-        let cell = layout.cell(*column, left, top, height);
-        let right_aligned = matches!(column, Column::Size);
-        let alignment = if right_aligned {
-            egui::Layout::right_to_left(Align::Center)
-        } else {
-            egui::Layout::left_to_right(Align::Center)
-        };
-        let text = texts.get(column_key(*column));
-        ui.scope_builder(
-            egui::UiBuilder::new().max_rect(cell).layout(alignment),
-            |ui| {
-                ui.add_sized(
-                    [cell.width(), height],
-                    egui::Label::new(RichText::new(text).color(palette.text_dimmed)).truncate(),
-                );
-            },
-        );
-    }
-
-    ui.painter().hline(
-        egui::emath::Rangef::new(rect.left(), rect.right()),
-        rect.bottom(),
-        Stroke::new(SEPARATOR_WIDTH, palette.separator),
-    );
-}
-
-/// Draws the file list of a panel.
-fn draw_list(
-    ui: &mut Ui,
-    panel: &PanelState,
-    layout: &ColumnLayout,
-    metrics: &Metrics,
-    palette: &Palette,
-    texts: &Texts<'_>,
-) -> usize {
-    let row_height = metrics.row_height();
-    let list_rect = ui.max_rect();
-    let visible = ((list_rect.height() / row_height).ceil() as usize).max(1);
-
-    if panel.row_count() == 0 {
-        ui.label(RichText::new(texts.get(TextKey::PanelEmpty)).color(palette.text_dimmed));
-        return visible;
-    }
-
-    let selection = panel.selection();
-    let cursor = panel.cursor();
-    let first = panel.scroll_row();
-
-    let rows = panel.visible_rows(first, visible);
-
-    for row in &rows {
-        let is_cursor = row.position() == cursor;
-        let is_marked = selection.contains(row.position());
-
-        // WHY: the rows are placed at a fixed distance from each other, so
-        // that the list has no gaps and no double lines.
-        let rect = Rect::from_min_size(ui.min_rect().min, Vec2::new(list_rect.width(), row_height));
-        ui.advance_cursor_after_rect(rect);
-
-        if is_marked {
-            ui.painter().rect_filled(rect, 0.0, palette.marked);
-        }
-        if is_cursor {
-            ui.painter().rect_filled(rect, 0.0, palette.cursor);
-        }
-
-        let text_color = palette.text;
-        let dimmed = palette.text_dimmed;
-        let left = rect.left() + 4.0;
-
-        for column in &layout.columns {
-            let (text, color, right_aligned) = match column {
-                Column::Name => (row.name().to_string(), text_color, false),
-                Column::Size => (row.size_text(), dimmed, true),
-                Column::Date => (row.date_text(), dimmed, false),
-                Column::Type => (texts.get(row.type_key()), dimmed, false),
-            };
-
-            let cell = layout.cell(*column, left, rect.top(), row_height);
-            let alignment = if right_aligned {
-                egui::Layout::right_to_left(Align::Center)
-            } else {
-                egui::Layout::left_to_right(Align::Center)
-            };
-
-            ui.scope_builder(
-                egui::UiBuilder::new().max_rect(cell).layout(alignment),
-                |ui| {
-                    ui.add_sized(
-                        [cell.width(), row_height],
-                        egui::Label::new(RichText::new(text).color(color)).truncate(),
+    match profile.structure() {
+        PanelStructure::TwoPanels => {
+            match surface.arrangement() {
+                crate::layout::PanelArrangement::SideBySide => {
+                    let gap = profile.panel_gap();
+                    let width = ((rect.width() - gap) / 2.0).max(1.0);
+                    let left = Rect::from_min_size(rect.min, Vec2::new(width, rect.height()));
+                    let right = Rect::from_min_size(
+                        egui::pos2(rect.min.x + width + gap, rect.min.y),
+                        Vec2::new(width, rect.height()),
                     );
-                },
+                    let rows_left =
+                        panel::draw_panel(ui, surface, PanelSide::Left, left, style, requested);
+                    let rows_right =
+                        panel::draw_panel(ui, surface, PanelSide::Right, right, style, requested);
+                    rows_left.min(rows_right)
+                }
+                crate::layout::PanelArrangement::Stacked => {
+                    // WHY: the panel that has the focus fills the screen and
+                    // the other one lies below it. The user reaches it by
+                    // scrolling, which is the gesture of a finger on a
+                    // tablet (section 6.5).
+                    let gap = profile.panel_gap();
+                    let height = ((rect.height() - gap) / 2.0).max(1.0);
+                    let active = surface.active_side();
+                    let other = active.other();
+                    let active_rect =
+                        Rect::from_min_size(rect.min, Vec2::new(rect.width(), height));
+                    let other_rect = Rect::from_min_size(
+                        egui::pos2(rect.min.x, rect.min.y + height + gap),
+                        Vec2::new(rect.width(), height),
+                    );
+                    let rows =
+                        panel::draw_panel(ui, surface, active, active_rect, style, requested);
+                    panel::draw_panel(ui, surface, other, other_rect, style, requested);
+                    rows
+                }
+            }
+        }
+        PanelStructure::SinglePanelWithOverlay => {
+            // WHY: two panels side by side are unreadable on a television.
+            // The panel that has the focus fills the surface, and the other
+            // one appears as an overlay when an action needs a destination.
+            let active = surface.active_side();
+            let rows = panel::draw_panel(ui, surface, active, rect, style, requested);
+            if let Some(side) = surface.overlay() {
+                let overlay = Rect::from_center_size(rect.center(), rect.size() * 0.8);
+                panel::draw_panel(ui, surface, side, overlay, style, requested);
+            }
+            rows
+        }
+        PanelStructure::SpatialPanels => {
+            // WHY: the panels are arranged in space rather than in a
+            // window. The distance between them is the depth of the world,
+            // and the focus sits on the panel the ray pointer is on.
+            let gap = profile.panel_gap();
+            let width = ((rect.width() - gap) / 2.0).max(1.0);
+            let left = Rect::from_min_size(rect.min, Vec2::new(width, rect.height()));
+            let right = Rect::from_min_size(
+                egui::pos2(rect.min.x + width + gap, rect.min.y),
+                Vec2::new(width, rect.height()),
             );
+            let rows_left = panel::draw_panel(ui, surface, PanelSide::Left, left, style, requested);
+            let rows_right =
+                panel::draw_panel(ui, surface, PanelSide::Right, right, style, requested);
+            rows_left.min(rows_right)
         }
-
-        if is_cursor {
-            // WHY: the frame of the focus is drawn after the text, so that
-            // it frames the entry instead of hiding it.
-            ui.painter().rect_stroke(
-                rect,
-                0.0,
-                Stroke::new(metrics.focus_frame_width(), palette.focus_frame),
-                egui::StrokeKind::Inside,
-            );
-        }
-    }
-
-    draw_scrollbar(ui, panel, list_rect, metrics, palette);
-
-    visible
-}
-
-/// Draws the scroll bar of a file list.
-fn draw_scrollbar(
-    ui: &mut Ui,
-    panel: &PanelState,
-    list_rect: Rect,
-    metrics: &Metrics,
-    palette: &Palette,
-) {
-    let rows = panel.row_count();
-    let visible = ((list_rect.height() / metrics.row_height()).ceil() as usize).max(1);
-    if rows <= visible {
-        return;
-    }
-
-    let width = 6.0;
-    let track = Rect::from_min_size(
-        egui::pos2(list_rect.right() - width, list_rect.top()),
-        egui::vec2(width, list_rect.height()),
-    );
-    ui.painter().rect_filled(track, 3.0, palette.text_dimmed);
-
-    let height = (track.height() * visible as f32 / rows as f32).max(20.0);
-    let offset = track.height() * panel.scroll_row() as f32 / rows as f32;
-    let thumb = Rect::from_min_size(
-        egui::pos2(track.left(), track.top() + offset),
-        egui::vec2(width, height.min(track.height() - offset)),
-    );
-    ui.painter().rect_filled(thumb, 3.0, palette.focus_frame);
-}
-
-/// Draws the status line.
-fn draw_status_bar(
-    ui: &mut Ui,
-    surface: &WorkSurface,
-    palette: &Palette,
-    texts: &Texts<'_>,
-    status: Option<&str>,
-) {
-    let entries = surface.active().row_count();
-    let marked = surface.active().selection().len();
-    let filtered = surface.active().filter().is_active();
-    let total = surface.active().total_count();
-
-    ui.horizontal(|ui| {
-        let mut parts = vec![if filtered {
-            texts.get_with(
-                TextKey::PanelStatusFiltered,
-                &[
-                    Argument::Number(entries as u64),
-                    Argument::Total(total as u64),
-                ],
-            )
-        } else {
-            texts.get_with(
-                TextKey::PanelStatusEntries,
-                &[Argument::Number(entries as u64)],
-            )
-        }];
-        if marked > 0 {
-            parts.push(texts.get_with(
-                TextKey::PanelStatusSelected,
-                &[Argument::Number(marked as u64)],
-            ));
-        }
-        for part in parts {
-            ui.label(RichText::new(part).color(palette.text_dimmed));
-        }
-        if let Some(status) = status {
-            ui.label(RichText::new(status).color(palette.text));
-        }
-    });
-}
-
-/// The translation key of the header of a column.
-///
-/// WHY: the header of a column is a visible text and goes through a
-/// translation key (FR-05).
-pub(crate) fn column_key(column: Column) -> TextKey {
-    match column {
-        Column::Name => TextKey::PanelColumnName,
-        Column::Size => TextKey::PanelColumnSize,
-        Column::Date => TextKey::PanelColumnDate,
-        Column::Type => TextKey::PanelColumnType,
     }
 }

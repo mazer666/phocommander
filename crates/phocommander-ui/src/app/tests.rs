@@ -9,7 +9,7 @@
 
 use super::*;
 use crate::Argument;
-use crate::keymap_view::KeymapView;
+use crate::keymap_view::{Key, KeyStroke, KeymapView};
 use crate::listing::{Entry, EntryKind};
 use crate::panel::PanelSide;
 use std::collections::BTreeMap;

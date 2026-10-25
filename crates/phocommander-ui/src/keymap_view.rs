@@ -9,6 +9,12 @@
 //!       event, the context and the binding table — and it is deterministic:
 //!       when two actions of one context are bound to the same key, the
 //!       action that comes first in the catalogue wins (FR-101).
+//! SIZE: this module holds the whole input layer in one place on purpose —
+//!       the keys, the strokes, the bindings, the events and the table of the
+//!       contexts. The table of the contexts refers to the bindings of every
+//!       other table, and a split would make the resolution of an event
+//!       readable in three files instead of one.
+//!
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ui::{Binding, Context, InputEvent, KeyStroke};

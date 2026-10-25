@@ -20,6 +20,27 @@ use crate::actions::Action;
 use crate::panel::PanelSide;
 use crate::surface::TransferRequest;
 
+/// A request of the drawing to the shell.
+///
+/// WHY: the drawing reads the state and never changes it. A click on a
+/// button, on a tab or on a node of the tree is therefore a request and
+/// not a change — the shell carries it out, exactly as it carries out an
+/// action that came from the keyboard.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Request {
+    /// Carry out an action of the catalogue.
+    Action(Action),
+
+    /// Show another tab of the panel that has the focus.
+    SwitchTab(usize),
+
+    /// Close a tab of the panel that has the focus.
+    CloseTab(usize),
+
+    /// Open the directory the user chose in the tree.
+    OpenDirectory(PathBuf),
+}
+
 /// A request of the interface to the application.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command {

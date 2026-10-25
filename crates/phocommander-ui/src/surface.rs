@@ -10,7 +10,9 @@
 //!       every request that spans them names its source *and* its
 //!       destination. A request whose source and destination are the same
 //!       panel is refused — a copy into the directory it comes from is never
-//!       what the user meant.
+//!       what the user meant. The arrangement of the two panels belongs to
+//!       the surface as well, because it is a decision about both of them
+//!       (FR-11).
 //! EXAMPLE:
 //! ```no_run
 //! use phocommander_ui::surface::WorkSurface;
@@ -23,7 +25,10 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::jobs::JobSummary;
+use crate::layout::{LayoutProfile, PanelArrangement};
 use crate::panel::{PanelSide, PanelState};
+use crate::preview::QuickView;
 
 /// The two panels of the work surface.
 #[derive(Debug)]
@@ -31,6 +36,11 @@ pub struct WorkSurface {
     left: PanelState,
     right: PanelState,
     active: PanelSide,
+    arrangement: PanelArrangement,
+    overlay: Option<PanelSide>,
+    quick_view: QuickView,
+    jobs: Vec<JobSummary>,
+    job_list_visible: bool,
 }
 
 impl WorkSurface {
@@ -40,6 +50,11 @@ impl WorkSurface {
             left: PanelState::new(left),
             right: PanelState::new(right),
             active: PanelSide::Left,
+            arrangement: PanelArrangement::default(),
+            overlay: None,
+            quick_view: QuickView::new(),
+            jobs: Vec::new(),
+            job_list_visible: true,
         }
     }
 
@@ -169,6 +184,124 @@ impl WorkSurface {
         TransferRequest::new(source, destination, entries)
     }
 
+    /// Moves the tab that is shown into the other panel.
+    ///
+    /// WHY: the move of a tab is explicit (FR-13) and it carries the whole
+    /// state of the tab: the path, the order, the cursor, the marks and the
+    /// filter stay with the tab. The panel the tab comes from keeps a tab
+    /// of its own, so that a panel is never left empty.
+    pub fn move_active_tab_to_other(&mut self) -> bool {
+        let source = self.active;
+        let destination = source.other();
+        let index = self.panel(source).active_tab_index();
+        let path = self.panel(source).active_tab().path().to_path_buf();
+
+        let Some(tab) = self.panel_mut(source).take_tab(index) else {
+            return false;
+        };
+        if self.panel(source).tab_count() == 0 {
+            self.panel_mut(source)
+                .insert_tab(crate::panel::Tab::new(path));
+        }
+        self.panel_mut(destination).insert_tab(tab);
+        true
+    }
+
+    /// The arrangement of the two panels.
+    pub fn arrangement(&self) -> PanelArrangement {
+        self.arrangement
+    }
+
+    /// Changes the arrangement of the two panels.
+    ///
+    /// WHY: the arrangement is switched while the program runs (FR-11) and
+    /// the state of the panels does not change with it. The panels keep
+    /// their tabs, their paths, their cursors and their marks.
+    pub fn set_arrangement(&mut self, arrangement: PanelArrangement) {
+        self.arrangement = arrangement;
+    }
+
+    /// Switches the arrangement of the two panels.
+    ///
+    /// WHY: the method answers whether the switch happened. A layout that
+    /// shows one panel has no arrangement to switch, and the caller
+    /// reports that instead of pretending it worked.
+    pub fn toggle_arrangement(&mut self, profile: &LayoutProfile) -> bool {
+        if !profile.allows(self.arrangement) {
+            return false;
+        }
+        self.arrangement = self.arrangement.other();
+        true
+    }
+
+    /// The panel that is shown as an overlay, if one is.
+    ///
+    /// WHY: on a television only one panel is visible, and the second one
+    /// appears as an overlay when an action needs a destination (section
+    /// 6.5 of the specification). The overlay is a view of the other panel
+    /// and not a change of the focus — the focus stays where the user put
+    /// it.
+    pub fn overlay(&self) -> Option<PanelSide> {
+        self.overlay
+    }
+
+    /// Shows the panel of the given side as an overlay, or hides it.
+    pub fn set_overlay(&mut self, side: Option<PanelSide>) {
+        self.overlay = side;
+    }
+
+    /// Shows the other panel as an overlay, or hides the overlay.
+    pub fn toggle_overlay(&mut self) {
+        self.overlay = match self.overlay {
+            Some(_) => None,
+            None => Some(self.active.other()),
+        };
+    }
+
+    /// The quick view of the marked file.
+    pub fn quick_view(&self) -> &QuickView {
+        &self.quick_view
+    }
+    /// The quick view of the marked file.
+    pub fn quick_view_mut(&mut self) -> &mut QuickView {
+        &mut self.quick_view
+    }
+
+    /// The rows of the list of the jobs.
+    pub fn jobs(&self) -> &[JobSummary] {
+        &self.jobs
+    }
+
+    /// Puts the rows of the list of the jobs into the surface.
+    pub fn set_jobs(&mut self, jobs: Vec<JobSummary>) {
+        self.jobs = jobs;
+    }
+
+    /// Whether the list of the jobs is shown.
+    pub const fn is_job_list_visible(&self) -> bool {
+        self.job_list_visible
+    }
+
+    /// Shows or hides the list of the jobs.
+    ///
+    /// WHY: the list of the jobs is an area of the surface and not of a
+    /// panel, because the queue of the operations belongs to the program
+    /// and not to a directory.
+    pub fn toggle_job_list(&mut self) -> bool {
+        self.job_list_visible = !self.job_list_visible;
+        self.job_list_visible
+    }
+
+    /// Applies the layout of the context to the panels.
+    ///
+    /// WHY: the tree belongs to a panel and can be switched on and off for
+    /// it alone (FR-14). The layout decides whether a tree exists at all;
+    /// a panel whose tree the user has switched keeps its own decision.
+    pub fn apply_profile(&mut self, profile: &LayoutProfile) {
+        self.left.apply_profile(profile);
+        self.right.apply_profile(profile);
+    }
+
     /// Rebuilds the index of the filter of both panels.
     ///
     /// WHY: the index of the filter belongs to the panel and is rebuilt
@@ -273,7 +406,9 @@ pub fn panel_path(panel: &PanelState) -> &Path {
 // there.
 mod tests {
     use super::*;
+    use crate::context::Context;
     use crate::listing::{Entry, EntryKind};
+    use crate::metrics::{Metrics, Platform};
 
     /// The work surface with three entries in the left panel.
     fn surface() -> WorkSurface {
@@ -283,6 +418,11 @@ mod tests {
             Entry::new("b.txt", EntryKind::File),
         ]);
         surface
+    }
+
+    /// The layout of the desktop.
+    fn desktop() -> LayoutProfile {
+        LayoutProfile::for_context(Context::Keyboard, &Metrics::for_platform(Platform::Linux))
     }
 
     #[test]
@@ -359,5 +499,42 @@ mod tests {
         assert_eq!(surface.panel(PanelSide::Left).row_count(), 0);
         assert_eq!(surface.panel(PanelSide::Right).row_count(), 2);
         assert_eq!(surface.active_side(), PanelSide::Left);
+    }
+
+    #[test]
+    fn the_arrangement_is_switched_without_losing_the_state() {
+        // arrange
+        let mut surface = surface();
+        surface.active_mut().toggle_at(0);
+
+        // act
+        let switched = surface.toggle_arrangement(&desktop());
+
+        // assert
+        assert!(switched);
+        assert_eq!(surface.arrangement(), PanelArrangement::Stacked);
+        assert_eq!(surface.active().selection().len(), 1);
+        assert_eq!(surface.active().row_count(), 2);
+    }
+
+    #[test]
+    fn a_tab_that_is_moved_keeps_its_state() {
+        // arrange
+        let mut surface = surface();
+        surface.active_mut().toggle_at(0);
+        surface.active_mut().set_filter_text("a");
+
+        // act
+        let moved = surface.move_active_tab_to_other();
+
+        // assert
+        assert!(moved);
+        let right = surface.panel(PanelSide::Right);
+        assert_eq!(right.tab_count(), 2);
+        assert_eq!(right.active_tab_index(), 1);
+        assert_eq!(right.selection().len(), 1);
+        assert_eq!(right.filter_text(), "a");
+        // The panel the tab came from keeps a tab of its own.
+        assert_eq!(surface.panel(PanelSide::Left).tab_count(), 1);
     }
 }
