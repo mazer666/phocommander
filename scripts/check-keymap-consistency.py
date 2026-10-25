@@ -65,6 +65,7 @@ EXTRA_BINDINGS: dict[str, str] = {
     "panel.swap": "Ctrl+U",
     "panel.open_in_other": "Ctrl+Enter",
     "panel.next_tab": "Ctrl+Tab",
+    "panel.filter": "Ctrl+F",
     "selection.toggle": "Ins",
     "selection.all": "Ctrl+A",
     "selection.none": "Ctrl+Num-",
