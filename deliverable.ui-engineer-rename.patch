@@ -1,0 +1,5279 @@
+diff --git a/apps/phocommander-desktop/src/filesystem.rs b/apps/phocommander-desktop/src/filesystem.rs
+new file mode 100644
+index 0000000..fe2babe
+--- /dev/null
++++ b/apps/phocommander-desktop/src/filesystem.rs
+@@ -0,0 +1,165 @@
++//! The file system of the host machine.
++//!
++//! WHAT: the file system that the operations work on ([`HostFileSystem`]).
++//! WHY: the operations ask a source for the content of a directory and for
++//!       the facts of a file, and they never touch a file system on their
++//!       own. The adapter of the host machine is therefore the one place
++//!       where the calls of the library meet the calls of the operating
++//!       system. The composition root owns it, because it is the only crate
++//!       that may see the crate of the operations and the crate of the
++//!       platform at the same time.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_desktop::filesystem::HostFileSystem;
++//! use phocommander_ops::port::FileSystem;
++//! use std::path::Path;
++//!
++//! let fs = HostFileSystem::new();
++//! assert!(fs.metadata(Path::new("/a/path/that/does/not/exist")).is_err());
++//! ```
++
++use std::fs;
++use std::path::Path;
++
++use phocommander_ops::error::OpError;
++use phocommander_ops::port::{CopyResult, DirEntry, EntryKind, FileInfo, FileSystem};
++
++/// The file system of the host machine.
++#[derive(Debug, Clone, Copy, Default)]
++pub struct HostFileSystem;
++
++impl HostFileSystem {
++    /// Builds the file system of the host machine.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_desktop::filesystem::HostFileSystem;
++    ///
++    /// let fs = HostFileSystem::new();
++    /// let _ = fs;
++    /// ```
++    pub const fn new() -> Self {
++        Self
++    }
++}
++
++impl FileSystem for HostFileSystem {
++    fn read_dir(&self, path: &Path) -> Result<Vec<DirEntry>, OpError> {
++        let entries = fs::read_dir(path).map_err(|error| io_error(path, error))?;
++        let mut listing = Vec::new();
++        for entry in entries {
++            let entry = entry.map_err(|error| io_error(path, error))?;
++            let entry_path = entry.path();
++            let metadata = fs::symlink_metadata(&entry_path).ok();
++            listing.push(DirEntry {
++                name: entry.file_name().to_string_lossy().to_string(),
++                kind: kind_of(&entry_path),
++                size: metadata.as_ref().map(|metadata| metadata.len()),
++                modified: metadata
++                    .as_ref()
++                    .and_then(|metadata| metadata.modified().ok()),
++            });
++        }
++        Ok(listing)
++    }
++
++    fn metadata(&self, path: &Path) -> Result<FileInfo, OpError> {
++        let metadata = fs::symlink_metadata(path).map_err(|error| io_error(path, error))?;
++        Ok(FileInfo {
++            kind: kind_of(path),
++            size: metadata.len(),
++            modified: metadata.modified().ok(),
++        })
++    }
++
++    fn copy_file(&self, from: &Path, to: &Path) -> Result<CopyResult, OpError> {
++        let bytes = fs::copy(from, to).map_err(|error| io_error(from, error))?;
++        let checksum = self.checksum(from)?;
++        Ok(CopyResult { bytes, checksum })
++    }
++
++    fn rename(&self, from: &Path, to: &Path) -> Result<(), OpError> {
++        fs::rename(from, to).map_err(|error| io_error(from, error))
++    }
++
++    fn remove_file(&self, path: &Path) -> Result<(), OpError> {
++        fs::remove_file(path).map_err(|error| io_error(path, error))
++    }
++
++    fn remove_dir(&self, path: &Path) -> Result<(), OpError> {
++        fs::remove_dir(path).map_err(|error| io_error(path, error))
++    }
++
++    fn create_dir_all(&self, path: &Path) -> Result<(), OpError> {
++        fs::create_dir_all(path).map_err(|error| io_error(path, error))
++    }
++
++    fn checksum(&self, path: &Path) -> Result<u64, OpError> {
++        let content = fs::read(path).map_err(|error| io_error(path, error))?;
++        Ok(checksum_of(&content))
++    }
++
++    fn copy_symlink(&self, from: &Path, to: &Path) -> Result<(), OpError> {
++        let target = fs::read_link(from).map_err(|error| io_error(from, error))?;
++        // WHY: on a system with symbolic links the copy of a link creates a
++        //       link and never writes the target of the link as a regular
++        //       file.
++        #[cfg(unix)]
++        let result = std::os::unix::fs::symlink(target, to).map_err(|error| io_error(to, error));
++        // WHY: on a system without symbolic links the copy of a link is
++        //       refused instead of writing the target of the link as a
++        //       regular file.
++        #[cfg(not(unix))]
++        let result = {
++            let _ = (target, to);
++            Err(OpError::UnsupportedMode {
++                mode: "copy_symlink".to_string(),
++            })
++        };
++        result
++    }
++}
++
++/// The kind of an entry of the host machine.
++///
++/// WHY: a link is a link and not the file it points to. The operations copy
++///       links as links and never follow them, and the kind is what tells
++///       them the difference.
++fn kind_of(path: &Path) -> EntryKind {
++    match fs::symlink_metadata(path) {
++        Ok(metadata) => {
++            let file_type = metadata.file_type();
++            if file_type.is_symlink() {
++                EntryKind::Symlink
++            } else if file_type.is_dir() {
++                EntryKind::Directory
++            } else if file_type.is_file() {
++                EntryKind::File
++            } else {
++                EntryKind::Other
++            }
++        }
++        Err(_) => EntryKind::Other,
++    }
++}
++
++/// The checksum of a content.
++///
++/// WHY: the verified copy compares the checksum of the source with the
++///       checksum of the destination. The two values have to come from the
++///       same rule, and the rule is the one of the product.
++fn checksum_of(content: &[u8]) -> u64 {
++    let mut sum: u64 = 0;
++    for byte in content {
++        sum = sum.wrapping_mul(31).wrapping_add(u64::from(*byte));
++    }
++    sum
++}
++
++/// The error of a call that the operating system refused.
++fn io_error(path: &Path, error: std::io::Error) -> OpError {
++    OpError::Io {
++        path: path.to_path_buf(),
++        source: error,
++    }
++}
+diff --git a/apps/phocommander-desktop/src/lib.rs b/apps/phocommander-desktop/src/lib.rs
+index 5ca0b50..60bdb8a 100644
+--- a/apps/phocommander-desktop/src/lib.rs
++++ b/apps/phocommander-desktop/src/lib.rs
+@@ -4,7 +4,9 @@
+ //!       configuration into the rules of the subsystems ([{security}]), the
+ //!       catalogue of the texts and the formats of the values
+ //!       ([{catalogue}]) and the language of the interface at run time
+-//!       ([{language}]).
++//!       ([{language}]), the file system of the host machine ([{filesystem}])
++//!       and the adapters of the dialog of the multiple rename
++//!       ([{rename}]).
+ //! WHY: the application is the composition root of the workspace: it is the
+ //!       only crate that may see the core crate, the configuration crate, the
+ //!       operations crate, the viewer crate and the interface crate at the
+@@ -23,7 +25,9 @@
+ 
+ pub mod catalogue;
+ pub mod desktop;
++pub mod filesystem;
+ pub mod language;
++pub mod rename;
+ pub mod security;
+ 
+ pub use security::SecurityPlan;
+diff --git a/apps/phocommander-desktop/src/main.rs b/apps/phocommander-desktop/src/main.rs
+index 7cd60ea..ad4cbe4 100644
+--- a/apps/phocommander-desktop/src/main.rs
++++ b/apps/phocommander-desktop/src/main.rs
+@@ -18,7 +18,9 @@ use phocommander_config::{
+     Config, ConfigNotice, EffectiveSecurity, NoticeSeverity, resolve_security,
+ };
+ use phocommander_desktop::desktop::DesktopApp;
++use phocommander_desktop::filesystem::HostFileSystem;
+ use phocommander_desktop::language::{ConfigWatcher, InterfaceLanguage, locale_of};
++use phocommander_desktop::rename::{FileTemplateStore, OpsRenameEngine};
+ use phocommander_desktop::security::SecurityPlan;
+ use phocommander_platform::config_directory;
+ use phocommander_ui::{
+@@ -35,6 +37,12 @@ const CONFIGURATION_FILE_NAME: &str = "config.toml";
+ /// Der Name der Tastenbelegung in der Konfigurationsdatei.
+ const KEYMAP_FILE_NAME: &str = "keymap.toml";
+ 
++/// The name of the file with the named templates of the multiple rename.
++///
++/// WHY: the templates of the user live beside the configuration file, so
++///       that they are there after a restart of the program (FR-36).
++const TEMPLATE_STORE_FILE_NAME: &str = "rename-templates.txt";
++
+ fn main() -> eframe::Result<()> {
+     let (config, notices) = read_configuration();
+     report_notices(&notices);
+@@ -122,6 +130,25 @@ pub fn build_application(config: &Config) -> WorkSurfaceApp {
+         .with_theme(Theme::Dark)
+         .with_metrics(metrics)
+         .with_context(Context::Keyboard)
++        // WHY: the dialog of the multiple rename asks the engine for the new
++        //       names, and the engine of the operations lives in another
++        //       crate. The composition root hands the implementation over
++        //       (FR-34).
++        .with_rename_engine(Box::new(OpsRenameEngine::new(Box::new(HostFileSystem::new()))))
++        .with_template_store(Box::new(FileTemplateStore::new(template_store_path())))
++}
++
++/// The path of the file of the named templates.
++///
++/// WHY: the templates of the user live beside the configuration file, so
++///       that they are there after a restart of the program (FR-36). A
++///       machine without a configuration directory has no place for them,
++///       and the dialog then works without stored templates.
++fn template_store_path() -> PathBuf {
++    match config_directory() {
++        Ok(directory) => directory.join(TEMPLATE_STORE_FILE_NAME),
++        Err(_) => PathBuf::from(TEMPLATE_STORE_FILE_NAME),
++    }
+ }
+ 
+ /// The path of the configuration file, if the configuration directory can be
+diff --git a/apps/phocommander-desktop/src/rename.rs b/apps/phocommander-desktop/src/rename.rs
+new file mode 100644
+index 0000000..0d74ae9
+--- /dev/null
++++ b/apps/phocommander-desktop/src/rename.rs
+@@ -0,0 +1,429 @@
++//! The adapters of the dialog of the multiple rename.
++//!
++//! WHAT: the engine that forms the new names ([`OpsRenameEngine`]) and the
++//!       store of the named templates ([`FileTemplateStore`]).
++//! WHY: the interface crate may not depend on the crate of the operations,
++//!       and it performs no file operation of its own. The adapters are
++//!       therefore here, in the composition root — the one crate that may see
++//!       the crate of the operations, the crate of the platform and the
++//!       crate of the interface at the same time (ADR-0001, option B). The
++//!       engine answers the question of the dialog with the names that the
++//!       engine of the operations forms, so that the preview the user sees
++//!       is the preview the rename will carry out (FR-34).
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_desktop::filesystem::HostFileSystem;
++//! use phocommander_desktop::rename::OpsRenameEngine;
++//! use phocommander_ui::rename::{RenameEngine, RenameRequest};
++//!
++//! let engine = OpsRenameEngine::new(Box::new(HostFileSystem::new()));
++//! let preview = engine.preview(&RenameRequest::new());
++//! assert!(preview.rows.is_empty());
++//! ```
++
++use std::fs;
++use std::io;
++use std::path::{Path, PathBuf};
++use std::time::SystemTime;
++
++use phocommander_ops::port::FileSystem;
++use phocommander_ops::rename::{plan_renames, RenamePair as OpsPair};
++use phocommander_ops::template::{
++    CounterOrder as OpsCounterOrder, CounterRule as OpsCounterRule, RenameInput, RenameRule,
++    ReplaceRule as OpsReplaceRule, SeriesRule as OpsSeriesRule, TemplateError, form_names,
++};
++use phocommander_ui::rename::{
++    Conflict, ConflictKind, CounterOrder as UiCounterOrder, NamedTemplate, PreviewProblem,
++    PreviewRow, ProblemKind, RenameEngine, RenameFile, RenamePreview, RenameRequest,
++    RenameRule as UiRule, TemplateStore, TemplateStoreError, decode_templates, encode_templates,
++};
++
++/// The engine of the desktop build: it forms the new names of a rename.
++///
++/// WHY: the engine is the adapter between the question of the dialog and the
++///       engine of the operations. The dialog asks for the new names and for
++///       the conflicts of the rename, and the adapter answers both out of the
++///       one place that owns the rules.
++#[derive(Debug)]
++pub struct OpsRenameEngine {
++    /// The file system the conflicts are looked for in.
++    fs: Box<dyn FileSystem>,
++}
++
++impl OpsRenameEngine {
++    /// Builds the engine of the desktop build.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_desktop::filesystem::HostFileSystem;
++    /// use phocommander_desktop::rename::OpsRenameEngine;
++    ///
++    /// let engine = OpsRenameEngine::new(Box::new(HostFileSystem::new()));
++    /// let _ = engine;
++    /// ```
++    pub fn new(fs: Box<dyn FileSystem>) -> Self {
++        Self { fs }
++    }
++}
++
++impl RenameEngine for OpsRenameEngine {
++    fn preview(&self, request: &RenameRequest) -> RenamePreview {
++        let rule = rule_of(&request.rule);
++        let inputs: Vec<RenameInput> = request.files.iter().map(input_of).collect();
++
++        // WHY: the time of the rename comes from the caller, so that the same
++        //       rule and the same files always yield the same names
++        //       (FR-33). The preview asks for the moment of now.
++        let names = match form_names(&rule, &inputs, SystemTime::now()) {
++            Ok(names) => names,
++            Err(error) => {
++                return RenamePreview {
++                    rows: Vec::new(),
++                    conflicts: Vec::new(),
++                    problem: Some(problem_of(&error)),
++                };
++            }
++        };
++
++        let mut rows: Vec<PreviewRow> = Vec::with_capacity(names.len());
++        for name in &names {
++            rows.push(match name.name() {
++                Some(new_name) => PreviewRow::named(name.source(), new_name),
++                None => {
++                    let problem = match name.problem() {
++                        Some(problem) => problem_of(problem),
++                        None => PreviewProblem::empty_format(),
++                    };
++                    PreviewRow::failed(name.source(), problem)
++                }
++            });
++        }
++
++        let pairs = pairs_of(&rows);
++        let conflicts = plan_renames(self.fs.as_ref(), &pairs)
++            .into_iter()
++            .map(|conflict| Conflict::new(kind_of(conflict.kind), conflict.path))
++            .collect();
++
++        RenamePreview {
++            rows,
++            conflicts,
++            problem: None,
++        }
++    }
++}
++
++/// The store of the named templates in a file.
++///
++/// WHY: the templates of the user live in a file of the configuration
++///       directory, so that they are there after a restart of the program.
++///       The file is written in the format of the interface crate, and the
++///       composition root only moves the bytes.
++#[derive(Debug, Clone)]
++pub struct FileTemplateStore {
++    /// The path of the file of the templates.
++    path: PathBuf,
++}
++
++impl FileTemplateStore {
++    /// Builds the store of the templates in the given file.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_desktop::rename::FileTemplateStore;
++    ///
++    /// let store = FileTemplateStore::new("/tmp/rename-templates.txt");
++    /// assert!(store.path().ends_with("rename-templates.txt"));
++    /// ```
++    pub fn new(path: impl Into<PathBuf>) -> Self {
++        Self { path: path.into() }
++    }
++
++    /// The path of the file of the templates.
++    pub fn path(&self) -> &Path {
++        self.path.as_path()
++    }
++}
++
++impl TemplateStore for FileTemplateStore {
++    fn templates(&self) -> Result<Vec<NamedTemplate>, TemplateStoreError> {
++        let text = match fs::read_to_string(&self.path) {
++            Ok(text) => text,
++            // WHY: a store that does not exist yet holds no templates. That
++            //       is not an error — the user has simply not stored one.
++            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
++            Err(error) => {
++                return Err(TemplateStoreError::Io {
++                    path: self.path.clone(),
++                    message: error.to_string(),
++                });
++            }
++        };
++        decode_templates(&text)
++    }
++
++    fn store(&self, template: &NamedTemplate) -> Result<(), TemplateStoreError> {
++        let mut templates = self.templates()?;
++        match templates
++            .iter()
++            .position(|other| other.name == template.name)
++        {
++            Some(index) => templates[index] = template.clone(),
++            None => templates.push(template.clone()),
++        }
++        let text = encode_templates(&templates);
++
++        if let Some(parent) = self.path.parent()
++            && !parent.as_os_str().is_empty()
++        {
++            fs::create_dir_all(parent).map_err(|error| TemplateStoreError::Io {
++                path: parent.to_path_buf(),
++                message: error.to_string(),
++            })?;
++        }
++        fs::write(&self.path, text).map_err(|error| TemplateStoreError::Io {
++            path: self.path.clone(),
++            message: error.to_string(),
++        })?;
++        Ok(())
++    }
++}
++
++/// The rule of the dialog as the rule of the engine.
++fn rule_of(rule: &UiRule) -> RenameRule {
++    let mut ops = RenameRule::new(rule.effective_format());
++    for replacement in &rule.replacements {
++        ops = ops.with_replacement(OpsReplaceRule {
++            search: replacement.search.clone(),
++            replacement: replacement.replacement.clone(),
++            regex: replacement.regex,
++        });
++    }
++    if let Some(counter) = &rule.counter {
++        ops = ops.with_counter(OpsCounterRule {
++            start: counter.start,
++            step: counter.step,
++            width: counter.width,
++            order: order_of(counter.order),
++        });
++    }
++    if let Some(series) = &rule.series {
++        ops = ops.with_series(OpsSeriesRule {
++            series_name: series.series_name.clone(),
++            season: series.season,
++            episode: series.episode,
++            format: series.format.clone(),
++            season_width: series.season_width,
++            episode_width: series.episode_width,
++        });
++    }
++    ops
++}
++
++/// The order of the counter of the dialog as the order of the engine.
++fn order_of(order: UiCounterOrder) -> OpsCounterOrder {
++    match order {
++        UiCounterOrder::Selection => OpsCounterOrder::Selection,
++        UiCounterOrder::Name => OpsCounterOrder::Name,
++        UiCounterOrder::Date => OpsCounterOrder::Date,
++    }
++}
++
++/// The facts of a file of the dialog as the facts of the engine.
++fn input_of(file: &RenameFile) -> RenameInput {
++    let mut input = RenameInput::new(file.path.clone());
++    input.size = file.size;
++    input.modified = file.modified;
++    input.checksum = file.checksum;
++    input
++}
++
++/// The pairs of the rename, without the files that keep their name.
++///
++/// WHY: a file that keeps its name is not renamed. Such a pair would be a
++///       rename of a file onto itself, and the engine refuses it.
++fn pairs_of(rows: &[PreviewRow]) -> Vec<OpsPair> {
++    let mut pairs = Vec::with_capacity(rows.len());
++    for row in rows {
++        let Some(target) = row.target.as_ref() else {
++            continue;
++        };
++        if *target == row.source {
++            continue;
++        }
++        pairs.push(OpsPair::new(row.source.clone(), target.clone()));
++    }
++    pairs
++}
++
++/// The reason of the engine as the reason of the dialog.
++fn problem_of(error: &TemplateError) -> PreviewProblem {
++    match error {
++        TemplateError::EmptyFormat => PreviewProblem::empty_format(),
++        TemplateError::UnknownValue { placeholder, .. } => {
++            PreviewProblem::of(ProblemKind::UnknownValue, placeholder)
++        }
++        TemplateError::InvalidPattern { pattern, .. } => {
++            PreviewProblem::of(ProblemKind::InvalidPattern, pattern)
++        }
++        TemplateError::InvalidName { name, .. } => {
++            PreviewProblem::of(ProblemKind::InvalidName, name)
++        }
++    }
++}
++
++/// The kind of a conflict of the engine as the kind of the dialog.
++fn kind_of(kind: phocommander_ops::rename::RenameConflictKind) -> ConflictKind {
++    match kind {
++        phocommander_ops::rename::RenameConflictKind::TargetExists => ConflictKind::TargetExists,
++        phocommander_ops::rename::RenameConflictKind::DuplicateTarget => {
++            ConflictKind::DuplicateTarget
++        }
++        phocommander_ops::rename::RenameConflictKind::MissingSource => {
++            ConflictKind::MissingSource
++        }
++    }
++}
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests {
++    #![allow(clippy::unwrap_used, clippy::expect_used)]
++
++    use super::*;
++    use phocommander_ops::fake_fs::FakeFileSystem;
++
++    /// The engine of the test with the given files.
++    fn engine_with(files: &[(&str, &[u8])]) -> OpsRenameEngine {
++        let fs = FakeFileSystem::new();
++        for (path, content) in files {
++            fs.write_file(Path::new(path), content)
++                .unwrap_or_else(|error| panic!("the file should have been written: {error}"));
++        }
++        OpsRenameEngine::new(Box::new(fs))
++    }
++
++    /// The engine of the test with two files.
++    fn engine() -> OpsRenameEngine {
++        engine_with(&[
++            ("/photos/a.jpg", b"a"),
++            ("/photos/b.jpg", b"b"),
++        ])
++    }
++
++    /// The question of the test.
++    fn request() -> RenameRequest {
++        RenameRequest::with_files(
++            UiRule::new("[name]_[n].[ext]"),
++            vec![
++                RenameFile::new("/photos/a.jpg"),
++                RenameFile::new("/photos/b.jpg"),
++            ],
++        )
++    }
++
++    #[test]
++    fn the_preview_is_what_the_engine_forms() {
++        // arrange
++        let engine = engine();
++
++        // act
++        let preview = engine.preview(&request());
++
++        // assert — the names are the names that the engine of the operations
++        // forms for the same rule and the same files.
++        let names = form_names(
++            &rule_of(&request().rule),
++            &[
++                input_of(&RenameFile::new("/photos/a.jpg")),
++                input_of(&RenameFile::new("/photos/b.jpg")),
++            ],
++            SystemTime::now(),
++        )
++        .unwrap_or_default();
++        assert_eq!(preview.rows.len(), names.len());
++        assert_eq!(preview.rows[0].name.as_deref(), names[0].name());
++        assert_eq!(preview.rows[1].name.as_deref(), names[1].name());
++    }
++
++    #[test]
++    fn a_target_that_exists_is_a_conflict() {
++        // arrange
++        let engine = engine_with(&[
++            ("/photos/a.jpg", b"a"),
++            ("/photos/b.jpg", b"b"),
++            ("/photos/a_001.jpg", b"taken"),
++        ]);
++
++        // act
++        let preview = engine.preview(&request());
++
++        // assert
++        assert_eq!(preview.conflicts.len(), 1);
++        assert_eq!(preview.conflicts[0].kind, ConflictKind::TargetExists);
++    }
++
++    #[test]
++    fn two_files_that_want_the_same_name_are_a_conflict() {
++        // arrange
++        let engine = engine();
++        let question = RenameRequest::with_files(
++            UiRule::new("fixed.[ext]"),
++            vec![
++                RenameFile::new("/photos/a.jpg"),
++                RenameFile::new("/photos/b.jpg"),
++            ],
++        );
++
++        // act — the rule names every file "fixed.jpg".
++        let preview = engine.preview(&question);
++
++        // assert
++        assert_eq!(preview.conflicts.len(), 1);
++        assert_eq!(preview.conflicts[0].kind, ConflictKind::DuplicateTarget);
++    }
++
++    #[test]
++    fn a_rule_without_a_format_is_a_problem_of_the_whole_rule() {
++        // arrange
++        let engine = engine();
++        let question =
++            RenameRequest::with_files(UiRule::new(""), vec![RenameFile::new("/photos/a.jpg")]);
++
++        // act
++        let preview = engine.preview(&question);
++
++        // assert
++        assert!(preview.problem.is_some());
++        assert_eq!(
++            preview.problem.map(|problem| problem.kind),
++            Some(ProblemKind::EmptyFormat)
++        );
++    }
++
++    #[test]
++    fn a_stored_template_is_read_back() {
++        // arrange
++        let directory = std::env::temp_dir().join("phocommander-template-test");
++        let path = directory.join("templates.txt");
++        let _ = fs::remove_file(&path);
++        let store = FileTemplateStore::new(path.clone());
++        let template = NamedTemplate::new("Camera", UiRule::new("[name]_[n].[ext]"));
++
++        // act
++        store
++            .store(&template)
++            .unwrap_or_else(|error| panic!("the template should have been stored: {error}"));
++        let read = store
++            .templates()
++            .unwrap_or_else(|error| panic!("the templates should have been read: {error}"));
++
++        // assert
++        assert_eq!(read.len(), 1);
++        assert_eq!(read[0].name, "Camera");
++        assert_eq!(read[0].rule.format, "[name]_[n].[ext]");
++        let _ = fs::remove_file(&path);
++    }
++}
+diff --git a/crates/phocommander-i18n/locales/de/rename.ftl b/crates/phocommander-i18n/locales/de/rename.ftl
+new file mode 100644
+index 0000000..b06df6d
+--- /dev/null
++++ b/crates/phocommander-i18n/locales/de/rename.ftl
+@@ -0,0 +1,27 @@
++# Die Wörter der Mehrfachumbenennung — Deutsch.
++#
++# Die Schlüssel dieser Datei sind in jeder Sprache dieselben. Ein fehlender
++# Schlüssel ist ein Fehler, den das Gate der Spezifikation meldet.
++
++rename-title = Mehrfachumbenennung
++rename-format = Format
++rename-search = Suchen
++rename-replacement = Ersetzen
++rename-regex = Regulärer Ausdruck
++rename-counter-start = Zähler startet
++rename-counter-step = Zähler Schrittweite
++rename-counter-width = Zähler Breite
++rename-series = Serie
++rename-template-name = Name der Vorlage
++rename-templates = Vorlagen
++rename-preview = Vorschau
++rename-empty = Nichts anzuzeigen
++rename-hint = Enter bestätigt - F3 springt zum nächsten Konflikt - Shift+F3 zum vorherigen - Esc bricht ab
++rename-problem-empty-format = Die Regel trägt kein Format
++rename-problem-unknown-value = Der Wert des Platzhalters { $value } ist nicht bekannt
++rename-problem-invalid-pattern = Das Muster { $value } ist kein gültiger regulärer Ausdruck
++rename-problem-invalid-name = Der Name { $value } kann kein Dateiname sein
++rename-conflict-target-exists = Der Name { $value } ist schon vergeben
++rename-conflict-duplicate-target = Zwei Dateien der Auswahl wollen den Namen { $value }
++rename-conflict-missing-source = Die Datei { $value } existiert nicht
++rename-template-store-failed = Die Vorlage konnte nicht gespeichert werden
+diff --git a/crates/phocommander-i18n/locales/en/rename.ftl b/crates/phocommander-i18n/locales/en/rename.ftl
+new file mode 100644
+index 0000000..1aeee34
+--- /dev/null
++++ b/crates/phocommander-i18n/locales/en/rename.ftl
+@@ -0,0 +1,27 @@
++# The words of the multiple rename — English.
++#
++# The keys of this file are the same in every language. A key that is missing
++# in one language is a defect that the gate of the specification reports.
++
++rename-title = Multiple rename
++rename-format = Format
++rename-search = Search
++rename-replacement = Replace
++rename-regex = Regular expression
++rename-counter-start = Counter start
++rename-counter-step = Counter step
++rename-counter-width = Counter width
++rename-series = Series
++rename-template-name = Name of the template
++rename-templates = Templates
++rename-preview = Preview
++rename-empty = Nothing to show
++rename-hint = Enter confirms - F3 jumps to the next conflict - Shift+F3 to the previous one - Esc cancels
++rename-problem-empty-format = The rule carries no format
++rename-problem-unknown-value = The value of the placeholder { $value } is not known
++rename-problem-invalid-pattern = The pattern { $value } is not a valid regular expression
++rename-problem-invalid-name = The name { $value } cannot be used as a file name
++rename-conflict-target-exists = The name { $value } is already taken
++rename-conflict-duplicate-target = Two files of the selection want the name { $value }
++rename-conflict-missing-source = The file { $value } does not exist
++rename-template-store-failed = The template could not be stored
+diff --git a/crates/phocommander-i18n/locales/fr/rename.ftl b/crates/phocommander-i18n/locales/fr/rename.ftl
+new file mode 100644
+index 0000000..6b89659
+--- /dev/null
++++ b/crates/phocommander-i18n/locales/fr/rename.ftl
+@@ -0,0 +1,28 @@
++# Les mots du renommage multiple — Français.
++#
++# Les clés de ce fichier sont les mêmes dans toutes les langues. Une clé qui
++# manque dans une langue est un défaut que la porte de contrôle de la
++# spécification signale.
++
++rename-title = Renommage multiple
++rename-format = Format
++rename-search = Rechercher
++rename-replacement = Remplacer
++rename-regex = Expression régulière
++rename-counter-start = Début du compteur
++rename-counter-step = Pas du compteur
++rename-counter-width = Largeur du compteur
++rename-series = Série
++rename-template-name = Nom du modèle
++rename-templates = Modèles
++rename-preview = Aperçu
++rename-empty = Rien à afficher
++rename-hint = Entrée confirme - F3 passe au conflit suivant - Maj+F3 au précédent - Échap annule
++rename-problem-empty-format = La règle ne porte aucun format
++rename-problem-unknown-value = La valeur de l'espace réservé { $value } n'est pas connue
++rename-problem-invalid-pattern = Le motif { $value } n'est pas une expression régulière valide
++rename-problem-invalid-name = Le nom { $value } ne peut pas être un nom de fichier
++rename-conflict-target-exists = Le nom { $value } est déjà pris
++rename-conflict-duplicate-target = Deux fichiers de la sélection veulent le nom { $value }
++rename-conflict-missing-source = Le fichier { $value } n'existe pas
++rename-template-store-failed = Le modèle n'a pas pu être enregistré
+diff --git a/crates/phocommander-i18n/src/catalogue.rs b/crates/phocommander-i18n/src/catalogue.rs
+index 31e35bc..6f43913 100644
+--- a/crates/phocommander-i18n/src/catalogue.rs
++++ b/crates/phocommander-i18n/src/catalogue.rs
+@@ -41,7 +41,14 @@ struct Locales;
+ /// WHY: the catalogue is split by domain so that a translator can work on the
+ /// file manager without touching the viewer or the settings (section 8.2 of
+ /// the specification).
+-const DOMAINS: [&str; 5] = ["common", "actions", "panel", "viewer", "palette"];
++const DOMAINS: [&str; 6] = [
++    "common",
++    "actions",
++    "panel",
++    "viewer",
++    "palette",
++    "rename",
++];
+ 
+ /// The directories that hold the embedded catalogues.
+ ///
+diff --git a/crates/phocommander-ui/src/app.rs b/crates/phocommander-ui/src/app.rs
+index 0591f81..25a6f51 100644
+--- a/crates/phocommander-ui/src/app.rs
++++ b/crates/phocommander-ui/src/app.rs
+@@ -13,7 +13,10 @@
+ //!       dispatch of the action and the drawing belong to the same flow,
+ //!       and a split would hide the order of the three steps. The ways in
+ //!       which the shell takes a language live in a module of their own, so
+-//!       that the shell itself stays readable.
++//!       that the shell itself stays readable. The dialog of the multiple
++//!       rename lives in a module of its own as well: it has a state, a
++//!       drawing and a set of keys, and none of them belongs to the flow of
++//!       the surface.
+ //!
+ //! EXAMPLE:
+ //! ```no_run
+@@ -37,6 +40,7 @@
+ 
+ mod input;
+ mod language;
++mod rename;
+ 
+ use std::path::PathBuf;
+ 
+@@ -53,6 +57,7 @@ use crate::layout::{LayoutProfile, PanelStructure};
+ use crate::metrics::{Metrics, Platform};
+ use crate::preview::PreviewSource;
+ use crate::refresh::RefreshPolicy;
++use crate::rename::{RenameDialog, RenameEngine, TemplateStore};
+ use crate::surface::{TransferRequest, WorkSurface};
+ use crate::theme::{Palette, Theme};
+ use crate::undo::UndoAvailability;
+@@ -76,6 +81,20 @@ pub struct WorkSurfaceApp {
+     job_source: Option<Box<dyn JobSource>>,
+     pending_transfer: Option<PendingTransfer>,
+     undo: UndoAvailability,
++    /// The dialog of the multiple rename, if it is open.
++    ///
++    /// WHY: the dialog is a part of the surface. It belongs to the panel
++    ///       that has the focus, it holds the rule the user is editing and
++    ///       the preview of the new names (FR-34).
++    rename: Option<RenameDialog>,
++    /// The engine that forms the new names.
++    ///
++    /// WHY: the engine lives in the crate of the operations and the
++    ///       interface crate may not depend on a sibling crate. The
++    ///       composition root hands the implementation over.
++    rename_engine: Option<Box<dyn RenameEngine>>,
++    /// The store of the named templates.
++    template_store: Option<Box<dyn TemplateStore>>,
+     /// The context of the last frame.
+     ///
+     /// WHY: a change of the language of the interface has to reach the screen
+@@ -134,6 +153,9 @@ impl WorkSurfaceApp {
+             job_source: None,
+             pending_transfer: None,
+             undo: UndoAvailability::Unavailable,
++            rename: None,
++            rename_engine: None,
++            template_store: None,
+             egui_context: None,
+         }
+     }
+@@ -395,9 +417,10 @@ impl WorkSurfaceApp {
+                 self.commands.push(Command::Delete { side, entries });
+             }
+             "panel.rename" => {
+-                let side = self.surface.active_side();
+-                let entries = self.marked_paths();
+-                self.commands.push(Command::Rename { side, entries });
++                // WHY: the rename of more than one file runs through the
++                //       dialog of the multiple rename. The dialog shows the
++                //       new names before the rename runs (FR-34).
++                self.open_rename_dialog();
+             }
+             "panel.mkdir" => {
+                 let side = self.surface.active_side();
+@@ -682,6 +705,10 @@ impl WorkSurfaceApp {
+         for request in requested {
+             self.handle_request(request);
+         }
++
++        // WHY: the dialog is drawn above the surface. It reads the state of
++        //       the rename and never changes it.
++        self.draw_rename_dialog(ui);
+     }
+ 
+     /// The colours of the work surface.
+diff --git a/crates/phocommander-ui/src/app/input.rs b/crates/phocommander-ui/src/app/input.rs
+index 3ed4885..5aa68f3 100644
+--- a/crates/phocommander-ui/src/app/input.rs
++++ b/crates/phocommander-ui/src/app/input.rs
+@@ -32,11 +32,20 @@ impl WorkSurfaceApp {
+             // WHY: the characters of the filter field arrive as a text
+             // event and not as a key event, because the keyboard layout of
+             // the user decides which characters a key produces.
+-            if let egui::Event::Text(text) = &event
+-                && self.filter_is_editing()
+-            {
+-                self.surface.active_mut().filter_insert(text);
+-                continue;
++            if let egui::Event::Text(text) = &event {
++                if self.rename.is_some() {
++                    // WHY: the dialog has the focus while it is open. The
++                    //       text belongs to the field of the dialog that has
++                    //       the focus.
++                    if let Some(dialog) = self.rename.as_mut() {
++                        dialog.insert(text);
++                    }
++                    continue;
++                }
++                if self.filter_is_editing() {
++                    self.surface.active_mut().filter_insert(text);
++                    continue;
++                }
+             }
+ 
+             let egui::Event::Key {
+@@ -54,6 +63,14 @@ impl WorkSurfaceApp {
+                 continue;
+             };
+ 
++            // WHY: the dialog of the multiple rename is a window above the
++            //       surface. While it is open, a key that it does not use
++            //       reaches neither the panel nor the tree.
++            if self.rename.is_some() {
++                self.rename_key(stroke);
++                continue;
++            }
++
+             // WHY: the field that has the focus takes the keys that belong
+             // to it. The escape key empties the field and hides it, the
+             // enter key confirms the filter and keeps it (FR-74a).
+diff --git a/crates/phocommander-ui/src/app/rename.rs b/crates/phocommander-ui/src/app/rename.rs
+new file mode 100644
+index 0000000..d8954b1
+--- /dev/null
++++ b/crates/phocommander-ui/src/app/rename.rs
+@@ -0,0 +1,389 @@
++//! The dialog of the multiple rename in the shell.
++//!
++//! WHAT: the shell with an engine and with a store
++//!       (`with_rename_engine`, `with_template_store`), the opening of the
++//!       dialog (`open_rename_dialog`), the keys of the dialog
++//!       (`rename_key`) and the drawing of the dialog
++//!       (`draw_rename_dialog`).
++//! WHY: the dialog is a part of the surface and not a window of its own: it
++//!       belongs to the panel that has the focus, it is closed by the escape
++//!       key, and it hands the rename to the application as a command with
++//!       the pairs the user has seen (FR-34). The two keys of the jump list
++//!       come from the binding table — F3 and Shift+F3 (FR-35) — and the
++//!       other keys are the keys of the editing of a text field, the same
++//!       arrangement as the filter field of a panel.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::app::WorkSurfaceApp;
++//! use phocommander_ui::surface::WorkSurface;
++//! use std::path::PathBuf;
++//!
++//! # struct Empty;
++//! # impl phocommander_ui::i18n::Catalogue for Empty {
++//! #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++//! #         None
++//! #     }
++//! # }
++//! let app = WorkSurfaceApp::new(
++//!     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++//!     Default::default(),
++//!     Box::new(Empty),
++//! );
++//! assert!(app.rename_dialog().is_none());
++//! ```
++
++use crate::actions::{Action, ActionCategory};
++use crate::app::{StatusMessage, WorkSurfaceApp};
++use crate::commands::Command;
++use crate::draw;
++use crate::i18n::Texts;
++use crate::keymap_view::{Binding, Key, KeyStroke};
++use crate::rename::{RenameDialog, RenameEngine, RenameFile, RenameFocus, TemplateStore};
++
++impl WorkSurfaceApp {
++    /// The shell with an engine that forms the new names.
++    ///
++    /// WHY: the engine that forms the names lives in the crate of the
++    ///       operations, and the interface crate may not depend on a sibling
++    ///       crate. The composition root hands the implementation over — the
++    ///       same arrangement as the catalogue of the texts and the formats
++    ///       of a locale.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::app::WorkSurfaceApp;
++    /// use phocommander_ui::surface::WorkSurface;
++    /// use phocommander_ui::{RenameEngine, RenamePreview, RenameRequest};
++    /// use std::path::PathBuf;
++    ///
++    /// # struct Engine;
++    /// # impl RenameEngine for Engine {
++    /// #     fn preview(&self, _request: &RenameRequest) -> RenamePreview {
++    /// #         RenamePreview::empty()
++    /// #     }
++    /// # }
++    /// # struct Empty;
++    /// # impl phocommander_ui::i18n::Catalogue for Empty {
++    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++    /// #         None
++    /// #     }
++    /// # }
++    /// let app = WorkSurfaceApp::new(
++    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++    ///     Default::default(),
++    ///     Box::new(Empty),
++    /// )
++    /// .with_rename_engine(Box::new(Engine));
++    /// assert!(app.rename_dialog().is_none());
++    /// ```
++    pub fn with_rename_engine(mut self, engine: Box<dyn RenameEngine>) -> Self {
++        self.rename_engine = Some(engine);
++        self
++    }
++
++    /// The shell with a store of the named templates.
++    ///
++    /// WHY: the templates are stored in a file of the configuration
++    ///       directory, and the interface crate performs no file operation
++    ///       of its own. The composition root hands the store over.
++    pub fn with_template_store(mut self, store: Box<dyn TemplateStore>) -> Self {
++        self.template_store = Some(store);
++        self
++    }
++
++    /// The dialog of the multiple rename, if it is open.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::app::WorkSurfaceApp;
++    /// use phocommander_ui::surface::WorkSurface;
++    /// use std::path::PathBuf;
++    ///
++    /// # struct Empty;
++    /// # impl phocommander_ui::i18n::Catalogue for Empty {
++    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
++    /// #         None
++    /// #     }
++    /// # }
++    /// let app = WorkSurfaceApp::new(
++    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
++    ///     Default::default(),
++    ///     Box::new(Empty),
++    /// );
++    /// assert!(app.rename_dialog().is_none());
++    /// ```
++    pub fn rename_dialog(&self) -> Option<&RenameDialog> {
++        self.rename.as_ref()
++    }
++
++    /// The dialog of the multiple rename, if it is open.
++    pub fn rename_dialog_mut(&mut self) -> Option<&mut RenameDialog> {
++        self.rename.as_mut()
++    }
++
++    /// Opens the dialog of the multiple rename.
++    ///
++    /// WHY: the dialog works on the marked entries of the panel that has the
++    ///       focus. An operation acts on the panel that has the focus, and
++    ///       the transfer into the other panel is always explicit (FR-16).
++    pub(super) fn open_rename_dialog(&mut self) {
++        let side = self.surface.active_side();
++        let files = self.rename_files();
++        if files.is_empty() {
++            return;
++        }
++
++        let read = self
++            .template_store
++            .as_ref()
++            .map(|store| store.templates());
++        let templates = match read {
++            Some(Ok(templates)) => templates,
++            Some(Err(error)) => {
++                // WHY: the message of the error reaches the user through the
++                //       status line and comes from the catalogue (FR-05).
++                let key = error.message_key().as_str().to_string();
++                self.status = Some(StatusMessage {
++                    key,
++                    arguments: Vec::new(),
++                });
++                Vec::new()
++            }
++            None => Vec::new(),
++        };
++
++        self.rename = Some(RenameDialog::new(side, files, templates));
++    }
++
++    /// The files of the selection of the panel that has the focus.
++    ///
++    /// WHY: the marked entries are the selection. A panel without a mark
++    ///       renames the entry under the cursor — the same rule as every
++    ///       other operation of the panel.
++    fn rename_files(&self) -> Vec<RenameFile> {
++        let panel = self.surface.active();
++        let directory = panel.path().to_path_buf();
++        let mut files: Vec<RenameFile> = panel
++            .marked_entries()
++            .iter()
++            .map(|entry| {
++                let mut file = RenameFile::new(directory.join(entry.name.as_str()));
++                file.size = entry.size;
++                file.modified = entry.modified;
++                file
++            })
++            .collect();
++
++        if files.is_empty()
++            && let Some(entry) = panel.cursor_entry()
++        {
++            let mut file = RenameFile::new(directory.join(entry.name.as_str()));
++            file.size = entry.size;
++            file.modified = entry.modified;
++            files.push(file);
++        }
++        files
++    }
++
++    /// Carries out a key that the dialog uses.
++    ///
++    /// WHY: the dialog has the focus while it is open. A key that the dialog
++    ///       does not use reaches neither the panel nor the tree — the dialog
++    ///       is a window above the surface, and the surface waits.
++    pub(super) fn rename_key(&mut self, stroke: KeyStroke) -> bool {
++        if self.rename.is_none() {
++            return false;
++        }
++
++        // WHY: the jump list has its own actions in the catalogue, and they
++        //       are bound to F3 and Shift+F3 (FR-35). The surface with the
++        //       focus decides what a key means, and the dialog has it.
++        if let Some(action) = self.rename_action(stroke) {
++            if let Some(mut dialog) = self.rename.take() {
++                match action.id() {
++                    "rename.conflict_next" => {
++                        dialog.jump_to_next_conflict();
++                    }
++                    "rename.conflict_previous" => {
++                        dialog.jump_to_previous_conflict();
++                    }
++                    _ => {}
++                }
++                self.rename = Some(dialog);
++            }
++            return true;
++        }
++
++        let Some(mut dialog) = self.rename.take() else {
++            return false;
++        };
++
++        match stroke.key {
++            Key::Escape => {
++                // WHY: the escape key gives up the dialog and renames
++                //       nothing.
++                return true;
++            }
++            Key::Enter => {
++                return self.rename_enter(dialog);
++            }
++            Key::Tab => {
++                dialog.focus_next(stroke.modifiers.shift);
++            }
++            Key::Backspace => dialog.backspace(),
++            Key::Delete => dialog.delete(),
++            Key::ArrowLeft => {
++                if dialog.focus().is_field() {
++                    dialog.move_caret(-1);
++                }
++            }
++            Key::ArrowRight => {
++                if dialog.focus().is_field() {
++                    dialog.move_caret(1);
++                }
++            }
++            Key::Home => {
++                if dialog.focus().is_field() {
++                    dialog.caret_to_start();
++                }
++            }
++            Key::End => {
++                if dialog.focus().is_field() {
++                    dialog.caret_to_end();
++                }
++            }
++            Key::ArrowUp => {
++                match dialog.focus() {
++                    RenameFocus::Templates => dialog.move_template_cursor(-1),
++                    RenameFocus::Preview => dialog.move_cursor(-1),
++                    _ => {}
++                }
++            }
++            Key::ArrowDown => {
++                match dialog.focus() {
++                    RenameFocus::Templates => dialog.move_template_cursor(1),
++                    RenameFocus::Preview => dialog.move_cursor(1),
++                    _ => {}
++                }
++            }
++            Key::PageUp => {
++                if dialog.focus() == RenameFocus::Preview {
++                    dialog.move_cursor(-10);
++                }
++            }
++            Key::PageDown => {
++                if dialog.focus() == RenameFocus::Preview {
++                    dialog.move_cursor(10);
++                }
++            }
++            _ => {}
++        }
++
++        self.rename = Some(dialog);
++        true
++    }
++
++    /// Carries out the enter key of the dialog.
++    ///
++    /// WHY: the enter key means three things, and the part of the dialog
++    ///       that has the focus decides which one it is: the name of a
++    ///       template stores the template, the list of the templates applies
++    ///       the template under the cursor, and the rest of the dialog
++    ///       confirms the rename.
++    fn rename_enter(&mut self, mut dialog: RenameDialog) -> bool {
++        match dialog.focus() {
++            RenameFocus::Regex => {
++                // WHY: the switch is a part of the dialog, so that the
++                //       keyboard reaches it as well as the mouse (FR-31).
++                dialog.toggle_regex();
++                self.rename = Some(dialog);
++                return true;
++            }
++            RenameFocus::TemplateName => {
++                if let Some(template) = dialog.current_template() {
++                    dialog.add_template(template.clone());
++                    if let Some(store) = self.template_store.as_ref()
++                        && let Err(error) = store.store(&template)
++                    {
++                        let key = error.message_key().as_str().to_string();
++                        self.status = Some(StatusMessage {
++                            key,
++                            arguments: Vec::new(),
++                        });
++                    }
++                }
++                self.rename = Some(dialog);
++                return true;
++            }
++            RenameFocus::Templates => {
++                let cursor = dialog.template_cursor();
++                dialog.apply_template(cursor);
++                self.rename = Some(dialog);
++                return true;
++            }
++            _ => {}
++        }
++
++        // WHY: the rename runs only when the preview holds no conflict and
++        //       no file that could not be named. The rename of a selection is
++        //       atomic (FR-41).
++        let Some(pairs) = dialog.pairs() else {
++            self.rename = Some(dialog);
++            return true;
++        };
++        let side = dialog.side();
++        self.commands.push(Command::Rename { side, pairs });
++        true
++    }
++
++    /// The action of the dialog that a key stroke triggers.
++    fn rename_action(&self, stroke: KeyStroke) -> Option<Action> {
++        for action in Action::in_category(ActionCategory::Rename) {
++            if self.keymap.binding_for(self.context, action) == Some(&Binding::Key(stroke)) {
++                return Some(action);
++            }
++        }
++        None
++    }
++
++    /// Draws the dialog of the multiple rename.
++    ///
++    /// WHY: the preview is asked for when the rule changed and not in every
++    ///       frame. A frame that draws an unchanged rule costs the drawing
++    ///       alone.
++    pub(super) fn draw_rename_dialog(&mut self, ui: &mut egui::Ui) {
++        if self.rename.is_none() {
++            return;
++        }
++
++        let palette = self.palette();
++        let profile = self.profile();
++        let WorkSurfaceApp {
++            rename,
++            rename_engine,
++            catalogue,
++            formats,
++            metrics,
++            ..
++        } = self;
++        let texts = Texts::new(catalogue.as_ref());
++        let style = draw::DrawStyle::new(metrics, &palette, &texts, formats.as_ref(), &profile);
++
++        // WHY: the borrow of the dialog ends with the block, so that the
++        //       shell can put the dialog away when the user closed the
++        //       window with the mouse.
++        let closed = {
++            let Some(dialog) = rename.as_mut() else {
++                return;
++            };
++            if let Some(engine) = rename_engine.as_deref() {
++                dialog.update_preview(engine);
++            }
++            crate::rename::draw::draw_dialog(ui, dialog, &style);
++            !dialog.is_window_open()
++        };
++        if closed {
++            *rename = None;
++        }
++    }
++}
+diff --git a/crates/phocommander-ui/src/commands.rs b/crates/phocommander-ui/src/commands.rs
+index 7730bd9..e1537e2 100644
+--- a/crates/phocommander-ui/src/commands.rs
++++ b/crates/phocommander-ui/src/commands.rs
+@@ -18,6 +18,7 @@ use std::path::PathBuf;
+ 
+ use crate::actions::Action;
+ use crate::panel::PanelSide;
++use crate::rename::RenamePair;
+ use crate::surface::TransferRequest;
+ 
+ /// A request of the drawing to the shell.
+@@ -65,13 +66,21 @@ pub enum Command {
+         entries: Vec<PathBuf>,
+     },
+ 
+-    /// Rename the marked entries of a panel.
++    /// Rename the files of a panel.
++    ///
++    /// WHY: the command carries the pairs and not only the paths of the
++    ///       files. The dialog has already shown the new names to the user
++    ///       (FR-34), and the application has to rename exactly the names
++    ///       that the user has seen. A command that carried only the paths
++    ///       would leave the application to form the names a second time —
++    ///       and a second answer can be a different one.
+     Rename {
+-        /// The panel the entries belong to.
++        /// The panel the files belong to.
+         side: PanelSide,
+ 
+-        /// The paths of the entries.
+-        entries: Vec<PathBuf>,
++        /// The pairs of the rename: the path the file carries now and the
++        /// path it receives.
++        pairs: Vec<RenamePair>,
+     },
+ 
+     /// Create a directory in a panel.
+diff --git a/crates/phocommander-ui/src/i18n/keys.rs b/crates/phocommander-ui/src/i18n/keys.rs
+index 1ddd494..7971867 100644
+--- a/crates/phocommander-ui/src/i18n/keys.rs
++++ b/crates/phocommander-ui/src/i18n/keys.rs
+@@ -230,6 +230,50 @@ pub enum TextKey {
+     PaletteSearch,
+     /// The text of an action palette without a match.
+     PaletteEmpty,
++    /// The title of the dialog of the multiple rename.
++    RenameTitle,
++    /// The label of the field with the format of the new name.
++    RenameFormat,
++    /// The label of the field with the text that is searched.
++    RenameSearch,
++    /// The label of the field with the text that replaces it.
++    RenameReplacement,
++    /// The label of the switch that turns the search into a pattern.
++    RenameRegex,
++    /// The label of the field with the first number of the counter.
++    RenameCounterStart,
++    /// The label of the field with the step of the counter.
++    RenameCounterStep,
++    /// The label of the field with the width of the counter.
++    RenameCounterWidth,
++    /// The label of the field with the name of the series.
++    RenameSeries,
++    /// The label of the field with the name of a new template.
++    RenameTemplateName,
++    /// The label of the list of the stored templates.
++    RenameTemplates,
++    /// The label of the list of the preview.
++    RenamePreview,
++    /// The text of the dialog without files and without templates.
++    RenameEmpty,
++    /// The line with the keys of the dialog.
++    RenameHint,
++    /// The reason why a rule without a format names no file.
++    RenameProblemEmptyFormat,
++    /// The reason why the value of a placeholder is not known.
++    RenameProblemUnknownValue,
++    /// The reason why a pattern is not a valid regular expression.
++    RenameProblemInvalidPattern,
++    /// The reason why a name cannot be used as a file name.
++    RenameProblemInvalidName,
++    /// The reason why the target of a rename is occupied.
++    RenameConflictTargetExists,
++    /// The reason why two files of a selection want the same name.
++    RenameConflictDuplicateTarget,
++    /// The reason why the file that is to be renamed is missing.
++    RenameConflictMissingSource,
++    /// The reason why a template could not be stored.
++    RenameTemplateStoreFailed,
+ }
+ 
+ impl TextKey {
+@@ -350,6 +394,28 @@ impl TextKey {
+             TextKey::PaletteTitle => "palette-title",
+             TextKey::PaletteSearch => "palette-search",
+             TextKey::PaletteEmpty => "palette-empty",
++            TextKey::RenameTitle => "rename-title",
++            TextKey::RenameFormat => "rename-format",
++            TextKey::RenameSearch => "rename-search",
++            TextKey::RenameReplacement => "rename-replacement",
++            TextKey::RenameRegex => "rename-regex",
++            TextKey::RenameCounterStart => "rename-counter-start",
++            TextKey::RenameCounterStep => "rename-counter-step",
++            TextKey::RenameCounterWidth => "rename-counter-width",
++            TextKey::RenameSeries => "rename-series",
++            TextKey::RenameTemplateName => "rename-template-name",
++            TextKey::RenameTemplates => "rename-templates",
++            TextKey::RenamePreview => "rename-preview",
++            TextKey::RenameEmpty => "rename-empty",
++            TextKey::RenameHint => "rename-hint",
++            TextKey::RenameProblemEmptyFormat => "rename-problem-empty-format",
++            TextKey::RenameProblemUnknownValue => "rename-problem-unknown-value",
++            TextKey::RenameProblemInvalidPattern => "rename-problem-invalid-pattern",
++            TextKey::RenameProblemInvalidName => "rename-problem-invalid-name",
++            TextKey::RenameConflictTargetExists => "rename-conflict-target-exists",
++            TextKey::RenameConflictDuplicateTarget => "rename-conflict-duplicate-target",
++            TextKey::RenameConflictMissingSource => "rename-conflict-missing-source",
++            TextKey::RenameTemplateStoreFailed => "rename-template-store-failed",
+         }
+     }
+ 
+@@ -364,7 +430,7 @@ impl TextKey {
+ /// WHY: the list is the contract between the code and the catalogue. The
+ /// gate of the workspace compares it with the key sets of the catalogues, so
+ /// that a key cannot be used without a translation.
+-const KEYS: [TextKey; 107] = [
++const KEYS: [TextKey; 129] = [
+     TextKey::ActionAppMenu,
+     TextKey::ActionAppQuit,
+     TextKey::ActionPaletteOpen,
+@@ -472,4 +538,26 @@ const KEYS: [TextKey; 107] = [
+     TextKey::PaletteTitle,
+     TextKey::PaletteSearch,
+     TextKey::PaletteEmpty,
++    TextKey::RenameTitle,
++    TextKey::RenameFormat,
++    TextKey::RenameSearch,
++    TextKey::RenameReplacement,
++    TextKey::RenameRegex,
++    TextKey::RenameCounterStart,
++    TextKey::RenameCounterStep,
++    TextKey::RenameCounterWidth,
++    TextKey::RenameSeries,
++    TextKey::RenameTemplateName,
++    TextKey::RenameTemplates,
++    TextKey::RenamePreview,
++    TextKey::RenameEmpty,
++    TextKey::RenameHint,
++    TextKey::RenameProblemEmptyFormat,
++    TextKey::RenameProblemUnknownValue,
++    TextKey::RenameProblemInvalidPattern,
++    TextKey::RenameProblemInvalidName,
++    TextKey::RenameConflictTargetExists,
++    TextKey::RenameConflictDuplicateTarget,
++    TextKey::RenameConflictMissingSource,
++    TextKey::RenameTemplateStoreFailed,
+ ];
+diff --git a/crates/phocommander-ui/src/lib.rs b/crates/phocommander-ui/src/lib.rs
+index 42e7c9d..2933b65 100644
+--- a/crates/phocommander-ui/src/lib.rs
++++ b/crates/phocommander-ui/src/lib.rs
+@@ -40,6 +40,7 @@ pub mod metrics;
+ pub mod panel;
+ pub mod preview;
+ pub mod refresh;
++pub mod rename;
+ pub mod surface;
+ pub mod theme;
+ pub mod undo;
+@@ -62,6 +63,11 @@ pub use panel::{
+ };
+ pub use preview::{Preview, PreviewSource, QuickView};
+ pub use refresh::RefreshPolicy;
++pub use rename::{
++    Conflict, ConflictKind, NamedTemplate, PreviewProblem, PreviewRow, ProblemKind, RenameDialog,
++    RenameEngine, RenameFile, RenameFocus, RenamePair, RenamePreview, RenameRequest, RenameRule,
++    ReplaceRule, TemplateStore, TemplateStoreError,
++};
+ pub use surface::{MarkedEntry, PanelError, PanelPair, TransferRequest, WorkSurface};
+ pub use theme::{Palette, Theme, contrast_ratio, visuals};
+ pub use undo::{UndoAvailability, UndoScope};
+diff --git a/crates/phocommander-ui/src/rename.rs b/crates/phocommander-ui/src/rename.rs
+new file mode 100644
+index 0000000..c0ff618
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename.rs
+@@ -0,0 +1,53 @@
++//! The dialog of the multiple rename.
++//!
++//! WHAT: the state of the dialog ([`RenameDialog`]), the parts of it that
++//!       have the focus ([`RenameFocus`]), the rule that the dialog edits
++//!       ([`RenameRule`]), the seam to the engine that forms the new names
++//!       ([`RenameEngine`]) and the named templates ([`NamedTemplate`],
++//!       [`TemplateStore`]).
++//! WHY: the dialog shows a live preview of every new name before the rename
++//!       runs (FR-34), it marks the conflicts and offers them as a jump list
++//!       (FR-35), and it stores the named templates (FR-36). The engine that
++//!       forms the names lives in the crate of the operations, and the
++//!       interface crate may not depend on a sibling crate of the same level.
++//!       The seam is therefore a trait, and the composition root hands the
++//!       implementation over — the same arrangement as the texts of the
++//!       catalogue and the formats of a locale.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::panel::PanelSide;
++//! use phocommander_ui::rename::{RenameDialog, RenameFile};
++//!
++//! let dialog = RenameDialog::new(
++//!     PanelSide::Left,
++//!     vec![RenameFile::new("/photos/sunset.jpg")],
++//!     Vec::new(),
++//! );
++//! assert_eq!(dialog.files().len(), 1);
++//! assert!(dialog.preview().is_none());
++//! ```
++
++pub(crate) mod dialog;
++pub(crate) mod draw;
++pub mod engine;
++pub(crate) mod fields;
++pub(crate) mod focus;
++pub mod rule;
++pub mod template;
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests;
++
++pub use dialog::RenameDialog;
++pub use engine::{
++    Conflict, ConflictKind, PreviewProblem, PreviewRow, ProblemKind, RenameEngine, RenameFile,
++    RenamePair, RenamePreview, RenameRequest,
++};
++pub use focus::RenameFocus;
++pub use rule::{CounterOrder, CounterRule, RenameRule, ReplaceRule, SeriesRule};
++pub use template::{
++    NamedTemplate, TemplateStore, TemplateStoreError, decode_templates, encode_templates,
++};
+diff --git a/crates/phocommander-ui/src/rename/dialog.rs b/crates/phocommander-ui/src/rename/dialog.rs
+new file mode 100644
+index 0000000..0722468
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/dialog.rs
+@@ -0,0 +1,562 @@
++//! The state of the dialog of the multiple rename.
++//!
++//! WHAT: the state of the dialog ([`RenameDialog`]) and the parts of it that
++//!       have the focus ([`RenameFocus`]).
++//! WHY: the dialog shows a live preview of every new name before the rename
++//!       runs (FR-34), it marks the conflicts and offers them as a jump list
++//!       (FR-35), and it stores the named templates (FR-36). The state lives
++//!       outside of the immediate mode context of egui, so that the preview is
++//!       not rebuilt in every frame: the engine is asked only when the rule
++//!       changed, and a frame that draws an unchanged rule costs nothing. The
++//!       keys of the dialog are the keys of the catalogue (F3 and Shift+F3 for
++//!       the conflict jump) and the keys of the editing of a text field — the
++//!       same arrangement as the filter field of a panel.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::panel::PanelSide;
++//! use phocommander_ui::rename::{RenameDialog, RenameFile};
++//!
++//! let dialog = RenameDialog::new(
++//!     PanelSide::Left,
++//!     vec![RenameFile::new("/photos/sunset.jpg")],
++//!     Vec::new(),
++//! );
++//! assert_eq!(dialog.files().len(), 1);
++//! assert!(dialog.preview().is_none());
++//! ```
++
++use crate::panel::PanelSide;
++use crate::rename::engine::{
++    PreviewRow, RenameEngine, RenameFile, RenamePair, RenamePreview, RenameRequest,
++};
++use crate::rename::fields::Fields;
++use crate::rename::focus::RenameFocus;
++use crate::rename::rule::RenameRule;
++use crate::rename::template::NamedTemplate;
++
++/// The state of the dialog of the multiple rename.
++#[derive(Debug)]
++pub struct RenameDialog {
++    /// The panel the files belong to.
++    side: PanelSide,
++
++    /// The files of the selection.
++    files: Vec<RenameFile>,
++
++    /// The fields that carry the rule.
++    fields: Fields,
++
++    /// The part of the dialog that has the focus.
++    focus: RenameFocus,
++
++    /// The last answer of the engine.
++    preview: Option<RenamePreview>,
++
++    /// Whether the engine has to be asked again.
++    dirty: bool,
++
++    /// The number of the answers of the engine.
++    ///
++    /// WHY: the counter is the evidence that the preview is not rebuilt in
++    ///       every frame. A test reads it and knows that the engine is asked
++    ///       only when the rule changed.
++    engine_calls: usize,
++
++    /// The row of the preview under the cursor.
++    cursor: usize,
++
++    /// The first row of the preview that is shown.
++    scroll: usize,
++
++    /// The rows of the preview that carry a conflict — the jump list.
++    conflicts: Vec<usize>,
++
++    /// The stored templates.
++    templates: Vec<NamedTemplate>,
++
++    /// The template under the cursor.
++    template_cursor: usize,
++
++    /// Whether the window of the dialog is open.
++    ///
++    /// WHY: the user can close the window with the mouse, and the shell has
++    ///       to know that the dialog is gone. The flag lives in the state and
++    ///       not in the frame, because the frame draws the window again and
++    ///       would forget the click.
++    window_open: bool,
++}
++
++impl RenameDialog {
++    /// Builds the dialog for a selection.
++    ///
++    /// WHY: the dialog knows the panel the files belong to, because an
++    ///       operation acts on the panel that has the focus (FR-16) and the
++    ///       rename must not land in the other panel.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::panel::PanelSide;
++    /// use phocommander_ui::rename::{RenameDialog, RenameFile};
++    ///
++    /// let dialog = RenameDialog::new(
++    ///     PanelSide::Right,
++    ///     vec![RenameFile::new("/photos/a.jpg")],
++    ///     Vec::new(),
++    /// );
++    /// assert_eq!(dialog.side(), PanelSide::Right);
++    /// ```
++    pub fn new(side: PanelSide, files: Vec<RenameFile>, templates: Vec<NamedTemplate>) -> Self {
++        let mut fields = Fields::default();
++        fields.caret_to_end(RenameFocus::Format);
++        Self {
++            side,
++            files,
++            fields,
++            focus: RenameFocus::Format,
++            preview: None,
++            dirty: true,
++            engine_calls: 0,
++            cursor: 0,
++            scroll: 0,
++            conflicts: Vec::new(),
++            templates,
++            template_cursor: 0,
++            window_open: true,
++        }
++    }
++
++    /// The panel the files belong to.
++    pub fn side(&self) -> PanelSide {
++        self.side
++    }
++
++    /// The files of the selection.
++    pub fn files(&self) -> &[RenameFile] {
++        &self.files
++    }
++
++    /// The part of the dialog that has the focus.
++    pub fn focus(&self) -> RenameFocus {
++        self.focus
++    }
++
++    /// Gives the focus to a part of the dialog.
++    ///
++    /// WHY: the caret goes to the end of the new field, because the user
++    ///       continues a text that is already there.
++    pub fn set_focus(&mut self, focus: RenameFocus) {
++        if self.focus == focus {
++            return;
++        }
++        self.focus = focus;
++        self.fields.caret_to_end(focus);
++    }
++
++    /// Gives the focus to the next part of the dialog.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{RenameDialog, RenameFocus};
++    /// # use phocommander_ui::panel::PanelSide;
++    /// let mut dialog = RenameDialog::new(PanelSide::Left, Vec::new(), Vec::new());
++    ///
++    /// dialog.focus_next(false);
++    ///
++    /// assert_eq!(dialog.focus(), RenameFocus::Search);
++    /// ```
++    pub fn focus_next(&mut self, backwards: bool) {
++        let all = RenameFocus::all();
++        let index = all
++            .iter()
++            .position(|focus| *focus == self.focus)
++            .unwrap_or(0);
++        let next = if backwards {
++            if index == 0 {
++                all.len() - 1
++            } else {
++                index - 1
++            }
++        } else {
++            (index + 1) % all.len()
++        };
++        self.set_focus(all[next]);
++    }
++
++    /// The text of the field that has the focus.
++    pub fn focused_text(&self) -> &str {
++        self.text_of(self.focus)
++    }
++
++    /// The text of a field of the dialog.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{RenameDialog, RenameFocus};
++    /// # use phocommander_ui::panel::PanelSide;
++    /// let dialog = RenameDialog::new(PanelSide::Left, Vec::new(), Vec::new());
++    ///
++    /// assert_eq!(dialog.text_of(RenameFocus::Format), "[name]_[n].[ext]");
++    /// ```
++    pub fn text_of(&self, focus: RenameFocus) -> &str {
++        self.fields.text_of(focus)
++    }
++
++    /// Whether the search is a regular expression.
++    pub fn regex(&self) -> bool {
++        self.fields.regex()
++    }
++
++    /// Turns the search into a regular expression, or back.
++    ///
++    /// WHY: the switch is off by default (FR-31). A search that is not a
++    ///       regular expression is what a user expects when the text carries
++    ///       a dot or a bracket.
++    pub fn set_regex(&mut self, regex: bool) {
++        self.fields.set_regex(regex);
++        self.dirty = true;
++    }
++
++    /// Turns the search into a regular expression, or back.
++    ///
++    /// WHY: the switch is a part of the dialog and not a widget of the
++    ///       drawing, so that the keyboard reaches it as well as the mouse.
++    pub fn toggle_regex(&mut self) {
++        let regex = !self.fields.regex();
++        self.set_regex(regex);
++    }
++
++    /// Whether a field carries a value that is not a number.
++    ///
++    /// WHY: a field that carries no number is drawn in the colour of a
++    ///       warning, so that the user sees the mistake before the rename
++    ///       runs.
++    pub fn is_invalid(&self, focus: RenameFocus) -> bool {
++        self.fields.is_invalid(focus)
++    }
++
++    /// The position of the caret in the field that has the focus.
++    pub fn caret(&self) -> usize {
++        self.fields.caret()
++    }
++
++    /// Writes text into the field that has the focus.
++    ///
++    /// WHY: the preview follows every key stroke of the field (FR-34). The
++    ///       dialog therefore writes the text into its own state and asks the
++    ///       engine for the new names in the frame that follows.
++    pub fn insert(&mut self, text: &str) {
++        self.fields.insert(self.focus, text);
++        self.mark_changed();
++    }
++
++    /// Deletes the character before the caret.
++    pub fn backspace(&mut self) {
++        self.fields.backspace(self.focus);
++        self.mark_changed();
++    }
++
++    /// Deletes the character at the caret.
++    pub fn delete(&mut self) {
++        self.fields.delete(self.focus);
++        self.mark_changed();
++    }
++
++    /// Moves the caret by a number of characters.
++    pub fn move_caret(&mut self, delta: isize) {
++        self.fields.move_caret(self.focus, delta);
++    }
++
++    /// Puts the caret in front of the text.
++    pub fn caret_to_start(&mut self) {
++        self.fields.caret_to_start();
++    }
++
++    /// Puts the caret behind the text.
++    pub fn caret_to_end(&mut self) {
++        self.fields.caret_to_end(self.focus);
++    }
++
++    /// Marks the rule as changed.
++    ///
++    /// WHY: the name of a template is not part of the rule, and the preview
++    ///       does not change when it is typed.
++    fn mark_changed(&mut self) {
++        if self.focus != RenameFocus::TemplateName {
++            self.dirty = true;
++        }
++    }
++
++    /// The rule that the fields describe.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::panel::PanelSide;
++    /// use phocommander_ui::rename::RenameDialog;
++    ///
++    /// let dialog = RenameDialog::new(PanelSide::Left, Vec::new(), Vec::new());
++    /// assert_eq!(dialog.rule().format, "[name]_[n].[ext]");
++    /// assert_eq!(dialog.rule().counter.map(|counter| counter.width), Some(3));
++    /// ```
++    pub fn rule(&self) -> RenameRule {
++        self.fields.rule()
++    }
++
++    /// The last answer of the engine.
++    pub fn preview(&self) -> Option<&RenamePreview> {
++        self.preview.as_ref()
++    }
++
++    /// The rows of the preview.
++    pub fn rows(&self) -> &[PreviewRow] {
++        match &self.preview {
++            Some(preview) => preview.rows.as_slice(),
++            None => &[],
++        }
++    }
++
++    /// The number of the answers of the engine.
++    ///
++    /// WHY: the number is the evidence that the preview is not rebuilt in
++    ///       every frame. It grows with every change of the rule and with
++    ///       nothing else.
++    pub fn engine_calls(&self) -> usize {
++        self.engine_calls
++    }
++
++    /// Asks the engine for the new names, if the rule changed.
++    ///
++    /// WHY: the preview follows every change of the rule (FR-34), and a
++    ///       frame that draws an unchanged rule asks nothing. The engine is
++    ///       therefore called once per change and not once per frame.
++    pub fn update_preview(&mut self, engine: &dyn RenameEngine) {
++        if !self.dirty {
++            return;
++        }
++        self.dirty = false;
++        self.engine_calls += 1;
++        let request = RenameRequest::with_files(self.rule(), self.files.clone());
++        let preview = engine.preview(&request);
++        self.conflicts = conflict_rows(&preview);
++        self.preview = Some(preview);
++        let last = self.rows().len().saturating_sub(1);
++        if self.cursor > last {
++            self.cursor = last;
++        }
++    }
++
++    /// The rows of the preview that carry a conflict — the jump list.
++    ///
++    /// WHY: the jump list holds the rows and not the paths, because the
++    ///       cursor of the dialog walks the rows of the preview.
++    pub fn conflicts(&self) -> &[usize] {
++        &self.conflicts
++    }
++
++    /// Whether the row of the preview carries a conflict.
++    pub fn is_conflict(&self, row: usize) -> bool {
++        self.conflicts.contains(&row)
++    }
++
++    /// Puts the cursor on the next conflict.
++    ///
++    /// WHY: at the end of the list the cursor stays on the last entry. A
++    ///       jump that wraps around would send the user to a place he has
++    ///       already seen, and the list of the conflicts is short.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::panel::PanelSide;
++    /// use phocommander_ui::rename::RenameDialog;
++    ///
++    /// let dialog = RenameDialog::new(PanelSide::Left, Vec::new(), Vec::new());
++    /// assert!(!dialog.jump_to_next_conflict());
++    /// ```
++    pub fn jump_to_next_conflict(&mut self) -> bool {
++        let Some(next) = self
++            .conflicts
++            .iter()
++            .copied()
++            .find(|index| *index > self.cursor)
++        else {
++            return false;
++        };
++        self.cursor = next;
++        true
++    }
++
++    /// Puts the cursor on the previous conflict.
++    pub fn jump_to_previous_conflict(&mut self) -> bool {
++        let Some(previous) = self
++            .conflicts
++            .iter()
++            .copied()
++            .rev()
++            .find(|index| *index < self.cursor)
++        else {
++            return false;
++        };
++        self.cursor = previous;
++        true
++    }
++
++    /// The row of the preview under the cursor.
++    pub fn cursor(&self) -> usize {
++        self.cursor
++    }
++
++    /// Moves the cursor by a number of rows.
++    pub fn move_cursor(&mut self, delta: isize) {
++        let last = self.rows().len().saturating_sub(1) as isize;
++        let next = (self.cursor as isize + delta).clamp(0, last);
++        self.cursor = next as usize;
++    }
++
++    /// The first row of the preview that is shown.
++    pub fn scroll(&self) -> usize {
++        self.scroll
++    }
++
++    /// Scrolls so that the cursor is inside the window of the given rows.
++    ///
++    /// WHY: the cursor must never leave the screen — a dialog that scrolls
++    ///       away from its own cursor has lost the place the user was at.
++    pub fn ensure_cursor_visible(&mut self, rows: usize) {
++        if rows == 0 {
++            return;
++        }
++        let cursor = self.cursor;
++        if cursor < self.scroll {
++            self.scroll = cursor;
++        } else if cursor >= self.scroll + rows {
++            self.scroll = cursor + 1 - rows;
++        }
++    }
++
++    /// The pairs of the rename, if the rename may run.
++    ///
++    /// WHY: the rename of a selection is atomic — either every file is
++    ///       renamed or none of them is. A selection with a conflict and a
++    ///       selection with a file that could not be named are therefore
++    ///       refused as a whole (FR-41).
++    pub fn pairs(&self) -> Option<Vec<RenamePair>> {
++        let preview = self.preview.as_ref()?;
++        if !preview.may_rename() {
++            return None;
++        }
++        let mut pairs = Vec::with_capacity(preview.rows.len());
++        for row in &preview.rows {
++            let target = row.target.as_ref()?;
++            // WHY: a file that keeps its name is not renamed. Such a file
++            //       would be a rename of a file onto itself, and the engine
++            //       refuses it.
++            if *target == row.source {
++                continue;
++            }
++            pairs.push(RenamePair::new(row.source.clone(), target.clone()));
++        }
++        Some(pairs)
++    }
++
++    /// Whether the rename may run.
++    pub fn is_ready(&self) -> bool {
++        self.pairs().is_some()
++    }
++
++    /// The stored templates.
++    pub fn templates(&self) -> &[NamedTemplate] {
++        &self.templates
++    }
++
++    /// The template under the cursor.
++    pub fn template_cursor(&self) -> usize {
++        self.template_cursor
++    }
++
++    /// Moves the cursor of the templates by a number of rows.
++    pub fn move_template_cursor(&mut self, delta: isize) {
++        let last = self.templates.len().saturating_sub(1) as isize;
++        let next = (self.template_cursor as isize + delta).clamp(0, last);
++        self.template_cursor = next as usize;
++    }
++
++    /// Puts the rule of a template into the fields.
++    ///
++    /// WHY: a template that is applied shows its rule in the fields, so that
++    ///       the user sees what the template does before the rename runs.
++    pub fn apply_template(&mut self, index: usize) -> bool {
++        let Some(template) = self.templates.get(index) else {
++            return false;
++        };
++        let rule = template.rule.clone();
++        self.fields.apply_rule(&rule);
++        self.dirty = true;
++        self.fields.caret_to_end(self.focus);
++        true
++    }
++
++    /// The template that the fields describe.
++    ///
++    /// WHY: the name of the template is the name the user typed. A template
++    ///       without a name cannot be stored, because the list of the dialog
++    ///       would show two entries without a name.
++    pub fn current_template(&self) -> Option<NamedTemplate> {
++        let name = self.fields.template_name();
++        if name.is_empty() {
++            return None;
++        }
++        Some(NamedTemplate::new(name, self.rule()))
++    }
++
++    /// Puts a template into the list.
++    ///
++    /// WHY: a template with the same name is replaced. A name stands for one
++    ///       rule, and a second rule under the same name would make the list
++    ///       ambiguous.
++    pub fn add_template(&mut self, template: NamedTemplate) {
++        let position = self
++            .templates
++            .iter()
++            .position(|other| other.name == template.name);
++        match position {
++            Some(index) => {
++                self.templates[index] = template;
++                self.template_cursor = index;
++            }
++            None => {
++                self.templates.push(template);
++                self.template_cursor = self.templates.len().saturating_sub(1);
++            }
++        }
++    }
++
++    /// Whether the window of the dialog is open.
++    ///
++    /// WHY: the user can close the window with the mouse, and the shell has
++    ///       to know that the dialog is gone.
++    pub fn is_window_open(&self) -> bool {
++        self.window_open
++    }
++
++    /// Remembers whether the window of the dialog is open.
++    pub fn set_window_open(&mut self, open: bool) {
++        self.window_open = open;
++    }
++}
++
++/// The rows of the preview that carry a conflict.
++fn conflict_rows(preview: &RenamePreview) -> Vec<usize> {
++    let mut rows = Vec::new();
++    for (index, row) in preview.rows.iter().enumerate() {
++        let marked = preview.conflicts.iter().any(|conflict| {
++            conflict.path == row.source
++                || row
++                    .target
++                    .as_ref()
++                    .is_some_and(|target| conflict.path == *target)
++        });
++        if marked {
++            rows.push(index);
++        }
++    }
++    rows
++}
+diff --git a/crates/phocommander-ui/src/rename/draw.rs b/crates/phocommander-ui/src/rename/draw.rs
+new file mode 100644
+index 0000000..7602cd7
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/draw.rs
+@@ -0,0 +1,430 @@
++//! The drawing of the dialog of the multiple rename.
++//!
++//! WHAT: the window of the dialog ([`draw_dialog`]), the fields of the rule
++//!       ([`draw_fields`]), the list of the stored templates
++//!       ([`draw_templates`]), the list of the preview ([`draw_preview`]) and
++//!       the line with the keys ([`draw_hint`]).
++//! WHY: the dialog is a window above the two panels, and it is drawn with the
++//!       same colours, the same measures and the same texts as the rest of
++//!       the surface — a dialog that looks like a web page would be a lie
++//!       about the program it belongs to. Every text of the dialog comes from
++//!       the catalogue (FR-05), and the row under the cursor carries the
++//!       frame of the focus, so that the place the user works at is visible
++//!       (NFR-11). The drawing reads a snapshot of the fields and never holds
++//!       a borrow of the dialog while it draws — the state of the dialog is
++//!       changed by the keys and not by the drawing.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::rename::RenameFocus;
++//!
++//! assert!(RenameFocus::all().iter().any(|focus| *focus == RenameFocus::Preview));
++//! ```
++
++use egui::{Align, Color32, Layout, Rect, RichText, Stroke, Vec2};
++
++use crate::draw::DrawStyle;
++use crate::i18n::{Argument, TextKey};
++use crate::layout::LayoutProfile;
++use crate::rename::RenameDialog;
++use crate::rename::engine::PreviewRow;
++use crate::rename::focus::RenameFocus;
++use crate::theme::Palette;
++
++/// The number of the rows of the preview that are shown at the same time.
++///
++/// WHY: the preview of a selection of ten thousand files must not draw ten
++///       thousand rows. The dialog shows a window of the list, and the cursor
++///       is scrolled into it.
++const VISIBLE_ROWS: usize = 12;
++
++/// The width of the column with the old names.
++const OLD_NAME_WIDTH: f32 = 200.0;
++
++/// The width of the column with the names of the templates.
++const TEMPLATE_NAME_WIDTH: f32 = 220.0;
++
++/// The state of one field as the drawing sees it.
++///
++/// WHY: the drawing reads the state and never changes it. The snapshot is
++///       taken before the field is drawn, so that the drawing holds no
++///       borrow of the dialog while it draws.
++struct FieldView {
++    /// The text of the field.
++    text: String,
++
++    /// Whether the field has the focus.
++    focused: bool,
++
++    /// Whether the field carries a value that is not a number.
++    invalid: bool,
++
++    /// The text in front of the caret.
++    prefix: String,
++}
++
++impl FieldView {
++    /// Takes the snapshot of a field.
++    fn of(dialog: &RenameDialog, focus: RenameFocus) -> Self {
++        let focused = dialog.focus() == focus;
++        let prefix = if focused {
++            dialog
++                .focused_text()
++                .chars()
++                .take(dialog.caret())
++                .collect()
++        } else {
++            String::new()
++        };
++        Self {
++            text: dialog.text_of(focus).to_string(),
++            focused,
++            invalid: dialog.is_invalid(focus),
++            prefix,
++        }
++    }
++}
++
++/// Draws the dialog of the multiple rename.
++///
++/// WHY: the window is drawn above the two panels. The dialog reads the state
++///       and never changes it — the state is changed by the keys, and the keys
++///       are resolved by the shell.
++pub(crate) fn draw_dialog(ui: &mut egui::Ui, dialog: &mut RenameDialog, style: &DrawStyle<'_>) {
++    let title = style.texts.get(TextKey::RenameTitle);
++    let mut open = dialog.is_window_open();
++    let window = egui::Window::new(title)
++        .open(&mut open)
++        .default_size([680.0, 480.0]);
++
++    // WHY: the answer of the window is not used. The dialog is closed by the
++    //       shell — the escape key — and not by the frame of the window.
++    let _ = window.show(ui.ctx(), |ui| {
++        draw_fields(ui, dialog, style);
++        ui.separator();
++        draw_templates(ui, dialog, style);
++        ui.separator();
++        draw_preview(ui, dialog, style);
++        ui.separator();
++        draw_hint(ui, style);
++    });
++
++    // WHY: the user can close the window with the mouse. The flag belongs to
++    //       the state of the dialog, because the frame draws the window again
++    //       and would forget the click.
++    dialog.set_window_open(open);
++}
++
++/// Draws the fields that carry the rule.
++fn draw_fields(ui: &mut egui::Ui, dialog: &mut RenameDialog, style: &DrawStyle<'_>) {
++    draw_field(
++        ui,
++        style,
++        TextKey::RenameFormat,
++        &FieldView::of(dialog, RenameFocus::Format),
++    );
++
++    let search = FieldView::of(dialog, RenameFocus::Search);
++    let replacement = FieldView::of(dialog, RenameFocus::Replacement);
++    ui.horizontal(|ui| {
++        draw_field(ui, style, TextKey::RenameSearch, &search);
++        draw_field(ui, style, TextKey::RenameReplacement, &replacement);
++    });
++
++    draw_regex(ui, dialog, style);
++
++    let start = FieldView::of(dialog, RenameFocus::CounterStart);
++    let step = FieldView::of(dialog, RenameFocus::CounterStep);
++    let width = FieldView::of(dialog, RenameFocus::CounterWidth);
++    ui.horizontal(|ui| {
++        draw_field(ui, style, TextKey::RenameCounterStart, &start);
++        draw_field(ui, style, TextKey::RenameCounterStep, &step);
++        draw_field(ui, style, TextKey::RenameCounterWidth, &width);
++    });
++
++    draw_field(
++        ui,
++        style,
++        TextKey::RenameSeries,
++        &FieldView::of(dialog, RenameFocus::SeriesName),
++    );
++    draw_field(
++        ui,
++        style,
++        TextKey::RenameTemplateName,
++        &FieldView::of(dialog, RenameFocus::TemplateName),
++    );
++}
++
++/// Draws the switch that turns the search into a regular expression.
++///
++/// WHY: the switch is a part of the dialog and not a widget of the drawing,
++///       so that the keyboard reaches it as well as the mouse. The enter key
++///       switches it when it has the focus.
++fn draw_regex(ui: &mut egui::Ui, dialog: &mut RenameDialog, style: &DrawStyle<'_>) {
++    let palette = style.palette;
++    let profile = style.profile;
++    let focused = dialog.focus() == RenameFocus::Regex;
++    let mut regex = dialog.regex();
++
++    let response = ui.checkbox(&mut regex, style.texts.get(TextKey::RenameRegex));
++    if response.changed() {
++        dialog.set_regex(regex);
++    }
++    if focused {
++        // WHY: the frame of the focus is drawn around the switch with the
++        //       same colour and the same width as the frame around the
++        //       cursor of a file list (NFR-11).
++        ui.painter().rect_stroke(
++            response.rect,
++            0.0,
++            Stroke::new(profile.focus_frame_width(), palette.focus_frame),
++            egui::StrokeKind::Inside,
++        );
++    }
++}
++
++/// Draws one field of the rule.
++fn draw_field(
++    ui: &mut egui::Ui,
++    style: &DrawStyle<'_>,
++    label: TextKey,
++    view: &FieldView,
++) {
++    let palette = style.palette;
++    let texts = style.texts;
++    let metrics = style.metrics;
++    let profile = style.profile;
++
++    let color = if view.invalid {
++        palette.warning
++    } else if view.text.is_empty() {
++        palette.text_dimmed
++    } else {
++        palette.text
++    };
++
++    let height = profile.row_height();
++    ui.horizontal(|ui| {
++        ui.label(RichText::new(texts.get(label)).color(palette.text_dimmed));
++        let width = (ui.available_width() * 0.35).clamp(120.0, 320.0);
++        let response = ui.add_sized(
++            [width, height],
++            egui::Label::new(RichText::new(view.text.clone()).color(color)).truncate(),
++        );
++
++        if view.focused {
++            // WHY: the frame of the focus is drawn around the field with the
++            //       same colour and the same width as the frame around the
++            //       cursor of a file list (NFR-11).
++            ui.painter().rect_stroke(
++                response.rect,
++                0.0,
++                Stroke::new(profile.focus_frame_width(), palette.focus_frame),
++                egui::StrokeKind::Inside,
++            );
++            let caret = caret_place(ui, &view.prefix, response.rect, metrics.font_size());
++            ui.painter().vline(
++                caret,
++                response.rect.y_range(),
++                Stroke::new(1.0, palette.focus_frame),
++            );
++        }
++    });
++}
++
++/// Draws the list of the stored templates.
++fn draw_templates(ui: &mut egui::Ui, dialog: &RenameDialog, style: &DrawStyle<'_>) {
++    let palette = style.palette;
++    let texts = style.texts;
++    let profile = style.profile;
++
++    ui.label(
++        RichText::new(texts.get(TextKey::RenameTemplates)).color(palette.text_dimmed),
++    );
++
++    if dialog.templates().is_empty() {
++        ui.label(RichText::new(texts.get(TextKey::RenameEmpty)).color(palette.text_dimmed));
++        return;
++    }
++
++    let height = profile.row_height();
++    let cursor = dialog.template_cursor();
++    for (index, template) in dialog.templates().iter().enumerate() {
++        let rect = Rect::from_min_size(
++            egui::pos2(ui.cursor().min.x, ui.cursor().min.y),
++            Vec2::new(ui.available_width(), height),
++        );
++        ui.advance_cursor_after_rect(rect);
++        let name = template.name.clone();
++        draw_row(ui, rect, palette, profile, index == cursor, |ui| {
++            ui.add_sized(
++                [TEMPLATE_NAME_WIDTH, height],
++                egui::Label::new(RichText::new(name).color(palette.text)).truncate(),
++            );
++        });
++    }
++}
++
++/// Draws the list of the preview.
++fn draw_preview(ui: &mut egui::Ui, dialog: &mut RenameDialog, style: &DrawStyle<'_>) {
++    let palette = style.palette;
++    let texts = style.texts;
++    let profile = style.profile;
++
++    ui.label(RichText::new(texts.get(TextKey::RenamePreview)).color(palette.text_dimmed));
++
++    // WHY: the reason why no name could be formed stands above the list,
++    //       because it concerns the whole rule and not one file.
++    let problem = dialog
++        .preview()
++        .and_then(|preview| preview.problem.as_ref())
++        .map(|problem| {
++            texts.get_with(
++                problem.message_key(),
++                &[Argument::named("value", problem.detail.as_str())],
++            )
++        });
++    if let Some(problem) = problem {
++        ui.label(RichText::new(problem).color(palette.warning));
++    }
++
++    if dialog.rows().is_empty() {
++        ui.label(RichText::new(texts.get(TextKey::RenameEmpty)).color(palette.text_dimmed));
++        return;
++    }
++
++    let height = profile.row_height();
++    dialog.ensure_cursor_visible(VISIBLE_ROWS);
++    let first = dialog.scroll();
++    let cursor = dialog.cursor();
++
++    for index in first..first.saturating_add(VISIBLE_ROWS) {
++        let Some(row) = dialog.rows().get(index) else {
++            break;
++        };
++        let is_conflict = dialog.is_conflict(index);
++        let conflict = conflict_text_of(dialog, row, texts);
++        let rect = Rect::from_min_size(
++            egui::pos2(ui.cursor().min.x, ui.cursor().min.y),
++            Vec2::new(ui.available_width(), height),
++        );
++        ui.advance_cursor_after_rect(rect);
++        draw_row(ui, rect, palette, profile, index == cursor, |ui| {
++            draw_preview_row(ui, row, conflict.as_deref(), style, height);
++        });
++    }
++}
++
++/// The text of the conflict of a row of the preview.
++fn conflict_text_of(
++    dialog: &RenameDialog,
++    row: &PreviewRow,
++    texts: &crate::i18n::Texts<'_>,
++) -> Option<String> {
++    let preview = dialog.preview()?;
++    let conflict = preview.conflicts.iter().find(|conflict| {
++        conflict.path == row.source
++            || row
++                .target
++                .as_ref()
++                .is_some_and(|target| conflict.path == *target)
++    })?;
++    let path = conflict.path.to_string_lossy().to_string();
++    Some(texts.get_with(
++        conflict.message_key(),
++        &[Argument::named("value", path.as_str())],
++    ))
++}
++
++/// Draws one row of the preview.
++fn draw_preview_row(
++    ui: &mut egui::Ui,
++    row: &PreviewRow,
++    conflict: Option<&str>,
++    style: &DrawStyle<'_>,
++    height: f32,
++) {
++    let palette = style.palette;
++    let texts = style.texts;
++
++    ui.add_sized(
++        [OLD_NAME_WIDTH, height],
++        egui::Label::new(RichText::new(row.old_name()).color(palette.text_dimmed)).truncate(),
++    );
++
++    ui.label(RichText::new("->").color(palette.text_dimmed));
++
++    let (text, color) = match (&row.name, &row.problem) {
++        (Some(name), _) => (name.clone(), palette.text),
++        (None, Some(problem)) => (
++            texts.get_with(
++                problem.message_key(),
++                &[Argument::named("value", problem.detail.as_str())],
++            ),
++            palette.warning,
++        ),
++        (None, None) => (String::new(), palette.text_dimmed),
++    };
++    ui.add_sized(
++        [ui.available_width().max(80.0), height],
++        egui::Label::new(RichText::new(text).color(color)).truncate(),
++    );
++
++    if let Some(conflict) = conflict {
++        ui.label(RichText::new(conflict).color(palette.warning));
++    }
++}
++
++/// Draws a row of the dialog and marks it as the row under the cursor.
++fn draw_row(
++    ui: &mut egui::Ui,
++    rect: Rect,
++    palette: &Palette,
++    profile: &LayoutProfile,
++    is_cursor: bool,
++    build: impl FnOnce(&mut egui::Ui),
++) {
++    if is_cursor {
++        ui.painter().rect_filled(rect, 0.0, palette.cursor);
++    }
++
++    ui.scope_builder(
++        egui::UiBuilder::new()
++            .max_rect(rect)
++            .layout(Layout::left_to_right(Align::Center)),
++        |ui| {
++            ui.spacing_mut().item_spacing.x = 8.0;
++            build(ui);
++        },
++    );
++
++    if is_cursor {
++        // WHY: the frame of the focus is drawn after the text, so that it
++        //       frames the row instead of hiding it (NFR-11).
++        ui.painter().rect_stroke(
++            rect,
++            0.0,
++            Stroke::new(profile.focus_frame_width(), palette.focus_frame),
++            egui::StrokeKind::Inside,
++        );
++    }
++}
++
++/// Draws the line with the keys of the dialog.
++fn draw_hint(ui: &mut egui::Ui, style: &DrawStyle<'_>) {
++    ui.label(
++        RichText::new(style.texts.get(TextKey::RenameHint)).color(style.palette.text_dimmed),
++    );
++}
++
++/// The place of the caret in a field.
++fn caret_place(ui: &egui::Ui, prefix: &str, rect: Rect, font_size: f32) -> f32 {
++    let font = egui::FontId::proportional(font_size);
++    let width = ui.ctx().fonts_mut(|fonts| {
++        fonts
++            .layout_no_wrap(prefix.to_string(), font, Color32::WHITE)
++            .size()
++            .x
++    });
++    rect.left() + width
++}
+diff --git a/crates/phocommander-ui/src/rename/engine.rs b/crates/phocommander-ui/src/rename/engine.rs
+new file mode 100644
+index 0000000..03836f2
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/engine.rs
+@@ -0,0 +1,576 @@
++//! The seam to the engine that forms the new names.
++//!
++//! WHAT: the trait that the interface asks for the new names
++//!       ([`RenameEngine`]), the question ([`RenameRequest`]), the facts of a
++//!       file ([`RenameFile`]), the answer ([`RenamePreview`]), a row of the
++//!       answer ([`PreviewRow`]), the reason why a row failed
++//!       ([`PreviewProblem`], [`ProblemKind`]), a conflict ([`Conflict`]) and
++//!       the kinds of the conflicts ([`ConflictKind`]).
++//! WHY: the dialog shows a live preview of every new name before the rename
++//!       runs (FR-34), and the preview needs the engine that forms the
++//!       names. The engine lives in the crate of the operations, and the
++//!       interface crate may not depend on a sibling crate of the same level.
++//!       The seam is therefore a trait, and the composition root hands the
++//!       implementation over — the same arrangement as the texts of the
++//!       catalogue and the formats of a locale.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::rename::{RenameEngine, RenamePreview, RenameRequest};
++//!
++//! # struct Engine;
++//! # impl RenameEngine for Engine {
++//! #     fn preview(&self, _request: &RenameRequest) -> RenamePreview {
++//! #         RenamePreview::empty()
++//! #     }
++//! # }
++//! let engine = Engine;
++//! let request = RenameRequest::new();
++//! assert!(engine.preview(&request).rows.is_empty());
++//! ```
++
++use std::path::{Path, PathBuf};
++use std::time::SystemTime;
++
++use crate::i18n::TextKey;
++use crate::rename::rule::RenameRule;
++
++/// The engine that forms the new names of a selection.
++///
++/// WHY: the interface asks the engine for the new names and for the
++///       conflicts of the rename, and it never asks how the engine works.
++///       The implementation lives in the composition root, because the engine
++///       of the product belongs to the crate of the operations.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_ui::rename::{RenameEngine, RenamePreview, RenameRequest};
++///
++/// # struct Engine;
++/// # impl RenameEngine for Engine {
++/// #     fn preview(&self, _request: &RenameRequest) -> RenamePreview {
++/// #         RenamePreview::empty()
++/// #     }
++/// # }
++///
++/// fn names(engine: &dyn RenameEngine, request: &RenameRequest) -> usize {
++///     engine.preview(request).rows.len()
++/// }
++///
++/// assert_eq!(names(&Engine, &RenameRequest::new()), 0);
++/// ```
++pub trait RenameEngine {
++    /// The new names of the files of the selection and the conflicts of the
++    /// rename.
++    ///
++    /// WHY: the answer carries the conflicts of the rename as well, because
++    ///       the user has to see them before the rename runs (FR-35). The
++    ///       engine never renames a file here — it only says what the names
++    ///       would be.
++    fn preview(&self, request: &RenameRequest) -> RenamePreview;
++}
++
++/// The question that the dialog asks the engine.
++#[derive(Debug, Clone, PartialEq, Eq, Default)]
++pub struct RenameRequest {
++    /// The rule that forms the names.
++    pub rule: RenameRule,
++
++    /// The files of the selection.
++    pub files: Vec<RenameFile>,
++}
++
++impl RenameRequest {
++    /// Builds an empty question.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameRequest;
++    ///
++    /// let request = RenameRequest::new();
++    /// assert!(request.files.is_empty());
++    /// ```
++    pub fn new() -> Self {
++        Self::default()
++    }
++
++    /// Builds a question with a rule and a selection.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{RenameFile, RenameRequest, RenameRule};
++    ///
++    /// let request = RenameRequest::with_files(
++    ///     RenameRule::new("[name].[ext]"),
++    ///     vec![RenameFile::new("/photos/sunset.jpg")],
++    /// );
++    /// assert_eq!(request.files.len(), 1);
++    /// ```
++    pub fn with_files(rule: RenameRule, files: Vec<RenameFile>) -> Self {
++        Self { rule, files }
++    }
++}
++
++/// The facts of a file of the selection.
++///
++/// WHY: the formation reads no file. The size, the time of the last change
++///       and the checksum are handed to it by the caller, so that the same
++///       rule always yields the same names (FR-33) and so that the reading of
++///       a large file stays out of the loop that draws the preview.
++#[derive(Debug, Clone, PartialEq, Eq, Default)]
++pub struct RenameFile {
++    /// The path of the file that is renamed.
++    pub path: PathBuf,
++
++    /// The size of the file in bytes.
++    pub size: Option<u64>,
++
++    /// The time of the last change of the file.
++    pub modified: Option<SystemTime>,
++
++    /// The checksum of the content of the file.
++    pub checksum: Option<u64>,
++}
++
++impl RenameFile {
++    /// Builds the facts of a file.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameFile;
++    ///
++    /// let file = RenameFile::new("/photos/sunset.jpg");
++    /// assert_eq!(file.path.to_string_lossy(), "/photos/sunset.jpg");
++    /// assert!(file.size.is_none());
++    /// ```
++    pub fn new(path: impl Into<PathBuf>) -> Self {
++        Self {
++            path: path.into(),
++            size: None,
++            modified: None,
++            checksum: None,
++        }
++    }
++
++    /// Adds the size of the file.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameFile;
++    ///
++    /// let file = RenameFile::new("/photos/sunset.jpg").with_size(4096);
++    /// assert_eq!(file.size, Some(4096));
++    /// ```
++    pub fn with_size(mut self, size: u64) -> Self {
++        self.size = Some(size);
++        self
++    }
++
++    /// Adds the time of the last change of the file.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameFile;
++    /// use std::time::{Duration, SystemTime};
++    ///
++    /// let time = SystemTime::UNIX_EPOCH + Duration::from_secs(60);
++    /// let file = RenameFile::new("/photos/sunset.jpg").with_modified(time);
++    /// assert_eq!(file.modified, Some(time));
++    /// ```
++    pub fn with_modified(mut self, modified: SystemTime) -> Self {
++        self.modified = Some(modified);
++        self
++    }
++
++    /// Adds the checksum of the content of the file.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameFile;
++    ///
++    /// let file = RenameFile::new("/photos/sunset.jpg").with_checksum(7);
++    /// assert_eq!(file.checksum, Some(7));
++    /// ```
++    pub fn with_checksum(mut self, checksum: u64) -> Self {
++        self.checksum = Some(checksum);
++        self
++    }
++}
++
++/// The answer of the engine.
++#[derive(Debug, Clone, PartialEq, Eq, Default)]
++pub struct RenamePreview {
++    /// One row per file of the selection.
++    pub rows: Vec<PreviewRow>,
++
++    /// The conflicts of the rename.
++    pub conflicts: Vec<Conflict>,
++
++    /// The reason why no name could be formed at all.
++    ///
++    /// WHY: a rule without a format and a broken regular expression stop the
++    ///       whole formation. The rows then carry no name, and the dialog
++    ///       shows the reason above the list.
++    pub problem: Option<PreviewProblem>,
++}
++
++impl RenamePreview {
++    /// Builds an empty answer.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenamePreview;
++    ///
++    /// let preview = RenamePreview::empty();
++    /// assert!(preview.rows.is_empty());
++    /// assert!(preview.conflicts.is_empty());
++    /// ```
++    pub fn empty() -> Self {
++        Self::default()
++    }
++
++    /// Whether the rename may run.
++    ///
++    /// WHY: the rename of a selection is atomic — either every file is
++    ///       renamed or none of them is. A selection with a file that could
++    ///       not be named and a selection with a conflict are therefore both
++    ///       refused as a whole.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenamePreview;
++    ///
++    /// assert!(!RenamePreview::empty().may_rename());
++    /// ```
++    pub fn may_rename(&self) -> bool {
++        if self.problem.is_some() || !self.conflicts.is_empty() {
++            return false;
++        }
++        self.rows.iter().all(|row| row.name.is_some() && row.problem.is_none())
++    }
++}
++
++/// One row of the preview.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct PreviewRow {
++    /// The path the file carries now.
++    pub source: PathBuf,
++
++    /// The path the file would receive.
++    pub target: Option<PathBuf>,
++
++    /// The new name of the file.
++    pub name: Option<String>,
++
++    /// The reason why the file could not be named.
++    pub problem: Option<PreviewProblem>,
++}
++
++impl PreviewRow {
++    /// Builds a row of a file that received a new name.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::PreviewRow;
++    ///
++    /// let row = PreviewRow::named("/photos/a.jpg", "a_001.jpg");
++    /// assert_eq!(row.name.as_deref(), Some("a_001.jpg"));
++    /// ```
++    pub fn named(source: impl Into<PathBuf>, name: impl Into<String>) -> Self {
++        let source: PathBuf = source.into();
++        let name = name.into();
++        let target = match source.parent() {
++            Some(parent) => parent.join(name.as_str()),
++            None => PathBuf::from(name.as_str()),
++        };
++        Self {
++            source,
++            target: Some(target),
++            name: Some(name),
++            problem: None,
++        }
++    }
++
++    /// Builds a row of a file that could not be named.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{PreviewProblem, PreviewRow, ProblemKind};
++    ///
++    /// let row = PreviewRow::failed("/photos/a.jpg", PreviewProblem::empty_format());
++    /// assert!(row.name.is_none());
++    /// assert_eq!(row.problem.map(|problem| problem.kind), Some(ProblemKind::EmptyFormat));
++    /// ```
++    pub fn failed(source: impl Into<PathBuf>, problem: PreviewProblem) -> Self {
++        Self {
++            source: source.into(),
++            target: None,
++            name: None,
++            problem: Some(problem),
++        }
++    }
++
++    /// The name of the file without its directory.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::PreviewRow;
++    ///
++    /// let row = PreviewRow::named("/photos/a.jpg", "a_001.jpg");
++    /// assert_eq!(row.old_name(), "a.jpg");
++    /// ```
++    pub fn old_name(&self) -> String {
++        file_name_of(&self.source)
++    }
++}
++
++/// The reason why a name could not be formed.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct PreviewProblem {
++    /// The kind of the reason.
++    pub kind: ProblemKind,
++
++    /// The value that the reason names — a placeholder, a pattern or a name.
++    ///
++    /// WHY: the value is data and not a text of the interface. The message
++    ///       that explains it comes from the catalogue, and it takes the value
++    ///       as an argument (FR-05).
++    pub detail: String,
++}
++
++impl PreviewProblem {
++    /// Builds a reason of a kind without a value.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::PreviewProblem;
++    ///
++    /// let problem = PreviewProblem::empty_format();
++    /// assert!(problem.detail.is_empty());
++    /// ```
++    pub fn empty_format() -> Self {
++        Self {
++            kind: ProblemKind::EmptyFormat,
++            detail: String::new(),
++        }
++    }
++
++    /// Builds a reason that names a value.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{PreviewProblem, ProblemKind};
++    ///
++    /// let problem = PreviewProblem::of(ProblemKind::UnknownValue, "hash");
++    /// assert_eq!(problem.detail, "hash");
++    /// ```
++    pub fn of(kind: ProblemKind, detail: impl Into<String>) -> Self {
++        Self {
++            kind,
++            detail: detail.into(),
++        }
++    }
++
++    /// The key of the catalogue that carries the message of this reason.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{PreviewProblem, ProblemKind};
++    /// use phocommander_ui::TextKey;
++    ///
++    /// let problem = PreviewProblem::empty_format();
++    /// assert_eq!(problem.message_key(), TextKey::RenameProblemEmptyFormat);
++    /// ```
++    pub fn message_key(&self) -> TextKey {
++        self.kind.message_key()
++    }
++}
++
++/// The kinds of the reasons why a name could not be formed.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum ProblemKind {
++    /// The rule carries no format.
++    EmptyFormat,
++
++    /// The value of a placeholder is not known.
++    UnknownValue,
++
++    /// The pattern of a replacement rule is not a valid regular expression.
++    InvalidPattern,
++
++    /// The formed name cannot be used as a file name.
++    InvalidName,
++}
++
++impl ProblemKind {
++    /// The key of the catalogue that carries the message of this kind.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::ProblemKind;
++    /// use phocommander_ui::TextKey;
++    ///
++    /// assert_eq!(
++    ///     ProblemKind::InvalidPattern.message_key(),
++    ///     TextKey::RenameProblemInvalidPattern
++    /// );
++    /// ```
++    pub const fn message_key(&self) -> TextKey {
++        match self {
++            ProblemKind::EmptyFormat => TextKey::RenameProblemEmptyFormat,
++            ProblemKind::UnknownValue => TextKey::RenameProblemUnknownValue,
++            ProblemKind::InvalidPattern => TextKey::RenameProblemInvalidPattern,
++            ProblemKind::InvalidName => TextKey::RenameProblemInvalidName,
++        }
++    }
++}
++
++/// A conflict that stops the rename.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct Conflict {
++    /// The kind of the conflict.
++    pub kind: ConflictKind,
++
++    /// The path the conflict is about.
++    pub path: PathBuf,
++}
++
++impl Conflict {
++    /// Builds a conflict.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{Conflict, ConflictKind};
++    ///
++    /// let conflict = Conflict::new(ConflictKind::TargetExists, "/photos/b.jpg");
++    /// assert_eq!(conflict.kind, ConflictKind::TargetExists);
++    /// ```
++    pub fn new(kind: ConflictKind, path: impl Into<PathBuf>) -> Self {
++        Self {
++            kind,
++            path: path.into(),
++        }
++    }
++
++    /// The key of the catalogue that carries the message of this conflict.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{Conflict, ConflictKind};
++    /// use phocommander_ui::TextKey;
++    ///
++    /// let conflict = Conflict::new(ConflictKind::DuplicateTarget, "/photos/b.jpg");
++    /// assert_eq!(conflict.message_key(), TextKey::RenameConflictDuplicateTarget);
++    /// ```
++    pub const fn message_key(&self) -> TextKey {
++        self.kind.message_key()
++    }
++}
++
++/// The kinds of the conflicts of a rename.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
++pub enum ConflictKind {
++    /// The target of the rename is occupied by another file.
++    TargetExists,
++
++    /// Two files of the selection would receive the same name.
++    DuplicateTarget,
++
++    /// The file that is to be renamed does not exist.
++    MissingSource,
++}
++
++impl ConflictKind {
++    /// The name of the kind, as the operations write it.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::ConflictKind;
++    ///
++    /// assert_eq!(ConflictKind::TargetExists.as_str(), "target-exists");
++    /// ```
++    pub const fn as_str(&self) -> &'static str {
++        match self {
++            ConflictKind::TargetExists => "target-exists",
++            ConflictKind::DuplicateTarget => "duplicate-target",
++            ConflictKind::MissingSource => "missing-source",
++        }
++    }
++
++    /// The key of the catalogue that carries the message of this kind.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::ConflictKind;
++    /// use phocommander_ui::TextKey;
++    ///
++    /// assert_eq!(
++    ///     ConflictKind::MissingSource.message_key(),
++    ///     TextKey::RenameConflictMissingSource
++    /// );
++    /// ```
++    pub const fn message_key(&self) -> TextKey {
++        match self {
++            ConflictKind::TargetExists => TextKey::RenameConflictTargetExists,
++            ConflictKind::DuplicateTarget => TextKey::RenameConflictDuplicateTarget,
++            ConflictKind::MissingSource => TextKey::RenameConflictMissingSource,
++        }
++    }
++}
++
++/// One file of a multiple rename.
++///
++/// WHY: the interface names the pairs of the rename on its own, because the
++///       type of the operations is not known to it. The composition root
++///       translates the pair into the pair of the engine.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct RenamePair {
++    /// The path the file carries now.
++    pub source: PathBuf,
++
++    /// The path the file receives.
++    pub target: PathBuf,
++}
++
++impl RenamePair {
++    /// Builds a pair of a rename.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenamePair;
++    ///
++    /// let pair = RenamePair::new("/photos/a.jpg", "/photos/a_001.jpg");
++    /// assert_eq!(pair.source.to_string_lossy(), "/photos/a.jpg");
++    /// ```
++    pub fn new(source: impl Into<PathBuf>, target: impl Into<PathBuf>) -> Self {
++        Self {
++            source: source.into(),
++            target: target.into(),
++        }
++    }
++
++    /// The name of the file without its directory.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenamePair;
++    ///
++    /// let pair = RenamePair::new("/photos/a.jpg", "/photos/a_001.jpg");
++    /// assert_eq!(pair.target_name(), "a_001.jpg");
++    /// ```
++    pub fn target_name(&self) -> String {
++        file_name_of(&self.target)
++    }
++}
++
++/// The name of a path without its directory.
++fn file_name_of(path: &Path) -> String {
++    path.file_name()
++        .map(|name| name.to_string_lossy().to_string())
++        .unwrap_or_default()
++}
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests;
+diff --git a/crates/phocommander-ui/src/rename/engine/tests.rs b/crates/phocommander-ui/src/rename/engine/tests.rs
+new file mode 100644
+index 0000000..cdc230e
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/engine/tests.rs
+@@ -0,0 +1,83 @@
++// The tests of the seam to the engine that forms the new names.
++//
++// WHY: the tests live in a file of their own, so that the seam itself stays
++// readable. They may fail loudly when their arrangement is wrong — the rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++
++#![allow(clippy::unwrap_used, clippy::expect_used)]
++
++use super::*;
++
++#[test]
++fn a_preview_without_a_name_may_not_rename() {
++    // arrange
++    let mut preview = RenamePreview::empty();
++    preview.rows.push(PreviewRow::failed("/photos/a.jpg", PreviewProblem::empty_format()));
++
++    // act
++    let may = preview.may_rename();
++
++    // assert
++    assert!(!may);
++}
++
++#[test]
++fn a_preview_with_a_conflict_may_not_rename() {
++    // arrange
++    let mut preview = RenamePreview::empty();
++    preview.rows.push(PreviewRow::named("/photos/a.jpg", "a_001.jpg"));
++    preview
++        .conflicts
++        .push(Conflict::new(ConflictKind::TargetExists, "/photos/a_001.jpg"));
++
++    // act
++    let may = preview.may_rename();
++
++    // assert
++    assert!(!may);
++}
++
++#[test]
++fn a_preview_with_names_and_without_conflicts_may_rename() {
++    // arrange
++    let mut preview = RenamePreview::empty();
++    preview.rows.push(PreviewRow::named("/photos/a.jpg", "a_001.jpg"));
++
++    // act
++    let may = preview.may_rename();
++
++    // assert
++    assert!(may);
++}
++
++#[test]
++fn every_kind_of_a_problem_has_a_key_of_its_own() {
++    // act
++    let keys = [
++        ProblemKind::EmptyFormat.message_key(),
++        ProblemKind::UnknownValue.message_key(),
++        ProblemKind::InvalidPattern.message_key(),
++        ProblemKind::InvalidName.message_key(),
++    ];
++
++    // assert
++    assert_eq!(keys.len(), 4);
++    assert_ne!(keys[0], keys[1]);
++    assert_ne!(keys[2], keys[3]);
++}
++
++#[test]
++fn every_kind_of_a_conflict_has_a_key_of_its_own() {
++    // act
++    let keys = [
++        ConflictKind::TargetExists.message_key(),
++        ConflictKind::DuplicateTarget.message_key(),
++        ConflictKind::MissingSource.message_key(),
++    ];
++
++    // assert
++    assert_eq!(keys.len(), 3);
++    assert_ne!(keys[0], keys[1]);
++    assert_ne!(keys[1], keys[2]);
++}
+diff --git a/crates/phocommander-ui/src/rename/fields.rs b/crates/phocommander-ui/src/rename/fields.rs
+new file mode 100644
+index 0000000..61a8b95
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/fields.rs
+@@ -0,0 +1,303 @@
++//! The fields of the dialog of the multiple rename.
++//!
++//! WHAT: the buffers of the dialog ([`Fields`]).
++//! WHY: the fields are the truth of the dialog: the rule is built out of them
++//!       every time the engine is asked, so that a rule and the fields can
++//!       never drift apart. The caret belongs to the fields as well, because
++//!       only one field is edited at a time and the caret of the field that
++//!       has the focus is the caret of the dialog.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::panel::PanelSide;
++//! use phocommander_ui::rename::{RenameDialog, RenameFocus};
++//!
++//! let dialog = RenameDialog::new(PanelSide::Left, Vec::new(), Vec::new());
++//! assert_eq!(dialog.text_of(RenameFocus::Format), "[name]_[n].[ext]");
++//! ```
++
++use crate::rename::focus::RenameFocus;
++use crate::rename::rule::{CounterOrder, CounterRule, RenameRule, ReplaceRule, SeriesRule};
++
++/// The buffers of the dialog and the caret in them.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub(crate) struct Fields {
++    /// The format of the new name.
++    format: String,
++
++    /// The text that is searched.
++    search: String,
++
++    /// The text that takes its place.
++    replacement: String,
++
++    /// Whether the search is a regular expression.
++    regex: bool,
++
++    /// The first number of the counter.
++    counter_start: String,
++
++    /// The step of the counter.
++    counter_step: String,
++
++    /// The width of the counter.
++    counter_width: String,
++
++    /// The name of the series.
++    series_name: String,
++
++    /// The name of the template that is to be stored.
++    template_name: String,
++
++    /// The position of the caret in the field that has the focus.
++    caret: usize,
++}
++
++impl Default for Fields {
++    /// Builds the fields of a dialog that was just opened.
++    ///
++    /// WHY: the format numbers the files of the selection, so that the
++    ///       preview shows what the dialog is for. A format that leaves the
++    ///       names alone would show a list of names that do not change, and
++    ///       every file of it would look like a conflict.
++    fn default() -> Self {
++        Self {
++            format: "[name]_[n].[ext]".to_string(),
++            search: String::new(),
++            replacement: String::new(),
++            regex: false,
++            counter_start: "1".to_string(),
++            counter_step: "1".to_string(),
++            counter_width: "3".to_string(),
++            series_name: String::new(),
++            template_name: String::new(),
++            caret: 0,
++        }
++    }
++}
++
++impl Fields {
++    /// The text of a field.
++    pub(crate) fn text_of(&self, focus: RenameFocus) -> &str {
++        match focus {
++            RenameFocus::Format => self.format.as_str(),
++            RenameFocus::Search => self.search.as_str(),
++            RenameFocus::Replacement => self.replacement.as_str(),
++            RenameFocus::CounterStart => self.counter_start.as_str(),
++            RenameFocus::CounterStep => self.counter_step.as_str(),
++            RenameFocus::CounterWidth => self.counter_width.as_str(),
++            RenameFocus::SeriesName => self.series_name.as_str(),
++            RenameFocus::TemplateName => self.template_name.as_str(),
++            RenameFocus::Regex | RenameFocus::Templates | RenameFocus::Preview => "",
++        }
++    }
++
++    /// The position of the caret in the field that has the focus.
++    pub(crate) fn caret(&self) -> usize {
++        self.caret
++    }
++
++    /// Writes text into a field at the caret.
++    ///
++    /// WHY: the preview follows every key stroke of the field (FR-34). The
++    ///       text therefore goes into the buffer of the dialog and the engine
++    ///       is asked in the frame that follows.
++    pub(crate) fn insert(&mut self, focus: RenameFocus, text: &str) {
++        // WHY: the caret is read before the buffer is borrowed, and the new
++        //       caret is written after the borrow is over. The borrow of the
++        //       buffer holds the whole field, and the caret is a part of it.
++        let caret = self.caret;
++        let count = text.chars().count();
++        let next = {
++            let Some(buffer) = self.buffer_mut(focus) else {
++                return;
++            };
++            let position = byte_index_of(buffer, caret);
++            buffer.insert_str(position, text);
++            caret + count
++        };
++        self.caret = next;
++    }
++
++    /// Deletes the character before the caret.
++    pub(crate) fn backspace(&mut self, focus: RenameFocus) {
++        let caret = self.caret;
++        let next = {
++            let Some(buffer) = self.buffer_mut(focus) else {
++                return;
++            };
++            if caret == 0 {
++                return;
++            }
++            let position = byte_index_of(buffer, caret - 1);
++            let end = byte_index_of(buffer, caret);
++            buffer.replace_range(position..end, "");
++            caret - 1
++        };
++        self.caret = next;
++    }
++
++    /// Deletes the character at the caret.
++    pub(crate) fn delete(&mut self, focus: RenameFocus) {
++        let caret = self.caret;
++        let next = {
++            let Some(buffer) = self.buffer_mut(focus) else {
++                return;
++            };
++            if caret >= buffer.chars().count() {
++                return;
++            }
++            let position = byte_index_of(buffer, caret);
++            let end = byte_index_of(buffer, caret + 1);
++            buffer.replace_range(position..end, "");
++            caret
++        };
++        self.caret = next;
++    }
++
++    /// Moves the caret by a number of characters.
++    pub(crate) fn move_caret(&mut self, focus: RenameFocus, delta: isize) {
++        let last = self.text_of(focus).chars().count() as isize;
++        let target = (self.caret as isize + delta).clamp(0, last);
++        self.caret = target as usize;
++    }
++
++    /// Puts the caret in front of the text.
++    pub(crate) fn caret_to_start(&mut self) {
++        self.caret = 0;
++    }
++
++    /// Puts the caret behind the text of a field.
++    ///
++    /// WHY: the caret goes to the end of the text, because the user continues
++    ///       a text that is already there and does not rewrite it.
++    pub(crate) fn caret_to_end(&mut self, focus: RenameFocus) {
++        self.caret = self.text_of(focus).chars().count();
++    }
++
++    /// Whether the search is a regular expression.
++    pub(crate) fn regex(&self) -> bool {
++        self.regex
++    }
++
++    /// Turns the search into a regular expression, or back.
++    pub(crate) fn set_regex(&mut self, regex: bool) {
++        self.regex = regex;
++    }
++
++    /// The name of the series.
++    pub(crate) fn series_name(&self) -> &str {
++        self.series_name.as_str()
++    }
++
++    /// The name of the template that is to be stored.
++    pub(crate) fn template_name(&self) -> &str {
++        self.template_name.trim()
++    }
++
++    /// Whether a field carries a value that is not a number.
++    ///
++    /// WHY: a field that carries no number is drawn in the colour of a
++    ///       warning, so that the user sees the mistake before the rename
++    ///       runs.
++    pub(crate) fn is_invalid(&self, focus: RenameFocus) -> bool {
++        match focus {
++            RenameFocus::CounterStart => number_of(self.counter_start.as_str()).is_none(),
++            RenameFocus::CounterStep => number_of(self.counter_step.as_str()).is_none(),
++            RenameFocus::CounterWidth => width_of(self.counter_width.as_str()).is_none(),
++            _ => false,
++        }
++    }
++
++    /// The rule that the fields describe.
++    pub(crate) fn rule(&self) -> RenameRule {
++        let mut rule = RenameRule::new(self.format.clone());
++        if !self.search.is_empty() {
++            rule = rule.with_replacement(ReplaceRule {
++                search: self.search.clone(),
++                replacement: self.replacement.clone(),
++                regex: self.regex,
++            });
++        }
++        rule = rule.with_counter(CounterRule {
++            start: number_of(self.counter_start.as_str()).unwrap_or(1),
++            step: number_of(self.counter_step.as_str()).unwrap_or(1),
++            width: width_of(self.counter_width.as_str()).unwrap_or(3),
++            order: CounterOrder::Selection,
++        });
++        rule = rule.with_series(SeriesRule {
++            series_name: if self.series_name.is_empty() {
++                None
++            } else {
++                Some(self.series_name.clone())
++            },
++            ..SeriesRule::default()
++        });
++        rule
++    }
++
++    /// Puts the rule of a template into the fields.
++    ///
++    /// WHY: a template that is applied shows its rule in the fields, so that
++    ///       the user sees what the template does before the rename runs.
++    pub(crate) fn apply_rule(&mut self, rule: &RenameRule) {
++        self.format = rule.effective_format().to_string();
++        self.search = rule
++            .replacements
++            .first()
++            .map(|replacement| replacement.search.clone())
++            .unwrap_or_default();
++        self.replacement = rule
++            .replacements
++            .first()
++            .map(|replacement| replacement.replacement.clone())
++            .unwrap_or_default();
++        self.regex = rule
++            .replacements
++            .first()
++            .map(|replacement| replacement.regex)
++            .unwrap_or(false);
++        if let Some(counter) = &rule.counter {
++            self.counter_start = counter.start.to_string();
++            self.counter_step = counter.step.to_string();
++            self.counter_width = counter.width.to_string();
++        }
++        self.series_name = rule
++            .series
++            .as_ref()
++            .and_then(|series| series.series_name.clone())
++            .unwrap_or_default();
++    }
++
++    /// The buffer of a field.
++    fn buffer_mut(&mut self, focus: RenameFocus) -> Option<&mut String> {
++        match focus {
++            RenameFocus::Format => Some(&mut self.format),
++            RenameFocus::Search => Some(&mut self.search),
++            RenameFocus::Replacement => Some(&mut self.replacement),
++            RenameFocus::CounterStart => Some(&mut self.counter_start),
++            RenameFocus::CounterStep => Some(&mut self.counter_step),
++            RenameFocus::CounterWidth => Some(&mut self.counter_width),
++            RenameFocus::SeriesName => Some(&mut self.series_name),
++            RenameFocus::TemplateName => Some(&mut self.template_name),
++            RenameFocus::Regex | RenameFocus::Templates | RenameFocus::Preview => None,
++        }
++    }
++}
++
++/// The byte index of the given character position.
++fn byte_index_of(text: &str, position: usize) -> usize {
++    text.char_indices()
++        .nth(position)
++        .map(|(index, _)| index)
++        .unwrap_or(text.len())
++}
++
++/// The number of a value, if the value is a number.
++fn number_of(text: &str) -> Option<i64> {
++    text.trim().parse::<i64>().ok()
++}
++
++/// The width of a value, if the value is a width.
++fn width_of(text: &str) -> Option<usize> {
++    text.trim().parse::<usize>().ok().filter(|width| *width > 0)
++}
+diff --git a/crates/phocommander-ui/src/rename/focus.rs b/crates/phocommander-ui/src/rename/focus.rs
+new file mode 100644
+index 0000000..9e39df5
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/focus.rs
+@@ -0,0 +1,105 @@
++//! The parts of the dialog of the multiple rename that have the focus.
++//!
++//! WHAT: the part of the dialog that has the focus ([`RenameFocus`]).
++//! WHY: the order of the parts is the order of the tab key, and it is fixed
++//!       (section 6.4 of the specification). The order is therefore part of
++//!       the state and not an accident of the drawing. Every part of the
++//!       dialog is reachable with the keyboard — the mouse is optional.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::rename::RenameFocus;
++//!
++//! assert_eq!(RenameFocus::all().len(), 11);
++//! assert_eq!(RenameFocus::all()[0], RenameFocus::Format);
++//! ```
++
++/// The part of the dialog that has the focus.
++///
++/// WHY: the order of the parts is the order of the tab key, and it is fixed
++///       (section 6.4 of the specification). The order is therefore part of
++///       the state and not an accident of the drawing.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum RenameFocus {
++    /// The field with the format of the new name.
++    Format,
++
++    /// The field with the text that is searched.
++    Search,
++
++    /// The field with the text that takes its place.
++    Replacement,
++
++    /// The switch that turns the search into a regular expression.
++    Regex,
++
++    /// The field with the first number of the counter.
++    CounterStart,
++
++    /// The field with the step of the counter.
++    CounterStep,
++
++    /// The field with the width of the counter.
++    CounterWidth,
++
++    /// The field with the name of the series.
++    SeriesName,
++
++    /// The field with the name of a new template.
++    TemplateName,
++
++    /// The list of the stored templates.
++    Templates,
++
++    /// The list of the preview.
++    Preview,
++}
++
++impl RenameFocus {
++    /// Every part of the dialog, in the order of the tab key.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameFocus;
++    ///
++    /// assert_eq!(RenameFocus::all().len(), 11);
++    /// assert_eq!(RenameFocus::all()[0], RenameFocus::Format);
++    /// ```
++    pub const fn all() -> [RenameFocus; 11] {
++        [
++            RenameFocus::Format,
++            RenameFocus::Search,
++            RenameFocus::Replacement,
++            RenameFocus::Regex,
++            RenameFocus::CounterStart,
++            RenameFocus::CounterStep,
++            RenameFocus::CounterWidth,
++            RenameFocus::SeriesName,
++            RenameFocus::TemplateName,
++            RenameFocus::Templates,
++            RenameFocus::Preview,
++        ]
++    }
++
++    /// Whether the part is a text field.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameFocus;
++    ///
++    /// assert!(RenameFocus::Format.is_field());
++    /// assert!(!RenameFocus::Preview.is_field());
++    /// ```
++    pub const fn is_field(&self) -> bool {
++        matches!(
++            self,
++            RenameFocus::Format
++                | RenameFocus::Search
++                | RenameFocus::Replacement
++                | RenameFocus::CounterStart
++                | RenameFocus::CounterStep
++                | RenameFocus::CounterWidth
++                | RenameFocus::SeriesName
++                | RenameFocus::TemplateName
++        )
++    }
++}
+diff --git a/crates/phocommander-ui/src/rename/rule.rs b/crates/phocommander-ui/src/rename/rule.rs
+new file mode 100644
+index 0000000..2a39b50
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/rule.rs
+@@ -0,0 +1,441 @@
++//! The rule of a rename as the dialog edits it.
++//!
++//! WHAT: the rule of a rename ([`RenameRule`]), the search and the
++//!       replacement ([`ReplaceRule`]), the counter ([`CounterRule`]), the
++//!       order in which the files receive their number ([`CounterOrder`]) and
++//!       the values of a series ([`SeriesRule`]).
++//! WHY: the dialog edits a rule and shows it to the user. The engine that
++//!       forms the names lives in the crate of the operations, and the
++//!       interface crate may not depend on a sibling crate of the same level.
++//!       The rule is therefore data here — it can be stored, read back and
++//!       compared without running anything — and the composition root
++//!       translates it into the rule of the engine (the seam of
++//!       [`crate::rename::engine`]).
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::rename::RenameRule;
++//!
++//! let rule = RenameRule::new("[name] - [n].[ext]");
++//! assert_eq!(rule.effective_format(), "[name] - [n].[ext]");
++//! assert!(rule.counter.is_none());
++//! ```
++
++/// The rule of a rename.
++///
++/// WHY: a rule is data and not behaviour. It carries the format of the new
++///       name, the replacement rules, the counter and the values of a series,
++///       and it can be stored, read back and compared without running
++///       anything.
++#[derive(Debug, Clone, PartialEq, Eq, Default)]
++pub struct RenameRule {
++    /// The format of the new name.
++    pub format: String,
++
++    /// The rules that search a text and replace it (FR-31).
++    pub replacements: Vec<ReplaceRule>,
++
++    /// The counter that numbers the files of the selection (FR-32).
++    pub counter: Option<CounterRule>,
++
++    /// The values of a series, if the files belong to one (FR-37, FR-38).
++    pub series: Option<SeriesRule>,
++}
++
++impl RenameRule {
++    /// Builds a rule with a format.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameRule;
++    ///
++    /// let rule = RenameRule::new("[name].[ext]");
++    /// assert_eq!(rule.format, "[name].[ext]");
++    /// ```
++    pub fn new(format: impl Into<String>) -> Self {
++        Self {
++            format: format.into(),
++            replacements: Vec::new(),
++            counter: None,
++            series: None,
++        }
++    }
++
++    /// Adds a rule that searches a text and replaces it.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{RenameRule, ReplaceRule};
++    ///
++    /// let rule = RenameRule::new("[name]").with_replacement(ReplaceRule::literal("a", "b"));
++    /// assert_eq!(rule.replacements.len(), 1);
++    /// ```
++    pub fn with_replacement(mut self, replacement: ReplaceRule) -> Self {
++        self.replacements.push(replacement);
++        self
++    }
++
++    /// Adds the counter that numbers the files.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{CounterRule, RenameRule};
++    ///
++    /// let rule = RenameRule::new("[n]").with_counter(CounterRule::new(1, 1, 3));
++    /// assert_eq!(rule.counter.map(|counter| counter.width), Some(3));
++    /// ```
++    pub fn with_counter(mut self, counter: CounterRule) -> Self {
++        self.counter = Some(counter);
++        self
++    }
++
++    /// Adds the values of a series.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{RenameRule, SeriesRule};
++    ///
++    /// let rule = RenameRule::new("[series]").with_series(SeriesRule::new());
++    /// assert!(rule.series.is_some());
++    /// ```
++    pub fn with_series(mut self, series: SeriesRule) -> Self {
++        self.series = Some(series);
++        self
++    }
++
++    /// The format that the formation uses.
++    ///
++    /// WHY: a rule that renames the episodes of a series and carries no
++    ///       format of its own uses the format of its series.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::RenameRule;
++    ///
++    /// let rule = RenameRule::new("");
++    /// assert_eq!(rule.effective_format(), "");
++    /// ```
++    pub fn effective_format(&self) -> &str {
++        if !self.format.trim().is_empty() {
++            return self.format.as_str();
++        }
++        match &self.series {
++            Some(series) => series.effective_format(),
++            None => "",
++        }
++    }
++}
++
++/// A rule that searches a text and replaces it.
++///
++/// WHY: the switch that turns the search into a regular expression is off by
++///       default (FR-31). A search that is not a regular expression is what
++///       a user expects when the text carries a dot or a bracket.
++#[derive(Debug, Clone, PartialEq, Eq, Default)]
++pub struct ReplaceRule {
++    /// The text that is searched.
++    pub search: String,
++
++    /// The text that takes its place.
++    pub replacement: String,
++
++    /// Whether the search is a regular expression.
++    pub regex: bool,
++}
++
++impl ReplaceRule {
++    /// Builds a rule that searches the text literally.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::ReplaceRule;
++    ///
++    /// let rule = ReplaceRule::literal("a.b", "c");
++    /// assert_eq!(rule.search, "a.b");
++    /// assert!(!rule.regex);
++    /// ```
++    pub fn literal(search: impl Into<String>, replacement: impl Into<String>) -> Self {
++        Self {
++            search: search.into(),
++            replacement: replacement.into(),
++            regex: false,
++        }
++    }
++
++    /// Builds a rule that searches the text with a regular expression.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::ReplaceRule;
++    ///
++    /// let rule = ReplaceRule::pattern(r"^a(\d+)$", "b$1");
++    /// assert!(rule.regex);
++    /// ```
++    pub fn pattern(search: impl Into<String>, replacement: impl Into<String>) -> Self {
++        Self {
++            search: search.into(),
++            replacement: replacement.into(),
++            regex: true,
++        }
++    }
++}
++
++/// The rule of the counter.
++///
++/// WHY: the counter numbers the files of a selection (FR-32): it starts at a
++///       value, it grows by a step, and it is written with a fixed number of
++///       digits, so that the files of one run carry the same width.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct CounterRule {
++    /// The number of the first file.
++    pub start: i64,
++
++    /// The distance between two numbers.
++    pub step: i64,
++
++    /// The number of digits the number is written with.
++    pub width: usize,
++
++    /// The order in which the files receive the number.
++    pub order: CounterOrder,
++}
++
++impl Default for CounterRule {
++    /// Builds the counter that numbers the files from one.
++    fn default() -> Self {
++        Self {
++            start: 1,
++            step: 1,
++            width: 3,
++            order: CounterOrder::Selection,
++        }
++    }
++}
++
++impl CounterRule {
++    /// Builds a counter.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::CounterRule;
++    ///
++    /// let counter = CounterRule::new(10, 5, 2);
++    /// assert_eq!(counter.start, 10);
++    /// assert_eq!(counter.width, 2);
++    /// ```
++    pub fn new(start: i64, step: i64, width: usize) -> Self {
++        Self {
++            start,
++            step,
++            width,
++            order: CounterOrder::Selection,
++        }
++    }
++
++    /// Sets the order in which the files receive the number.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{CounterOrder, CounterRule};
++    ///
++    /// let counter = CounterRule::new(1, 1, 3).with_order(CounterOrder::Name);
++    /// assert_eq!(counter.order, CounterOrder::Name);
++    /// ```
++    pub fn with_order(mut self, order: CounterOrder) -> Self {
++        self.order = order;
++        self
++    }
++}
++
++/// The order in which the files of a selection receive their number.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
++pub enum CounterOrder {
++    /// The order of the selection.
++    #[default]
++    Selection,
++
++    /// The order of the names of the files.
++    Name,
++
++    /// The order of the time of the last change of the files.
++    Date,
++}
++
++impl CounterOrder {
++    /// The name of the order, as the configuration file writes it.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::CounterOrder;
++    ///
++    /// assert_eq!(CounterOrder::Selection.as_str(), "selection");
++    /// ```
++    pub const fn as_str(&self) -> &'static str {
++        match self {
++            CounterOrder::Selection => "selection",
++            CounterOrder::Name => "name",
++            CounterOrder::Date => "date",
++        }
++    }
++}
++
++/// The values of a series.
++///
++/// WHY: the name of a series is the name of the directory the files live in
++///       — but a series that is filed in a collection folder has a directory
++///       that is not its name. The value is therefore always shown before the
++///       rename and can be overridden (FR-38).
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct SeriesRule {
++    /// The name of the series.
++    pub series_name: Option<String>,
++
++    /// The season of the files whose name carries no number.
++    pub season: Option<u64>,
++
++    /// The episode of the files whose name carries no number.
++    pub episode: Option<u64>,
++
++    /// The format of the new name, if the series carries one of its own.
++    pub format: Option<String>,
++
++    /// The width of the season number.
++    pub season_width: usize,
++
++    /// The width of the episode number.
++    pub episode_width: usize,
++}
++
++impl Default for SeriesRule {
++    /// Builds the values of a series with the standard widths.
++    fn default() -> Self {
++        Self {
++            series_name: None,
++            season: None,
++            episode: None,
++            format: None,
++            season_width: 2,
++            episode_width: 2,
++        }
++    }
++}
++
++impl SeriesRule {
++    /// Builds the values of a series.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::SeriesRule;
++    ///
++    /// let series = SeriesRule::new();
++    /// assert_eq!(series.season_width, 2);
++    /// ```
++    pub fn new() -> Self {
++        Self::default()
++    }
++
++    /// Sets the name of the series.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::SeriesRule;
++    ///
++    /// let series = SeriesRule::new().with_series_name("The Expanse");
++    /// assert_eq!(series.series_name.as_deref(), Some("The Expanse"));
++    /// ```
++    pub fn with_series_name(mut self, name: impl Into<String>) -> Self {
++        self.series_name = Some(name.into());
++        self
++    }
++
++    /// Sets the format of the new name.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::SeriesRule;
++    ///
++    /// let series = SeriesRule::new().with_format("[series].[ext]");
++    /// assert_eq!(series.effective_format(), "[series].[ext]");
++    /// ```
++    pub fn with_format(mut self, format: impl Into<String>) -> Self {
++        self.format = Some(format.into());
++        self
++    }
++
++    /// The format that the formation uses.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::SeriesRule;
++    ///
++    /// assert_eq!(SeriesRule::new().effective_format(), "");
++    /// ```
++    pub fn effective_format(&self) -> &str {
++        self.format.as_deref().unwrap_or("")
++    }
++}
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests {
++    use super::*;
++
++    #[test]
++    fn a_rule_without_a_format_uses_the_format_of_its_series() {
++        // arrange
++        let series = SeriesRule::new().with_format("[series].[ext]");
++        let rule = RenameRule::new("").with_series(series);
++
++        // act
++        let format = rule.effective_format();
++
++        // assert
++        assert_eq!(format, "[series].[ext]");
++    }
++
++    #[test]
++    fn the_format_of_the_rule_wins_over_the_format_of_the_series() {
++        // arrange
++        let series = SeriesRule::new().with_format("[series].[ext]");
++        let rule = RenameRule::new("[name].[ext]").with_series(series);
++
++        // act
++        let format = rule.effective_format();
++
++        // assert
++        assert_eq!(format, "[name].[ext]");
++    }
++
++    #[test]
++    fn the_counter_of_the_rule_carries_its_three_numbers() {
++        // arrange
++        let rule = RenameRule::new("[n]").with_counter(CounterRule::new(10, 5, 2));
++
++        // act
++        let counter = rule.counter;
++
++        // assert
++        let counter = match counter {
++            Some(counter) => counter,
++            None => panic!("the rule should carry a counter"),
++        };
++        assert_eq!(counter.start, 10);
++        assert_eq!(counter.step, 5);
++        assert_eq!(counter.width, 2);
++        assert_eq!(counter.order, CounterOrder::Selection);
++    }
++
++    #[test]
++    fn every_order_of_the_counter_has_a_name_of_its_own() {
++        // act
++        let names = [
++            CounterOrder::Selection.as_str(),
++            CounterOrder::Name.as_str(),
++            CounterOrder::Date.as_str(),
++        ];
++
++        // assert
++        assert_eq!(names, ["selection", "name", "date"]);
++    }
++}
+diff --git a/crates/phocommander-ui/src/rename/template.rs b/crates/phocommander-ui/src/rename/template.rs
+new file mode 100644
+index 0000000..29317ed
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/template.rs
+@@ -0,0 +1,526 @@
++//! The named templates of the multiple rename.
++//!
++//! WHAT: a template with a name ([`NamedTemplate`]), the seam that stores the
++//!       templates ([`TemplateStore`]), the reasons why a store fails
++//!       ([`TemplateStoreError`]) and the text in which the templates are
++//!       written ([`encode_templates`], [`decode_templates`]).
++//! WHY: a named template can be stored and applied again (FR-36). The dialog
++//!       holds the list of the templates and writes through the seam; the
++//!       composition root decides where the templates live — in a file of the
++//!       configuration directory, for example. The text of the file belongs
++//!       to the interface crate as well, so that the composition root moves
++//!       bytes and does not know the format of a template.
++//! EXAMPLE:
++//! ```no_run
++//! use phocommander_ui::rename::{NamedTemplate, RenameRule, decode_templates, encode_templates};
++//!
++//! let template = NamedTemplate::new("Camera", RenameRule::new("[name]_[n].[ext]"));
++//! let text = encode_templates(&[template]);
++//!
++//! let read = decode_templates(&text).unwrap_or_default();
++//! assert_eq!(read.len(), 1);
++//! assert_eq!(read[0].name, "Camera");
++//! ```
++
++use std::path::PathBuf;
++
++use crate::i18n::TextKey;
++use crate::rename::rule::RenameRule;
++
++/// A template with a name.
++///
++/// WHY: a template is a rule under a name. The name is what the user sees in
++///       the list of the dialog, and the rule is what the engine forms the
++///       names with.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct NamedTemplate {
++    /// The name of the template.
++    pub name: String,
++
++    /// The rule that the template carries.
++    pub rule: RenameRule,
++}
++
++impl NamedTemplate {
++    /// Builds a template.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::{NamedTemplate, RenameRule};
++    ///
++    /// let template = NamedTemplate::new("Camera", RenameRule::new("[name]_[n].[ext]"));
++    /// assert_eq!(template.name, "Camera");
++    /// ```
++    pub fn new(name: impl Into<String>, rule: RenameRule) -> Self {
++        Self {
++            name: name.into(),
++            rule,
++        }
++    }
++}
++
++/// The seam that stores the named templates.
++///
++/// WHY: the interface crate may not depend on the crate of the
++///       configuration, and it performs no file operation of its own. The
++///       seam is therefore the place where the templates are stored, and the
++///       composition root hands the implementation over.
++pub trait TemplateStore {
++    /// The templates that are stored.
++    ///
++    /// WHY: a store that cannot be read answers with the reason and not with
++    ///       an empty list that looks like a store without templates.
++    fn templates(&self) -> Result<Vec<NamedTemplate>, TemplateStoreError>;
++
++    /// Stores a template under its name.
++    ///
++    /// WHY: a template with the same name is replaced. A name stands for one
++    ///       rule, and a second rule under the same name would make the list
++    ///       of the dialog ambiguous.
++    fn store(&self, template: &NamedTemplate) -> Result<(), TemplateStoreError>;
++}
++
++/// The reasons why a store of the templates fails.
++#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
++pub enum TemplateStoreError {
++    /// The stored text carries a line that could not be read.
++    #[error("the line {line} of the stored templates could not be read: {reason}")]
++    Malformed {
++        /// The number of the line, counted from one.
++        line: usize,
++
++        /// The reason why the line could not be read.
++        reason: String,
++    },
++
++    /// The file of the templates could not be read or written.
++    #[error("the file {path} of the templates could not be used: {message}")]
++    Io {
++        /// The path of the file.
++        path: PathBuf,
++
++        /// The message of the operating system.
++        message: String,
++    },
++}
++
++impl TemplateStoreError {
++    /// The key of the catalogue that carries the message of this error.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::TemplateStoreError;
++    /// use phocommander_ui::TextKey;
++    ///
++    /// let error = TemplateStoreError::malformed(3, "the key is unknown");
++    /// assert_eq!(error.message_key(), TextKey::RenameTemplateStoreFailed);
++    /// ```
++    pub const fn message_key(&self) -> TextKey {
++        TextKey::RenameTemplateStoreFailed
++    }
++
++    /// Builds the reason of a line that could not be read.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::TemplateStoreError;
++    ///
++    /// let error = TemplateStoreError::malformed(3, "the key is unknown");
++    /// assert_eq!(error.line(), 3);
++    /// ```
++    pub fn malformed(line: usize, reason: impl Into<String>) -> Self {
++        Self::Malformed {
++            line,
++            reason: reason.into(),
++        }
++    }
++
++    /// The number of the line that could not be read.
++    ///
++    /// EXAMPLE:
++    /// ```no_run
++    /// use phocommander_ui::rename::TemplateStoreError;
++    ///
++    /// let error = TemplateStoreError::malformed(3, "the key is unknown");
++    /// assert_eq!(error.line(), 3);
++    /// ```
++    pub const fn line(&self) -> usize {
++        match self {
++            Self::Malformed { line, .. } => *line,
++            Self::Io { .. } => 0,
++        }
++    }
++}
++
++/// The head of a stored template.
++const TEMPLATE_HEAD: &str = "@";
++
++/// Writes the templates into the text of the store.
++///
++/// WHY: the format is a line for a value and a line for the head of a
++///       template. It is deliberately simple: a user may read the file of
++///       the templates and change a rule in it, and a line that the reader
++///       does not know is reported instead of being ignored.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_ui::rename::{NamedTemplate, RenameRule, encode_templates};
++///
++/// let template = NamedTemplate::new("Camera", RenameRule::new("[name]_[n].[ext]"));
++/// let text = encode_templates(&[template]);
++/// assert!(text.contains("@ Camera"));
++/// assert!(text.contains("format [name]_[n].[ext]"));
++/// ```
++pub fn encode_templates(templates: &[NamedTemplate]) -> String {
++    let mut text = String::new();
++    text.push_str("# The named templates of the multiple rename.\n");
++    for template in templates {
++        text.push('\n');
++        text.push_str(TEMPLATE_HEAD);
++        text.push(' ');
++        text.push_str(template.name.as_str());
++        text.push('\n');
++
++        let rule = &template.rule;
++        text.push_str("format ");
++        text.push_str(rule.effective_format());
++        text.push('\n');
++
++        for replacement in &rule.replacements {
++            text.push_str("search ");
++            text.push_str(replacement.search.as_str());
++            text.push('\n');
++            text.push_str("replace ");
++            text.push_str(replacement.replacement.as_str());
++            text.push('\n');
++            text.push_str("regex ");
++            text.push_str(if replacement.regex { "true" } else { "false" });
++            text.push('\n');
++        }
++
++        if let Some(counter) = &rule.counter {
++            text.push_str("counter-start ");
++            text.push_str(&counter.start.to_string());
++            text.push('\n');
++            text.push_str("counter-step ");
++            text.push_str(&counter.step.to_string());
++            text.push('\n');
++            text.push_str("counter-width ");
++            text.push_str(&counter.width.to_string());
++            text.push('\n');
++            text.push_str("counter-order ");
++            text.push_str(counter.order.as_str());
++            text.push('\n');
++        }
++
++        if let Some(series) = &rule.series
++            && let Some(name) = &series.series_name
++        {
++            text.push_str("series ");
++            text.push_str(name.as_str());
++            text.push('\n');
++        }
++    }
++    text
++}
++
++/// Reads the templates out of the text of the store.
++///
++/// WHY: a line that the reader does not know is an error and not a line that
++///       is ignored. A typo in the file of the templates must be visible, or
++///       the user would not know why a template is missing.
++///
++/// EXAMPLE:
++/// ```no_run
++/// use phocommander_ui::rename::decode_templates;
++///
++/// let text = "@ Camera\nformat [name]_[n].[ext]\n";
++/// let templates = decode_templates(text).unwrap_or_default();
++/// assert_eq!(templates.len(), 1);
++/// assert_eq!(templates[0].rule.format, "[name]_[n].[ext]");
++/// ```
++pub fn decode_templates(text: &str) -> Result<Vec<NamedTemplate>, TemplateStoreError> {
++    let mut templates: Vec<NamedTemplate> = Vec::new();
++    let mut current: Option<NamedTemplate> = None;
++
++    for (index, line) in text.lines().enumerate() {
++        let number = index + 1;
++        let trimmed = line.trim();
++        if trimmed.is_empty() || trimmed.starts_with('#') {
++            continue;
++        }
++
++        if let Some(name) = trimmed.strip_prefix(TEMPLATE_HEAD) {
++            if let Some(template) = current.take() {
++                templates.push(template);
++            }
++            let name = name.trim();
++            if name.is_empty() {
++                return Err(TemplateStoreError::malformed(
++                    number,
++                    "name-empty",
++                ));
++            }
++            current = Some(NamedTemplate::new(name, RenameRule::default()));
++            continue;
++        }
++
++        let Some(template) = current.as_mut() else {
++            return Err(TemplateStoreError::malformed(
++                number,
++                "line-before-template",
++            ));
++        };
++
++        let (key, value) = split_value(trimmed);
++        match key {
++            "format" => {
++                template.rule.format = value.to_string();
++            }
++            "search" => {
++                let replacement = crate::rename::rule::ReplaceRule {
++                    search: value.to_string(),
++                    replacement: String::new(),
++                    regex: false,
++                };
++                template.rule.replacements.push(replacement);
++            }
++            "replace" => {
++                let Some(last) = template.rule.replacements.last_mut() else {
++                    return Err(TemplateStoreError::malformed(
++                        number,
++                        "replacement-before-search",
++                    ));
++                };
++                last.replacement = value.to_string();
++            }
++            "regex" => {
++                let Some(last) = template.rule.replacements.last_mut() else {
++                    return Err(TemplateStoreError::malformed(
++                        number,
++                        "regex-before-search",
++                    ));
++                };
++                last.regex = match value {
++                    "true" => true,
++                    "false" => false,
++                    other => {
++                        return Err(TemplateStoreError::malformed(
++                            number,
++                            format!("value-not-a-boolean:{other}"),
++                        ));
++                    }
++                };
++            }
++            "counter-start" => {
++                let counter = counter_of(&mut template.rule);
++                counter.start = number_of(value).ok_or_else(|| {
++                    TemplateStoreError::malformed(number, "start-not-a-number")
++                })?;
++            }
++            "counter-step" => {
++                let counter = counter_of(&mut template.rule);
++                counter.step = number_of(value).ok_or_else(|| {
++                    TemplateStoreError::malformed(number, "step-not-a-number")
++                })?;
++            }
++            "counter-width" => {
++                let counter = counter_of(&mut template.rule);
++                counter.width = width_of(value).ok_or_else(|| {
++                    TemplateStoreError::malformed(number, "width-not-a-number")
++                })?;
++                if counter.width == 0 {
++                    return Err(TemplateStoreError::malformed(
++                        number,
++                        "width-not-greater-than-zero",
++                    ));
++                }
++            }
++            "counter-order" => {
++                let counter = counter_of(&mut template.rule);
++                counter.order = match value {
++                    "selection" => crate::rename::rule::CounterOrder::Selection,
++                    "name" => crate::rename::rule::CounterOrder::Name,
++                    "date" => crate::rename::rule::CounterOrder::Date,
++                    other => {
++                        return Err(TemplateStoreError::malformed(
++                            number,
++                            format!("order-unknown:{other}"),
++                        ));
++                    }
++                };
++            }
++            "series" => {
++                let series = series_of(&mut template.rule);
++                series.series_name = Some(value.to_string());
++            }
++            other => {
++                return Err(TemplateStoreError::malformed(
++                    number,
++                    format!("key-unknown:{other}"),
++                ));
++            }
++        }
++    }
++
++    if let Some(template) = current.take() {
++        templates.push(template);
++    }
++    Ok(templates)
++}
++
++/// Splits a line into its key and its value.
++fn split_value(line: &str) -> (&str, &str) {
++    match line.split_once(' ') {
++        Some((key, value)) => (key, value.trim()),
++        None => (line, ""),
++    }
++}
++
++/// The counter of a rule, created when it carries none.
++fn counter_of(rule: &mut RenameRule) -> &mut crate::rename::rule::CounterRule {
++    rule.counter.get_or_insert_with(crate::rename::rule::CounterRule::default)
++}
++
++/// The values of a series of a rule, created when the rule carries none.
++fn series_of(rule: &mut RenameRule) -> &mut crate::rename::rule::SeriesRule {
++    rule.series
++        .get_or_insert_with(crate::rename::rule::SeriesRule::default)
++}
++
++/// The number of a value, if the value is a number.
++fn number_of(value: &str) -> Option<i64> {
++    value.trim().parse::<i64>().ok()
++}
++
++/// The width of a value, if the value is a width.
++fn width_of(value: &str) -> Option<usize> {
++    value.trim().parse::<usize>().ok()
++}
++
++#[cfg(test)]
++// WHY: a test may fail loudly when its arrangement is wrong. The rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++mod tests {
++    use super::*;
++    use crate::rename::rule::{CounterOrder, CounterRule, ReplaceRule};
++
++    #[test]
++    fn a_template_survives_the_round_trip_through_the_text() {
++        // arrange
++        let rule = RenameRule::new("[name]_[n].[ext]")
++            .with_replacement(ReplaceRule::pattern(r"^a(\d+)$", "b$1"))
++            .with_counter(CounterRule::new(10, 5, 2).with_order(CounterOrder::Name));
++        let template = NamedTemplate::new("Camera", rule);
++
++        // act
++        let text = encode_templates(&[template.clone()]);
++        let read = decode_templates(&text).unwrap_or_default();
++
++        // assert
++        assert_eq!(read.len(), 1);
++        let read = match read.first() {
++            Some(template) => template,
++            None => panic!("the template should have been read back"),
++        };
++        assert_eq!(read.name, "Camera");
++        assert_eq!(read.rule.format, template.rule.format);
++        assert_eq!(read.rule.replacements.len(), 1);
++        assert_eq!(read.rule.replacements[0].search, r"^a(\d+)$");
++        assert_eq!(read.rule.replacements[0].replacement, "b$1");
++        assert!(read.rule.replacements[0].regex);
++        let counter = match read.rule.counter.as_ref() {
++            Some(counter) => counter,
++            None => panic!("the counter should have been read back"),
++        };
++        assert_eq!(counter.start, 10);
++        assert_eq!(counter.step, 5);
++        assert_eq!(counter.width, 2);
++        assert_eq!(counter.order, CounterOrder::Name);
++    }
++
++    #[test]
++    fn the_name_of_a_series_survives_the_round_trip() {
++        // arrange
++        let rule = RenameRule::new("[series]").with_series(
++            crate::rename::rule::SeriesRule::new().with_series_name("The Expanse"),
++        );
++        let template = NamedTemplate::new("Series", rule);
++
++        // act
++        let text = encode_templates(&[template]);
++        let read = decode_templates(&text).unwrap_or_default();
++
++        // assert
++        let series = read
++            .first()
++            .and_then(|template| template.rule.series.as_ref())
++            .and_then(|series| series.series_name.as_deref());
++        assert_eq!(series, Some("The Expanse"));
++    }
++
++    #[test]
++    fn a_line_with_an_unknown_key_is_an_error() {
++        // arrange
++        let text = "@ Camera\nformat [name]\ncolour red\n";
++
++        // act
++        let result = decode_templates(text);
++
++        // assert
++        let error = match result {
++            Err(error) => error,
++            Ok(_) => panic!("the unknown key should have been reported"),
++        };
++        assert_eq!(error.line(), 3);
++    }
++
++    #[test]
++    fn a_line_before_the_name_of_a_template_is_an_error() {
++        // arrange
++        let text = "format [name]\n";
++
++        // act
++        let result = decode_templates(text);
++
++        // assert
++        assert!(result.is_err());
++    }
++
++    #[test]
++    fn a_template_without_a_name_is_an_error() {
++        // arrange
++        let text = "@\nformat [name]\n";
++
++        // act
++        let result = decode_templates(text);
++
++        // assert
++        assert!(result.is_err());
++    }
++
++    #[test]
++    fn a_counter_width_of_zero_is_an_error() {
++        // arrange
++        let text = "@ Camera\ncounter-width 0\n";
++
++        // act
++        let result = decode_templates(text);
++
++        // assert
++        assert!(result.is_err());
++    }
++
++    #[test]
++    fn comments_and_empty_lines_are_ignored() {
++        // arrange
++        let text = "# a comment\n\n@ Camera\n\nformat [name]\n";
++
++        // act
++        let templates = decode_templates(text).unwrap_or_default();
++
++        // assert
++        assert_eq!(templates.len(), 1);
++    }
++}
+diff --git a/crates/phocommander-ui/src/rename/tests.rs b/crates/phocommander-ui/src/rename/tests.rs
+new file mode 100644
+index 0000000..5086ed0
+--- /dev/null
++++ b/crates/phocommander-ui/src/rename/tests.rs
+@@ -0,0 +1,357 @@
++// The tests of the dialog of the multiple rename.
++//
++// WHY: the tests live in a file of their own, so that the dialog itself stays
++// readable. They may fail loudly when their arrangement is wrong — the rule
++// that forbids a panic applies to the production code, and it is enforced
++// there.
++
++#![allow(clippy::unwrap_used, clippy::expect_used)]
++
++use super::*;
++use crate::panel::PanelSide;
++use crate::rename::engine::{ConflictKind, RenameEngine};
++
++/// An engine that forms the names out of the format of the rule.
++struct Forming {
++    /// The number of the answers.
++    calls: std::cell::Cell<usize>,
++
++    /// The row that carries a conflict, if there is one.
++    conflict: Option<usize>,
++}
++
++impl Forming {
++    /// An engine without a conflict.
++    fn new() -> Self {
++        Self {
++            calls: std::cell::Cell::new(0),
++            conflict: None,
++        }
++    }
++
++    /// An engine that marks the given row as a conflict.
++    fn with_conflict(row: usize) -> Self {
++        Self {
++            calls: std::cell::Cell::new(0),
++            conflict: Some(row),
++        }
++    }
++}
++
++impl RenameEngine for Forming {
++    fn preview(&self, request: &RenameRequest) -> RenamePreview {
++        self.calls.set(self.calls.get() + 1);
++        let mut preview = RenamePreview::empty();
++        for (index, file) in request.files.iter().enumerate() {
++            let stem = file
++                .path
++                .file_stem()
++                .map(|stem| stem.to_string_lossy().to_string())
++                .unwrap_or_default();
++            let extension = file
++                .path
++                .extension()
++                .map(|extension| extension.to_string_lossy().to_string())
++                .unwrap_or_default();
++            let name = request
++                .rule
++                .format
++                .replace("[name]", stem.as_str())
++                .replace("[n]", &format!("{:03}", index + 1))
++                .replace("[ext]", extension.as_str());
++            preview.rows.push(PreviewRow::named(file.path.clone(), name));
++        }
++        if let Some(row) = self.conflict {
++            if let Some(entry) = preview.rows.get(row) {
++                let path = entry.target.clone().unwrap_or_else(|| entry.source.clone());
++                preview
++                    .conflicts
++                    .push(Conflict::new(ConflictKind::TargetExists, path));
++            }
++        }
++        preview
++    }
++}
++
++/// The dialog with three files.
++fn dialog() -> RenameDialog {
++    RenameDialog::new(
++        PanelSide::Left,
++        vec![
++            RenameFile::new("/photos/a.jpg"),
++            RenameFile::new("/photos/b.jpg"),
++            RenameFile::new("/photos/c.jpg"),
++        ],
++        Vec::new(),
++    )
++}
++
++/// The number of characters of the format of a new dialog.
++fn format_length() -> usize {
++    "[name]_[n].[ext]".chars().count()
++}
++
++#[test]
++fn the_preview_follows_every_change_of_the_rule() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::new();
++    dialog.update_preview(&engine);
++
++    // act
++    dialog.set_focus(RenameFocus::Format);
++    dialog.caret_to_start();
++    dialog.insert("x");
++    dialog.update_preview(&engine);
++
++    // assert
++    assert_eq!(engine.calls.get(), 2);
++    assert_eq!(dialog.rows()[0].name.as_deref(), Some("xa_001.jpg"));
++}
++
++#[test]
++fn the_engine_is_not_asked_again_when_nothing_changed() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::new();
++    dialog.update_preview(&engine);
++
++    // act — three frames that draw the same rule.
++    dialog.update_preview(&engine);
++    dialog.update_preview(&engine);
++
++    // assert
++    assert_eq!(engine.calls.get(), 1);
++    assert_eq!(dialog.engine_calls(), 1);
++}
++
++#[test]
++fn a_conflict_is_marked_and_the_jump_list_names_it() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::with_conflict(1);
++
++    // act
++    dialog.update_preview(&engine);
++
++    // assert
++    assert_eq!(dialog.conflicts(), &[1]);
++    assert!(dialog.is_conflict(1));
++    assert!(!dialog.is_conflict(0));
++}
++
++#[test]
++fn the_next_conflict_is_reachable_and_the_end_of_the_list_stays() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::with_conflict(1);
++    dialog.update_preview(&engine);
++
++    // act
++    let jumped = dialog.jump_to_next_conflict();
++
++    // assert
++    assert!(jumped);
++    assert_eq!(dialog.cursor(), 1);
++
++    // act — the list has no second entry, so the cursor stays.
++    let jumped = dialog.jump_to_next_conflict();
++
++    // assert
++    assert!(!jumped);
++    assert_eq!(dialog.cursor(), 1);
++}
++
++#[test]
++fn the_previous_conflict_is_reachable() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::with_conflict(1);
++    dialog.update_preview(&engine);
++
++    // act — the cursor stands behind the conflict.
++    dialog.move_cursor(2);
++    let jumped = dialog.jump_to_previous_conflict();
++
++    // assert
++    assert!(jumped);
++    assert_eq!(dialog.cursor(), 1);
++}
++
++#[test]
++fn the_rename_is_refused_while_a_conflict_is_on_the_list() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::with_conflict(1);
++    dialog.update_preview(&engine);
++
++    // act
++    let pairs = dialog.pairs();
++
++    // assert
++    assert!(pairs.is_none());
++    assert!(!dialog.is_ready());
++}
++
++#[test]
++fn the_rename_is_possible_without_a_conflict() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::new();
++    dialog.update_preview(&engine);
++
++    // act
++    let pairs = dialog.pairs();
++
++    // assert
++    let pairs = match pairs {
++        Some(pairs) => pairs,
++        None => panic!("the rename should be possible"),
++    };
++    assert_eq!(pairs.len(), 3);
++    assert_eq!(pairs[0].target_name(), "a_001.jpg");
++}
++
++#[test]
++fn a_file_that_keeps_its_name_is_not_renamed() {
++    // arrange
++    let mut dialog = RenameDialog::new(
++        PanelSide::Left,
++        vec![RenameFile::new("/photos/a.jpg")],
++        Vec::new(),
++    );
++    let engine = Forming::new();
++
++    // act — the format of the rule is the name of the file itself.
++    dialog.set_focus(RenameFocus::Format);
++    for _ in 0..format_length() {
++        dialog.backspace();
++    }
++    dialog.insert("[name].[ext]");
++    dialog.update_preview(&engine);
++
++    // assert
++    let pairs = dialog.pairs();
++    assert!(pairs.is_some());
++    let pairs = pairs.unwrap_or_default();
++    assert!(pairs.is_empty());
++}
++
++#[test]
++fn a_stored_template_can_be_applied_again() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::new();
++    dialog.update_preview(&engine);
++    let before = dialog.rows()[0].name.clone();
++
++    // act — the rule is stored under a name, changed and applied again.
++    dialog.set_focus(RenameFocus::TemplateName);
++    dialog.insert("Camera");
++    let template = match dialog.current_template() {
++        Some(template) => template,
++        None => panic!("the template should be built"),
++    };
++    dialog.add_template(template);
++    dialog.set_focus(RenameFocus::Format);
++    for _ in 0..format_length() {
++        dialog.backspace();
++    }
++    dialog.insert("[name]-[n].[ext]");
++    dialog.update_preview(&engine);
++    dialog.apply_template(0);
++    dialog.update_preview(&engine);
++
++    // assert
++    assert_eq!(dialog.templates().len(), 1);
++    assert_eq!(dialog.templates()[0].name, "Camera");
++    assert_eq!(dialog.rows()[0].name, before);
++}
++
++#[test]
++fn a_template_without_a_name_is_not_stored() {
++    // arrange
++    let dialog = dialog();
++
++    // act
++    let template = dialog.current_template();
++
++    // assert
++    assert!(template.is_none());
++}
++
++#[test]
++fn a_template_with_the_same_name_replaces_the_old_one() {
++    // arrange
++    let mut dialog = dialog();
++    let first = NamedTemplate::new("Camera", RenameRule::new("[name]"));
++    let second = NamedTemplate::new("Camera", RenameRule::new("[n]"));
++
++    // act
++    dialog.add_template(first);
++    dialog.add_template(second);
++
++    // assert
++    assert_eq!(dialog.templates().len(), 1);
++    assert_eq!(dialog.templates()[0].rule.format, "[n]");
++}
++
++#[test]
++fn the_focus_walks_the_dialog_in_a_fixed_order() {
++    // arrange
++    let mut dialog = dialog();
++
++    // act — the tab key walks the parts of the dialog and comes back.
++    let mut visited = Vec::new();
++    for _ in 0..RenameFocus::all().len() {
++        visited.push(dialog.focus());
++        dialog.focus_next(false);
++    }
++
++    // assert
++    assert_eq!(visited[0], RenameFocus::Format);
++    assert_eq!(visited[visited.len() - 1], RenameFocus::Preview);
++    assert_eq!(dialog.focus(), RenameFocus::Format);
++}
++
++#[test]
++fn the_backward_focus_stays_at_the_beginning() {
++    // arrange
++    let mut dialog = dialog();
++
++    // act
++    dialog.focus_next(true);
++
++    // assert
++    assert_eq!(dialog.focus(), RenameFocus::Preview);
++}
++
++#[test]
++fn the_name_of_a_template_does_not_change_the_rule() {
++    // arrange
++    let mut dialog = dialog();
++    let engine = Forming::new();
++    dialog.update_preview(&engine);
++
++    // act
++    dialog.set_focus(RenameFocus::TemplateName);
++    dialog.insert("Camera");
++    dialog.update_preview(&engine);
++
++    // assert
++    assert_eq!(engine.calls.get(), 1);
++}
++
++#[test]
++fn a_field_that_carries_no_number_is_reported() {
++    // arrange
++    let mut dialog = dialog();
++
++    // act
++    dialog.set_focus(RenameFocus::CounterStart);
++    dialog.insert("x");
++
++    // assert
++    assert!(dialog.is_invalid(RenameFocus::CounterStart));
++    assert!(!dialog.is_invalid(RenameFocus::CounterStep));
++}
+diff --git a/crates/phocommander-ui/src/theme.rs b/crates/phocommander-ui/src/theme.rs
+index c0fa643..c9fe6a0 100644
+--- a/crates/phocommander-ui/src/theme.rs
++++ b/crates/phocommander-ui/src/theme.rs
+@@ -120,6 +120,14 @@ pub struct Palette {
+ 
+     /// The colour of the background of the entry under the cursor.
+     pub cursor: Color32,
++
++    /// The colour of a text that reports a problem.
++    ///
++    /// WHY: a name that cannot be formed and a conflict of the rename are
++    ///       shown in this colour. The colour has to reach the same contrast
++    ///       as the text of the surface (NFR-11), because a warning that the
++    ///       user cannot read is no warning at all.
++    pub warning: Color32,
+ }
+ 
+ impl Palette {
+@@ -134,6 +142,7 @@ impl Palette {
+             separator: Color32::from_rgb(0xcf, 0xcf, 0xcf),
+             marked: Color32::from_rgb(0xd6, 0xe4, 0xff),
+             cursor: Color32::from_rgb(0xff, 0xf3, 0xc4),
++            warning: Color32::from_rgb(0xa8, 0x3a, 0x00),
+         }
+     }
+ 
+@@ -148,6 +157,7 @@ impl Palette {
+             separator: Color32::from_rgb(0x3d, 0x3d, 0x3d),
+             marked: Color32::from_rgb(0x2f, 0x4a, 0x7a),
+             cursor: Color32::from_rgb(0x3b, 0x3b, 0x2a),
++            warning: Color32::from_rgb(0xff, 0xa8, 0x5c),
+         }
+     }
+ }
+@@ -273,6 +283,19 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn the_warning_reaches_the_contrast_the_specification_names() {
++        // WHY: NFR-11 — a warning is a text and needs a contrast of at least
++        //       4.5:1, otherwise the user does not see it.
++        for palette in [Palette::light(), Palette::dark()] {
++            assert!(
++                contrast_ratio(palette.warning, palette.panel) >= 4.5,
++                "the warning has a contrast of {}",
++                contrast_ratio(palette.warning, palette.panel)
++            );
++        }
++    }
++
+     #[test]
+     fn the_contrast_of_a_colour_with_itself_is_one() {
+         // act
+diff --git a/crates/phocommander-ui/tests/rename_conflict_jump.rs b/crates/phocommander-ui/tests/rename_conflict_jump.rs
+new file mode 100644
+index 0000000..44fc757
+--- /dev/null
++++ b/crates/phocommander-ui/tests/rename_conflict_jump.rs
+@@ -0,0 +1,175 @@
++//! The conflict jump list of the rename dialog is reachable with F3.
++//!
++//! WHAT: the test opens the dialog of the multiple rename with three marked
++//!       files, presses F3 and Shift+F3 and reads the cursor of the preview.
++//! WHY: FR-35 — the conflicts are marked and listed in a conflict jump list
++//!       that is reachable with F3 and Shift+F3. The test drives the real
++//!       shell with real key events, and it reads the state of the dialog —
++//!       not a picture.
++//! EXAMPLE:
++//! ```text
++//! cargo test -p phocommander-ui --test rename_conflict_jump -- --exact
++//! ```
++
++#![allow(clippy::unwrap_used, clippy::expect_used)]
++
++use std::collections::BTreeMap;
++
++use phocommander_ui::app::WorkSurfaceApp;
++use phocommander_ui::context::Context;
++use phocommander_ui::i18n::{Argument, Catalogue};
++use phocommander_ui::keymap_view::KeymapView;
++use phocommander_ui::listing::{Entry, EntryKind};
++use phocommander_ui::rename::{
++    Conflict, ConflictKind, PreviewRow, RenameEngine, RenamePreview, RenameRequest,
++};
++use phocommander_ui::surface::WorkSurface;
++
++/// A catalogue that answers every key with a readable text.
++struct Names;
++
++impl Catalogue for Names {
++    fn lookup_with(&self, key: &str, arguments: &[Argument<'_>]) -> Option<String> {
++        let mut text = key.replace('-', " ");
++        if let Some(Argument::Number { value: count, .. }) = arguments.first() {
++            text = format!("{text} {count}");
++        }
++        Some(text)
++    }
++}
++
++/// The binding table of the test.
++///
++/// WHY: the test needs the bindings of the rename — F2 opens the dialog,
++///       F3 and Shift+F3 walk the conflicts — and the binding that marks
++///       every entry of the panel.
++fn keymap() -> KeymapView {
++    let mut keyboard = BTreeMap::new();
++    keyboard.insert("panel.rename".to_string(), "F2".to_string());
++    keyboard.insert("selection.all".to_string(), "Ctrl+A".to_string());
++    keyboard.insert("rename.conflict_next".to_string(), "F3".to_string());
++    keyboard.insert("rename.conflict_previous".to_string(), "Shift+F3".to_string());
++
++    let mut tables = BTreeMap::new();
++    tables.insert(Context::Keyboard, keyboard);
++
++    match KeymapView::from_context_tables(&tables) {
++        Ok(keymap) => keymap,
++        Err(error) => panic!("the binding table of the test should be valid: {error}"),
++    }
++}
++
++/// An engine that marks the first and the last file as a conflict.
++struct Conflicting;
++
++impl RenameEngine for Conflicting {
++    fn preview(&self, request: &RenameRequest) -> RenamePreview {
++        let mut preview = RenamePreview::empty();
++        for (index, file) in request.files.iter().enumerate() {
++            let name = format!("{index:03}.jpg");
++            preview.rows.push(PreviewRow::named(file.path.clone(), name));
++        }
++        for index in [0usize, 2usize] {
++            if let Some(row) = preview.rows.get(index)
++                && let Some(target) = row.target.clone()
++            {
++                preview
++                    .conflicts
++                    .push(Conflict::new(ConflictKind::TargetExists, target));
++            }
++        }
++        preview
++    }
++}
++
++/// The shell with three entries and the engine of the test.
++fn app() -> WorkSurfaceApp {
++    let mut surface = WorkSurface::new("/tmp".into(), "/var".into());
++    surface.active_mut().set_entries(vec![
++        Entry::new("a.jpg", EntryKind::File),
++        Entry::new("b.jpg", EntryKind::File),
++        Entry::new("c.jpg", EntryKind::File),
++    ]);
++
++    WorkSurfaceApp::new(surface, keymap(), Box::new(Names))
++        .with_rename_engine(Box::new(Conflicting))
++}
++
++/// The harness that draws the shell.
++fn harness(app: WorkSurfaceApp) -> egui_kittest::Harness<'static, WorkSurfaceApp> {
++    egui_kittest::Harness::builder()
++        .with_size(egui::vec2(900.0, 600.0))
++        .build_ui_state(
++            |ui, app: &mut WorkSurfaceApp| {
++                app.update(ui);
++            },
++            app,
++        )
++}
++
++/// The modifiers of the control key.
++fn ctrl() -> egui::Modifiers {
++    egui::Modifiers {
++        ctrl: true,
++        ..egui::Modifiers::default()
++    }
++}
++
++/// The modifiers of the shift key.
++fn shift() -> egui::Modifiers {
++    egui::Modifiers {
++        shift: true,
++        ..egui::Modifiers::default()
++    }
++}
++
++#[test]
++fn the_conflict_jump_list_is_reachable_with_f3_and_shift_f3() {
++    // arrange — three entries, all of them marked.
++    let mut harness = harness(app());
++    harness.key_press_modifiers(ctrl(), egui::Key::A);
++    harness.step();
++
++    // act — F2 opens the dialog of the multiple rename.
++    harness.key_press(egui::Key::F2);
++    harness.step();
++
++    // assert — the dialog is open, the three files are in it, and the two
++    // conflicts of the engine are marked.
++    let dialog = match harness.state().rename_dialog() {
++        Some(dialog) => dialog,
++        None => panic!("the dialog should be open"),
++    };
++    assert_eq!(dialog.files().len(), 3);
++    assert_eq!(dialog.conflicts(), &[0, 2]);
++
++    // act — F3 jumps to the next conflict.
++    harness.key_press(egui::Key::F3);
++    harness.step();
++
++    // assert — the cursor stands on the first conflict that follows the
++    // cursor of the preview.
++    let cursor = harness.state().rename_dialog().map(|dialog| dialog.cursor());
++    assert_eq!(cursor, Some(2));
++
++    // act — F3 again: the list has no conflict behind the last one, so the
++    // cursor stays on the last entry.
++    harness.key_press(egui::Key::F3);
++    harness.step();
++
++    // assert
++    let cursor = harness.state().rename_dialog().map(|dialog| dialog.cursor());
++    assert_eq!(cursor, Some(2));
++
++    // act — Shift+F3 jumps to the previous conflict.
++    harness.key_press_modifiers(shift(), egui::Key::F3);
++    harness.step();
++
++    // assert
++    let cursor = harness.state().rename_dialog().map(|dialog| dialog.cursor());
++    assert_eq!(cursor, Some(0));
++
++    // The tree of the drawn interface is the evidence of what the user sees.
++    // It is printed, so that the handover can quote it.
++    println!("{:?}", harness.root());
++}
+diff --git a/docs/WHERE_TO_CHANGE.md b/docs/WHERE_TO_CHANGE.md
+index 42e1c3b..2c1b556 100644
+--- a/docs/WHERE_TO_CHANGE.md
++++ b/docs/WHERE_TO_CHANGE.md
+@@ -29,6 +29,7 @@ the meantime. Files that already exist are linked.
+ | Key resolution, platform-specific binding | `crates/phocommander-keymap/src/` | `phocommander-keymap` | Turning a key press into an action and back. The "primary" modifier is `Cmd` on macOS/iPadOS and `Ctrl` on Windows/Linux/BSD — that mapping lives here, nowhere else. |
+ | Copy, move, delete, job queue | `crates/phocommander-ops/src/` | `phocommander-ops` | The long-running operations. Every operation runs asynchronously, reports progress with a rate and is cancellable. Symlinks are copied as symlinks and unlinked, never dereferenced or recursively deleted. |
+ | The names of a multiple rename | `crates/phocommander-ops/src/template.rs` | `phocommander-ops` | The formation of the new names: the placeholders, the search and the replacement, the counter and the series template. The formation reads no file — the size, the checksum and the time of the day come from the caller, so that the same rule always yields the same names (FR-33). |
++| The dialog of the multiple rename | `crates/phocommander-ui/src/rename/` | `phocommander-ui` | The state of the dialog, the live preview of the new names (FR-34), the conflict jump list (FR-35) and the named templates (FR-36). The dialog reaches the engine of the names through the trait `RenameEngine` and the store of the templates through the trait `TemplateStore` — the interface crate may not depend on the crate of the operations, and the composition root hands the implementations over. |
+ | Archive adapters, hardened extraction | `crates/phocommander-archive/src/` | `phocommander-archive` | Format support and the extraction hardening: iterate over entries yourself, canonicalise every target path, check it against the destination, never create symlinks from archive material, enforce the size and entry limits. |
+ | Viewer registry, format adapters | `crates/phocommander-viewer/src/` | `phocommander-viewer` | A new viewer format is a new implementation of the viewer trait plus one registration line — no change in the core. The viewer is read-only. |
+ | Network sources | `crates/phocommander-remote/src/` | `phocommander-remote` | SFTP, FTP, SMB, WebDAV, S3. Each protocol is a *source* behind the filesystem abstraction, not a separate feature area. Credentials go to the system keychain, never into the configuration file. |
+@@ -38,6 +39,7 @@ the meantime. Files that already exist are linked.
+ | Native menu, file dialogs, trash, permissions | `platform/phocommander-platform/src/` | `phocommander-platform` | The OS boundary: native menu via `muda`, native dialogs via `rfd`, trash integration, permission handling per platform. Everything OS-specific that is not a window lives here. |
+ | Desktop binary | `apps/phocommander-desktop/` | `phocommander-desktop` | The macOS, Windows, Linux and BSD application. The binary wires the UI crate to the platform crate and starts the event loop. |
+ | Catalogue, formats and language of the desktop build | `apps/phocommander-desktop/src/catalogue.rs`, `apps/phocommander-desktop/src/language.rs` | `phocommander-desktop` | The adapters between the crate of the localisation and the interface: the catalogue of the texts, the formats of a locale and the language of the running program. The language can be changed while the program runs (FR-124). |
++| The adapters of the rename dialog | `apps/phocommander-desktop/src/rename.rs`, `apps/phocommander-desktop/src/filesystem.rs` | `phocommander-desktop` | The engine that forms the new names (`phocommander-ops`), the file system of the host machine and the store of the named templates. The implementations of the traits `RenameEngine` and `TemplateStore` are handed to the interface here, because the composition root is the only crate that may see the crate of the operations and the crate of the interface at the same time. |
+ | Android packaging | `apps/phocommander-android/` | `phocommander-android` | Gradle project, Rust `cdylib`, SAF mode, optional full access, touch and keyboard operation. |
+ | iOS packaging | `apps/phocommander-ios/` | `phocommander-ios` | Xcode project, document picker, security-scoped bookmarks, split view. |
+ | Unit tests | `crates/<crate>/tests/`, `#[cfg(test)] mod tests` | per crate | One unit test per public function, at least. Integration tests cover the crate boundaries. |
+diff --git a/scripts/check-i18n-keys.py b/scripts/check-i18n-keys.py
+index f340ae1..6fb1e5d 100644
+--- a/scripts/check-i18n-keys.py
++++ b/scripts/check-i18n-keys.py
+@@ -42,7 +42,7 @@ TERM_PATTERN = re.compile(r"^-([A-Za-z][A-Za-z0-9_-]*)\s*=")
+ ATTRIBUTE_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*\.")
+ 
+ # The domains of the catalogue. Every locale holds exactly these files.
+-DOMAINS = ("common", "actions", "panel", "viewer", "palette")
++DOMAINS = ("common", "actions", "panel", "viewer", "palette", "rename")
+ 
+ 
+ def repository_root() -> Path:
