@@ -31,8 +31,14 @@ path = "src/lib.rs"
 # `crates/` may depend on a sibling. The integration test that holds the
 # canonical limits and the shipped configuration file against each other
 # therefore lives here as well.
+# The window itself. The interface crate draws with egui, and the framework
+# of egui owns the window of the application.
+eframe = { workspace = true }
+egui = { workspace = true }
+
 phocommander-config = { path = "../../crates/phocommander-config" }
 phocommander-core = { path = "../../crates/phocommander-core" }
+phocommander-i18n = { path = "../../crates/phocommander-i18n" }
 phocommander-ops = { path = "../../crates/phocommander-ops" }
 phocommander-platform = { path = "../../platform/phocommander-platform" }
 phocommander-ui = { path = "../../crates/phocommander-ui" }

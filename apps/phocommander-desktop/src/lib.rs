@@ -18,6 +18,7 @@
 //! assert!(plan.copy_policy().verifies_checksums());
 //! ```
 
+pub mod catalogue;
 pub mod security;
 
 pub use security::SecurityPlan;
