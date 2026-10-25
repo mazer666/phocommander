@@ -83,6 +83,31 @@ pub struct Config {
     pub remote: Remote,
 }
 
+impl Config {
+    /// The configuration that is in force when the file cannot be used.
+    ///
+    /// WHY: a broken configuration file must not weaken the application. The
+    /// safe configuration is the one of the profile `corporate`, in which
+    /// every rule of section 9.7 is in force. The limits of the other
+    /// sections are the ones of the core crate, which the composition root
+    /// supplies when the file does not name a value.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_config::{Config, SecurityProfile};
+    ///
+    /// let safe = Config::safe();
+    /// assert_eq!(safe.security.profile, SecurityProfile::Corporate);
+    /// assert!(!safe.security.remember_session);
+    /// ```
+    pub fn safe() -> Self {
+        Self {
+            security: Security::safe(),
+            ..Self::default()
+        }
+    }
+}
+
 /// The {[general]} section of the configuration file.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -206,8 +231,12 @@ pub struct Advanced {
 /// WHY: the security rules of the specification (sections 9.7 and 9.8) are
 /// not carved in stone. They are the default, and the user may adjust them
 /// to the machine and to the policy in force. Three guarantees are not part
-/// of this structure, because they cannot be switched off.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
+/// of the profile and of the switches, because they cannot be switched off:
+/// the fields [`Security::telemetry`] and [`Security::elevation`] exist so
+/// that a file which carries them can be read at all — their value has no
+/// effect and produces a message in the log — and the guarantee of the
+/// background index is decided by the code.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Security {
     /// The profile that decides which rules apply.
@@ -218,35 +247,108 @@ pub struct Security {
     ///
     /// WHY: a change that was made elsewhere is noticed. On a network
     /// drive this costs round trips, which is why it is a switch.
-    #[serde(default = "default_true")]
+    #[serde(default = "default_verify_directory_before_refresh")]
     pub verify_directory_before_refresh: bool,
 
     /// Keep no index.
     ///
     /// WHY: the application never reads a file that the user has not
     /// opened. The field exists so that the value is visible; the
-    /// guarantee itself does not depend on it.
-    #[serde(default)]
+    /// guarantee itself does not depend on it. A file that sets the value
+    /// to `true` is read, the value is ignored and a message is written to
+    /// the log.
+    #[serde(default = "default_background_index")]
     pub background_index: bool,
 
     /// Write the last directories at the end of a session.
     ///
     /// WHY: switching this off leaves nothing behind on a machine that
     /// is not the user's own.
-    #[serde(default = "default_true")]
+    #[serde(default = "default_remember_session")]
     pub remember_session: bool,
 
     /// The viewer reads a file only when the user opens it.
-    #[serde(default = "default_true")]
+    #[serde(default = "default_read_only_on_demand")]
     pub read_only_on_demand: bool,
 
     /// Compare the checksums of source and destination in the verified copy.
-    #[serde(default = "default_true")]
+    #[serde(default = "default_checksum_on_copy")]
     pub checksum_on_copy: bool,
 
-    /// Copy a symbolic link as a symbolic link and never follow it.
-    #[serde(default)]
+    /// Follow a symbolic link during a copy.
+    ///
+    /// WHY: the switch names the deviation from the rule of the
+    /// specification — "a symbolic link is copied as a symbolic link and is
+    /// never dereferenced" — and not the rule itself. The safe value is
+    /// therefore `false`, and the rule is in force exactly when the switch
+    /// is off.
+    #[serde(default = "default_follow_symlinks")]
     pub follow_symlinks: bool,
+
+    /// The application sends telemetry.
+    ///
+    /// WHY: there is no telemetry, so there is nothing to switch off. The
+    /// field exists so that a configuration file which carries the setting
+    /// can be read; the value has no effect and produces a message in the
+    /// log.
+    #[serde(default)]
+    pub telemetry: bool,
+
+    /// The application asks for administrator rights.
+    ///
+    /// WHY: the same as the field above. The application never asks for
+    /// elevation; the attempt to configure the guarantee is reported in the
+    /// log and has no effect.
+    #[serde(default)]
+    pub elevation: bool,
+}
+
+impl Default for Security {
+    /// The defaults of the section, as the shipped file writes them.
+    ///
+    /// WHY: the derived default of a structure of `bool` is `false` for
+    /// every field, and that is not the default of the file. The default is
+    /// therefore written out, so that an empty document and a missing
+    /// section produce the same result.
+    fn default() -> Self {
+        Self {
+            profile: SecurityProfile::default(),
+            verify_directory_before_refresh:
+                crate::security::DEFAULT_VERIFY_DIRECTORY_BEFORE_REFRESH,
+            background_index: crate::security::DEFAULT_BACKGROUND_INDEX,
+            remember_session: crate::security::DEFAULT_REMEMBER_SESSION,
+            read_only_on_demand: crate::security::DEFAULT_READ_ONLY_ON_DEMAND,
+            checksum_on_copy: crate::security::DEFAULT_CHECKSUM_ON_COPY,
+            follow_symlinks: crate::security::DEFAULT_FOLLOW_SYMLINKS,
+            telemetry: false,
+            elevation: false,
+        }
+    }
+}
+
+impl Security {
+    /// The settings that are in force when the configuration file cannot be
+    /// used.
+    ///
+    /// WHY: a broken file must not weaken the application. The safe set is
+    /// the profile `corporate`, because it is the set in which every rule of
+    /// section 9.7 is in force.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_config::schema::{Security, SecurityProfile};
+    ///
+    /// let safe = Security::safe();
+    /// assert_eq!(safe.profile, SecurityProfile::Corporate);
+    /// assert!(!safe.remember_session);
+    /// ```
+    pub fn safe() -> Self {
+        Self {
+            profile: SecurityProfile::Corporate,
+            remember_session: false,
+            ..Self::default()
+        }
+    }
 }
 
 /// The profile that decides which security rules apply.
@@ -255,7 +357,7 @@ pub struct Security {
 /// understand every switch. "standard" is for a private machine,
 /// "corporate" for a managed one, and "custom" for a user who knows the
 /// machine.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SecurityProfile {
     /// The rules of section 9.7 with the convenience switches.
@@ -269,9 +371,52 @@ pub enum SecurityProfile {
     Custom,
 }
 
-/// Returns the value of a switch that is on by default.
-fn default_true() -> bool {
-    true
+impl SecurityProfile {
+    /// The name of the profile, as the configuration file writes it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_config::schema::SecurityProfile;
+    ///
+    /// assert_eq!(SecurityProfile::Corporate.as_str(), "corporate");
+    /// ```
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            SecurityProfile::Standard => "standard",
+            SecurityProfile::Corporate => "corporate",
+            SecurityProfile::Custom => "custom",
+        }
+    }
+}
+
+/// Returns the default of the switch `verify_directory_before_refresh`.
+fn default_verify_directory_before_refresh() -> bool {
+    crate::security::DEFAULT_VERIFY_DIRECTORY_BEFORE_REFRESH
+}
+
+/// Returns the default of the switch `background_index`.
+fn default_background_index() -> bool {
+    crate::security::DEFAULT_BACKGROUND_INDEX
+}
+
+/// Returns the default of the switch `remember_session`.
+fn default_remember_session() -> bool {
+    crate::security::DEFAULT_REMEMBER_SESSION
+}
+
+/// Returns the default of the switch `read_only_on_demand`.
+fn default_read_only_on_demand() -> bool {
+    crate::security::DEFAULT_READ_ONLY_ON_DEMAND
+}
+
+/// Returns the default of the switch `checksum_on_copy`.
+fn default_checksum_on_copy() -> bool {
+    crate::security::DEFAULT_CHECKSUM_ON_COPY
+}
+
+/// Returns the default of the switch `follow_symlinks`.
+fn default_follow_symlinks() -> bool {
+    crate::security::DEFAULT_FOLLOW_SYMLINKS
 }
 
 /// The {[input]} section of the configuration file.

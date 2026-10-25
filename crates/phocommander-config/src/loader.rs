@@ -21,6 +21,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::notice::ConfigNotice;
 use crate::schema::Config;
 
 /// The newest version of the configuration schema this build understands.
@@ -121,6 +122,67 @@ pub fn load_file(path: impl AsRef<Path>) -> Result<Config, ConfigError> {
     parse_toml(&source)
 }
 
+/// Reads the configuration and falls back to the safe configuration.
+///
+/// WHY: a configuration file is written by hand, and a broken file must not
+/// stop the application — and it must not weaken it either. The function
+/// therefore returns the configuration that is in force together with the
+/// messages that say what happened. The safe configuration is the profile
+/// `corporate`, in which every rule of section 9.7 is in force.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_config::{ConfigNotice, parse_toml_or_safe};
+///
+/// let (config, notices) = parse_toml_or_safe("this is not a configuration");
+/// assert!(!notices.is_empty());
+/// assert_eq!(notices[0].severity, phocommander_config::NoticeSeverity::Warning);
+/// # let _ = config;
+/// ```
+pub fn parse_toml_or_safe(source: &str) -> (Config, Vec<ConfigNotice>) {
+    match parse_toml(source) {
+        Ok(config) => (config, Vec::new()),
+        Err(error) => (
+            Config::safe(),
+            vec![ConfigNotice::warning(
+                "the configuration file",
+                format!("the file could not be used ({error}); the safe configuration is in force"),
+            )],
+        ),
+    }
+}
+
+/// Reads the configuration file and falls back to the safe configuration.
+///
+/// WHY: the same rule as for a document that cannot be parsed: a file that
+/// cannot be read must not weaken the application. The path is named in the
+/// message, so that the user knows which file was refused.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_config::load_file_or_safe;
+///
+/// let (config, notices) = load_file_or_safe("/does/not/exist.toml");
+/// assert!(!notices.is_empty());
+/// # let _ = config;
+/// ```
+pub fn load_file_or_safe(path: impl AsRef<Path>) -> (Config, Vec<ConfigNotice>) {
+    let path = path.as_ref();
+    match load_file(path) {
+        Ok(config) => (config, Vec::new()),
+        Err(error) => (
+            Config::safe(),
+            vec![ConfigNotice::warning(
+                path.display().to_string(),
+                format!(
+                    "the configuration file could not be used ({error}); \
+                     the safe configuration is in force"
+                ),
+            )],
+        ),
+    }
+}
+
 /// Checks the values that the parser cannot check itself.
 ///
 /// WHY: a syntactically correct file can still contain a value that makes the
@@ -163,7 +225,6 @@ fn validate(config: &Config) -> Result<(), ConfigError> {
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced
 // there.
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::values::{InputContext, Language, OverwritePolicy, Theme};
@@ -379,5 +440,62 @@ mod tests {
             error.to_string().contains("remote.connect_timeout_seconds"),
             "{error}"
         );
+    }
+
+    #[test]
+    fn a_broken_document_gives_the_safe_configuration() {
+        // WHY: a broken file must not weaken the application. The safe
+        // configuration is the one in which every rule of section 9.7 is in
+        // force.
+        // arrange
+        let source = "this is not a configuration";
+
+        // act
+        let (config, notices) = parse_toml_or_safe(source);
+
+        // assert
+        assert_eq!(
+            config.security.profile,
+            crate::schema::SecurityProfile::Corporate
+        );
+        assert!(!config.security.remember_session);
+        assert_eq!(notices.len(), 1);
+        assert_eq!(notices[0].severity, crate::notice::NoticeSeverity::Warning);
+
+        let rules = crate::security::resolve_security(&config.security);
+        for rule in rules.rules() {
+            assert!(
+                rule.is_enabled(),
+                "the rule {} is not in force",
+                rule.id.as_str()
+            );
+        }
+    }
+
+    #[test]
+    fn a_file_that_cannot_be_read_gives_the_safe_configuration() {
+        // arrange
+        let path = std::env::temp_dir().join("phocommander-does-not-exist.toml");
+
+        // act
+        let (config, notices) = load_file_or_safe(&path);
+
+        // assert
+        assert_eq!(
+            config.security.profile,
+            crate::schema::SecurityProfile::Corporate
+        );
+        assert_eq!(notices.len(), 1);
+        assert!(notices[0].message.contains("safe configuration"));
+    }
+
+    #[test]
+    fn a_document_that_can_be_used_gives_no_notice() {
+        // act
+        let (config, notices) = parse_toml_or_safe("schema_version = 1\n");
+
+        // assert
+        assert_eq!(config.schema_version, 1);
+        assert!(notices.is_empty());
     }
 }

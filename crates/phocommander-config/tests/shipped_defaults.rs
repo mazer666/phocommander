@@ -15,6 +15,8 @@
 //! cargo test -p phocommander-config --test shipped_defaults
 //! ```
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use phocommander_config::{Config, parse_toml};
 
 /// The configuration file that ships with the repository.
