@@ -195,7 +195,7 @@ impl OpError {
     /// WHY: a message that names a path, a length and a limit needs those
     ///       values. The interface reads them from here, so that the message
     ///       of the catalogue can carry placeholders for them.
-    pub fn message_arguments(&self) -> Vec<String> {
+    pub fn message_arguments(&self) -> Vec<(String, String)> {
         match self {
             OpError::PathTooLong {
                 path,
@@ -203,10 +203,10 @@ impl OpError {
                 unit,
                 limit,
             } => vec![
-                path.display().to_string(),
-                amount.to_string(),
-                unit.clone(),
-                limit.to_string(),
+                ("path".to_string(), path.display().to_string()),
+                ("amount".to_string(), amount.to_string()),
+                ("unit".to_string(), unit.clone()),
+                ("limit".to_string(), limit.to_string()),
             ],
             _ => Vec::new(),
         }
@@ -281,6 +281,36 @@ pub enum JobErrorCode {
 }
 
 impl JobErrorCode {
+    /// The key of the catalogue that carries the message of this code.
+    ///
+    /// WHY: the codes of ADR-0003 carry a point, because they name a case in
+    ///       a table of cases. The keys of the catalogue carry a hyphen,
+    ///       because the format of the catalogue allows no point. The
+    ///       translation of one into the other is a rule and not a table, so
+    ///       that a new code needs no second place to be kept in step.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::error::JobErrorCode;
+    ///
+    /// assert_eq!(JobErrorCode::PathTooLong.as_str(), "path.too_long");
+    /// assert_eq!(JobErrorCode::PathTooLong.message_key(), "path-too-long");
+    /// ```
+    pub fn message_key(&self) -> String {
+        // WHY: the code of a case names it in two parts, and both parts are
+        //       separated by a point or by an underscore. The key of the
+        //       catalogue uses a hyphen in both places.
+        self.as_str().replace(['.', '_'], "-")
+    }
+
+    /// The name of the code, as the table of ADR-0003 writes it.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::error::JobErrorCode;
+    ///
+    /// assert_eq!(JobErrorCode::PathTooLong.as_str(), "path.too_long");
+    /// ```
     /// The name of the code.
     ///
     /// WHY: the codes of ADR-0003 are the contract with the user interface.
@@ -358,6 +388,14 @@ pub struct JobError {
 
     /// Whether the job continues with the next item.
     pub continues: bool,
+
+    /// The values that the message of the catalogue carries.
+    ///
+    /// WHY: the code names the case, and the message names the values — the
+    ///       path that is too long, its length and the limit of the platform.
+    ///       Without them the message of the catalogue could only repeat the
+    ///       code, and the user would learn nothing.
+    pub arguments: Vec<(String, String)>,
 }
 
 impl JobError {
@@ -387,7 +425,38 @@ impl JobError {
             code,
             message: message.into(),
             continues,
+            arguments: Vec::new(),
         }
+    }
+
+    /// The collected failure with the values that the message carries.
+    ///
+    /// WHY: a message of the catalogue needs the values of the failure — the
+    ///       path that is too long, its length and the limit. The code names
+    ///       the case, the values tell the user what happened.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::error::{JobError, JobErrorCode};
+    /// use std::path::PathBuf;
+    ///
+    /// let error = JobError::new(
+    ///     PathBuf::from("sunset.jpg"),
+    ///     JobErrorCode::PathTooLong,
+    ///     "the path is too long",
+    ///     false,
+    /// )
+    /// .with_arguments(vec![("limit".to_string(), "260".to_string())]);
+    /// assert_eq!(error.arguments().len(), 1);
+    /// ```
+    pub fn with_arguments(mut self, arguments: Vec<(String, String)>) -> Self {
+        self.arguments = arguments;
+        self
+    }
+
+    /// The values that the message of the catalogue carries.
+    pub fn arguments(&self) -> &[(String, String)] {
+        &self.arguments
     }
 
     /// The item the operation was working on.
