@@ -200,8 +200,8 @@ measured is reported as "not measured", never as "met".
 | Target value | Threshold | Measured with | Result | Status |
 |---|---|---|---|---|
 | Directory listing with 10 000 entries (NFR-01) | < 100 ms | `cargo bench -p phocommander-integration-tests --bench directory_listing` (criterion 0.8) | see section 3.1 | see section 3.1 |
-| Directory change, already loaded (NFR-02) | < 16 ms | — | no benchmark exists | **not measured** |
-| Key press until the visible reaction (NFR-03) | < 50 ms | `cargo test -p phocommander-ui --test the_filter_holds_the_frame_rate` | see section 3.2 | see section 3.2 |
+| Directory change, already loaded (NFR-02) | < 16 ms | `cargo bench -p phocommander-integration-tests --bench interaction` (criterion 0.8, release profile) | see section 3.3 | **met** — 98 ns against 16 ms |
+| Key press until the visible reaction (NFR-03) | < 50 ms | `cargo bench -p phocommander-integration-tests --bench interaction` (criterion 0.8, release profile) | see section 3.3 | **met** — 141 µs against 50 ms |
 | Frame of a panel with 100 000 entries | — (the frame rate of the filter) | `cargo test -p phocommander-ui --test the_filter_holds_the_frame_rate -- --nocapture` | see section 3.2 | see section 3.2 |
 | Start time until the operable surface (NFR-04) | < 800 ms | — | the application opens no window | **not measured** |
 | Memory in idle, two panels open (NFR-05) | < 120 MB | — | the application opens no window | **not measured** |
@@ -216,6 +216,30 @@ _(filled in from the log)_
 ### 3.2 The frame of a panel and the key stroke in the filter field
 
 _(filled in from the log)_
+
+### 3.3 The switch between the directories and the reaction to a key press
+
+The measurement runs in the **release profile**. In the development profile the compiler is
+many times slower, and a number from the development profile describes the compiler and not the
+program.
+
+```
+$ cargo bench -p phocommander-integration-tests --bench interaction
+switch between two loaded directories : 98ns
+reaction to a key press : 140.838µs
+```
+
+The building of the surface — two panels with 10 000 entries each — lies **outside** the
+measurement. It costs more time than the work that is measured, and a benchmark that measures
+the preparation measures the wrong thing.
+
+| Target value | Threshold | Measured | Held |
+|---|---|---|---|
+| The switch between two directories that are already loaded (NFR-02) | 16 ms | **98 ns** | by the factor of 160 000 |
+| The reaction to a key press (NFR-03) | 50 ms | **141 µs** | by the factor of 355 |
+
+The benchmark is `benches/interaction.rs`, and it **fails** when the number is too big — a
+benchmark that only prints a number holds no gate.
 
 ---
 

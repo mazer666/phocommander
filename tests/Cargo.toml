@@ -104,5 +104,10 @@ name = "directory_listing"
 path = "../benches/directory_listing.rs"
 harness = false
 
+[[bench]]
+name = "interaction"
+path = "../benches/interaction.rs"
+harness = false
+
 [lints]
 workspace = true
