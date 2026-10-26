@@ -78,3 +78,17 @@ path-too-long = The path { $path } is too long: { $amount } { $unit }, the limit
 path-too-long-advice = Move the file into a shorter directory, or rename the directory that holds it.
 path-too-long-unit-characters = characters
 path-too-long-unit-bytes = bytes
+
+# The messages of the failures of the jobs.
+
+io-read = The file could not be read: { $item }
+io-write = The file could not be written: { $item }
+io-permission = The system refused the access: { $item }
+job-checksum-mismatch = The copy differs from the source: { $item }
+path-reserved = The name is not usable on every platform: { $item }
+job-cancelled = The job was cancelled: { $item }
+job-not-confirmed = The job was not confirmed: { $item }
+io-not-found = The path does not exist: { $item }
+job-already-exists = The path exists already: { $item }
+job-unsupported-mode = The mode of the job is not supported: { $item }
+job-rename-conflict = The name is taken already: { $item }

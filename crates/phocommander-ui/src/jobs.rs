@@ -128,6 +128,53 @@ impl JobKind {
     }
 }
 
+/// The failure of a job, as the surface needs it.
+///
+/// WHY: the surface knows nothing about the crate of the operations. The
+///       failure therefore travels as a key of the catalogue and the values
+///       that the message needs, and the surface reads the text in the
+///       language of the interface (FR-05, FR-124).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JobError {
+    /// The key of the catalogue that carries the message.
+    key: String,
+
+    /// The values that the message carries, with the name that the message
+    /// of the catalogue expects.
+    arguments: Vec<(String, String)>,
+}
+
+impl JobError {
+    /// Builds the failure of a job.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::jobs::JobError;
+    ///
+    /// let error = JobError::new(
+    ///     "path-too-long",
+    ///     vec![("path".to_string(), "/a/b".to_string())],
+    /// );
+    /// assert_eq!(error.key(), "path-too-long");
+    /// ```
+    pub fn new(key: impl Into<String>, arguments: Vec<(String, String)>) -> Self {
+        Self {
+            key: key.into(),
+            arguments,
+        }
+    }
+
+    /// The key of the catalogue that carries the message.
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// The values that the message carries, with their names.
+    pub fn arguments(&self) -> &[(String, String)] {
+        &self.arguments
+    }
+}
+
 /// One row of the list of the jobs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JobSummary {
@@ -137,6 +184,7 @@ pub struct JobSummary {
     items_done: u64,
     items_total: u64,
     rate: Option<u64>,
+    error: Option<JobError>,
 }
 
 impl JobSummary {
@@ -155,7 +203,29 @@ impl JobSummary {
             items_done,
             items_total,
             rate: None,
+            error: None,
         }
+    }
+
+    /// The row with the failure of the job.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::jobs::{JobError, JobSummary};
+    ///
+    /// let error = JobError::new("path-too-long", Vec::new());
+    /// let summary = JobSummary::new(1, phocommander_ui::jobs::JobKind::Copy, phocommander_ui::jobs::JobState::Failed, 0, 0)
+    ///     .with_error(error);
+    /// assert!(summary.error().is_some());
+    /// ```
+    pub fn with_error(mut self, error: JobError) -> Self {
+        self.error = Some(error);
+        self
+    }
+
+    /// The failure of the job, if it failed.
+    pub fn error(&self) -> Option<&JobError> {
+        self.error.as_ref()
     }
 
     /// The row with the rate of the job.

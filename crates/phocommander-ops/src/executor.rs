@@ -124,12 +124,10 @@ pub fn execute(
                 && job.restricted_items.is_none()
                 && let Err(error) = remove_tree(fs, source)
             {
-                errors.push(JobError::new(
-                    source.clone(),
-                    error.code(),
-                    error.to_string(),
-                    false,
-                ));
+                errors.push(
+                    JobError::new(source.clone(), error.code(), error.to_string(), false)
+                        .with_arguments(error.message_arguments()),
+                );
             }
             Ok(JobResult {
                 state: state_of(&errors),
@@ -159,12 +157,10 @@ pub fn execute(
             }),
             Err(error) => Ok(JobResult {
                 state: JobState::Failed,
-                errors: vec![JobError::new(
-                    source.clone(),
-                    error.code(),
-                    error.to_string(),
-                    false,
-                )],
+                errors: vec![
+                    JobError::new(source.clone(), error.code(), error.to_string(), false)
+                        .with_arguments(error.message_arguments()),
+                ],
                 items_done: context.items_done(),
                 bytes_done: context.bytes_done(),
             }),
@@ -173,12 +169,10 @@ pub fn execute(
             let mut errors = Vec::new();
             for path in paths {
                 if let Err(error) = remove_entry(fs, path) {
-                    errors.push(JobError::new(
-                        path.clone(),
-                        error.code(),
-                        error.to_string(),
-                        true,
-                    ));
+                    errors.push(
+                        JobError::new(path.clone(), error.code(), error.to_string(), true)
+                            .with_arguments(error.message_arguments()),
+                    );
                 }
             }
             Ok(JobResult {
@@ -197,12 +191,10 @@ pub fn execute(
             }),
             Err(error) => Ok(JobResult {
                 state: JobState::Failed,
-                errors: vec![JobError::new(
-                    path.clone(),
-                    error.code(),
-                    error.to_string(),
-                    false,
-                )],
+                errors: vec![
+                    JobError::new(path.clone(), error.code(), error.to_string(), false)
+                        .with_arguments(error.message_arguments()),
+                ],
                 items_done: context.items_done(),
                 bytes_done: context.bytes_done(),
             }),

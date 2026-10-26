@@ -26,6 +26,7 @@
 pub mod catalogue;
 pub mod desktop;
 pub mod filesystem;
+pub mod jobs;
 pub mod language;
 pub mod linux;
 pub mod rename;

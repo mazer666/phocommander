@@ -80,3 +80,17 @@ path-too-long = Le chemin { $path } est trop long : { $amount } { $unit }, la li
 path-too-long-advice = Déplacez le fichier dans un répertoire plus court, ou renommez le répertoire qui le contient.
 path-too-long-unit-characters = caractères
 path-too-long-unit-bytes = octets
+
+# The messages of the failures of the jobs.
+
+io-read = Le fichier n'a pas pu être lu : { $item }
+io-write = Le fichier n'a pas pu être écrit : { $item }
+io-permission = Le système a refusé l'accès : { $item }
+job-checksum-mismatch = La copie diffère de la source : { $item }
+path-reserved = Le nom n'est pas utilisable sur toutes les plateformes : { $item }
+job-cancelled = La tâche a été annulée : { $item }
+job-not-confirmed = La tâche n'a pas été confirmée : { $item }
+io-not-found = Le chemin n'existe pas : { $item }
+job-already-exists = Le chemin existe déjà : { $item }
+job-unsupported-mode = Le mode de la tâche n'est pas pris en charge : { $item }
+job-rename-conflict = Le nom est déjà pris : { $item }

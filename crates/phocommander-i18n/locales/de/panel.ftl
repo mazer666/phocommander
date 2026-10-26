@@ -78,3 +78,17 @@ path-too-long = Der Pfad { $path } ist zu lang: { $amount } { $unit }, die Grenz
 path-too-long-advice = Verschiebe die Datei in ein kürzeres Verzeichnis, oder benenne das Verzeichnis um, das sie enthält.
 path-too-long-unit-characters = Zeichen
 path-too-long-unit-bytes = Bytes
+
+# The messages of the failures of the jobs.
+
+io-read = Die Datei konnte nicht gelesen werden: { $item }
+io-write = Die Datei konnte nicht geschrieben werden: { $item }
+io-permission = Das System hat den Zugriff verweigert: { $item }
+job-checksum-mismatch = Die Kopie weicht von der Quelle ab: { $item }
+path-reserved = Der Name ist auf nicht jeder Plattform brauchbar: { $item }
+job-cancelled = Der Auftrag wurde abgebrochen: { $item }
+job-not-confirmed = Der Auftrag wurde nicht bestätigt: { $item }
+io-not-found = Der Pfad gibt es nicht: { $item }
+job-already-exists = Der Pfad gibt es schon: { $item }
+job-unsupported-mode = Die Art des Auftrags wird nicht unterstützt: { $item }
+job-rename-conflict = Der Name ist schon vergeben: { $item }

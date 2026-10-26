@@ -198,6 +198,36 @@ impl<'a> Texts<'a> {
             _ => key.as_str().to_string(),
         }
     }
+
+    /// The text of a key that the catalogue names by its own name.
+    ///
+    /// WHY: the failures of the operations travel as a key and not as a
+    ///       value of the enumeration of the keys, because the interface
+    ///       knows no enumeration of the codes of the operations. The text is
+    ///       read by the name of the key, and a key that the catalogue does
+    ///       not know leaves its own name visible — a message that is empty
+    ///       cannot be diagnosed (FR-122).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::i18n::{Argument, Catalogue, Texts};
+    ///
+    /// struct Empty;
+    /// impl Catalogue for Empty {
+    ///     fn lookup_with(&self, _key: &str, _arguments: &[Argument<'_>]) -> Option<String> {
+    ///         None
+    ///     }
+    /// }
+    ///
+    /// let texts = Texts::new(&Empty);
+    /// assert_eq!(texts.get_by_key("path-too-long", &[]), "path-too-long");
+    /// ```
+    pub fn get_by_key(&self, key: &str, arguments: &[Argument<'_>]) -> String {
+        match self.catalogue.lookup_with(key, arguments) {
+            Some(text) if !text.is_empty() => text,
+            _ => key.to_string(),
+        }
+    }
 }
 
 #[cfg(test)]
