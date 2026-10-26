@@ -67,6 +67,7 @@ a message, what the log records, and what the acceptance documentation cites.
 | `path.absolute` | A path was absolute where a relative one was required | core |
 | `path.traversal` | A path tried to leave the destination directory | archive |
 | `path.reserved` | A name is not valid on every target platform | archive |
+| `path.too_long` | A path is longer than the target platform allows | core, operations |
 | `limit.too_large` | A file or an archive exceeded a limit | core |
 | `limit.entries` | An archive has too many entries | core |
 | `config.unknown_field` | The configuration file has a field that does not exist | config |

@@ -94,6 +94,13 @@ pub enum ErrorCode {
     /// A name is not valid on every target platform.
     PathReserved,
 
+    /// A path is longer than the target platform allows.
+    ///
+    /// WHY: a path that is too long cannot be written. The user has to
+    ///       learn that before the operation, and the message has to say
+    ///       which path it is and what can be done about it.
+    PathTooLong,
+
     /// A file or an archive exceeded a limit.
     LimitTooLarge,
 
@@ -121,6 +128,7 @@ impl ErrorCode {
             ErrorCode::PathAbsolute => "path.absolute",
             ErrorCode::PathTraversal => "path.traversal",
             ErrorCode::PathReserved => "path.reserved",
+            ErrorCode::PathTooLong => "path.too_long",
             ErrorCode::LimitTooLarge => "limit.too_large",
             ErrorCode::LimitEntries => "limit.entries",
             ErrorCode::PlatformNoConfigDirectory => "platform.no_config_directory",
@@ -148,6 +156,7 @@ impl ErrorCode {
             ErrorCode::PathAbsolute => 1101,
             ErrorCode::PathTraversal => 1102,
             ErrorCode::PathReserved => 1103,
+            ErrorCode::PathTooLong => 1104,
             ErrorCode::LimitTooLarge => 1201,
             ErrorCode::LimitEntries => 1202,
             ErrorCode::PlatformNoConfigDirectory => 1901,

@@ -73,3 +73,10 @@ error-binding-empty-palette-entry = L'entrée de la palette d'actions ne porte a
 error-binding-unknown-action = L'action { $identifier } ne fait pas partie du catalogue.
 error-binding-unknown-key = La liaison { $binding } nomme la touche inconnue { $key }.
 error-transfer-same-panel = Le panneau { $side } ne peut pas être à la fois la source et la destination d'un transfert.
+
+# The message of a path that is longer than the platform allows.
+
+path-too-long = Le chemin { $path } est trop long : { $amount } { $unit }, la limite est { $limit }.
+path-too-long-advice = Déplacez le fichier dans un répertoire plus court, ou renommez le répertoire qui le contient.
+path-too-long-unit-characters = caractères
+path-too-long-unit-bytes = octets
