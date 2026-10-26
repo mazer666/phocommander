@@ -36,7 +36,7 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 |---|---|
 | Tests | **1123 grün, 0 rot, 0 übersprungen** |
 | Testbinäre | 54 |
-| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 26.10.2026 nach den Ports von M3 und der Regel der Pfadlänge: **PASS**, 38 von 38 |
+| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 26.10.2026 nach dem Property-Test von FR-33 und der Abnahme von M3: **PASS**, 38 von 38 |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
 | Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
