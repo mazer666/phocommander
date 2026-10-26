@@ -633,6 +633,11 @@ PYTHON
 #       it does not prove that every crate of the workspace compiles, and
 #       the whole workspace does not fit into the memory of the sandbox
 #       beside the build that the script itself makes.
+# WHY: the gate runs the test package that carries the probe and not the
+#       whole workspace. The gate proves that a failing test turns the run
+#       red — it does not prove that every crate of the workspace compiles,
+#       and the whole workspace does not fit into the memory of the sandbox
+#       beside the build that the script itself makes.
 (cd "$COPY" && "$REPO/scripts/cargo.sh" test -p phocommander-integration-tests --test config_defaults --locked < /dev/null) > "$SCRATCH/test-negative.log" 2>&1
 negative=$?
 show "the QA gate probe fails on purpose|test result: FAILED|^error" "$SCRATCH/test-negative.log"
