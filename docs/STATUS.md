@@ -36,7 +36,7 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 |---|---|
 | Tests | **1123 grün, 0 rot, 0 übersprungen** |
 | Testbinäre | 54 |
-| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 25.10.2026 nach dem Dialog der Mehrfachumbenennung: **PASS**, 38 von 38 |
+| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 26.10.2026 nach den Ports von M3 und der Regel der Pfadlänge: **PASS**, 38 von 38 |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
 | Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
@@ -119,7 +119,6 @@ genauso leicht zu brechen sind:
 | Welche Zertifikate tragen die Binaries? | Windows braucht ein Code-Signing-Zertifikat, macOS einen Developer ID. Beides kostet Geld und braucht eine Entscheidung des Eigentümers. |
 | Das Zielverzeichnis der Tests liegt auf einem NAS-Volume | Jeder Build zahlt die Latenz des Volumes. Eine lokale Ablage wäre schneller — wenn die Sandbox sie anbietet. |
 | Der Release-Plan war widersprüchlich | Linux mit Alpha 2 und Windows mit Beta 1 — obwohl beide Ports zu M3 gehören. Korrigiert am 25.10.2026: Alpha 1, Alpha 2 und Beta 1 liefern macOS aus, Beta 2 liefert alle fünf Desktop-Plattformen |
-| Die Fehler der Aufträge werden in der Oberfläche nicht angezeigt | Der `JobSummary` trägt den Zustand, aber nicht den Text des Fehlers. Die Regel des zu langen Pfads liegt jetzt vollständig da — Fehler, Code, Katalogschlüssel, Meldung in drei Sprachen — aber ihre Anzeige in der Liste der Aufträge fehlt noch |
 | Der Eigenschaftstest der Umbenennung (FR-33) | Die Spezifikation nennt ihn ausdrücklich. Er ist der letzte fehlende Test der Abnahme von M1. |
 | Soll die Dateiendung ein Merkmal sein? | **Nein**, entschieden am 25.10.2026: die Endung bleibt ein Hinweis. Die Magic Bytes entscheiden. Eine Datei, die `.zip` heißt und kein ZIP ist, soll als das erkannt werden, was sie ist. |
 | Verschlüsselte Container (FR-68) | Nicht angefasst. Der Meilenstein M1 umfasst die unverschlüsselten Formate; die verschlüsselten kommen mit dem Umgang mit den Passwörtern. |

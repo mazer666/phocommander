@@ -336,6 +336,18 @@ pub(crate) fn draw_job_list(
                     Argument::total(job.items_total()),
                 ],
             );
+            // WHY: the failure of a job is shown in the row of the job. The
+            //       text comes from the catalogue, so that it speaks the
+            //       language of the interface (FR-05, FR-124).
+            let failure = job.error().map(|error| {
+                let arguments: Vec<Argument<'_>> = error
+                    .arguments()
+                    .iter()
+                    .map(|(name, value)| Argument::named(name, value.as_str()))
+                    .collect();
+                texts.get_by_key(error.key(), &arguments)
+            });
+
             ui.scope_builder(
                 egui::UiBuilder::new()
                     .max_rect(row_rect)
@@ -344,6 +356,9 @@ pub(crate) fn draw_job_list(
                     ui.label(RichText::new(kind).color(palette.text));
                     ui.label(RichText::new(state).color(palette.text_dimmed));
                     ui.label(RichText::new(progress).color(palette.text_dimmed));
+                    if let Some(failure) = failure {
+                        ui.label(RichText::new(failure).color(palette.warning));
+                    }
                 },
             );
         }

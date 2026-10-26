@@ -276,9 +276,9 @@ mod tests {
             4,
             "the message names the path, the length, the unit and the limit"
         );
-        assert!(arguments[0].contains("a-directory-with-a-long-name"));
+        assert!(arguments[0].1.contains("a-directory-with-a-long-name"));
         assert_eq!(
-            arguments[3],
+            arguments[3].1,
             limit.amount().to_string(),
             "the message names the limit of the platform"
         );
