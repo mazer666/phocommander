@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc efcc84343a96b155e6aab70b5c7c788124de2dd565b748a2b56f11db0d829d1e # shrinks to rule = RenameRule { format: "[rand]-[name].[ext]", replacements: [], counter: Some(CounterRule { start: 1, step: 1, width: 3, order: Selection }), series: None }, selection = [RenameInput { path: "/tv/The Expanse/Duldung.avi", size: Some(0), modified: None, checksum: None, series: None, random: None }]
