@@ -53,6 +53,14 @@ fn main() -> eframe::Result<()> {
     let plan = SecurityPlan::from_effective(&rules);
     report_plan(&plan);
 
+    // WHY: the display server is printed, because it decides the path of the
+    //       window. On Linux the application uses Wayland when the machine
+    //       offers it, and X11 otherwise (M3).
+    println!(
+        "display server: {}",
+        phocommander_desktop::linux::display_server().as_str()
+    );
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1280.0, 800.0])

@@ -87,6 +87,26 @@ pub enum OpError {
         source: io::Error,
     },
 
+    /// The path is longer than the target platform allows.
+    ///
+    /// WHY: a path that is too long cannot be written. The operation refuses
+    ///       it before it starts, and the message names the path, the length
+    ///       and the limit, so that the user can see what to do (FR-22).
+    #[error("{path} is too long: {amount} {unit}, the limit is {limit}")]
+    PathTooLong {
+        /// The path that was refused.
+        path: PathBuf,
+
+        /// The length of the path.
+        amount: usize,
+
+        /// The unit of the length — characters or bytes.
+        unit: String,
+
+        /// The limit of the platform.
+        limit: usize,
+    },
+
     /// The path does not exist.
     #[error("{path} does not exist")]
     NotFound {
@@ -158,6 +178,41 @@ impl OpError {
     /// let error = OpError::NotFound { path: PathBuf::from("a.txt") };
     /// assert_eq!(error.code(), JobErrorCode::NotFound);
     /// ```
+    /// The key of the catalogue that carries the message of this error.
+    ///
+    /// WHY: the message of an error reaches the user through the interface,
+    ///       and the interface reads it from the catalogue. The name of the
+    ///       key is therefore the contract between the two (FR-05).
+    pub fn message_key(&self) -> &'static str {
+        match self {
+            OpError::PathTooLong { .. } => "path-too-long",
+            _ => self.code().as_str(),
+        }
+    }
+
+    /// The values that the message of this error carries.
+    ///
+    /// WHY: a message that names a path, a length and a limit needs those
+    ///       values. The interface reads them from here, so that the message
+    ///       of the catalogue can carry placeholders for them.
+    pub fn message_arguments(&self) -> Vec<String> {
+        match self {
+            OpError::PathTooLong {
+                path,
+                amount,
+                unit,
+                limit,
+            } => vec![
+                path.display().to_string(),
+                amount.to_string(),
+                unit.clone(),
+                limit.to_string(),
+            ],
+            _ => Vec::new(),
+        }
+    }
+
+    /// The code of this error.
     pub fn code(&self) -> JobErrorCode {
         match self {
             OpError::Io { source, .. } => {
@@ -167,6 +222,7 @@ impl OpError {
                     JobErrorCode::IoWrite
                 }
             }
+            OpError::PathTooLong { .. } => JobErrorCode::PathTooLong,
             OpError::NotFound { .. } => JobErrorCode::NotFound,
             OpError::AlreadyExists { .. } => JobErrorCode::AlreadyExists,
             OpError::InvalidName { problem, .. } => match problem {
@@ -208,6 +264,9 @@ pub enum JobErrorCode {
     /// The plan of a synchronisation was not confirmed.
     NotConfirmed,
 
+    /// The path is longer than the target platform allows.
+    PathTooLong,
+
     /// The path does not exist.
     NotFound,
 
@@ -242,6 +301,7 @@ impl JobErrorCode {
             JobErrorCode::IoPermission => "io.permission",
             JobErrorCode::ChecksumMismatch => "job.checksum_mismatch",
             JobErrorCode::NameInvalid => "path.reserved",
+            JobErrorCode::PathTooLong => "path.too_long",
             JobErrorCode::Cancelled => "job.cancelled",
             JobErrorCode::NotConfirmed => "job.not_confirmed",
             JobErrorCode::NotFound => "io.read",
@@ -269,6 +329,7 @@ impl JobErrorCode {
             JobErrorCode::IoPermission => 1003,
             JobErrorCode::ChecksumMismatch => 1301,
             JobErrorCode::NameInvalid => 1103,
+            JobErrorCode::PathTooLong => 1104,
             JobErrorCode::Cancelled => 1302,
             JobErrorCode::NotConfirmed => 1303,
             JobErrorCode::NotFound => 1004,
