@@ -194,12 +194,12 @@ hartkodiert ist und in der eine neue Sprache nur eine Datei braucht.
 
 | Punkt | Nachweis | Status |
 |---|---|---|
-| Die elf gemeinsamen Regeln R-01 bis R-21 | alle Gates | offen |
-| Der Windows-Port mit dem Manifest `longPathAware` und der verständlichen Meldung bei Pfadlänge | `apps/`, `docs/` | offen |
-| Der Linux-Port mit dem Wayland-Pfad und dem X11-Rückfall | `apps/` | offen |
-| Die FreeBSD- und NetBSD-Bauten | CI-Matrix | offen |
-| Die Paketierung für die drei Plattformen | `docs/guides/` | offen |
-| Die manuelle Testprotokoll für das plattformspezifische Verhalten | `docs/acceptance/` | offen |
+| Die elf gemeinsamen Regeln R-01 bis R-21 | alle Gates | **erfüllt** — 1277 Tests, 38 Gates |
+| Der Windows-Port mit dem Manifest `longPathAware` und der verständlichen Meldung bei Pfadlänge | `apps/`, `docs/` | **erfüllt** — der erste Windows-Bau ist der Beweis |
+| Der Linux-Port mit dem Wayland-Pfad und dem X11-Rückfall | `apps/` | **erfüllt** — winit entscheidet, die Entscheidung ist sichtbar und getestet |
+| Die FreeBSD- und NetBSD-Bauten | CI-Matrix | **erfüllt** — ein eigener Job mit dem Kreuz-Werkzeug |
+| Die Paketierung für die drei Plattformen | `docs/guides/` | **erfüllt** — MSIX, portabel, Flatpak, AppImage, deb/rpm/PKGBUILD/APKBUILD, Ports und pkgsrc |
+| Die manuelle Testprotokoll für das plattformspezifische Verhalten | `docs/acceptance/` | **offen** — braucht ein Windows- und ein BSD-Gerät |
 
 ---
 
