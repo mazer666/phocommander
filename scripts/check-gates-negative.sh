@@ -419,31 +419,6 @@ show "^RESULT" "$SCRATCH/actions-positive.log"
 report "the gate is green on the keymap of the repository" 0 "$positive"
 echo
 
-echo "9.3 negative run (the defaults of the code do not match the file):"
-python3 - "$SCRATCH/keymap/crates/phocommander-ui/src/keymap_view/defaults.rs" <<'PYTHON'
-import sys
-from pathlib import Path
-path = Path(sys.argv[1])
-text = path.read_text(encoding="utf-8")
-text = text.replace(
-    '"panel.view".to_string(), "tap".to_string()',
-    '"panel.view".to_string(), "long-press".to_string()',
-    1,
-)
-path.write_text(text, encoding="utf-8")
-PYTHON
-python3 "$SCRATCH/keymap/scripts/check-keymap-consistency.py" > "$SCRATCH/keymap-defaults-negative.log" 2>&1
-negative=$?
-show "DEVIATION|^RESULT|defaults of the code" "$SCRATCH/keymap-defaults-negative.log"
-report "the gate is red when the defaults of the code do not match the file" 1 "$negative"
-echo
-echo "9.4 positive run (the defaults of the repository):"
-cp "$REPO_ROOT/crates/phocommander-ui/src/keymap_view/defaults.rs" \
-   "$SCRATCH/keymap/crates/phocommander-ui/src/keymap_view/defaults.rs"
-python3 "$SCRATCH/keymap/scripts/check-keymap-consistency.py" > "$SCRATCH/keymap-defaults-positive.log" 2>&1
-positive=$?
-show "^RESULT" "$SCRATCH/keymap-defaults-positive.log"
-report "the gate is green with the defaults of the repository" 0 "$positive"
 echo
 
 # ---------------------------------------------------------------------------
@@ -523,6 +498,33 @@ python3 "$SCRATCH/keymap/scripts/check-keymap-consistency.py" > "$SCRATCH/keymap
 positive=$?
 show "^RESULT" "$SCRATCH/keymap-positive.log"
 report "the gate is green on the keymap of the repository" 0 "$positive"
+echo
+
+echo "9.3 negative run (the defaults of the code do not match the file):"
+python3 - "$SCRATCH/keymap/crates/phocommander-ui/src/keymap_view/defaults.rs" <<'PYTHON'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+text = text.replace(
+    '"panel.view".to_string(), "tap".to_string()',
+    '"panel.view".to_string(), "long-press".to_string()',
+    1,
+)
+path.write_text(text, encoding="utf-8")
+PYTHON
+python3 "$SCRATCH/keymap/scripts/check-keymap-consistency.py" > "$SCRATCH/keymap-defaults-negative.log" 2>&1
+negative=$?
+show "DEVIATION|^RESULT|defaults of the code" "$SCRATCH/keymap-defaults-negative.log"
+report "the gate is red when the defaults of the code do not match the file" 1 "$negative"
+echo
+echo "9.4 positive run (the defaults of the repository):"
+cp "$REPO_ROOT/crates/phocommander-ui/src/keymap_view/defaults.rs" \
+   "$SCRATCH/keymap/crates/phocommander-ui/src/keymap_view/defaults.rs"
+python3 "$SCRATCH/keymap/scripts/check-keymap-consistency.py" > "$SCRATCH/keymap-defaults-positive.log" 2>&1
+positive=$?
+show "^RESULT" "$SCRATCH/keymap-defaults-positive.log"
+report "the gate is green with the defaults of the repository" 0 "$positive"
 echo
 
 # ---------------------------------------------------------------------------

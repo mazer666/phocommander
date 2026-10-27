@@ -29,7 +29,7 @@ diese fünf Eingänge zusammentreffen:
 | Die Formatierung | `cargo fmt --all -- --check` | **ohne Abweichung** |
 | Die Warnungen des Linters | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **ohne Warnung** |
 | Die Konsistenz-Gates | `scripts/check-*.py`, `scripts/check-*.sh` | **13 Stück, alle PASS** |
-| Die Gates beweisen sich selbst | `scripts/check-gates-negative.sh` | **39 Gates**, jedes wird rot und wieder grün |
+| Die Gates beweisen sich selbst | `scripts/check-gates-negative.sh` | **38 Gates**, jedes wird rot und wieder grün. Gate 9 prüft zwei Übereinstimmungen und läuft deshalb viermal |
 
 Die Zahl der Tests ist seit der Abnahme von M3 von 1277 auf **1316** gestiegen: 39 neue Tests
 für die Ereignisse, die Schreibweisen, die Erkennung der Gesten, die fünf Kontexte, die Vorgaben

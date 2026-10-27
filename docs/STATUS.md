@@ -38,7 +38,7 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 |---|---|
 | Tests | **1316 grün, 0 rot, 0 übersprungen** |
 | Testbinäre | 55 |
-| Gates, die sich selbst beweisen | **39** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 26.10.2026 nach der Naht der Eingabe von M4: **PASS**, 39 von 39 |
+| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Gate 9 prüft inzwischen **zwei** Übereinstimmungen und läuft deshalb viermal. Zuletzt gemessen am 26.10.2026 nach der Naht der Eingabe von M4: **PASS**, 38 von 38 |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
 | Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
