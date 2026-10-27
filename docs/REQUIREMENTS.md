@@ -321,7 +321,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | ID | Requirement | Milestone | Priority | Verification |
 |---|---|---|---|---|
 | FR-100 | Every operation is bound to a named action, not to a physical key | M1 | Must | Unit test on the action catalogue |
-| FR-101 | The key binding, the pointer, the touch gesture, the D-pad and the controller each bind to the same actions | M1 | Must | Unit test per context |
+| FR-101 | The key binding, the pointer, the touch gesture, the D-pad and the controller each bind to the same actions | M1 | Must | Unit test per context — umgesetzt in M4, siehe `docs/acceptance/M4-ACCEPTANCE.md` |
 | FR-102 | The action palette lists every action that is reachable in the current context | M8 | Must | Reachability protocol |
 | FR-103 | The action palette is fully operable with a D-pad and the confirm key | M8 | Must | Manual test |
 | FR-104 | Focus and selection are separate states in the D-pad and controller contexts | M4 | Must | State model test |

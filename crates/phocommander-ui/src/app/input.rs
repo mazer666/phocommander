@@ -27,6 +27,14 @@ impl WorkSurfaceApp {
     pub(super) fn resolve_input(&mut self, ctx: &egui::Context) {
         let events: Vec<egui::Event> = ctx.input(|input| input.events.clone());
         let primary = self.primary;
+        let now = ctx.input(|input| input.time);
+
+        // WHY: the long press is not an event of the framework. The finger
+        //       rests, and the frame has to ask once per frame whether the
+        //       finger has rested long enough (FR-101).
+        if let Some(event) = self.pointer.poll(now) {
+            self.dispatch_pointer_event(&event);
+        }
 
         for event in events {
             // WHY: the characters of the filter field arrive as a text
@@ -46,6 +54,16 @@ impl WorkSurfaceApp {
                     self.surface.active_mut().filter_insert(text);
                     continue;
                 }
+            }
+
+            // WHY: the mouse and the finger bring their own signals (FR-101).
+            //       They are translated before the keys, because a frame can
+            //       carry both.
+            if !matches!(event, egui::Event::Key { .. }) {
+                if let Some(input) = self.pointer.translate(&event, now) {
+                    self.dispatch_pointer_event(&input);
+                }
+                continue;
             }
 
             let egui::Event::Key {
@@ -85,6 +103,26 @@ impl WorkSurfaceApp {
             }
 
             self.handle_key(stroke);
+        }
+    }
+
+    /// Carries out an event of the mouse or of the finger.
+    ///
+    /// WHY: the binding of the context decides which action the signal
+    ///       triggers. The context of the keyboard has no binding for a
+    ///       click, and the context of the finger has none for a key —
+    ///       therefore the table alone decides, and the same code serves
+    ///       every context (FR-101).
+    pub(crate) fn dispatch_pointer_event(&mut self, event: &InputEvent) {
+        // WHY: while the dialog of the multiple rename is open, it has the
+        //       focus. A tap on the surface behind it belongs to the dialog
+        //       and not to the panel.
+        if self.rename.is_some() {
+            return;
+        }
+
+        if let Some(action) = self.keymap.resolve(self.context, event) {
+            self.dispatch(action);
         }
     }
 

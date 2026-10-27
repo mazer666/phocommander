@@ -121,6 +121,8 @@ Phocommander is operated in five input contexts. The binding is to **actions, no
 
 On a remote control there are no function keys. The **action palette** replaces them: a searchable list of every action available in the current context, opened with the menu or the Play/Pause key and operated with the direction keys and OK. It is available in every context — on the desktop it is the "search for an action" dialog.
 
+The bindings of all five contexts stand in [`config/keymap.toml`](config/keymap.toml) — one section per context, one line per action. The file overrides the defaults that the program carries, and `scripts/check-keymap-consistency.py` proves that the two agree. The description of every binding is in [`docs/KEYMAP.md`](docs/KEYMAP.md).
+
 ---
 
 ## Documentation

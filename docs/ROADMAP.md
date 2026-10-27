@@ -74,7 +74,7 @@ werden bei jeder Abnahme geprüft.
 | **M2** — Maturity on macOS | Registerkarten, Profile, sichere Kopiermodi, Layouts je Kontext | **in Arbeit** |
 | **M2b** — Internationalisierung | Englisch und Deutsch vollständig, lokalisierte Formatierung, Sprachwechsel zur Laufzeit | offen |
 | **M3** — The other desktop platforms | Windows, Linux, BSD | offen |
-| **M4** — Android | SAF, Touch-Kontext, Store | offen |
+| **M4** — Android | SAF, Touch-Kontext, Store | **in Arbeit** — die Naht der Eingabe steht |
 | **M5** — iPadOS | Dokumenten-Picker, Bookmarks | offen |
 | **M6** — Remote sources | SFTP, FTP, SMB, WebDAV | offen |
 | **M7** — Cloud and controllers | OAuth, S3, Controller-Kontext | offen |
@@ -210,10 +210,12 @@ hartkodiert ist und in der eine neue Sprache nur eine Datei braucht.
 | Punkt | Nachweis | Status |
 |---|---|---|
 | Die elf gemeinsamen Regeln R-01 bis R-21 | alle Gates | offen |
+| Die Naht der Eingabe: Tastatur, Zeiger, Finger, Fernbedienung und Gamepad binden dieselben Aktionen | `phocommander-ui`, `config/keymap.toml` | **erfüllt** |
+| Die Vorgaben der Bindungen im Code, damit die Datei des Benutzers sie nur überschreibt | `keymap_view/defaults.rs` | **erfüllt** |
 | Das Gradle-Projekt und die Rust-`cdylib` | `apps/phocommander-android/` | offen |
 | Der SAF-Modus ohne die Spezialberechtigung | `apps/` | offen |
 | Der optionale Vollzugriff, im Play Console deklariert und erklärt | `apps/`, `docs/` | offen |
-| Der Touch-Kontext mit den gestapelten Panels und 44-Punkt-Zielen | `phocommander-ui` | offen |
+| Der Touch-Kontext mit den gestapelten Panels und 44-Punkt-Zielen | `phocommander-ui` | teilweise — die Ereignisse und die Belegung stehen, die Anordnung der Bedienfelder fehlt |
 | Die Erklärung im ersten Start, warum die Berechtigung gebraucht wird | `apps/` | offen |
 
 ---

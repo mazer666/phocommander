@@ -26,6 +26,12 @@ fn the_parser_reads_the_bindings_of_every_context() {
 \"panel.copy\" = \"F5\"
 \"panel.rename\" = \"F2\"
 
+[input.pointer]
+\"panel.view\" = \"double-click\"
+
+[input.touch]
+\"panel.view\" = \"tap\"
+
 [input.dpad]
 \"panel.copy\" = \"palette:file.copy\"
 ";
@@ -35,8 +41,16 @@ fn the_parser_reads_the_bindings_of_every_context() {
 
     // assert
     let tables = tables.expect("the table should be readable");
-    assert_eq!(tables.len(), 2);
+    assert_eq!(tables.len(), 4);
     assert_eq!(tables[&Context::Keyboard]["panel.copy"], "F5".to_string());
+    // WHY: the pointer and the touch screen are contexts of their own
+    // (FR-101). A file manager that runs on a television and on a touch
+    // screen has to read their bindings too.
+    assert_eq!(
+        tables[&Context::Pointer]["panel.view"],
+        "double-click".to_string()
+    );
+    assert_eq!(tables[&Context::Touch]["panel.view"], "tap".to_string());
     assert_eq!(
         tables[&Context::Dpad]["panel.copy"],
         "palette:file.copy".to_string()

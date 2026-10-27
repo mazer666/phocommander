@@ -35,7 +35,7 @@ assignments. See [Changing the binding](#changing-the-binding).
 **Devices without function keys.** A TV remote control and a gamepad have neither
 `F` keys nor modifier keys. There, the **action palette** takes over: a searchable
 list of every action available in the current context. See
-[The contexts `dpad` and `controller`](#the-contexts-dpad-and-controller).
+[The contexts `pointer`, `touch`, `dpad` and `controller`](#the-contexts-pointer-touch-dpad-and-controller).
 
 ---
 
@@ -167,7 +167,13 @@ context = "auto"
 | `Ctrl+R`, `Ctrl+Shift+Tab`, `Ctrl+Num-`, `Ctrl+Num*` | A key combination. `Ctrl` is the *primary* modifier: `Cmd` on macOS and iPadOS, `Ctrl` on Windows, Linux and BSD. |
 | `Shift+F3` | A key combination with a second modifier. |
 | `palette:<group>.<entry>` | The action is reachable through the action palette under that entry. Used in the contexts that have no function keys. |
-| `Grip` | A controller button. |
+| `Grip`, `Trigger`, `Thumbstick`, `A`, `B`, `X`, `Y`, `DpadUp`, `DpadDown`, `DpadLeft`, `DpadRight` | A button of a gamepad or of a VR controller. |
+| `click`, `double-click`, `right-click`, `drag` | An event of the mouse or the trackpad. The right button opens the menu of the entry and binds therefore no action of the catalogue. |
+| `wheel-up`, `wheel-down` | The scroll wheel of the mouse or the trackpad. |
+| `tap`, `long-press` | A gesture of a finger. |
+| `swipe-left`, `swipe-right`, `swipe-up`, `swipe-down` | A swipe of a finger. |
+| `two-finger-up`, `two-finger-down` | A scroll with two fingers. |
+| `pinch-in`, `pinch-out` | Two fingers that change the distance between them. |
 
 ### Rules for a rebinding
 
@@ -180,6 +186,23 @@ context = "auto"
   action catalogue in `crates/phocommander-keymap/`.
 
 ---
+
+## The contexts `pointer`, `touch`, `dpad` and `controller`
+
+The specification names five contexts (section 6.2). The keyboard is the one
+that carries the complete set of the function keys; the other four reach the
+same actions by other means.
+
+| Context | Device | How it reaches the actions |
+|---|---|---|
+| `keyboard` | Keyboard | The function keys `F2` to `F10` and the key combinations. |
+| `pointer` | Mouse, trackpad | The same keys for the actions that a hand does with the keyboard, and the mouse for the actions that a hand does with the mouse: a **click** marks the selection, a **double click** opens the file. |
+| `touch` | Finger | The **action palette** takes the place of the function keys, exactly as on the remote control of the television: a **tap** opens the file, a **long press** marks the selection, a **swipe** switches to the second panel. |
+| `dpad` | Remote control | The action palette as well, opened from the menu or the play/pause key. |
+| `controller` | Gamepad, VR controller | The action palette as well; the focus sits on the ray pointer. |
+
+Every context holds **every** action of the catalogue. The binding differs, the
+action does not — that is the promise of FR-101.
 
 ## The contexts `dpad` and `controller`
 

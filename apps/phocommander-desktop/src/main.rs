@@ -196,12 +196,28 @@ fn host_platform() -> Platform {
 ///       Tastenbelegung, und die Aktionen sind über die Aktionspalette
 ///       erreichbar.
 fn read_keymap() -> Option<KeymapView> {
-    let directory = config_directory().ok()?;
-    let path = directory.join(KEYMAP_FILE_NAME);
-    let text = std::fs::read_to_string(path).ok()?;
+    // WHY: the defaults come first, so that a user without a file of his
+    //       own still has every binding. The file overrides them.
+    let view = KeymapView::with_defaults(&Default::default()).ok()?;
 
-    let tables = parse_keymap(&text)?;
-    KeymapView::from_context_tables(&tables).ok()
+    let Ok(directory) = config_directory() else {
+        return Some(view);
+    };
+    let path = directory.join(KEYMAP_FILE_NAME);
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return Some(view);
+    };
+    let Some(tables) = parse_keymap(&text) else {
+        return Some(view);
+    };
+
+    // WHY: a file with a broken binding must not take the whole set of the
+    //       bindings away. The view of the defaults stays in force, and the
+    //       file is the part that could not be read.
+    match KeymapView::with_defaults(&tables) {
+        Ok(ueberschrieben) => Some(ueberschrieben),
+        Err(_) => Some(view),
+    }
 }
 
 /// Liest die Tastenbelegung aus einer Datei mit Abschnitten.
@@ -233,6 +249,8 @@ pub fn parse_keymap(text: &str) -> Option<BTreeMap<Context, BTreeMap<String, Str
         {
             context = match section {
                 "keyboard" => Context::Keyboard,
+                "pointer" => Context::Pointer,
+                "touch" => Context::Touch,
                 "dpad" => Context::Dpad,
                 "controller" => Context::Controller,
                 _ => continue,

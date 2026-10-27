@@ -302,6 +302,12 @@ mod tests {
             [input.keyboard]
             "panel.copy" = "F5"
 
+            [input.pointer]
+            "panel.view" = "double-click"
+
+            [input.touch]
+            "panel.view" = "tap"
+
             [input.dpad]
             "panel.copy" = "palette:file.copy"
 
@@ -345,6 +351,16 @@ mod tests {
         assert_eq!(
             config.input.dpad.bindings.get("panel.copy"),
             Some(&"palette:file.copy".to_string())
+        );
+        // WHY: the pointer and the touch screen bind the same actions by
+        //       other means (FR-101). The loader has to carry both.
+        assert_eq!(
+            config.input.pointer.bindings.get("panel.view"),
+            Some(&"double-click".to_string())
+        );
+        assert_eq!(
+            config.input.touch.bindings.get("panel.view"),
+            Some(&"tap".to_string())
         );
         assert_eq!(config.remote.connect_timeout_seconds, Some(15));
         assert_eq!(config.remote.smb_signing, crate::SmbSigning::Require);

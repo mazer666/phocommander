@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -252,7 +253,15 @@ def check_contexts(catalogue: dict[str, str]) -> list[str]:
     differs, the action does not.
     """
     failures: list[str] = []
-    for name in ("input.dpad", "input.controller"):
+    # WHY: the specification names five contexts (section 6.2): the keyboard,
+    #       the pointer, the touch screen, the remote control and the gamepad.
+    #       Every one of them has to reach every action of the catalogue.
+    for name in (
+        "input.pointer",
+        "input.touch",
+        "input.dpad",
+        "input.controller",
+    ):
         bindings = read_context(name)
         operations = set(catalogue)
         missing = sorted(operations - set(bindings))
@@ -261,6 +270,35 @@ def check_contexts(catalogue: dict[str, str]) -> list[str]:
             failures.append(f"{action_id} is missing in the context {name}")
         for action_id in extra:
             failures.append(f"{action_id} exists only in the context {name}")
+    return failures
+
+
+def check_the_code_carries_the_same_bindings() -> list[str]:
+    """Return the failure messages when the code and the file disagree.
+
+    WHAT: the code carries the default bindings of the contexts, and
+          ``config/keymap.toml`` carries the same ones. The file that the
+          user edits overrides them, and the two must therefore start from
+          the same table.
+    WHY: two sources of the same thing drift apart. The check runs the
+          generator in its ``--check`` mode, which compares the generated
+          file with the configuration file and fails when they differ.
+    """
+    failures: list[str] = []
+    generator = REPO_ROOT / "scripts" / "generate-keymap-defaults.py"
+    if not generator.is_file():
+        return [f"the generator {generator} is missing"]
+
+    result = subprocess.run(
+        [sys.executable, str(generator), "--check"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout).strip().splitlines()
+        detail = message[-1] if message else "the generator reported a failure"
+        failures.append(f"the defaults of the code do not match the file: {detail}")
     return failures
 
 
@@ -333,8 +371,12 @@ def main() -> int:
     print()
     print("=== D. The three contexts hold the same actions ===")
     context_failures = check_contexts(catalogue)
+    context_failures += check_the_code_carries_the_same_bindings()
     failures.extend(context_failures)
-    print(f"  keyboard / dpad / controller : {'ok' if not context_failures else 'DEVIATION'}")
+    print(
+        "  keyboard / pointer / touch / dpad / controller : "
+        f"{'ok' if not context_failures else 'DEVIATION'}"
+    )
 
     print()
     print("=== E. Actions that no rule names ===")

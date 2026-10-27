@@ -162,5 +162,9 @@ fn reaction_to_a_key_press(criterion: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, switch_between_loaded_directories, reaction_to_a_key_press);
+criterion_group!(
+    benches,
+    switch_between_loaded_directories,
+    reaction_to_a_key_press
+);
 criterion_main!(benches);

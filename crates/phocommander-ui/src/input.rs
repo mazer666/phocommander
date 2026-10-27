@@ -1,8 +1,10 @@
 //! The input of the frame in the form of the interface.
 //!
 //! WHAT: the key that carries the primary meaning on the platform
-//!       ([`PrimaryModifier`]) and the conversion of a key event of the
-//!       framework into a key stroke of the catalogue ([`stroke_of`]).
+//!       ([`PrimaryModifier`]), the conversion of a key event of the
+//!       framework into a key stroke of the catalogue ([`stroke_of`]) and the
+//!       translation of the events of the mouse and of the finger
+//!       ([`pointer`]).
 //! WHY: the binding table of the configuration file is written in words and
 //!       the platform delivers a key of the framework. The conversion is
 //!       therefore one function, and it lives here and not in the shell —
@@ -15,6 +17,8 @@
 //! let stroke = stroke_of(egui::Key::F5, egui::Modifiers::default(), PrimaryModifier::Control);
 //! assert!(stroke.is_some());
 //! ```
+
+pub mod pointer;
 
 use crate::keymap_view::{Key, KeyStroke, Modifiers};
 

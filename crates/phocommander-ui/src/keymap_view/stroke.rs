@@ -23,6 +23,9 @@
 
 use std::fmt;
 
+use super::controller::ControllerButton;
+use super::gesture::{Gesture, PointerEvent};
+
 use super::{BindingError, MalformedReason};
 
 /// A key of the keyboard, free of any framework type.
@@ -394,6 +397,15 @@ impl fmt::Display for KeyStroke {
 pub enum InputEvent {
     /// A key was pressed.
     Key(KeyStroke),
+
+    /// The pointer or a button of it was used.
+    Pointer(PointerEvent),
+
+    /// A finger made a gesture.
+    Gesture(Gesture),
+
+    /// A button of a gamepad or of a VR controller was pressed.
+    Controller(ControllerButton),
 
     /// An entry of the action palette was chosen.
     Palette(String),

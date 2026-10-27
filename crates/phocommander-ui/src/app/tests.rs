@@ -331,3 +331,121 @@ fn the_error_of_a_binding_names_the_key_of_its_message() {
     };
     assert_eq!(error.message_key(), "error-binding-empty");
 }
+
+#[test]
+fn a_tap_in_the_touch_context_carries_out_the_action() {
+    // arrange
+    // WHY: FR-101 in one test. The finger makes a gesture, the gesture
+    //       reaches the table of the context, the table names the action,
+    //       and the action is carried out. Every link of the chain is
+    //       proven here.
+    let mut surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
+    surface
+        .active_mut()
+        .set_entries(vec![Entry::new("a.txt", EntryKind::File)]);
+
+    let mut touch = BTreeMap::new();
+    touch.insert("panel.switch".to_string(), "swipe-left".to_string());
+    touch.insert("panel.delete".to_string(), "tap".to_string());
+    let mut tables = BTreeMap::new();
+    tables.insert(Context::Touch, touch);
+    let keymap = match KeymapView::from_context_tables(&tables) {
+        Ok(keymap) => keymap,
+        Err(error) => panic!("the tables should be valid: {error}"),
+    };
+
+    let mut app = WorkSurfaceApp::new(surface, keymap, Box::new(Echo));
+    app.set_context(Context::Touch);
+
+    // act
+    // WHY: the gesture reaches the application through the translator, and
+    //       the translator is fed with the events of the framework.
+    let mut translator = crate::input::pointer::PointerTranslator::new();
+    translator.translate(
+        &egui::Event::Touch {
+            device_id: egui::TouchDeviceId(1),
+            id: egui::TouchId(1),
+            phase: egui::TouchPhase::Start,
+            pos: egui::pos2(10.0, 10.0),
+            force: None,
+        },
+        0.0,
+    );
+    let gesture = translator.translate(
+        &egui::Event::Touch {
+            device_id: egui::TouchDeviceId(1),
+            id: egui::TouchId(1),
+            phase: egui::TouchPhase::End,
+            pos: egui::pos2(11.0, 11.0),
+            force: None,
+        },
+        0.1,
+    );
+
+    let event = match gesture {
+        Some(event) => event,
+        None => panic!("the tap should have been recognised"),
+    };
+    app.dispatch_pointer_event(&event);
+
+    // assert
+    // WHY: the deletion of the selection is the action of the table. The
+    //       command proves that the action was carried out.
+    assert_eq!(app.commands().len(), 1);
+}
+
+#[test]
+fn a_swipe_in_the_touch_context_carries_out_the_action() {
+    // arrange
+    let mut surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
+    surface
+        .active_mut()
+        .set_entries(vec![Entry::new("a.txt", EntryKind::File)]);
+
+    let mut touch = BTreeMap::new();
+    touch.insert("panel.swap".to_string(), "swipe-left".to_string());
+    let mut tables = BTreeMap::new();
+    tables.insert(Context::Touch, touch);
+    let keymap = match KeymapView::from_context_tables(&tables) {
+        Ok(keymap) => keymap,
+        Err(error) => panic!("the tables should be valid: {error}"),
+    };
+
+    let mut app = WorkSurfaceApp::new(surface, keymap, Box::new(Echo));
+    app.set_context(Context::Touch);
+
+    // act
+    let mut translator = crate::input::pointer::PointerTranslator::new();
+    translator.translate(
+        &egui::Event::Touch {
+            device_id: egui::TouchDeviceId(1),
+            id: egui::TouchId(1),
+            phase: egui::TouchPhase::Start,
+            pos: egui::pos2(200.0, 100.0),
+            force: None,
+        },
+        0.0,
+    );
+    let gesture = translator.translate(
+        &egui::Event::Touch {
+            device_id: egui::TouchDeviceId(1),
+            id: egui::TouchId(1),
+            phase: egui::TouchPhase::Move,
+            pos: egui::pos2(50.0, 105.0),
+            force: None,
+        },
+        0.2,
+    );
+
+    let event = match gesture {
+        Some(event) => event,
+        None => panic!("the swipe should have been recognised"),
+    };
+    app.dispatch_pointer_event(&event);
+
+    // assert
+    // WHY: the exchange of the two panels is the action of the table. The
+    //       command proves that the action was carried out.
+    assert_eq!(app.commands().len(), 1);
+    assert!(matches!(app.commands()[0], Command::SwapPanels));
+}

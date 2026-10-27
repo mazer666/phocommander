@@ -1,6 +1,6 @@
 # Der Stand des Projekts
 
-**Letzte Aktualisierung:** 25.10.2026 · **Stand auf GitHub:** siehe `git log` — der letzte Commit trägt die Messung
+**Letzte Aktualisierung:** 26.10.2026 · **Stand auf GitHub:** siehe `git log` — der letzte Commit trägt die Messung
 
 Dieses Dokument ist das **Statusboard**. Es sagt, wo das Projekt steht, was gerade läuft und
 was als Nächstes kommt. Die Roadmap sagt, *was* die Meilensteine enthalten; dieses Dokument
@@ -20,7 +20,8 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 | **M2** — Maturity on macOS | Registerkarten, Profile, sichere Kopiermodi, Layouts je Kontext | **abgenommen** | `docs/acceptance/M2-ACCEPTANCE.md` |
 | **M2b** — Internationalisierung | Englisch und Deutsch vollständig, lokalisierte Formatierung, Sprachwechsel zur Laufzeit | **in Arbeit** | `docs/ACCEPTANCE-CRITERIA.md`, Block M2b |
 | **M3** — The other desktop platforms | Windows, Linux, BSD | offen | `docs/ROADMAP.md` |
-| **M4** … **M9** | Mobil, iPadOS, Netzwerkquellen, Cloud, Fernseher, Rest | offen | `docs/ROADMAP.md` |
+| **M4** — Mobile first | Zeiger, Finger, Fernseher, Gamepad — eine Bindungstabelle, fünf Kontexte | **in Arbeit** — der Eingangskanal steht, die Oberfläche des Fingers fehlt | `docs/acceptance/M4-ACCEPTANCE.md` |
+| **M5** … **M9** | iPadOS, Netzwerkquellen, Cloud, Rest | offen | `docs/ROADMAP.md` |
 
 ## 2. Was gerade läuft
 
@@ -29,18 +30,19 @@ Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
 | **Die Abnahme von M1** | Die dritte Messung ist geschrieben. Drei Gründe bleiben: das manuelle Protokoll auf einem macOS-Gerät, die Benchmarks der Spezifikation und der Eigenschaftstest der Umbenennung |
 | **Der Meilenstein M2b** | Die Kataloge sind synchron, das Gate gegen hartkodierte Texte steht, die Fehlermeldungen werden übersetzt, die Größen und Daten folgen der Sprache, und der Sprachwechsel erreicht die Oberfläche im nächsten Frame. Offen: der Auslöser des Wechsels — die Konfigurationsdatei wird einmal pro Sekunde gelesen, ein Menüeintrag wäre die dauerhafte Lösung |
 | **Der Meilenstein M3** | Beginnt nach M2b — Windows, Linux und BSD |
+| **Der Meilenstein M4** | Die Naht der Eingabe ist gezogen. Tastatur, Zeiger, Finger, Fernbedienung und Gamepad binden dieselben Aktionen. Offen: das Layout des Fingers, die Blätter des Dialogs, der Android-Bau |
 
 ## 3. Der gemessene Stand
 
 | Was | Zahl |
 |---|---|
-| Tests | **1123 grün, 0 rot, 0 übersprungen** |
-| Testbinäre | 54 |
-| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 26.10.2026 nach dem Property-Test von FR-33 und der Abnahme von M3: **PASS**, 38 von 38 |
+| Tests | **1316 grün, 0 rot, 0 übersprungen** |
+| Testbinäre | 55 |
+| Gates, die sich selbst beweisen | **39** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Zuletzt gemessen am 26.10.2026 nach der Naht der Eingabe von M4: **PASS**, 39 von 39 |
 | Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
 | Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
 | Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
-| Die Konsistenz-Gates | 11 Stück, alle grün |
+| Die Konsistenz-Gates | 13 Stück, alle grün |
 | Die Sprachkataloge | 3 Sprachen, 115 Schlüssel, gleicher Schlüsselsatz |
 
 ## 4. Was in diesem Meilenstein gefunden wurde
@@ -86,6 +88,11 @@ gefunden — im Code und in den Tests:
 27. **`cargo clippy` war stundenlang kaputt** und sah aus wie ein sauberer Code. Der Compiler liest seinen Quelltext beim Aufruf mit „-" vom Standard-Input, und das trug die Ausgabe des vorherigen Kommandos. Der Wrapper `scripts/cargo.sh` leert es und zeigt cargo auf den echten Treiber des Toolchains.
 28. **Der Negativtest hat den eigenen Fehler der Leitenden Instanz gefunden.** Nach der Umstellung auf `Iterator::find` war der Quelltext nicht mehr nach `cargo fmt` formatiert — und `cargo fmt --check` sah das nicht, weil der Aufruf über das verseuchte Standard-Input fehlschlug und der Fehler als „failed to run rustc" daherkam. Der Gate-Test fand es, weil er `cargo fmt` **in einer Kopie** aufruft, in der das Standard-Input leer ist.
 29. **Das Standard-Input der Shell trägt die Ausgabe des vorherigen Kommandos.** `rustc -` liest es als Rust-Quelltext und stirbt mit „unterminated character literal". Das war die Ursache der „Operation aborted"-Meldungen — **keine** Speicherprobleme, sondern ein verseuchtes stdin. Jeder cargo-Aufruf bekommt jetzt `< /dev/null`. Der Katalog konnte die Werte nicht zuordnen, und ein Argument, das zwei Zahlen trägt, wäre nicht zuordenbar gewesen.
+30. **Die Eingabe kannte nur die Tastatur.** `InputEvent` und `Binding` trugen nur `Key` und `Palette` — die Tabelle der Bindungen konnte daher keinen Klick und keinen Tipp benennen, obwohl die Spezifikation in FR-101 genau das verlangt. Die Naht der Eingabe trägt jetzt auch den Zeiger, den Finger, die Geste und die Tasten des Gamepads.
+31. **Es gab keine Standardbindungen im Code.** Die Bindungen standen nur in `config/keymap.toml`, und die Datei wird **nie geschrieben** — sie entsteht beim Benutzer gar nicht. `read_keymap()` lieferte `None`, und die Oberfläche hatte **keine einzige** Bindung. Das fiel beim Schreiben der Vorgaben auf, weil die Vorgabe „Grip" als Bindung im Controller-Kontext stand — und „Grip" ist keine Taste.
+32. **Der Wisch wurde doppelt ausgelöst.** Die Geste ging hinaus, als der Finger die Strecke überquerte, und noch einmal, als er aufhob. Der Test hat es gefunden.
+33. **Der Formatter und der Generator widersprachen sich.** Die erzeugte Datei wurde vom `cargo fmt` umgebrochen, und der Generator verglich die Bytes. Der Vergleich prüft jetzt den **Inhalt** — die Bindungen — und nicht mehr die Schreibweise.
+34. **Die Prüfung der Bindungen kannte nur drei Kontexte.** Die Prüfung sah `dpad` und `controller` und maß an ihnen, ob alle Aktionen gebunden sind. Die Kontexte `pointer` und `touch` waren ungeprüft — und wären auch leer geblieben.
 
 ## 5. Die Regeln, die aus diesem Meilenstein folgen
 

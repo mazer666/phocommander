@@ -167,7 +167,7 @@ Every row names the section **and the line** of the specification it was taken f
 | ID | Title | Source | Milestone | Priority | Verification | Acceptance criterion |
 |---|---|---|---|---|---|---|
 | FR-100 | Every operation is bound to a named action, not to a physical key | §4.9 Input model, line 323 | M1 | Must | automated — Unit test on the action catalogue | AC-M1-42 |
-| FR-101 | Keyboard, pointer, touch, D-pad and controller each bind to the same actions | §4.9 Input model, line 324 | M1 | Must | automated — Unit test per context | AC-M1-43 |
+| FR-101 | Keyboard, pointer, touch, D-pad and controller each bind to the same actions | §4.9 Input model, line 324 | M1 | Must | automated — Unit test per context — umgesetzt in M4, siehe `docs/acceptance/M4-ACCEPTANCE.md` | AC-M1-43 |
 | FR-102 | The action palette lists every action that is reachable in the current context | §4.9 Input model, line 325 | M8 | Must | automated — Reachability protocol | not yet assigned |
 | FR-103 | The action palette is fully operable with a D-pad and the confirm key | §4.9 Input model, line 326 | M8 | Must | manual — Manual test | not yet assigned |
 | FR-104 | Focus and selection are separate states in the D-pad and controller contexts | §4.9 Input model, line 327 | M4 | Must | automated — State model test | not yet assigned |

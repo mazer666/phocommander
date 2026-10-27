@@ -229,6 +229,215 @@
 # The controller has no F keys and no modifier keys, so the action palette is
 # the entry point for all actions. The trigger executes the focused action, the
 # grip toggles the marking of an entry.
+# The mouse and the trackpad.
+[input.pointer]
+# The mouse and the trackpad..
+#
+# The mouse reaches the same actions as the keyboard. The actions that a
+# hand performs with the mouse carry the mouse as their binding, and the
+# others keep the key. A click marks the selection and a double click
+# opens the file — the right button opens the menu of the entry and
+# therefore binds no action of the catalogue.
+
+# Rename the selection — also opens the multiple rename dialog.
+"panel.rename" = "F2"
+# Open the built-in viewer for the selection.
+"panel.view" = "double-click"
+# Open the text editor for the selection (planned for a later milestone).
+"panel.edit" = "F4"
+# Filter the entries of the active pane while the user types.
+# The specification names the filter in FR-74a to FR-74f and does not
+# name a key for it; Ctrl+F is the completion that the reference
+# documents in docs/KEYMAP.md.
+"panel.filter" = "Ctrl+F"
+# Copy the selection into the other pane.
+"panel.copy" = "F5"
+# Move the selection into the other pane.
+"panel.move" = "F6"
+# Create a new directory in the active pane.
+"panel.mkdir" = "F7"
+# Delete the selection.
+"panel.delete" = "F8"
+# Open the application menu.
+"app.menu" = "F9"
+# Quit the application.
+"app.quit" = "F10"
+# Switch the active pane.
+"panel.switch" = "Tab"
+# Reload the directory listing of the active pane.
+"panel.reload" = "Ctrl+R"
+# Swap the two panes.
+"panel.swap" = "Ctrl+U"
+# Open the selection in the other pane.
+"panel.open_in_other" = "Ctrl+Enter"
+# Switch to tab 1 of the active pane.
+"panel.tab.1" = "Ctrl+1"
+# Switch to tab 2 of the active pane.
+"panel.tab.2" = "Ctrl+2"
+# Switch to tab 3 of the active pane.
+"panel.tab.3" = "Ctrl+3"
+# Switch to tab 4 of the active pane.
+"panel.tab.4" = "Ctrl+4"
+# Switch to tab 5 of the active pane.
+"panel.tab.5" = "Ctrl+5"
+# Switch to tab 6 of the active pane.
+"panel.tab.6" = "Ctrl+6"
+# Switch to tab 7 of the active pane.
+"panel.tab.7" = "Ctrl+7"
+# Switch to tab 8 of the active pane.
+"panel.tab.8" = "Ctrl+8"
+# Switch to tab 9 of the active pane.
+"panel.tab.9" = "Ctrl+9"
+# Switch to the next tab of the active pane.
+"panel.next_tab" = "Ctrl+Tab"
+# Switch to the previous tab of the active pane.
+# The specification lists only the forward direction; this is the symmetric
+# completion and the first point to adjust if it turns out to be wrong.
+"panel.prev_tab" = "Ctrl+Shift+Tab"
+# Open a new tab in the active pane.
+"panel.tab.new" = "Ctrl+T"
+# Close the tab that is shown in the active pane.
+"panel.tab.close" = "Ctrl+W"
+# Move the tab that is shown into the other pane.
+"panel.tab.move_to_other" = "Ctrl+Shift+M"
+# Switch the arrangement of the two panes: next to each other or below
+# each other. The state of the panes does not change with it.
+"panel.layout.toggle" = "Ctrl+Shift+L"
+# Show or hide the tree of the directories in the active pane.
+"panel.tree.toggle" = "Ctrl+B"
+# Show or hide the quick view of the marked file.
+"panel.quick_view.toggle" = "Ctrl+Q"
+# Show or hide the list of the jobs.
+"panel.job_list.toggle" = "Ctrl+J"
+# Toggle the marking of the entry under the cursor.
+"selection.toggle" = "click"
+# Select all entries of the active pane.
+"selection.all" = "Ctrl+A"
+# Clear the selection in the active pane.
+"selection.none" = "Ctrl+Num-"
+# Invert the selection in the active pane.
+"selection.invert" = "Ctrl+Num*"
+# Select the entries that match a pattern.
+"selection.by_pattern" = "Space"
+# Open the drive list of the active pane.
+# The classic per-pane variant Alt+F2 opens the drive list of the other pane.
+"panel.drives" = "Alt+F1"
+# Go to the parent directory of the active pane.
+"panel.parent" = "Ctrl+PgUp"
+# Search forward in the viewer.
+"viewer.find_next" = "F3"
+# Search backward in the viewer.
+"viewer.find_previous" = "Shift+F3"
+# Jump to the next conflict in the multiple rename dialog.
+"rename.conflict_next" = "F3"
+# Jump to the previous conflict in the multiple rename dialog.
+"rename.conflict_previous" = "Shift+F3"
+
+# The finger on a touch screen.
+[input.touch]
+# The finger on a touch screen.
+#
+# A finger has no function keys, and the action palette takes their
+# place — the same solution that the remote control of the television
+# uses. The tap opens the file, the long press marks the selection, and
+# the swipe switches to the second panel. The dialogs appear as a sheet
+# from the bottom, and the rows are at least 44 points high.
+
+# Rename the selection — also opens the multiple rename dialog.
+"panel.rename" = "palette:panel.rename"
+# Open the built-in viewer for the selection.
+"panel.view" = "tap"
+# Open the text editor for the selection (planned for a later milestone).
+"panel.edit" = "palette:panel.edit"
+# Filter the entries of the active pane while the user types.
+# The specification names the filter in FR-74a to FR-74f and does not
+# name a key for it; Ctrl+F is the completion that the reference
+# documents in docs/KEYMAP.md.
+"panel.filter" = "palette:panel.filter"
+# Copy the selection into the other pane.
+"panel.copy" = "palette:panel.copy"
+# Move the selection into the other pane.
+"panel.move" = "palette:panel.move"
+# Create a new directory in the active pane.
+"panel.mkdir" = "palette:panel.mkdir"
+# Delete the selection.
+"panel.delete" = "palette:panel.delete"
+# Open the application menu.
+"app.menu" = "palette:app.menu"
+# Quit the application.
+"app.quit" = "palette:app.quit"
+# Switch the active pane.
+"panel.switch" = "swipe-left"
+# Reload the directory listing of the active pane.
+"panel.reload" = "palette:panel.reload"
+# Swap the two panes.
+"panel.swap" = "palette:panel.swap"
+# Open the selection in the other pane.
+"panel.open_in_other" = "palette:panel.open_in_other"
+# Switch to tab 1 of the active pane.
+"panel.tab.1" = "palette:panel.tab.1"
+# Switch to tab 2 of the active pane.
+"panel.tab.2" = "palette:panel.tab.2"
+# Switch to tab 3 of the active pane.
+"panel.tab.3" = "palette:panel.tab.3"
+# Switch to tab 4 of the active pane.
+"panel.tab.4" = "palette:panel.tab.4"
+# Switch to tab 5 of the active pane.
+"panel.tab.5" = "palette:panel.tab.5"
+# Switch to tab 6 of the active pane.
+"panel.tab.6" = "palette:panel.tab.6"
+# Switch to tab 7 of the active pane.
+"panel.tab.7" = "palette:panel.tab.7"
+# Switch to tab 8 of the active pane.
+"panel.tab.8" = "palette:panel.tab.8"
+# Switch to tab 9 of the active pane.
+"panel.tab.9" = "palette:panel.tab.9"
+# Switch to the next tab of the active pane.
+"panel.next_tab" = "palette:panel.next_tab"
+# Switch to the previous tab of the active pane.
+# The specification lists only the forward direction; this is the symmetric
+# completion and the first point to adjust if it turns out to be wrong.
+"panel.prev_tab" = "palette:panel.prev_tab"
+# Open a new tab in the active pane.
+"panel.tab.new" = "palette:panel.tab.new"
+# Close the tab that is shown in the active pane.
+"panel.tab.close" = "palette:panel.tab.close"
+# Move the tab that is shown into the other pane.
+"panel.tab.move_to_other" = "palette:panel.tab.move_to_other"
+# Switch the arrangement of the two panes: next to each other or below
+# each other. The state of the panes does not change with it.
+"panel.layout.toggle" = "palette:panel.layout.toggle"
+# Show or hide the tree of the directories in the active pane.
+"panel.tree.toggle" = "palette:panel.tree.toggle"
+# Show or hide the quick view of the marked file.
+"panel.quick_view.toggle" = "palette:panel.quick_view.toggle"
+# Show or hide the list of the jobs.
+"panel.job_list.toggle" = "palette:panel.job_list.toggle"
+# Toggle the marking of the entry under the cursor.
+"selection.toggle" = "long-press"
+# Select all entries of the active pane.
+"selection.all" = "palette:selection.all"
+# Clear the selection in the active pane.
+"selection.none" = "palette:selection.none"
+# Invert the selection in the active pane.
+"selection.invert" = "palette:selection.invert"
+# Select the entries that match a pattern.
+"selection.by_pattern" = "palette:selection.by_pattern"
+# Open the drive list of the active pane.
+# The classic per-pane variant Alt+F2 opens the drive list of the other pane.
+"panel.drives" = "palette:panel.drives"
+# Go to the parent directory of the active pane.
+"panel.parent" = "palette:panel.parent"
+# Search forward in the viewer.
+"viewer.find_next" = "palette:viewer.find_next"
+# Search backward in the viewer.
+"viewer.find_previous" = "palette:viewer.find_previous"
+# Jump to the next conflict in the multiple rename dialog.
+"rename.conflict_next" = "palette:rename.conflict_next"
+# Jump to the previous conflict in the multiple rename dialog.
+"rename.conflict_previous" = "palette:rename.conflict_previous"
+
+# The gamepad and the controller of the virtual reality.
 [input.controller]
 # Rename the selection — also opens the multiple rename dialog.
 "panel.rename" = "palette:file.rename"

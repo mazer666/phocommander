@@ -51,6 +51,7 @@ use crate::draw;
 use crate::format::{Formats, PlainFormats};
 use crate::i18n::{Argument, Catalogue, Texts};
 use crate::input::PrimaryModifier;
+use crate::input::pointer::PointerTranslator;
 use crate::jobs::JobSource;
 use crate::keymap_view::KeymapView;
 use crate::layout::{LayoutProfile, PanelStructure};
@@ -102,6 +103,14 @@ pub struct WorkSurfaceApp {
     ///       repaint (FR-124). The shell therefore keeps the context of egui
     ///       and asks it for a repaint when the language changes.
     egui_context: Option<egui::Context>,
+    /// The translator of the events of the mouse and of the finger.
+    ///
+    /// WHY: the recognition of a tap, of a long press and of a swipe needs
+    ///       the history of the events, and the history belongs to the
+    ///       application and not to the shell. The translator therefore
+    ///       lives in the application and the shell hands it the events of
+    ///       the frame (FR-101).
+    pointer: PointerTranslator,
 }
 
 /// A transfer that waits for the confirmation of the user.
@@ -157,7 +166,38 @@ impl WorkSurfaceApp {
             rename_engine: None,
             template_store: None,
             egui_context: None,
+            pointer: PointerTranslator::new(),
         }
+    }
+
+    /// Sets the context of the input.
+    ///
+    /// WHY: the context decides which table of the bindings applies, and
+    /// the context comes from the configuration and from the device that
+    /// the application runs on. A build for a television sets the context
+    /// of the remote control, a build for a telephone sets the context of
+    /// the finger (FR-101).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::app::WorkSurfaceApp;
+    /// use phocommander_ui::context::Context;
+    /// # use phocommander_ui::{Catalogue, WorkSurface};
+    /// # use phocommander_ui::keymap_view::KeymapView;
+    /// # use std::path::PathBuf;
+    /// # struct Empty;
+    /// # impl Catalogue for Empty {
+    /// #     fn lookup_with(&self, _: &str, _: &[phocommander_ui::Argument<'_>]) -> Option<String> {
+    /// #         None
+    /// #     }
+    /// # }
+    /// # let keymap = KeymapView::from_context_tables(&Default::default()).unwrap();
+    /// # let surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
+    /// # let mut app = WorkSurfaceApp::new(surface, keymap, Box::new(Empty));
+    /// app.set_context(Context::Touch);
+    /// ```
+    pub fn set_context(&mut self, context: Context) {
+        self.context = context;
     }
 
     /// The shell with an undo that can be taken back.

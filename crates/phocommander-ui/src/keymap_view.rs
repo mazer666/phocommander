@@ -27,11 +27,16 @@ use std::collections::BTreeMap;
 use crate::actions::Action;
 use crate::context::Context;
 
+mod controller;
+pub mod defaults;
+mod gesture;
 mod stroke;
 
 // WHY: the types of the input live in a file of their own, and they are
 //       handed on here. The public path of every type stays the same, so
 //       that the callers do not have to know about the split.
+pub use controller::ControllerButton;
+pub use gesture::{Direction, Gesture, PinchDirection, PointerEvent};
 pub use stroke::{InputEvent, Key, KeyStroke, Modifiers};
 
 /// The prefix of a binding that names an entry of the action palette.
@@ -46,6 +51,15 @@ const PALETTE_PREFIX: &str = "palette:";
 pub enum Binding {
     /// A key with its modifier keys.
     Key(KeyStroke),
+
+    /// An event of the pointer.
+    Pointer(PointerEvent),
+
+    /// A gesture of a finger.
+    Gesture(Gesture),
+
+    /// A button of a gamepad or of a VR controller.
+    Controller(ControllerButton),
 
     /// An entry of the action palette.
     Palette(String),
@@ -75,6 +89,21 @@ impl Binding {
             return Ok(Binding::Palette(entry.to_string()));
         }
 
+        // WHY: the pointer and the finger come before the key. A name like
+        //       "click" is not a key, and a key stroke would refuse it with
+        //       an error that names the wrong thing.
+        if let Some(event) = PointerEvent::parse(text) {
+            return Ok(Binding::Pointer(event));
+        }
+        if let Some(gesture) = Gesture::parse(text) {
+            return Ok(Binding::Gesture(gesture));
+        }
+        // WHY: the buttons of the controller come after the pointer and the
+        //       finger, because their names are short and could collide.
+        if let Some(button) = ControllerButton::parse(text) {
+            return Ok(Binding::Controller(button));
+        }
+
         Ok(Binding::Key(KeyStroke::parse(text)?))
     }
 
@@ -82,6 +111,9 @@ impl Binding {
     pub fn to_binding(&self) -> String {
         match self {
             Binding::Key(stroke) => stroke.to_binding(),
+            Binding::Pointer(event) => event.as_str().to_string(),
+            Binding::Gesture(gesture) => gesture.as_str(),
+            Binding::Controller(button) => button.as_str().to_string(),
             Binding::Palette(entry) => format!("{PALETTE_PREFIX}{entry}"),
         }
     }
@@ -186,6 +218,36 @@ impl KeymapView {
         Ok(Self { contexts })
     }
 
+    /// The view of the default bindings.
+    ///
+    /// WHY: the file of the configuration is the one that the user edits,
+    ///       and a file that is missing must not leave the application
+    ///       without any binding. The defaults come first, and the file
+    ///       overrides them (FR-101).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::keymap_view::KeymapView;
+    ///
+    /// # fn main() -> Result<(), phocommander_ui::BindingError> {
+    /// let view = KeymapView::with_defaults(&Default::default())?;
+    /// assert!(view.has_context(phocommander_ui::Context::Touch));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_defaults(
+        tables: &BTreeMap<Context, BTreeMap<String, String>>,
+    ) -> Result<Self, BindingError> {
+        let mut zusammen = defaults::default_bindings();
+        for (context, table) in tables {
+            let ziel = zusammen.entry(*context).or_default();
+            for (aktion, bindung) in table {
+                ziel.insert(aktion.clone(), bindung.clone());
+            }
+        }
+        Self::from_context_tables(&zusammen)
+    }
+
     /// The action that an event triggers in a context.
     ///
     /// WHY: the resolution is deterministic. When two actions of one context
@@ -273,6 +335,11 @@ impl ContextBindings {
     fn resolve(&self, event: &InputEvent) -> Option<Action> {
         match event {
             InputEvent::Key(stroke) => self.lookup.get(&Binding::Key(*stroke)).copied(),
+            InputEvent::Pointer(event) => self.lookup.get(&Binding::Pointer(*event)).copied(),
+            InputEvent::Gesture(gesture) => self.lookup.get(&Binding::Gesture(*gesture)).copied(),
+            InputEvent::Controller(button) => {
+                self.lookup.get(&Binding::Controller(*button)).copied()
+            }
             InputEvent::Palette(entry) => {
                 self.lookup.get(&Binding::Palette(entry.clone())).copied()
             }
