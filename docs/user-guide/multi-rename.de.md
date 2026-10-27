@@ -59,6 +59,15 @@ Platzhalter sind Textbausteine, die beim Umbenennen durch einen Wert ersetzt wer
 | `[hash]` | Kurz-Prüfsumme |
 | `[rand]` | Zufallswert |
 | `[case]` / `[lower]` / `[upper]` / `[title]` | der Text in Großbuchstaben, kleinbuchstaben, in Groß- und Kleinschreibung oder in Titelschreibung |
+| `[series]` | Name der Serie |
+| `[season]` | Staffel der Serie |
+| `[episode]` | Nummer der Folge |
+| `[episode_title]` | Titel der Folge |
+
+Die Breite einer Zahl kommt aus dem **Zähler** und aus den Feldern der Serie, nicht aus dem
+Platzhalter. Ein dreistelliger Zähler schreibt `[n]` als `001`, eine zweistellige Staffel
+schreibt `[season]` als `02`. Es gibt kein Format wie `{n:03}` — ein Name, das eines trägt,
+ist kein Platzhalter und bleibt, wie er ist.
 
 ### 3.2 Ersetzen
 
@@ -93,16 +102,21 @@ So sehen Sie alle Konflikte in einem Durchgang, ohne die Liste verlassen zu müs
 ## 5. Vorlagen
 
 Regeln lassen sich als **benannte Vorlagen** speichern und wieder anwenden. Jede
-Vorlage ist eine TOML-Datei im Konfigurationsverzeichnis und kann von Ihnen angepasst
+Vorlage ist eine Datei im Konfigurationsverzeichnis und kann von Ihnen angepasst
 werden.
+
+Die benannten Vorlagen tragen **geschweifte Klammern**, der Dialog trägt **eckige**. Die
+beiden Dialekte sind getrennt, und zwar aus einem Grund: Die Datei der Vorlagen lesen Sie,
+und ihre Klammern heben die Platzhalter von den Klammern ab, die ein Dateiname tragen kann.
+Die Umwandlung geschieht, wenn eine Vorlage gespeichert und wenn sie in den Dialog gelegt wird.
 
 | Vorlage | Zielformat |
 |---|---|
-| **Serienfolge** | `{serie} - S{staffel:02}E{episode:02} - {titel}.{format}` |
-| **Kamera** | `{n}_{serie}_{titel}.{format}` — der Zähler wird dreistellig geführt (`{n:03}`) |
-| **Podcast** | `{date}_{titel}.{format}` — das Datum als `{date:YYYY-MM-DD}` |
-| **Rechnung** | `{year}_{number}_{description}.{format}` — Jahr, Nummer, Beschreibung |
-| **Musik** | `{artist}_{title}_{track}.{format}` — Interpret, Titel, Tracknummer (`{track:02}`) |
+| **Serienfolge** | `{series} - S{season}E{episode} - {episode_title}.{ext}` — die Staffel mit zwei Ziffern, die Folge mit zwei Ziffern |
+| **Kamera** | `{n}_{series}_{title}.{ext}` — der Zähler wird dreistellig geführt |
+| **Podcast** | `{date}_{title}.{ext}` — das Datum als `YYYY-MM-DD` |
+| **Rechnung** | `{parent}_{n}_{name}.{ext}` — der übergeordnete Ordner, der Zähler und der Name der Datei |
+| **Musik** | `{parent}_{n}_{name}.{ext}` — der übergeordnete Ordner als Album, der Zähler als Tracknummer |
 
 Die Vorlagen liegen im Konfigurationsverzeichnis unter `templates/`. Eine eigene
 Vorlage legen Sie an, indem Sie im Dialog eine Regel speichern und ihr einen Namen
@@ -188,7 +202,7 @@ Nichts wird stillschweigend geändert — Sie entscheiden.
 |---|---|
 | Die Episode wird nicht hochgezählt | Die Regel enthält keinen Zähler. Fügen Sie unter „Zähler" einen Startwert und eine Schrittweite hinzu. |
 | Der Serienname ist der Ordnername, nicht die Serie | Der Serienname stammt standardmäßig aus dem übergeordneten Verzeichnis. Im Dialog ist er überschreibbar. |
-| Die Vorschau bleibt leer | In der Regel fehlt der Platzhalter, der den Namen erzeugt — meist `{name}` oder `{titel}`. |
+| Die Vorschau bleibt leer | In der Regel fehlt der Platzhalter, der den Namen erzeugt — meist `{name}` oder `{title}`. |
 | Ein Name wird rot angezeigt | Der Name existiert bereits im Zielverzeichnis. `F3` springt zum nächsten Konflikt, `Shift+F3` zum vorherigen. |
 | Die Erkennung greift nicht | Das Muster `SxxEyy` wird case-insensitiv gesucht. Ein Name wie `Staffel 1, Folge 2` enthält das Muster nicht und wird abgefragt. |
 

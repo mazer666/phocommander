@@ -93,6 +93,9 @@ jobs:
       - name: Links der Dokumentation prüfen
         run: python3 scripts/check-docs-links.py
 
+      - name: Sprache der Dokumentation prüfen
+        run: python3 scripts/check-docs-language.py
+
       - name: cargo-deny installieren
         run: cargo install cargo-deny --version "$CARGO_DENY_VERSION" --locked
 

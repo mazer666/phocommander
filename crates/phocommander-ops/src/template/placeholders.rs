@@ -372,3 +372,23 @@ pub(crate) fn title_case(text: &str) -> String {
     }
     out
 }
+
+/// The names of every placeholder the engine knows.
+///
+/// WHY: the interface needs the names to tell a placeholder from a bracket
+///       that belongs to the name of a file. The list lives here, where the
+///       placeholders live, and the interface asks for it instead of
+///       keeping a second list.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ops::template::placeholders::known_names;
+///
+/// assert!(known_names().contains(&"name"));
+/// ```
+pub fn known_names() -> Vec<&'static str> {
+    Placeholder::ALL
+        .iter()
+        .map(|placeholder| placeholder.as_str())
+        .collect()
+}

@@ -1,109 +1,104 @@
-# Abnahme des Meilensteins M2 — Reife auf macOS
+# Acceptance of the milestone M2 — Maturity on macOS
 
-**Stand:** 25.10.2026 · **Prüfer:** Leitende Instanz · **Ergebnis:** angenommen mit zwei offenen Punkten
-
----
-
-## 1. Was dieser Meilenstein umfasst
-
-M2 macht aus dem arbeitenden Dateibrowser eine Anwendung, die im Alltag einen Dateibrowser
-ersetzen kann: Registerkarten mit eigenem Zustand, ein Verzeichnisbaum je Panel, eine
-Schnellansicht, die sichere Kopiermodi mit Synchronisationsplan, die atomare Umbenennung, das
-Wiederholen nur der fehlgeschlagenen Einträge, das Rückgängig, die Prüfung der Archive ohne
-Entpacken und die Interface-Profile `clean` und `full`.
-
-Die Internationalisierung ist **nicht** Teil dieses Meilensteins. Sie ist der eigene
-Meilenstein **M2b**, und der Grund steht in der Roadmap: die Vollständigkeit der Sprachen ist
-eine Eigenschaft des Produkts und keine Einzelheit der Darstellung.
-
-## 2. Der gemessene Stand
-
-| Was | Wie gemessen | Ergebnis |
-|---|---|---|
-| Die Tests des ganzen Workspace | `cargo test --workspace --locked` | **924 grün, 0 rot, 0 übersprungen** |
-| Die Formatierung | `cargo fmt --all -- --check` | **ohne Abweichung** |
-| Die Warnungen des Linters | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **ohne Warnung** |
-| Die Lizenzen | `cargo deny check` | **advisories, bans, licenses, sources: ok** |
-| Die Grenzen der Crates | `scripts/check-crate-boundaries.sh` | **12 Abhängigkeiten, 0 Verstöße** |
-| Die Größe der Dateien | `scripts/check-file-size.sh` | **0 über dem Maximum von 900**, 6 über dem Zielwert von 600 mit Begründung im Modulkopf |
-| Keine Telemetrie | `scripts/check-no-telemetry.sh` | **0 Verstöße, 0 verbotene Crates** |
-| Die sieben Konsistenzskripte | `scripts/check-*.py` | **alle PASS** |
-| Die Gates selbst | `scripts/check-gates-negative.sh` | **34 Gates**: jedes wird bei einem Defekt rot und wieder grün |
-
-Die Protokolle liegen unter `docs/acceptance/logs/`.
-
-## 3. Die Fehler, die dieser Meilenstein gefunden hat
-
-Der Meilenstein ist nicht deshalb grün, weil nichts passiert wäre. Die Prüfung hat zwölf echte
-Fehler gefunden und zwölf Testfehler, die auf falsche Annahmen zurückgingen:
-
-**Fehler im Code**
-
-1. Die Liste der Textschlüssel zählte 106 Einträge, enthielt aber 107 — ein Schlüssel war
-   nicht in der Prüfliste.
-2. Der Wächter der temporären Datei trug ein `Debug`, das der Merkmalsträger des Dateisystems
-   nicht erfüllen kann. Die Zustände werden jetzt von Hand geschrieben.
-3. Der Übersetzer trug ein `Debug`, das das Bündel der Fluent-Bibliothek nicht erfüllen kann.
-4. Der Sprachbezeichner hatte keinen gültigen Ersatz, wenn ein Verzeichnis keinen gültigen
-   Sprachcode trägt.
-5. Die Aufzählung der Verzeichniseinträge lieferte die Dateinamen statt der Einträge, die die
-   Vergleiche brauchen.
-6. Der Prüfplan der Umbenennung meldete denselben Konflikt zweimal. Die Sprungliste zeigte
-   denselben Pfad zweimal.
-7. Die Prüfung der Archive verglich die Prüfsumme auch dann, wenn der Eintrag keinen Inhalt
-   hatte — ein symbolischer Link wurde dadurch als beschädigt gemeldet.
-8. Der Aufrufer der Zeichenfunktionen trug acht bis neun Parameter, die immer dieselben waren.
-
-**Fehler in den Tests, die falsche Annahmen trugen**
-
-9. Zwei Tests des Verzeichnisbaums erwarteten die Wurzel des Volumes nicht, obwohl der Code
-   sie ausdrücklich vorsieht. Der Code hat recht: die Wurzel ist ein Vorfahr wie jeder andere.
-10. Zwei Tests der Umbenennung prüften eine Lage, die kein Konflikt ist.
-11. Zwei Tests des Vergleichs verglichen ein Verzeichnis, das es nicht gab.
-12. Ein Test der Prüfsumme übergab keinen Inhalt und erwartete trotzdem ein Ergebnis.
-
-## 4. Die Lücke, die dieser Meilenstein aufdeckt
-
-Die Warteschlange der Aufträge hatte **keinen einzigen Test**. Das Wiederholen der
-fehlgeschlagenen Einträge (FR-22k) war implementiert, aber niemand hatte es je laufen
-lassen. Neun Tests sind dazugekommen, und sie haben einen echten Fehler gefunden: das
-Dateisystem der Tests konnte nicht einen einzelnen Eintrag scheitern lassen. Diese
-Möglichkeit fehlt jetzt.
-
-## 5. Die offenen Punkte
-
-| Punkt | Grund | Wann |
-|---|---|---|
-| Der About-Dialog nennt die Zahl der tatsächlich unterstützten Formate | Der Dialog ist Teil des Meilensteins M3 | M3 |
-| Die Leistungsziele NFR-01 bis NFR-08 sind gemessen | Die Messung braucht die fertige Oberfläche | nach M3 |
-
-Diese beiden Punkte betreffen Anforderungen, die dem Meilenstein M2 in der Spezifikation
-zugeordnet sind. Sie sind nicht umgangen, sondern offen benannt.
-
-## 6. Die Korrekturen, die außerhalb des Meilensteins liegen
-
-Diese Korrekturen waren nötig, damit der Meilenstein überhaupt messbar war, gehören aber
-nicht zum Umfang von M2:
-
-- Die Internationalisierung wurde aus M2 herausgelöst und zum Meilenstein **M2b** gemacht. Die
-  Anforderungen FR-120 bis FR-126 zeigen jetzt auf M2b, und der Block M2b in den
-  Abnahmekriterien trägt die Kriterien AC-M2b-01 bis AC-M2b-08.
-- Der französische Katalog wurde auf 108 Schlüssel gebracht. Er war der Beweis für FR-125 —
-  eine dritte Sprache ohne Änderung am Quelltext — und er war unvollständig, also kein Beweis.
-- Das Kennzeichen der Texte `Locale::English` und `Locale::German` existieren nicht. Die
-  Aufrufe nutzen jetzt `Locale::english()` und `Locale::of("de")`.
-- Die Prüfskripte kennen jetzt den Meilenstein M2b und die Kennzeichen `AC-M2b-xx`.
-
-## 7. Was als Nächstes kommt
-
-1. Der Meilenstein **M2b** — die Internationalisierung in beiden Sprachen, mit der Prüfung der
-   Schlüsselsätze und dem Wechsel zur Laufzeit.
-2. Die **M1-Abnahme** wird neu geschrieben, auf dem ruhenden Baum und mit den 924 Tests, die
-   inzwischen existieren.
-3. Der Meilenstein **M3** — Windows, Linux und BSD.
+**State:** 25.10.2026 · **Examiner:** Lead instance · **Result:** accepted with two open points
 
 ---
 
-*Die Annahme gilt für den Stand des Commits, mit dem die Protokolle unter
-`docs/acceptance/logs/` geschrieben wurden. Jede spätere Änderung an den Quellen macht die
-Messung ungültig.*
+## 1. What this milestone covers
+
+M2 turns the working file browser into an application that can replace a file browser in everyday
+use: tabs with a state of their own, a directory tree per panel, a quick view, the safe copy modes
+with the synchronisation plan, the atomic rename, the retry of the failed entries only, the undo,
+the check of the archives without unpacking them and the interface profiles `clean` and `full`.
+
+The internationalisation is **not** part of this milestone. It is the milestone **M2b** of its own,
+and the reason stands in the roadmap: the completeness of the languages is a property of the
+product and not a detail of the presentation.
+
+## 2. The measured state
+
+| What | How it was measured | Result |
+|---|---|---|
+| The tests of the whole workspace | `cargo test --workspace --locked` | **924 green, 0 red, 0 skipped** |
+| The formatting | `cargo fmt --all -- --check` | **without a deviation** |
+| The warnings of the linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **without a warning** |
+| The licences | `cargo deny check` | **advisories, bans, licences, sources: ok** |
+| The boundaries of the crates | `scripts/check-crate-boundaries.sh` | **12 dependencies, 0 violations** |
+| The size of the files | `scripts/check-file-size.sh` | **0 above the maximum of 900**, 6 above the target value of 600 with the reason in the module header |
+| No telemetry | `scripts/check-no-telemetry.sh` | **0 violations, 0 forbidden crates** |
+| The consistency scripts | `scripts/check-*.py` | **all PASS** |
+| The gates themselves | `scripts/check-gates-negative.sh` | **34 gates**: each turns red on a defect and green again |
+
+The protocols lie under `docs/acceptance/logs/`.
+
+## 3. The errors that this milestone found
+
+The milestone is not green because nothing happened. The check found twelve real errors and twelve
+test errors that rested on false assumptions:
+
+**Errors in the code**
+
+1. The list of the text keys counted 106 entries but held 107 — one key was not in the check list.
+2. The watcher of the temporary file carried a `Debug` that the trait bearer of the file system
+   cannot fulfil. The states are written by hand now.
+3. The translator carried a `Debug` that the bundle of the Fluent library cannot fulfil.
+4. The language identifier had no valid replacement when a directory carries no valid language
+   code.
+5. The enumeration of the directory entries delivered the file names instead of the entries that
+   the comparisons need.
+6. The check plan of the rename reported the same conflict twice. The jump list showed the same
+   path twice.
+7. The check of the archives compared the checksum even when the entry had no content — a symbolic
+   link was thereby reported as damaged.
+8. The caller of the character functions carried eight or nine parameters that were always the same.
+
+**Errors in the tests that carried false assumptions**
+
+9. Two tests of the directory tree expected the root of the volume not, although the code provides
+   it expressly. The code is right: the root is an ancestor like every other.
+10. Two tests of the rename checked a situation that is no conflict.
+11. Two tests of the comparison compared a directory that did not exist.
+12. A test of the checksum passed no content and expected a result all the same.
+
+## 4. The gap that this milestone uncovers
+
+The job queue had **not a single test**. The retry of the failed entries (FR-22k) was implemented,
+but nobody had ever run it. Nine tests came to it, and they found a real error: the file system of
+the tests could not let a single entry fail. That possibility is missing now.
+
+## 5. The open points
+
+| Point | Reason | When |
+|---|---|---|
+| The about dialog names the number of the formats that are really supported | The dialog is a part of the milestone M3 | M3 |
+| The performance goals NFR-01 to NFR-08 are measured | The measurement needs the finished interface | after M3 |
+
+These two points touch requirements that the specification assigns to the milestone M2. They are
+not bypassed, but named openly.
+
+## 6. The corrections that lie outside the milestone
+
+These corrections were needed so that the milestone was measurable at all, but they do not belong
+to the scope of M2:
+
+- The internationalisation was taken out of M2 and made the milestone **M2b**. The requirements
+  FR-120 to FR-126 point at M2b now, and the block M2b in the acceptance criteria carries the
+  criteria AC-M2b-01 to AC-M2b-08.
+- The French catalogue was brought to 108 keys. It was the proof for FR-125 — a third language
+  without a change of the source — and it was incomplete, so it was no proof.
+- The identifiers of the texts `Locale::English` and `Locale::German` do not exist. The calls use
+  `Locale::english()` and `Locale::of("de")` now.
+- The check scripts know the milestone M2b and the identifiers `AC-M2b-xx` now.
+
+## 7. What comes next
+
+1. The milestone **M2b** — the internationalisation in both languages, with the check of the sets of
+   keys and the change at run time.
+2. The **acceptance of M1** is rewritten, on the quiet tree and with the 924 tests that exist by now.
+3. The milestone **M3** — Windows, Linux and BSD.
+
+---
+
+*The acceptance holds for the state of the commit with which the protocols under
+`docs/acceptance/logs/` were written. Every later change of the sources makes the measurement
+invalid.*

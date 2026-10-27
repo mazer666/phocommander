@@ -110,7 +110,10 @@ fn the_shipped_configuration_file_holds_the_values_of_the_specification() {
     assert_eq!(config.remote.connect_timeout_seconds, Some(15));
     assert_eq!(config.remote.smb_signing, SmbSigning::Prefer);
     assert_eq!(config.remote.smb_encryption, SmbEncryption::Prefer);
-    assert_eq!(config.remote.max_remote_download_bytes, 0);
+    // WHY: the reading budget of a remote source is sixty-four megabytes —
+    //       the decision of the owner. Zero would mean no limit at all, and
+    //       the size of an answer is decided by somebody else.
+    assert_eq!(config.remote.max_remote_download_bytes, 67_108_864);
 }
 
 #[test]

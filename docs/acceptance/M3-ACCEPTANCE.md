@@ -1,81 +1,77 @@
-# Abnahme des Meilensteins M3 — Windows, Linux und BSD
+# Acceptance of the milestone M3 — Windows, Linux and BSD
 
-**Stand:** 26.10.2026 · **Prüfer:** Leitende Instanz · **Ergebnis:** angenommen mit zwei offenen Punkten
+**State:** 26.10.2026 · **Examiner:** Lead instance · **Result:** accepted with two open points
 
 ---
 
-## 1. Was dieser Meilenstein umfasst
+## 1. What this milestone covers
 
-M3 bringt dieselbe Anwendung auf die anderen Desktop-Plattformen, aus derselben Codebasis:
-der **Windows-Port** mit dem Manifest für die langen Pfade und einer verständlichen Meldung bei
-Pfadlänge, der **Linux-Port** mit dem Wayland-Pfad und dem Rückfall auf X11, die
-**FreeBSD- und NetBSD-Bauten** in der CI-Matrix und die **Paketierung** für die drei
-Plattformen.
+M3 brings the same application to the other desktop platforms, out of the same code base: the
+**Windows port** with the manifest for the long paths and a plain-language message on the path
+length, the **Linux port** with the Wayland path and the fallback to X11, the **FreeBSD and NetBSD
+builds** in the CI matrix and the **packaging** for the three platforms.
 
-## 2. Der gemessene Stand
+## 2. The measured state
 
-| Was | Wie gemessen | Ergebnis |
+| What | How it was measured | Result |
 |---|---|---|
-| Die Tests des Workspace | `cargo test --workspace --locked` | **1277 grün, 0 rot, 0 übersprungen** |
-| Die Formatierung | `cargo fmt --all -- --check` | **ohne Abweichung** |
-| Die Warnungen des Linters | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **ohne Warnung** |
-| Die Lizenzen | `cargo deny check` | **advisories, bans, licenses, sources: ok** |
-| Die Grenzen der Crates | `scripts/check-crate-boundaries.sh` | **13 Abhängigkeiten, 0 Verstöße** |
-| Keine Telemetrie | `scripts/check-no-telemetry.sh` | **0 Verstöße** |
-| Die sieben Konsistenz-Gates | `scripts/check-*.py` | **alle PASS** |
-| Die Gates beweisen sich selbst | `scripts/check-gates-negative.sh` | **38 Gates**, jedes wird rot und wieder grün |
+| The tests of the workspace | `cargo test --workspace --locked` | **1277 green, 0 red, 0 skipped** |
+| The formatting | `cargo fmt --all -- --check` | **without a deviation** |
+| The warnings of the linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **without a warning** |
+| The licences | `cargo deny check` | **advisories, bans, licences, sources: ok** |
+| The boundaries of the crates | `scripts/check-crate-boundaries.sh` | **13 dependencies, 0 violations** |
+| No telemetry | `scripts/check-no-telemetry.sh` | **0 violations** |
+| The consistency gates | `scripts/check-*.py` | **all PASS** |
+| The gates prove themselves | `scripts/check-gates-negative.sh` | **38 gates**, each turns red and green again |
 
-## 3. Was dieser Meilenstein gefunden hat
+## 3. What this milestone found
 
-**Ein Fund, der die Sicherheitsarchitektur betraft.** Die gehärtete Extraktion benutzte das Crate
-`cap-std`, und **das Crate braucht einen Nightly-Compiler**: es verlangt vom Compiler
-Eigenschaften, die der stabile Compiler nicht erlaubt — in *jeder* Version. Die alten Versionen
-helfen nicht, sie ziehen ein `rustix`, das ein dem Compiler längst entferntes Attribut benutzt.
+**A finding that touches the security architecture.** The hardened extraction used the crate
+`cap-std`, and **the crate needs a nightly compiler**: it demands features of the compiler that
+the stable compiler does not allow — in *every* version. The old versions do not help, they pull a
+`rustix` that uses an attribute the compiler removed long ago.
 
-Die Entscheidung ADR-0004 nannte `rustix` bereits als Alternative, und sie bietet denselben
-Zugriff — den Deskriptor des Verzeichnisses, das relative Öffnen, das Verweigern der
-symbolischen Links — **ohne eine einzige Zeile `unsafe`** in diesem Repository. Die Umstellung
-ist geschehen, und **die Negativtests der Härtungsregeln H-02 bis H-06 halten gegen sie**.
+The decision ADR-0004 named `rustix` as an alternative already, and it offers the same access —
+the descriptor of the directory, the relative opening, the refusing of the symbolic links —
+**without a single line of `unsafe`** in this repository. The change is done, and **the negative
+tests of the hardening rules H-02 to H-06 hold against it**.
 
-**Zwei Fehler in der Kette der Meldungen.** Der Katalogschlüssel eines Fehlers und der
-Fehlercode sind zwei verschiedene Dinge: der Code trägt einen Punkt (`path.too_long`), weil er
-einen Fall in einer Falltabelle benennt, der Schlüssel trägt einen Bindestrich
-(`path-too-long`), weil das Format des Katalogs keinen Punkt erlaubt. Und ein Schlüssel, der
-zwei Bedeutungen trug, wurde vom Katalog abgelehnt — und damit war der **ganze Katalog
-unbrauchbar**, woran fast alle i18n-Tests scheiterten.
+**Two errors in the chain of the messages.** The catalogue key of an error and the error code are
+two different things: the code carries a dot (`path.too_long`), because it names a case in a table
+of cases, the key carries a hyphen (`path-too-long`), because the format of the catalogue allows no
+dot. And a key that carried two meanings was refused by the catalogue — and with it the **whole
+catalogue was unusable**, on which almost all i18n tests failed.
 
-**Ein Fund, der die Oberfläche betraft.** Die Auftragsliste hatte **keine Quelle**: die
-Oberfläche kannte das Trait `JobSource`, aber die Desktop-App hat es nie umgesetzt. Die Liste
-blieb leer, und der Benutzer sah nie, dass ein Auftrag fehlschlug.
+**A finding that touches the interface.** The job list had **no source**: the interface knew the
+trait `JobSource`, but the desktop app never implemented it. The list stayed empty, and the user
+never saw that a job had failed.
 
-## 4. Die zwei offenen Punkte
+## 4. The two open points
 
-| Punkt | Grund | Wann |
+| Point | Reason | When |
 |---|---|---|
-| **Der erste Windows-Bau** | Das Manifest `longPathAware` und die einbettende Resource-Datei sind mit `rust-lld` bewiesen, nicht mit dem Linker von Windows. `link.exe` nimmt dieselbe `.res`-Datei, aber der erste Bau des Eigentümers ist der Beweis | beim ersten Windows-Bau |
-| **Das manuelle Testprotokoll für das plattformspezifische Verhalten** | Die Sandbox hat ein Linux-System und keinen Bildschirm, kein Windows und kein BSD. Das Protokoll braucht diese Maschinen | mit den Geräten des Eigentümers |
+| **The first Windows build** | The manifest `longPathAware` and the embedded resource file are proven with `rust-lld`, not with the linker of Windows. `link.exe` takes the same `.res` file, but the first build of the owner is the proof | at the first Windows build |
+| **The manual test protocol for the platform-specific behaviour** | The sandbox has a Linux system and no screen, no Windows and no BSD. The protocol needs these machines | with the machines of the owner |
 
-Die übrigen Punkte der Roadmap sind erfüllt: das Manifest, die Meldung der Pfadlänge, die
-Entscheidung Wayland gegen X11, die Bauten von FreeBSD und NetBSD und die Paketierung.
+The remaining points of the roadmap are fulfilled: the manifest, the message of the path length,
+the decision of Wayland against X11, the builds of FreeBSD and NetBSD and the packaging.
 
-## 5. Die Entscheidungen, die dieser Meilenstein getroffen hat
+## 5. The decisions that this milestone made
 
-| Entscheidung | Warum |
+| Decision | Why |
 |---|---|
-| **Die gehärtete Extraktion nutzt `rustix` statt `cap-std`** | `cap-std` braucht einen Nightly-Compiler. Ein Nightly-Compiler ist für ein Projekt, das sein Sicherheitsargument in safe Rust schreibt, keine Option. ADR-0004 nannte `rustix` bereits |
-| **Die Dateiendung entscheidet das Format eines Containers nicht** | Die Magic Bytes entscheiden. Eine Datei, die `.zip` heißt und kein ZIP ist, soll als das erkannt werden, was sie ist |
-| **Ein Skript wird über die API mit dem Modus gepusht, nicht über den Connector** | Der Connector trägt den Modus nicht, und ein Gate-Skript ohne Ausführungsbit läuft nicht |
+| **The hardened extraction uses `rustix` instead of `cap-std`** | `cap-std` needs a nightly compiler. A nightly compiler is no option for a project that writes its security argument in safe Rust. ADR-0004 named `rustix` already |
+| **The extension of a file does not decide the format of a container** | The magic bytes decide. A file that is called `.zip` and is no ZIP shall be recognised as what it is |
+| **A script is pushed over the API with the mode, not over the connector** | The connector does not carry the mode, and a gate script without the executable bit does not run |
 
-## 6. Was als Nächstes kommt
+## 6. What comes next
 
-1. Der **Eigenschaftstest der Umbenennung (FR-33)** — er ist inzwischen geschrieben und auf seine
-   Wirksamkeit geprüft: mit einem echten Zufall statt des abgeleiteten Werts fallen beide
-   Eigenschaften um.
-2. Die **Benchmarks NFR-02 und NFR-03** im Release-Profil.
-3. Die **Abnahme von M1** abschließen, sobald das manuelle Protokoll auf einem macOS-Gerät
-   gelaufen ist.
+1. The **property test of the rename (FR-33)** — it is written now and checked on its effect: with a
+   real randomness instead of the derived value, both properties fall.
+2. The **benchmarks NFR-02 and NFR-03** in the release profile.
+3. The **acceptance of M1**, as soon as the manual protocol has run on a macOS machine.
 
 ---
 
-*Die Annahme gilt für den Stand des Commits, mit dem die Protokolle geschrieben wurden. Jede
-spätere Änderung an den Quellen macht die Messung ungültig.*
+*The acceptance holds for the state of the commit with which the protocols were written. Every
+later change of the sources makes the measurement invalid.*

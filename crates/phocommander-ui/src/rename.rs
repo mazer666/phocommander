@@ -27,6 +27,7 @@
 //! assert!(dialog.preview().is_none());
 //! ```
 
+pub mod dialect;
 pub(crate) mod dialog;
 pub(crate) mod draw;
 pub mod engine;
@@ -41,6 +42,7 @@ pub mod template;
 // there.
 mod tests;
 
+pub use dialect::Dialect;
 pub use dialog::RenameDialog;
 pub use engine::{
     Conflict, ConflictKind, PreviewProblem, PreviewRow, ProblemKind, RenameEngine, RenameFile,

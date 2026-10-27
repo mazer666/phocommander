@@ -11,8 +11,8 @@ This directory holds the **negative tests** of the project: tests that perform a
 that the defence holds. A positive test — "a normal archive is extracted", "a normal file is
 listed" — proves nothing about a hardening. The specification demands the negative form:
 
-> "Für jede Härtung — Pfad-Traversal, Dekompressionsbombe, Header-Limit — existiert ein negativer
-> Test, der den Angriff tatsächlich ausführt und die Abwehr belegt."
+> "For every hardening — path traversal, decompression bomb, header limit — there is a negative
+> test that actually performs the attack and proves the defence."
 
 Every hostile archive in this directory is **built at run time** in a temporary directory. No binary
 file is stored in the repository: a stored attack sample goes stale with every change of the

@@ -1,136 +1,190 @@
-# Der Stand des Projekts
+# The state of the project
 
-**Letzte Aktualisierung:** 26.10.2026 · **Stand auf GitHub:** siehe `git log` — der letzte Commit trägt die Messung
+**Last updated:** 27.10.2026 · **State on GitHub:** see `git log` — the last commit carries the measurement
 
-Dieses Dokument ist das **Statusboard**. Es sagt, wo das Projekt steht, was gerade läuft und
-was als Nächstes kommt. Die Roadmap sagt, *was* die Meilensteine enthalten; dieses Dokument
-sagt, *wie weit* sie sind.
+This document is the **status board**. It says where the project stands, what is running and what
+comes next. The roadmap says *what* the milestones contain; this document says *how far* they are.
 
-Die Quelle der Wahrheit für den Code ist das Repository selbst. Dieses Dokument beschreibt den
-Stand eines Commits — mit dem Commit-Hash in der Kopfzeile.
+The source of truth for the code is the repository itself. This document describes the state of one
+commit — with the commit hash in the headline.
 
 ---
 
-## 1. Der Stand der Meilensteine
+## 1. The state of the milestones
 
-| Meilenstein | Inhalt | Stand | Nachweis |
+| Milestone | Content | State | Evidence |
 |---|---|---|---|
-| **M0** — Foundation | Workspace, CI, Konfiguration, Bedrohungsmodell, Dokumentation | **abgenommen** | `docs/acceptance/M0-ACCEPTANCE.md` |
-| **M1** — The working file browser | Dateisystemmodell, Auftragswarteschlange, Umbenennung, Betrachter Stufe 1, Archive | **in Prüfung** — Engine und Dialog der Umbenennung sind fertig; offen sind das macOS-Protokoll und die Benchmarks | `docs/acceptance/M1-ACCEPTANCE.md` |
-| **M2** — Maturity on macOS | Registerkarten, Profile, sichere Kopiermodi, Layouts je Kontext | **abgenommen** | `docs/acceptance/M2-ACCEPTANCE.md` |
-| **M2b** — Internationalisierung | Englisch und Deutsch vollständig, lokalisierte Formatierung, Sprachwechsel zur Laufzeit | **in Arbeit** | `docs/ACCEPTANCE-CRITERIA.md`, Block M2b |
-| **M3** — The other desktop platforms | Windows, Linux, BSD | offen | `docs/ROADMAP.md` |
-| **M4** — Mobile first | Zeiger, Finger, Fernseher, Gamepad — eine Bindungstabelle, fünf Kontexte | **in Arbeit** — der Eingangskanal steht, die Oberfläche des Fingers fehlt | `docs/acceptance/M4-ACCEPTANCE.md` |
-| **M5** … **M9** | iPadOS, Netzwerkquellen, Cloud, Rest | offen | `docs/ROADMAP.md` |
+| **M0** — Foundation | Workspace, CI, configuration, threat model, documentation | **accepted** | `docs/acceptance/M0-ACCEPTANCE.md` |
+| **M1** — The working file browser | File system model, job queue, rename, viewer stage 1, archives | **in review** — the engine and the dialog of the rename are done; open are the macOS protocol and the benchmarks | `docs/acceptance/M1-ACCEPTANCE.md` |
+| **M2** — Maturity on macOS | Tabs, profiles, safe copy modes, layouts per context | **accepted** | `docs/acceptance/M2-ACCEPTANCE.md` |
+| **M2b** — Internationalisation | English and German complete, localised formatting, change of the language at run time | **in work** | `docs/ACCEPTANCE-CRITERIA.md`, block M2b |
+| **M3** — The other desktop platforms | Windows, Linux, BSD | **accepted with two open points** — the manual protocol and the signing | `docs/acceptance/M3-ACCEPTANCE.md` |
+| **M4** — Mobile first | Pointer, finger, television, gamepad — one table of bindings, five contexts | **in work** — the input seam stands, the layout of the finger is missing | `docs/acceptance/M4-ACCEPTANCE.md` |
+| **M5** … **M9** | iPadOS, remote sources, cloud, the rest | open | `docs/ROADMAP.md` |
 
-## 2. Was gerade läuft
+## 2. What is running
 
-| Was | Stand |
+| What | State |
 |---|---|
-| **Die Abnahme von M1** | Die dritte Messung ist geschrieben. Drei Gründe bleiben: das manuelle Protokoll auf einem macOS-Gerät, die Benchmarks der Spezifikation und der Eigenschaftstest der Umbenennung |
-| **Der Meilenstein M2b** | Die Kataloge sind synchron, das Gate gegen hartkodierte Texte steht, die Fehlermeldungen werden übersetzt, die Größen und Daten folgen der Sprache, und der Sprachwechsel erreicht die Oberfläche im nächsten Frame. Offen: der Auslöser des Wechsels — die Konfigurationsdatei wird einmal pro Sekunde gelesen, ein Menüeintrag wäre die dauerhafte Lösung |
-| **Der Meilenstein M3** | Beginnt nach M2b — Windows, Linux und BSD |
-| **Der Meilenstein M4** | Die Naht der Eingabe ist gezogen. Tastatur, Zeiger, Finger, Fernbedienung und Gamepad binden dieselben Aktionen. Offen: das Layout des Fingers, die Blätter des Dialogs, der Android-Bau |
+| **The acceptance of M1** | The sixth measurement is written. Three reasons remain: the manual protocol on a real macOS machine, the benchmarks of the specification and the property test of the rename |
+| **The milestone M2b** | The catalogues are in sync, the gate against hardcoded texts stands, the error messages are translated, the sizes and the dates follow the language, and the change of the language reaches the interface in the next frame. Open: the trigger of the change — the configuration file is read once per second, a menu entry would be the lasting solution |
+| **The milestone M3** | Accepted with two open points — the manual protocol on real Windows and BSD machines, and the release signing |
+| **The milestone M4** | The seam of the input is drawn. Keyboard, pointer, finger, remote control and gamepad bind to the same actions. Open: the layout of the finger, the sheet dialogs, the Android build |
 
-## 3. Der gemessene Stand
+## 3. The measured state
 
-| Was | Zahl |
+| What | Number |
 |---|---|
-| Tests | **1316 grün, 0 rot, 0 übersprungen** |
-| Testbinäre | 55 |
-| Gates, die sich selbst beweisen | **38** — jedes wird bei einem eingebauten Defekt rot und nach der Reparatur wieder grün. Gate 9 prüft inzwischen **zwei** Übereinstimmungen und läuft deshalb viermal. Zuletzt gemessen am 26.10.2026 nach der Naht der Eingabe von M4: **PASS**, 38 von 38 |
-| Der Linter | `cargo clippy --all-targets -- -D warnings` — **keine Warnung** |
-| Die Formatierung | `cargo fmt --all -- --check` — **ohne Abweichung** |
-| Die Lizenzen | `cargo deny check` — advisories, bans, licenses, sources: **ok** |
-| Die Konsistenz-Gates | 13 Stück, alle grün |
-| Die Sprachkataloge | 3 Sprachen, 115 Schlüssel, gleicher Schlüsselsatz |
+| Tests | **1335 green, 0 red, 0 skipped** |
+| Test binaries | 57 |
+| Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
+| The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
+| The formatting | `cargo fmt --all -- --check` — **without a deviation** |
+| The licences | `cargo deny check` — advisories, bans, licences, sources: **ok** |
+| The consistency gates | 14, all green |
+| The language catalogues | 3 languages, 152 keys, the same set of keys |
 
-## 4. Was in diesem Meilenstein gefunden wurde
+## 4. The decisions of the owner
 
-Der Meilenstein ist nicht grün, weil nichts passiert wäre. Die Prüfung hat **echte Fehler**
-gefunden — im Code und in den Tests:
+The four open points of the implementation are decided. They stand in the specification in section
+14.2, and the code follows them.
 
-**Fehler im Code**
-
-1. Die Liste der Textschlüssel zählte 106 Einträge und enthielt 107.
-2. Der Wächter der temporären Datei trug ein `Debug`, das der Merkmalsträger nicht erfüllen kann.
-3. Der Übersetzer trug ein `Debug`, das das Bündel der Fluent-Bibliothek nicht erfüllen kann.
-4. Die Aufzählung der Verzeichniseinträge lieferte Dateinamen statt der Einträge, die die Vergleiche brauchen.
-5. Der Prüfplan der Umbenennung meldete denselben Konflikt zweimal.
-6. Die Prüfung der Archive verglich die Prüfsumme auch dann, wenn der Eintrag keinen Inhalt hatte — ein symbolischer Link wurde als beschädigt gemeldet.
-7. Die leere Tastenbelegung meldete „unbekannte Taste" statt „leere Belegung".
-8. Die Meldungen der Fehler standen in englischen Texten im Quelltext — die Statuszeile zeigte sie dem Benutzer an.
-9. Die Zeichenfunktionen trugen acht bis neun Parameter, die immer dieselben waren.
-
-**Fehler in den Tests, die falsche Annahmen trugen**
-
-10. Zwei Tests des Verzeichnisbaums erwarteten die Wurzel des Volumes nicht, obwohl der Code sie vorsieht.
-11. Zwei Tests der Umbenennung prüften eine Lage, die kein Konflikt ist.
-12. Zwei Tests des Vergleichs verglichen ein Verzeichnis, das es nicht gab.
-13. Ein Test der Prüfsumme übergab keinen Inhalt und erwartete trotzdem ein Ergebnis.
-14. Der Integrationstest der Verzeichniseinträge war toter Code — er war nie im Manifest.
-
-**Lücken, die die Prüfung aufgedeckt hat**
-
-15. Die Warteschlange der Aufträge hatte **keinen einzigen Test** — das Wiederholen der fehlgeschlagenen Einträge war implementiert, aber nie gelaufen.
-16. Die Container-Adapter der Archive hatten **keinen einzigen Test** — jetzt haben sie 32.
-17. Die Erkennung des Formats kannte **kein komprimiertes TAR** — die vier Komprimierungen des Adapters waren über die öffentliche API unerreichbar.
-18. Die Datei `keymap_view.rs` war auf 999 Zeilen gewachsen und damit über dem Maximum von 900. Sie ist jetzt geteilt: die Eingabe in `keymap_view/stroke.rs`, die Belegung in `keymap_view.rs`.
-19. Der Negativtest benutzte das zentrale Zielverzeichnis und verunreinigte die Binaries.
-20. `AGENTS.md` nannte 400 und 550 Zeilen, wo die Spezifikation (NFR-14) und das Gate 600 und 900 sagen. Die Datei sagt selbst, dass die Spezifikation gewinnt.
-21. Drei Gate-Skripte hatten auf GitHub das Ausführungsbit verloren. Der Weg, der den Inhalt schreibt, trägt den Modus nicht — deshalb gibt es jetzt `scripts/restore-executable-bits.sh`.
-22. **Die Umbenennung von M1 war nur zur Hälfte vorhanden.** Die *Ausführung* existiert und ist getestet — atomar, mit Konflikterkennung und dem Zurücknehmen eines gescheiterten Umbenennens. Die *Bildung* des neuen Namens aus einer Vorlage fehlte: die Platzhalter, das Suchen und Ersetzen, der Zähler, die Determinismus, die Vorschau, die Konfliktliste, die gespeicherten Vorlagen und die Nullauffüllung.
-26. Der **abgeleitete Zufallswert** wurde mit sechzehn Zeichen geschrieben statt mit acht: die Breite eines Formats ist ein *Minimum*, kein Maximum. Ein 64-Bit-Hash passt nicht in acht Stellen, ohne dass er gekürzt wird.
-23. Das Modul `format` des i18n-Crates war **nie kompiliert** — es war nicht deklariert. Der erste Build des Crates wäre rot gewesen.
-23. Fluent registriert seine eingebauten Funktionen **nicht** von selbst. `NUMBER($count)` war deshalb eine unbekannte Funktion, und die Nachricht fiel auf den Schlüssel zurück.
-24. Fluent 0.16 schreibt eine Zahl **ohne** die Trennzeichen der Sprache — das Feld `use_grouping` existiert, wird aber nicht benutzt. Die Zahlen der Oberfläche tragen die Trennzeichen jetzt, weil der i18n-Crate sie selbst mit den Regeln von CLDR formatiert.
-25. Ein Argument der Oberfläche hatte **keinen Namen**.
-27. **`cargo clippy` war stundenlang kaputt** und sah aus wie ein sauberer Code. Der Compiler liest seinen Quelltext beim Aufruf mit „-" vom Standard-Input, und das trug die Ausgabe des vorherigen Kommandos. Der Wrapper `scripts/cargo.sh` leert es und zeigt cargo auf den echten Treiber des Toolchains.
-28. **Der Negativtest hat den eigenen Fehler der Leitenden Instanz gefunden.** Nach der Umstellung auf `Iterator::find` war der Quelltext nicht mehr nach `cargo fmt` formatiert — und `cargo fmt --check` sah das nicht, weil der Aufruf über das verseuchte Standard-Input fehlschlug und der Fehler als „failed to run rustc" daherkam. Der Gate-Test fand es, weil er `cargo fmt` **in einer Kopie** aufruft, in der das Standard-Input leer ist.
-29. **Das Standard-Input der Shell trägt die Ausgabe des vorherigen Kommandos.** `rustc -` liest es als Rust-Quelltext und stirbt mit „unterminated character literal". Das war die Ursache der „Operation aborted"-Meldungen — **keine** Speicherprobleme, sondern ein verseuchtes stdin. Jeder cargo-Aufruf bekommt jetzt `< /dev/null`. Der Katalog konnte die Werte nicht zuordnen, und ein Argument, das zwei Zahlen trägt, wäre nicht zuordenbar gewesen.
-30. **Die Eingabe kannte nur die Tastatur.** `InputEvent` und `Binding` trugen nur `Key` und `Palette` — die Tabelle der Bindungen konnte daher keinen Klick und keinen Tipp benennen, obwohl die Spezifikation in FR-101 genau das verlangt. Die Naht der Eingabe trägt jetzt auch den Zeiger, den Finger, die Geste und die Tasten des Gamepads.
-31. **Es gab keine Standardbindungen im Code.** Die Bindungen standen nur in `config/keymap.toml`, und die Datei wird **nie geschrieben** — sie entsteht beim Benutzer gar nicht. `read_keymap()` lieferte `None`, und die Oberfläche hatte **keine einzige** Bindung. Das fiel beim Schreiben der Vorgaben auf, weil die Vorgabe „Grip" als Bindung im Controller-Kontext stand — und „Grip" ist keine Taste.
-32. **Der Wisch wurde doppelt ausgelöst.** Die Geste ging hinaus, als der Finger die Strecke überquerte, und noch einmal, als er aufhob. Der Test hat es gefunden.
-33. **Der Formatter und der Generator widersprachen sich.** Die erzeugte Datei wurde vom `cargo fmt` umgebrochen, und der Generator verglich die Bytes. Der Vergleich prüft jetzt den **Inhalt** — die Bindungen — und nicht mehr die Schreibweise.
-34. **Die Prüfung der Bindungen kannte nur drei Kontexte.** Die Prüfung sah `dpad` und `controller` und maß an ihnen, ob alle Aktionen gebunden sind. Die Kontexte `pointer` und `touch` waren ungeprüft — und wären auch leer geblieben.
-
-## 5. Die Regeln, die aus diesem Meilenstein folgen
-
-Diese Regeln sind aus den Fehlern entstanden. Sie stehen hier, weil sie beim nächsten Mal
-genauso leicht zu brechen sind:
-
-| Regel | Warum |
-|---|---|
-| **Ein einziger Cargo-Prozess im Workspace.** Jeder Agent bekommt ein eigenes `CARGO_HOME` und `CARGO_TARGET_DIR` auf lokaler Platte. | Drei Gigabyte RAM. Zwei Builds gleichzeitig bringen beide um — und der Agent wartet dann auf eine Antwort, die nie kommt. |
-| **Der Negativtest baut in ein Zielverzeichnis von sich.** | Ein Testbinary trägt den Pfad des Repositorys, in dem es gebaut wurde. Ein Binary aus der Kopie sucht die Konfiguration der Kopie — und die ist weg, wenn das Skript endet. |
-| **Die Agenten bauen nicht.** Sie schreiben, die Leitende Instanz baut und prüft. | Ein Bau in einem fremden Verzeichnis frisst 1 bis 5 GB und blockiert das NAS-Volume, auf dem das Repository liegt. |
-| **Nach jedem Meilenstein wird aufgeräumt.** | Am Ende dieses Tages lagen 20 GB Target-Verzeichnisse in `/tmp`. |
-| **Nach jedem `git reset` das Ausführungsbit wiederherstellen.** | `./scripts/restore-executable-bits.sh` — der Weg, der den Inhalt schreibt, trägt den Modus nicht. |
-| **Jeder cargo-Aufruf bekommt `< /dev/null`.** | Das Standard-Input der Shell trägt die Ausgabe des vorherigen Kommandos, und `rustc -` liest sie als Rust-Quelltext. |
-| **Ein Gate, das nie rot war, ist ein Wunsch.** | Jedes neue Gate gehört in `check-gates-negative.sh`, mit einem eingebauten Defekt. |
-
-## 6. Was als Nächstes kommt
-
-| # | Was | Warum |
+| Question | Decision | Affects |
 |---|---|---|
-| 1 | Das manuelle Protokoll von M1 auf einem macOS-Gerät | Die Sandbox hat ein Linux-System und keinen Bildschirm. Die Abnahme braucht dieses Protokoll, sonst bleibt M1 offen |
-| 2 | Die Benchmarks von NFR-02, NFR-03 und NFR-09a | Sie brauchen das Release-Profil und einen ruhigen Baum |
-| 3 | Den Auslöser des Sprachwechsels festlegen | Der Desktop-Build liest die Konfigurationsdatei einmal pro Sekunde. Ein Eintrag in der nativen Menüleiste wäre die dauerhafte Lösung — `muda` kommt mit M3 |
-| 4 | Den Meilenstein M3 vorbereiten — Windows, Linux, BSD | Der erste Meilenstein, der auf einer anderen Plattform läuft. Zuerst die Portabilitätsfragen: der Trenner der Pfade, die langen Pfade unter Windows, die Tastenbelegung je Plattform und die Matrix der CI |
+| The reference for the series name | The directory name is the default, it is always visible, and it can be overridden | M1, M2 |
+| The scope of the action palette | Only the actions that are reachable in the current context are shown | M8 |
+| The size limit for a network answer | A reading budget that the user sets in the settings; the default is 64 MiB, zero turns the limit off | M6 |
+| The placeholder dialect in the rename dialog | Square brackets in the dialog, curly braces in the named templates | M1, M2 |
 
-## 7. Die Fragen, die eine Entscheidung brauchen
+## 5. What this milestone found
 
-| Frage | Stand |
+The milestone is not green because nothing happened. The check found **real errors** — in the code
+and in the tests:
+
+**Errors in the code**
+
+1. The list of the text keys counted 106 entries and held 107.
+2. The watcher of the temporary file carried a `Debug` that the trait bearer cannot fulfil.
+3. The translator carried a `Debug` that the bundle of the Fluent library cannot fulfil.
+4. The enumeration of the directory entries delivered file names instead of the entries that the
+   comparisons need.
+5. The check plan of the rename reported the same conflict twice.
+6. The check of the archives compared the checksum even when the entry had no content — a symbolic
+   link was reported as damaged.
+7. The empty key binding reported "unknown key" instead of "empty binding".
+8. The messages of the errors stood in English texts in the source — the status line showed them to
+   the user.
+9. The character functions carried eight or nine parameters that were always the same.
+
+**Errors in the tests that carried false assumptions**
+
+10. Two tests of the directory tree expected the root of the volume not, although the code provides
+    it.
+11. Two tests of the rename checked a situation that is no conflict.
+12. Two tests of the comparison compared a directory that did not exist.
+13. A test of the checksum passed no content and expected a result all the same.
+14. The integration test of the directory entries was dead code — it was never in the manifest.
+
+**Gaps that the check uncovered**
+
+15. The job queue had **not a single test** — the retry of the failed entries was implemented, but
+    it never ran.
+16. The container adapters of the archives had **not a single test** — now they have 32.
+17. The detection of the format knew **no compressed TAR** — the four compressions of the adapter
+    were unreachable through the public API.
+18. The file `keymap_view.rs` had grown to 999 lines and was therefore above the maximum of 900. It
+    is split now: the input in `keymap_view/stroke.rs`, the binding in `keymap_view.rs`.
+19. The negative test used the central target directory and polluted the binaries.
+20. `AGENTS.md` named 400 and 550 lines, where the specification (NFR-14) and the gate say 600 and
+    900. The file says itself that the specification wins.
+21. Three gate scripts had lost the executable bit on GitHub. The way that writes the content does
+    not carry the mode — therefore there is `scripts/restore-executable-bits.sh` now.
+22. **The rename of M1 existed only half.** The *execution* exists and is tested — atomic, with the
+    detection of conflicts and with the taking back of a failed rename. The *formation* of the new
+    name from a template was missing: the placeholders, the searching and the replacing, the
+    counter, the determinism, the preview, the list of the conflicts, the stored templates and the
+    padding with zeros.
+23. The **derived random value** was written with sixteen characters instead of eight: the width of
+    a format is a *minimum*, not a maximum. A 64-bit hash does not fit into eight places without
+    being cut short.
+24. The module `format` of the i18n crate was **never compiled** — it was not declared. The first
+    build of the crate would have been red.
+25. Fluent does not register its built-in functions by itself. `NUMBER($count)` was therefore an
+    unknown function, and the message fell back to the key.
+26. Fluent 0.16 writes a number **without** the separators of the language — the field
+    `use_grouping` exists, but it is not used. The numbers of the interface carry the separators
+    now, because the i18n crate formats them itself with the rules of CLDR.
+27. An argument of the interface had **no name**.
+28. **`cargo clippy` was broken for hours** and looked like clean code. The compiler reads its
+    source with "-" from the standard input, and that carried the output of the previous command.
+    The wrapper `scripts/cargo.sh` empties it and points cargo at the real driver of the toolchain.
+29. **The negative test found the error of the lead instance.** After the change to `Iterator::find`
+    the source was no longer formatted after `cargo fmt` — and `cargo fmt --check` did not see it,
+    because the call failed on the poisoned standard input and the error came as "failed to run
+    rustc". The gate test found it because it calls `cargo fmt` **in a copy** whose standard input
+    is empty.
+30. **The standard input of the shell carries the output of the previous command.** `rustc -` reads
+    it as Rust source and dies with "unterminated character literal". That was the cause of the
+    "Operation aborted" messages — **no** memory problems, but a poisoned stdin. Every cargo call
+    now gets `< /dev/null`.
+31. **The input knew only the keyboard.** `InputEvent` and `Binding` carried only `Key` and
+    `Palette` — the table of the bindings could not name a click or a tap, although the interface
+    already knew `Context::Pointer` and `Context::Touch`.
+32. **There were no default bindings in the code at all.** The bindings stood only in
+    `config/keymap.toml`, and that file is never written — it never comes into being on the user's
+    machine, and `read_keymap()` returned `None`. The interface had not a single binding: no `F5`,
+    no `Tab`. The gap showed itself while the defaults were written, because the default of the
+    controller context was `Grip` — and `Grip` is no key.
+33. **The swipe went out twice.** The gesture went out when the finger passed the distance and
+    once more when it lifted. The test found it.
+34. **The formatter and the generator contradicted each other.** The generated file was broken up
+    by `cargo fmt`, and the generator compared the bytes. The comparison now reads the content —
+    the bindings — and leaves the spelling alone.
+35. **The check of the bindings knew three contexts only.** It saw `dpad` and `controller` and
+    measured on them whether every action is bound. The contexts `pointer` and `touch` were
+    unchecked — and would have stayed empty without a gate noticing.
+36. The formatter of `benches/interaction.rs` had never run.
+
+## 6. The rules that follow from this milestone
+
+These rules came out of the errors. They stand here, because the next time they are just as easy to
+break:
+
+| Rule | Why |
 |---|---|
-| Wie läuft das manuelle Protokoll auf einem echten macOS-Gerät? | Die Sandbox hat ein Linux-System und keinen Bildschirm. Die Abnahme von M1 braucht dieses Protokoll. |
-| Welche Zertifikate tragen die Binaries? | Windows braucht ein Code-Signing-Zertifikat, macOS einen Developer ID. Beides kostet Geld und braucht eine Entscheidung des Eigentümers. |
-| Das Zielverzeichnis der Tests liegt auf einem NAS-Volume | Jeder Build zahlt die Latenz des Volumes. Eine lokale Ablage wäre schneller — wenn die Sandbox sie anbietet. |
-| Der Release-Plan war widersprüchlich | Linux mit Alpha 2 und Windows mit Beta 1 — obwohl beide Ports zu M3 gehören. Korrigiert am 25.10.2026: Alpha 1, Alpha 2 und Beta 1 liefern macOS aus, Beta 2 liefert alle fünf Desktop-Plattformen |
-| Der Eigenschaftstest der Umbenennung (FR-33) | Die Spezifikation nennt ihn ausdrücklich. Er ist der letzte fehlende Test der Abnahme von M1. |
-| Soll die Dateiendung ein Merkmal sein? | **Nein**, entschieden am 25.10.2026: die Endung bleibt ein Hinweis. Die Magic Bytes entscheiden. Eine Datei, die `.zip` heißt und kein ZIP ist, soll als das erkannt werden, was sie ist. |
-| Verschlüsselte Container (FR-68) | Nicht angefasst. Der Meilenstein M1 umfasst die unverschlüsselten Formate; die verschlüsselten kommen mit dem Umgang mit den Passwörtern. |
+| **One single cargo process in the workspace.** Every agent gets a `CARGO_HOME` and a `CARGO_TARGET_DIR` of its own on local disk. | Three gigabytes of RAM. Two builds at the same time kill both — and the agent then waits for an answer that never comes. |
+| **The negative test builds into a target directory of its own.** | A test binary carries the path of the repository it was built in. A binary from the copy looks for the configuration of the copy — and that is gone when the script ends. |
+| **The agents do not build.** They write, the lead instance builds and checks. | A build in a foreign directory eats 1 to 5 GB and blocks the NAS volume on which the repository lies. |
+| **After every milestone the disk is cleaned.** | At the end of that day there were 20 GB of target directories in `/tmp`. |
+| **After every `git reset` the executable bit is restored.** | `./scripts/restore-executable-bits.sh` — the way that writes the content does not carry the mode. |
+| **Every cargo call gets `< /dev/null`.** | The standard input of the shell carries the output of the previous command, and `rustc -` reads it as Rust source. |
+| **A gate that was never red is a wish.** | Every new gate belongs into `check-gates-negative.sh`, with a built-in defect. |
+| **The documentation of the repository is English.** The German editions of the user guide are a product feature, not an exception to the rule. | The specification, the roadmap and the code speak one language. A second language in the documentation doubles the work and the drift. |
+
+## 7. What comes next
+
+| # | What | Why |
+|---|---|---|
+| 1 | The manual protocol of M1 on a macOS machine | The sandbox has a Linux system and no screen. The acceptance needs this protocol, otherwise M1 stays open |
+| 2 | The benchmarks of NFR-02, NFR-03 and NFR-09a | They need the release profile and a quiet tree |
+| 3 | The trigger of the change of the language | The desktop build reads the configuration file once per second. An entry in the native menu bar would be the lasting solution — `muda` comes with M3 |
+| 4 | The layout of the finger in M4 | The interface of the telephone stacks the panels, the rows are 44 points high, the dialogs come as a sheet from the bottom, and there is no hover |
+| 5 | The defaults of the bindings in the CI | `scripts/generate-keymap-defaults.py --check` belongs beside the other gates, so that the file of the defaults does not become stale |
+| 6 | The milestone M3 — Windows, Linux, BSD | The first milestone that runs on another platform. First the questions of the portability: the separator of the paths, the long paths under Windows, the key binding per platform and the matrix of the CI |
+
+## 8. The questions that need a decision
+
+| Question | State |
+|---|---|
+| How does the manual protocol run on a real macOS machine? | The sandbox has a Linux system and no screen. The acceptance of M1 needs this protocol. |
+| Which certificates sign the binaries? | Windows needs a code-signing certificate, macOS a Developer ID. Both cost money and need a decision of the owner. |
+| The target directory of the tests lies on a NAS volume | Every build pays the latency of the volume. A local storage would be faster — if the sandbox offers it. |
+| The release plan was contradictory | Linux with Alpha 2 and Windows with Beta 1 — although both ports belong to M3. Corrected on 25.10.2026: Alpha 1, Alpha 2 and Beta 1 ship macOS, Beta 2 ships all five desktop platforms |
+| The property test of the rename (FR-33) | The specification names it expressly. It is the last missing test of the acceptance of M1. |
+| Should the extension be a feature? | **No**, decided on 25.10.2026: the extension stays a hint. The magic bytes decide. A file that is called `.zip` and is no ZIP shall be recognised as what it is. |
+| Encrypted containers (FR-68) | Not touched. The milestone M1 covers the unencrypted formats; the encrypted ones come with the handling of the passwords. |
 
 ---
 
-*Der Stand dieses Dokuments gehört zum Commit in der Kopfzeile. Wer ihn fortschreibt, aktualisiert
-die Kopfzeile mit.*
+*The state of this document belongs to the commit in the headline. Whoever carries it forward
+updates the headline with it.*

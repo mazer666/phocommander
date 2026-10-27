@@ -456,6 +456,19 @@ pub struct InputBindings {
     pub bindings: BTreeMap<String, String>,
 }
 
+/// The default of the largest answer of a remote source, in bytes.
+///
+/// WHY: sixty-four megabytes. A directory listing with a hundred thousand
+///       entries fits into it, a file that the viewer opens is far smaller,
+///       and the memory of a phone holds it. The user may set another value
+///       in the settings, and zero turns the limit off.
+pub const DEFAULT_MAX_REMOTE_DOWNLOAD_BYTES: u64 = 67_108_864;
+
+/// The default of the largest answer of a remote source.
+const fn default_max_remote_download_bytes() -> u64 {
+    DEFAULT_MAX_REMOTE_DOWNLOAD_BYTES
+}
+
 /// The {[remote]} section of the configuration file.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -472,10 +485,14 @@ pub struct Remote {
     #[serde(default)]
     pub smb_encryption: SmbEncryption,
 
-    /// The largest file that may be downloaded from a remote source, in bytes.
+    /// The largest answer that may be read from a remote source, in bytes.
     ///
-    /// WHY: zero means that there is no limit. The default is zero because the
-    /// limit is only sensible for sources the user trusts.
-    #[serde(default)]
+    /// WHY: a remote source is the one place where the size of an answer
+    ///       is decided by somebody else. The default is sixty-four
+    ///       megabytes: a directory listing with a hundred thousand entries
+    ///       fits into it, a file that the viewer opens is far smaller, and
+    ///       the memory of a phone holds it. The user may set another value
+    ///       in the settings, and zero turns the limit off.
+    #[serde(default = "default_max_remote_download_bytes")]
     pub max_remote_download_bytes: u64,
 }

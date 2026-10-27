@@ -9,8 +9,8 @@ and the specification disagree, the specification wins — and the disagreement 
 in this file that you should fix in the same change.
 
 Do not edit `docs/REQUIREMENTS.md` to match your implementation. If the specification
-is wrong, describe the conflict in `deliverable.md` and let the owner decide; every
-deviation from a decision needs a new decision, dated and justified.
+is wrong, describe the conflict in the handover document and let the owner decide;
+every deviation from a decision needs a new decision, dated and justified.
 
 ---
 
@@ -238,10 +238,17 @@ A behaviour that is not documented does not exist for the next contributor.
 | Content | Language |
 |---|---|
 | Code, comments, identifiers, commit messages | English |
-| Repository documents (README, specs, ADRs, guides) | English, except the bilingual user guide and glossary |
+| Repository documents (README, specs, ADRs, guides, roadmap, status board, acceptance documents) | English, without exception |
 | User guide (`docs/user-guide/`) | German **and** English |
 | Glossary (`docs/glossary.md`) | German **and** English, term by term |
-| Your handover file `deliverable.md` | German |
+| Your handover file | English |
+
+The documentation of the repository is English. The two exceptions are the user guide
+and the glossary, and they are exceptions because they are read in both languages by
+their nature. Every other document — the roadmap, the status board, the acceptance
+documents, the guides, the handovers — is written in English, because the
+specification, the code and the documentation speak one language. A second language in
+the documentation doubles the work and the drift.
 
 Do not translate a code identifier into German. Do not write German doc comments in
 English source files. If a UI string is needed, it goes through a translation key —
@@ -249,7 +256,7 @@ never a hardcoded string in the code.
 
 ---
 
-## 8. Handover: changed files plus `deliverable.md`
+## 8. Handover: changed files plus the handover document
 
 **Do not commit, push, tag or release.** Not even a "fixup" commit, not even on your
 own branch. The owner decides what enters the history.
@@ -258,7 +265,8 @@ Hand over:
 
 1. **The changed files, in place in the working tree.** That is the primary
    handover: the owner sees exactly what you produced, unfiltered.
-2. **`deliverable.md`, written in German**, containing:
+2. **A handover document under `docs/handover/`, written in English**, named
+   after the topic — `docs/handover/<topic>.md` — containing:
    - what you changed, file by file, with line counts and the reason for each change,
    - the commands you ran and their real output (paste it, do not summarise it),
    - a link check and the result,
@@ -267,8 +275,8 @@ Hand over:
 3. **A progress entry** in the team board, so the next agent knows where the work
    stands.
 
-If your change touches several files, list every one of them in `deliverable.md` —
-a handover that mentions only the "interesting" files hides the rest.
+If your change touches several files, list every one of them in the handover
+document — a handover that mentions only the "interesting" files hides the rest.
 
 ---
 
@@ -349,7 +357,7 @@ python3 scripts/check-links.py
 - [ ] Every hardening has a negative test that performs the attack.
 - [ ] Every public function has a WHAT / WHY / EXAMPLE doc comment.
 - [ ] Documentation changed in the same change as the behaviour it describes.
-- [ ] Code, comments and commits are English; `deliverable.md` is German.
+- [ ] Code, comments, commits and documents are English.
 - [ ] All claims in the handover are backed by a command output I pasted.
-- [ ] Nothing was committed or pushed; the handover is the working tree plus
-      `deliverable.md`.
+- [ ] Nothing was committed or pushed; the handover is the working tree plus the
+      handover document under `docs/handover/`.

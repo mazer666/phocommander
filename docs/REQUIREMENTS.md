@@ -313,7 +313,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-91 | SMB signing and SMB 3 transport encryption are required where the server supports them | M6 | Must | Integration test against a server with and without signing |
 | FR-92 | The WebDAV client is part of the project, not a copyleft dependency | M6 | Must | `cargo deny` plus code review |
 | FR-93 | Every network operation has a timeout | M6 | Must | Integration test against a server that stalls |
-| FR-94 | The response size is bounded independently of the content length the server announces | M6 | Must | Integration test |
+| FR-94 | The response size is bounded independently of the content length the server announces, by a reading budget that the user sets in the settings; the default is 64 MiB and zero turns the limit off | M6 | Must | Integration test |
 | FR-95 | A server that offers an older protocol version is refused, not silently accepted | M6 | Must | Integration test |
 
 ### 4.9 Input model
@@ -1654,27 +1654,35 @@ requires a new decision, recorded here with the date and the reason.
 | E12 | How is the interface adapted to the user's taste? | Two profiles, `clean` and `full`, with per-command overrides, exportable and importable | The user chooses how much furniture they see, without a feature gate |
 | E13 | Which placeholders does the rename engine use? | Both dialects. Square brackets in the dialog, curly braces in the named templates | The dialog stays simple, the templates get the expressive power, and the separation is documented |
 
-### 14.2 Open questions for the implementation
+### 14.2 The decisions on the open points of the implementation
 
-These points do not block the start of the work, but they need an answer before the affected code
-is written.
+These points were open until the owner decided them. The decision, the reason and the place of
+the implementation are written down here, so that the code and the specification cannot drift
+apart.
 
-**The reference for the series name.** Whether the series name is taken from the parent
-directory or entered for every series is a question of habit. The proposal: the directory name is
-the default, it is always visible and can be overridden. The decision is made when real series
-are processed the first time.
+**The reference for the series name — decided.** The directory name is the default, it is always
+visible and it can be overridden. The value is taken from the directory the files live in, and a
+series that is filed in a collection folder carries a directory that is not its name — the field
+is therefore shown before the rename runs, and the user can change it. The implementation is
+`parent_name_of` in the crate of the operations and the field `series_name` of the series rule
+(FR-37, FR-38).
 
-**The scope of the action palette.** Whether the palette shows only the actions that work in the
-current context, or all actions with a note on the unreachable ones. The proposal: only the
-working ones. A palette that constantly shows entries which do nothing is exactly the clutter the
-product principles forbid.
+**The scope of the action palette — decided.** The palette shows only the actions that are
+reachable in the current context. A palette that constantly shows entries which do nothing is
+exactly the clutter the product principles forbid. The implementation is the reachability of
+the context in the table of the bindings (FR-102, M8).
 
-**The size limit for a network answer.** The proposal is a fixed reading budget. The exact value
-follows from the smallest sensible target platform and is measured in M6 rather than guessed.
+**The size limit for a network answer — decided.** The limit is a reading budget that the user
+sets in the settings. The default is sixty-four megabytes: a directory listing with a hundred
+thousand entries fits into it, a file that the viewer opens is far smaller, and the memory of a
+phone holds it. The value stands in `remote.max_remote_download_bytes`, and zero turns the limit
+off. The limit is measured in M6 (FR-94).
 
-**The placeholder dialect in the rename dialog.** Square brackets or curly braces in the dialog
-itself. The proposal is square brackets for the generic dialog, because they are what the
-documentation already uses and they read clearly in a compact field.
+**The placeholder dialect in the rename dialog — decided.** The engine knows both dialects: the
+square brackets in the dialog, the curly braces in the named templates. The dialog stays
+simple, the templates get the expressive power, and the separation is documented. The
+conversion happens at the border of the file of the templates — when a template is stored and
+when it is applied to the dialog (E13, FR-31, FR-36).
 
 ---
 

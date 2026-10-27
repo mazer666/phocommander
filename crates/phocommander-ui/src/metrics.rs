@@ -89,6 +89,7 @@ impl Platform {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Metrics {
     row_height: f32,
+    control_height: f32,
     font_size: f32,
     focus_frame_width: f32,
     sidebar_depth: f32,
@@ -112,6 +113,7 @@ impl Metrics {
         match platform {
             Platform::MacOs => Self {
                 row_height: 20.0,
+                control_height: 24.0,
                 font_size: 13.0,
                 focus_frame_width: 2.0,
                 sidebar_depth: 220.0,
@@ -121,6 +123,7 @@ impl Metrics {
             },
             Platform::Windows => Self {
                 row_height: 20.0,
+                control_height: 24.0,
                 font_size: 13.0,
                 focus_frame_width: 1.5,
                 sidebar_depth: 220.0,
@@ -130,6 +133,7 @@ impl Metrics {
             },
             Platform::Linux | Platform::Bsd => Self {
                 row_height: 20.0,
+                control_height: 24.0,
                 font_size: 13.0,
                 focus_frame_width: 1.5,
                 sidebar_depth: 200.0,
@@ -141,6 +145,7 @@ impl Metrics {
                 // WHY: a finger needs a target of forty-four points, and the
                 // specification names that number for the touch context.
                 row_height: 44.0,
+                control_height: 44.0,
                 font_size: 16.0,
                 focus_frame_width: 3.0,
                 sidebar_depth: 300.0,
@@ -162,6 +167,7 @@ impl Metrics {
         match context {
             Context::Dpad => Self {
                 row_height: self.row_height * 1.8,
+                control_height: self.control_height * 1.8,
                 font_size: self.font_size * 1.8,
                 focus_frame_width: self.focus_frame_width * 2.0,
                 sidebar_depth: self.sidebar_depth,
@@ -171,6 +177,11 @@ impl Metrics {
             },
             Context::Touch => Self {
                 row_height: self.row_height.max(44.0),
+                // WHY: a finger needs a target of forty-four points. The
+                //       rule of the specification names the rows of the
+                //       list, and the fields and the buttons of a sheet
+                //       are targets of the same kind.
+                control_height: self.control_height.max(44.0),
                 font_size: self.font_size.max(16.0),
                 focus_frame_width: self.focus_frame_width.max(3.0),
                 ..self
@@ -182,6 +193,24 @@ impl Metrics {
     /// The height of a row of the file list.
     pub const fn row_height(&self) -> f32 {
         self.row_height
+    }
+
+    /// The height of a control that the user operates — a field, a button.
+    ///
+    /// WHY: a finger needs a target of forty-four points, and a field of
+    ///       twenty-four points is hard to reach with a thumb. The rule of
+    ///       the touch context therefore reaches the controls as well and
+    ///       not only the rows of the list.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::metrics::{Metrics, Platform};
+    ///
+    /// let touch = Metrics::for_platform(Platform::Android);
+    /// assert!(touch.control_height() >= 44.0);
+    /// ```
+    pub const fn control_height(&self) -> f32 {
+        self.control_height
     }
 
     /// The size of the text.

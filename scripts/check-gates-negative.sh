@@ -810,6 +810,36 @@ report "the gate is green again" 0 "$positive"
 echo
 
 echo "=============================================================="
+echo "Gate 18 — the language of the documentation: scripts/check-docs-language.py"
+echo "=============================================================="
+echo "18.1 negative run (a document of the project carries German text):"
+cp "$COPY/docs/KEYMAP.md" "$SCRATCH/keymap-language.md"
+python3 - "$COPY/docs/KEYMAP.md" <<'PYTHON'
+import sys, pathlib
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+# Ein deutscher Satz wandert in ein Dokument der Projektdokumentation.
+text = text.replace(
+    "## The bindings",
+    "## Die Bindungen\n\nDieser Meilenstein ist der wichtigste.",
+    1,
+)
+path.write_text(text, encoding="utf-8")
+PYTHON
+(cd "$COPY" && python3 scripts/check-docs-language.py) > "$SCRATCH/docs-language-negative.log" 2>&1
+negative=$?
+show "German text|FAIL" "$SCRATCH/docs-language-negative.log"
+report "the gate is red on a German text in the documentation" "nonzero" "$negative"
+echo
+cp "$SCRATCH/keymap-language.md" "$COPY/docs/KEYMAP.md"
+echo "18.2 positive run (the German text is removed again):"
+(cd "$COPY" && python3 scripts/check-docs-language.py) > "$SCRATCH/docs-language-positive.log" 2>&1
+positive=$?
+show "RESULT: PASS|German text" "$SCRATCH/docs-language-positive.log"
+report "the gate is green again" 0 "$positive"
+echo
+
+echo "=============================================================="
 if [ "$failures" -eq 0 ]; then
   echo "RESULT: PASS — every gate turned red on a broken state and green again."
   echo "Gates proved: ${gates}"

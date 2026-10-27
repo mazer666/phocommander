@@ -25,6 +25,7 @@
 use std::path::PathBuf;
 
 use crate::i18n::TextKey;
+use crate::rename::dialect::Dialect;
 use crate::rename::rule::RenameRule;
 
 /// A template with a name.
@@ -56,6 +57,32 @@ impl NamedTemplate {
             name: name.into(),
             rule,
         }
+    }
+
+    /// The template with the format in the given dialect.
+    ///
+    /// WHY: the named templates are written in the dialect of the templates
+    ///       — the curly braces — and the dialog works in the dialect of
+    ///       the dialog — the square brackets (E13). The conversion happens
+    ///       at the border of the file, and this method is that border.
+    ///       The source is named as well as the target, because the file
+    ///       carries the curly braces and the dialog carries the square
+    ///       ones — the direction is therefore different on the way in and
+    ///       on the way out.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::rename::{Dialect, NamedTemplate, RenameRule};
+    ///
+    /// let template = NamedTemplate::new("Camera", RenameRule::new("[name]_[n].[ext]"));
+    /// let known = ["name", "n", "ext"];
+    /// let in_file = template.in_dialect(Dialect::Square, Dialect::Curly, &known);
+    /// assert_eq!(in_file.rule.format, "{name}_{n}.{ext}");
+    /// ```
+    pub fn in_dialect(&self, from: Dialect, to: Dialect, known: &[&str]) -> Self {
+        let mut template = self.clone();
+        template.rule.format = Dialect::convert(&self.rule.format, known, from, to);
+        template
     }
 }
 

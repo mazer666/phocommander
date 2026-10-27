@@ -159,7 +159,7 @@ Every row names the section **and the line** of the specification it was taken f
 | FR-91 | SMB signing and SMB 3 transport encryption are required where the server supports them | §4.8 Remote sources, line 313 | M6 | Must | automated — Integration test against a server with and without signing | not yet assigned |
 | FR-92 | The WebDAV client is part of the project, not a copyleft dependency | §4.8 Remote sources, line 314 | M6 | Must | mixed — `cargo deny` plus code review | not yet assigned |
 | FR-93 | Every network operation has a timeout | §4.8 Remote sources, line 315 | M6 | Must | automated — Integration test against a server that stalls | not yet assigned |
-| FR-94 | The response size is bounded independently of the announced content length | §4.8 Remote sources, line 316 | M6 | Must | automated — Integration test | not yet assigned |
+| FR-94 | The response size is bounded independently of the content length the server announces, by a reading budget that the user sets in the settings; the default is 64 MiB and zero turns the limit off | §4.8 Remote sources, line 316 | M6 | Must | automated — Integration test | not yet assigned |
 | FR-95 | A server that offers an older protocol version is refused, not silently accepted | §4.8 Remote sources, line 317 | M6 | Must | automated — Integration test | not yet assigned |
 
 ## 4.9 Input model

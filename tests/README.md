@@ -1,7 +1,7 @@
 # The test structure of Phocommander
 
-**Binding source:** [`docs/REQUIREMENTS.md`](../docs/REQUIREMENTS.md) — section *Test- und
-Qualitätsstrategie*. **Acceptance catalogue:**
+**Binding source:** [`docs/REQUIREMENTS.md`](../docs/REQUIREMENTS.md) — section *Test and
+quality strategy*. **Acceptance catalogue:**
 [`docs/ACCEPTANCE-CRITERIA.md`](../docs/ACCEPTANCE-CRITERIA.md).
 
 ## The layout
@@ -22,7 +22,7 @@ tests/
 ```
 
 The unit tests live next to the code they test, inside the crates — that is the rule of the
-specification ("Unit-Tests liegen bei jeder öffentlichen Funktion"). This directory holds the tests
+specification ("unit tests lie next to every public function"). This directory holds the tests
 that cannot live there: the ones that hold two crates against each other, and the ones that read the
 files of the repository.
 

@@ -58,6 +58,15 @@ Placeholders are building blocks that are replaced by a value when the rename ru
 | `[hash]` | Short checksum |
 | `[rand]` | Random value |
 | `[case]` / `[lower]` / `[upper]` / `[title]` | The text in upper case, lower case, capitalised or title case |
+| `[series]` | Name of the series |
+| `[season]` | Season of the series |
+| `[episode]` | Number of the episode |
+| `[episode_title]` | Title of the episode |
+
+The width of a number comes from the **counter** and from the fields of the series,
+not from the placeholder. A counter with three digits writes `[n]` as `001`; a season
+with two digits writes `[season]` as `02`. There is no format such as `{n:03}` — a
+name that carries one is not a placeholder and stays as it is.
 
 ### 3.2 Replace
 
@@ -90,16 +99,21 @@ That way you see every conflict in one pass without leaving the list.
 
 ## 5. Templates
 
-Rules can be saved as **named templates** and applied again. Every template is a TOML
-file in the configuration directory and can be adjusted by you.
+Rules can be saved as **named templates** and applied again. Every template is a file in the
+configuration directory and can be adjusted by you.
+
+The named templates carry **curly braces**, the dialog carries **square brackets**. The two
+dialects are separate on purpose: the file of the templates is read by you, and its braces make
+the placeholders stand out from the brackets that a file name may carry. The conversion happens
+when a template is stored and when it is applied to the dialog.
 
 | Template | Target format |
 |---|---|
-| **Series episode** | `{serie} - S{staffel:02}E{episode:02} - {titel}.{format}` |
-| **Camera** | `{n}_{serie}_{titel}.{format}` — the counter is written with three digits (`{n:03}`) |
-| **Podcast** | `{date}_{titel}.{format}` — the date as `{date:YYYY-MM-DD}` |
-| **Invoice** | `{year}_{number}_{description}.{format}` — year, number, description |
-| **Music** | `{artist}_{title}_{track}.{format}` — artist, title, track number (`{track:02}`) |
+| **Series episode** | `{series} - S{season}E{episode} - {episode_title}.{ext}` — the season with two digits and the episode with two digits |
+| **Camera** | `{n}_{series}_{title}.{ext}` — the counter is written with three digits |
+| **Podcast** | `{date}_{title}.{ext}` — the date as `YYYY-MM-DD` |
+| **Invoice** | `{parent}_{n}_{name}.{ext}` — the parent directory, the counter and the name of the file |
+| **Music** | `{parent}_{n}_{name}.{ext}` — the parent directory as the album, the counter as the track number |
 
 The templates live in the `templates/` subdirectory of the configuration directory. You
 create your own template by saving a rule in the dialog and giving it a name.
@@ -182,7 +196,7 @@ Nothing is changed silently — you decide.
 |---|---|
 | The episode number does not increase | The rule has no counter. Add a start value and a step under "Counter". |
 | The series name is the folder name, not the series | The series name comes from the parent directory by default. It can be overridden in the dialog. |
-| The preview stays empty | The rule is missing the placeholder that produces the name — usually `{name}` or `{titel}`. |
+| The preview stays empty | The rule is missing the placeholder that produces the name — usually `{name}` or `{title}`. |
 | A name is shown in red | The name already exists in the target directory. `F3` jumps to the next conflict, `Shift+F3` to the previous one. |
 | The detection does not fire | The pattern `SxxEyy` is matched case-insensitively. A name like `Season 1, Episode 2` does not contain the pattern and is asked for. |
 

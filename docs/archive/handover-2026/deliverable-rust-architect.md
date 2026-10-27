@@ -396,10 +396,10 @@ Die vollständigen Texte liegen als Dateien unter `docs/adr/` (Format nach der V
 
 | ADR | Titel | Status | Kernentscheidung in einem Satz |
 |---|---|---|---|
-| [ADR-0001](docs/adr/ADR-0001-cargo-workspace-and-module-boundaries.md) | Cargo workspace and crate boundaries | accepted | Eine Workspace, eine Versionskatalogeinstellung, die strenge Lesart der Flachbau-Regel als ausführbares Gate — **plus die Entscheidungsvorlage O1**, weil die Regel der Spezifikation der Praxis des referenzierten Schwesterprojekts widerspricht |
-| [ADR-0002](docs/adr/ADR-0002-filesystem-abstraction.md) | The filesystem abstraction | accepted | Eine Quelle, eine Methode: „list the directory“; die Fehler der Quellen sind ihre eigenen; Schreiben ist ein schmaleres Interface |
-| [ADR-0003](docs/adr/ADR-0003-error-hierarchy-and-error-codes.md) | The error hierarchy and the error codes | accepted | Jede Kiste besitzt ihren Fehlertyp; die Codes sind stabile Verträge mit der Oberfläche; `unwrap`/`expect` bleiben per Lint verboten |
-| [ADR-0004](docs/adr/ADR-0004-archive-extraction-security.md) | The security strategy for the extraction of archives | accepted | Kein `extract()`, eine einzige Namensauflösung, keine Symlinks aus Archivmaterial, drei Grenzwerte aus `core::config`, deskriptorbasierter Zugriff, Negativtest je Härtung |
+| [ADR-0001](../../adr/ADR-0001-cargo-workspace-and-module-boundaries.md) | Cargo workspace and crate boundaries | accepted | Eine Workspace, eine Versionskatalogeinstellung, die strenge Lesart der Flachbau-Regel als ausführbares Gate — **plus die Entscheidungsvorlage O1**, weil die Regel der Spezifikation der Praxis des referenzierten Schwesterprojekts widerspricht |
+| [ADR-0002](../../adr/ADR-0002-filesystem-abstraction.md) | The filesystem abstraction | accepted | Eine Quelle, eine Methode: „list the directory“; die Fehler der Quellen sind ihre eigenen; Schreiben ist ein schmaleres Interface |
+| [ADR-0003](../../adr/ADR-0003-error-hierarchy-and-error-codes.md) | The error hierarchy and the error codes | accepted | Jede Kiste besitzt ihren Fehlertyp; die Codes sind stabile Verträge mit der Oberfläche; `unwrap`/`expect` bleiben per Lint verboten |
+| [ADR-0004](../../adr/ADR-0004-archive-extraction-security.md) | The security strategy for the extraction of archives | accepted | Kein `extract()`, eine einzige Namensauflösung, keine Symlinks aus Archivmaterial, drei Grenzwerte aus `core::config`, deskriptorbasierter Zugriff, Negativtest je Härtung |
 
 ---
 

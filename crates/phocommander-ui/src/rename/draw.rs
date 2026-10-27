@@ -88,6 +88,27 @@ impl FieldView {
 pub(crate) fn draw_dialog(ui: &mut egui::Ui, dialog: &mut RenameDialog, style: &DrawStyle<'_>) {
     let title = style.texts.get(TextKey::RenameTitle);
     let mut open = dialog.is_window_open();
+    // WHY: a sheet is not a window. On a touch screen the dialog comes from
+    //       the bottom of the display, takes the width of the display and
+    //       covers the greater part of it — the same shape that the
+    //       sheets of a telephone carry. On the desktop the dialog stays a
+    //       window that can be moved.
+    if style.profile.sheet_dialogs() {
+        // WHY: the identifier comes from the surface, so that the sheet of
+        //       one dialog does not collide with the sheet of another one.
+        let id = ui.make_persistent_id("rename-sheet");
+        draw_sheet(ui.ctx(), id, style, |ui| {
+            draw_fields(ui, dialog, style);
+            ui.separator();
+            draw_templates(ui, dialog, style);
+            ui.separator();
+            draw_preview(ui, dialog, style);
+            ui.separator();
+            draw_hint(ui, style);
+        });
+        return;
+    }
+
     let window = egui::Window::new(title)
         .open(&mut open)
         .default_size([680.0, 480.0]);
@@ -108,6 +129,43 @@ pub(crate) fn draw_dialog(ui: &mut egui::Ui, dialog: &mut RenameDialog, style: &
     //       the state of the dialog, because the frame draws the window again
     //       and would forget the click.
     dialog.set_window_open(open);
+}
+
+/// Draws the dialog as a sheet from the bottom of the display.
+///
+/// WHY: a window is a rectangle that floats over the surface. On a touch
+///       screen a dialog is a sheet: it comes from the bottom, it has the
+///       width of the display, and it covers the greater part of it, so
+///       that the thumb reaches the fields and the button without a
+///       finger that has to find a small target in a wide surface.
+fn draw_sheet(
+    ctx: &egui::Context,
+    id: egui::Id,
+    style: &DrawStyle<'_>,
+    inhalt: impl FnOnce(&mut egui::Ui),
+) {
+    let palette = style.palette;
+    let flaeche = ctx.content_rect();
+    let hoehe = flaeche.height() * 0.85;
+    let oben = flaeche.max.y - hoehe;
+
+    // WHY: the area is placed by hand, because a sheet is not a panel of
+    //       the surface but a layer above it. It has the width of the
+    //       display and it comes from the bottom.
+    egui::Area::new(id)
+        .fixed_pos(egui::pos2(flaeche.min.x, oben))
+        .order(egui::Order::Foreground)
+        .show(ctx, |ui| {
+            egui::Frame::new()
+                .fill(palette.panel)
+                .stroke(egui::Stroke::new(1.0, palette.focus_frame))
+                .inner_margin(egui::Margin::same(12))
+                .show(ui, |ui| {
+                    ui.set_width((flaeche.width() - 24.0).max(1.0));
+                    ui.add_space(8.0);
+                    inhalt(ui);
+                });
+        });
 }
 
 /// Draws the fields that carry the rule.
@@ -194,7 +252,10 @@ fn draw_field(ui: &mut egui::Ui, style: &DrawStyle<'_>, label: TextKey, view: &F
         palette.text
     };
 
-    let height = profile.row_height();
+    // WHY: a field is a target of the same kind as a row of the list. A
+    //       finger has to reach it, and the rule of forty-four points
+    //       therefore reaches the fields of a sheet.
+    let height = profile.control_height();
     ui.horizontal(|ui| {
         ui.label(RichText::new(texts.get(label)).color(palette.text_dimmed));
         let width = (ui.available_width() * 0.35).clamp(120.0, 320.0);

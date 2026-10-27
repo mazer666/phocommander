@@ -31,9 +31,10 @@ use phocommander_ops::rename::{RenamePair as OpsPair, plan_renames};
 use phocommander_ops::template::{
     CounterOrder as OpsCounterOrder, CounterRule as OpsCounterRule, RenameInput, RenameRule,
     ReplaceRule as OpsReplaceRule, SeriesRule as OpsSeriesRule, TemplateError, form_names,
+    placeholders::known_names,
 };
 use phocommander_ui::rename::{
-    Conflict, ConflictKind, CounterOrder as UiCounterOrder, NamedTemplate, PreviewProblem,
+    Conflict, ConflictKind, CounterOrder as UiCounterOrder, Dialect, NamedTemplate, PreviewProblem,
     PreviewRow, ProblemKind, RenameEngine, RenameFile, RenamePreview, RenameRequest,
     RenameRule as UiRule, TemplateStore, TemplateStoreError, decode_templates, encode_templates,
 };
@@ -169,7 +170,16 @@ impl TemplateStore for FileTemplateStore {
                 });
             }
         };
-        decode_templates(&text)
+        // WHY: the named templates are written in the dialect of the
+        //       templates — the curly braces (E13). The dialog works in the
+        //       dialect of the dialog — the square brackets — and the
+        //       conversion happens at the border of the file.
+        let templates = decode_templates(&text)?;
+        let known = known_names();
+        Ok(templates
+            .into_iter()
+            .map(|template| template.in_dialect(Dialect::Curly, Dialect::Square, &known))
+            .collect())
     }
 
     fn store(&self, template: &NamedTemplate) -> Result<(), TemplateStoreError> {
@@ -181,7 +191,15 @@ impl TemplateStore for FileTemplateStore {
             Some(index) => templates[index] = template.clone(),
             None => templates.push(template.clone()),
         }
-        let text = encode_templates(&templates);
+        // WHY: the file carries the dialect of the templates. The rule of
+        //       the dialog is in the dialect of the dialog.
+        let known = known_names();
+        let text = encode_templates(
+            &templates
+                .iter()
+                .map(|template| template.in_dialect(Dialect::Square, Dialect::Curly, &known))
+                .collect::<Vec<_>>(),
+        );
 
         if let Some(parent) = self.path.parent()
             && !parent.as_os_str().is_empty()
@@ -428,7 +446,35 @@ mod tests {
         // assert
         assert_eq!(read.len(), 1);
         assert_eq!(read[0].name, "Camera");
+        // WHY: the dialog works in the dialect of the dialog — the square
+        //       brackets. The file carries the other dialect, and the
+        //       conversion happens at the border of the file (E13).
         assert_eq!(read[0].rule.format, "[name]_[n].[ext]");
+        let _ = fs::remove_file(&path);
+    }
+
+    #[test]
+    fn the_file_of_the_templates_carries_the_curly_braces() {
+        // arrange
+        let directory = std::env::temp_dir().join("phocommander-template-dialect-test");
+        let path = directory.join("templates.txt");
+        let _ = fs::remove_file(&path);
+        let store = FileTemplateStore::new(path.clone());
+        let template = NamedTemplate::new("Camera", UiRule::new("[name]_[n].[ext]"));
+
+        // act
+        store
+            .store(&template)
+            .unwrap_or_else(|error| panic!("the template should have been stored: {error}"));
+        let text = fs::read_to_string(&path)
+            .unwrap_or_else(|error| panic!("the file should have been read: {error}"));
+
+        // assert
+        // WHY: the named templates are a file that the user reads and
+        //       edits. Their dialect is part of their interface, and it is
+        //       the dialect of the templates — the curly braces.
+        assert!(text.contains("{name}_{n}.{ext}"), "the file reads: {text}");
+        assert!(!text.contains("[name]"), "the file reads: {text}");
         let _ = fs::remove_file(&path);
     }
 }

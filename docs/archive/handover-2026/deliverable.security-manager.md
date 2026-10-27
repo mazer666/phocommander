@@ -625,10 +625,14 @@ Docs Lead verlinkt sie. Das gehört in die Rollenbeschreibung des Rosters.
 **Gegenmaßnahme:** Meine Übergabe liegt zusätzlich als **`deliverable.security-manager.md`**
 und mein Patch als **`deliverable-security-manager.patch`** im Repository, damit ein späterer
 Überschreibvorgang die Übergabe nicht vernichtet.
+**Endstand (24.10.2026, 11:24):** `deliverable.md` enthält die Übergabe des Security Managers.
+Der Inhalt des PM war zum Zeitpunkt der Übernahme byte-identisch mit
+`deliverable-product-manager.md` (`cmp` bestätigt) und ist dort gesichert — es geht **kein
+Inhalt verloren**.
 **Systemic finding:** Solange alle Agenten denselben Pfad `deliverable.md` benutzen, zerstört
 der letzte Schreiber die Übergaben der anderen. Empfehlung an den Owner: agentenspezifische
 Namen verbindlich vorschreiben (`deliverable-<agent>.md` + `deliverable-<agent>.patch`) — der
-PM hat das bereits praktiziert.
+PM hat das bereits praktiziert, der Docs Lead und der Architect noch nicht.
 
 ---
 
@@ -646,7 +650,7 @@ file operations against a hostile filesystem, and the network sources.
 
 The complete threat model — trust boundary, attack surfaces, the binding hardening rules, the
 accepted residual risks, the permission audit and the audit protocol — lives in
-[`docs/security/THREAT_MODEL.md`](docs/security/THREAT_MODEL.md). This document is the
+[`docs/security/THREAT_MODEL.md`](../../security/THREAT_MODEL.md). This document is the
 front door: what is guaranteed, what to report, and how.
 ```
 

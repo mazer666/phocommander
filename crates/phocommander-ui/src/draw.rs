@@ -217,7 +217,11 @@ fn draw_panels(
 
     match profile.structure() {
         PanelStructure::TwoPanels => {
-            match surface.arrangement() {
+            // WHY: the arrangement is the decision of the user, but the
+            //       context has the last word where the decision cannot
+            //       exist. On a touch screen the panels are always stacked
+            //       (FR-106).
+            match profile.panel_arrangement(surface.arrangement()) {
                 crate::layout::PanelArrangement::SideBySide => {
                     let gap = profile.panel_gap();
                     let width = ((rect.width() - gap) / 2.0).max(1.0);

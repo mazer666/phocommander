@@ -193,6 +193,7 @@ pub struct LayoutProfile {
     structure: PanelStructure,
     areas: VisibleAreas,
     row_height: f32,
+    control_height: f32,
     font_size: f32,
     focus_frame_width: f32,
     panel_gap: f32,
@@ -229,6 +230,7 @@ impl LayoutProfile {
             structure: PanelStructure::TwoPanels,
             areas: VisibleAreas::all(),
             row_height: metrics.row_height(),
+            control_height: metrics.control_height(),
             font_size: metrics.font_size(),
             focus_frame_width: metrics.focus_frame_width(),
             panel_gap: 6.0,
@@ -299,6 +301,40 @@ impl LayoutProfile {
     /// The height of a row of the file list.
     pub const fn row_height(&self) -> f32 {
         self.row_height
+    }
+
+    /// The height of a control that the user operates — a field, a button.
+    ///
+    /// WHY: the rule of forty-four points reaches the controls of a sheet
+    ///       and not only the rows of the list. A finger has to reach a
+    ///       field of the same size as a row.
+    pub const fn control_height(&self) -> f32 {
+        self.control_height
+    }
+
+    /// The arrangement of the two panels in this context.
+    ///
+    /// WHY: the arrangement is the decision of the user (FR-11) — the
+    ///       panels stand next to each other or below each other. On a
+    ///       touch screen that decision does not exist: two panels side by
+    ///       side are too narrow for a finger, and the screen of a phone
+    ///       has no room for them. The context therefore decides here, and
+    ///       the decision of the user is only used where it can exist.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::context::Context;
+    /// use phocommander_ui::layout::{LayoutProfile, PanelArrangement};
+    /// use phocommander_ui::metrics::{Metrics, Platform};
+    ///
+    /// let touch = LayoutProfile::for_context(Context::Touch, &Metrics::for_platform(Platform::Android));
+    /// assert_eq!(touch.panel_arrangement(PanelArrangement::SideBySide), PanelArrangement::Stacked);
+    /// ```
+    pub const fn panel_arrangement(&self, wanted: PanelArrangement) -> PanelArrangement {
+        match self.context {
+            Context::Touch => PanelArrangement::Stacked,
+            _ => wanted,
+        }
     }
 
     /// The size of the text.
@@ -391,6 +427,58 @@ mod tests {
         assert!(profile.row_height() >= 44.0);
         assert!(profile.sheet_dialogs());
         assert!(!profile.hover_enabled());
+    }
+
+    #[test]
+    fn the_finger_stacks_the_panels_whatever_the_user_wishes() {
+        // arrange
+        let profile = LayoutProfile::for_context(Context::Touch, &desktop());
+
+        // act, assert
+        // WHY: the arrangement is the decision of the user on the desktop —
+        //       but two panels side by side are too narrow for a finger, and
+        //       the screen of a telephone has no room for them. The context
+        //       decides therefore here (FR-106).
+        assert_eq!(
+            profile.panel_arrangement(PanelArrangement::SideBySide),
+            PanelArrangement::Stacked
+        );
+        assert_eq!(
+            profile.panel_arrangement(PanelArrangement::Stacked),
+            PanelArrangement::Stacked
+        );
+    }
+
+    #[test]
+    fn the_desktop_keeps_the_arrangement_of_the_user() {
+        // arrange
+        let profile = LayoutProfile::for_context(Context::Keyboard, &desktop());
+
+        // act, assert
+        assert_eq!(
+            profile.panel_arrangement(PanelArrangement::SideBySide),
+            PanelArrangement::SideBySide
+        );
+        assert_eq!(
+            profile.panel_arrangement(PanelArrangement::Stacked),
+            PanelArrangement::Stacked
+        );
+    }
+
+    #[test]
+    fn the_finger_needs_a_target_of_forty_four_points_for_every_control() {
+        // arrange
+        let profile = LayoutProfile::for_context(Context::Touch, &desktop());
+
+        // act, assert
+        // WHY: the rule of forty-four points reaches the fields and the
+        //       buttons of a sheet and not only the rows of the list. A
+        //       field of twenty-four points is hard to reach with a thumb.
+        assert!(profile.control_height() >= 44.0);
+        assert!(profile.row_height() >= 44.0);
+        // WHY: the desktop keeps the smaller controls.
+        let desktop = LayoutProfile::for_context(Context::Keyboard, &desktop());
+        assert!(desktop.control_height() < 44.0);
     }
 
     #[test]

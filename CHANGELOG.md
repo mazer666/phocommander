@@ -19,7 +19,7 @@ The milestone column follows the roadmap of the binding specification,
   - The releases **Alpha 1** (0.1.0-alpha.1) through **Release 1.0** (1.0.0), each with the
     version, the milestone that triggers it and the platforms it ships for.
   - The conditions **T-01 to T-15** that have to hold before a release is built, measured and
-    signed: the acceptance of the milestone, the common rules R-01 to R-21, the tests, the
+    signed: the acceptance of the milestone, the common rules R-01 to R-22, the tests, the
     version in one place, the checksums, the signature, the notarisation for macOS, the
     Authenticode signature for Windows, the store approval, the release notes, the
     documentation, the security rules, the build on the target platform and the absence of

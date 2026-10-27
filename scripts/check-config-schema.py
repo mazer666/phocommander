@@ -70,7 +70,7 @@ EXPECTED_VALUES = {
     "remote|connect_timeout_seconds": 15,
     "remote|smb_signing": "prefer",
     "remote|smb_encryption": "prefer",
-    "remote|max_remote_download_bytes": 0,
+    "remote|max_remote_download_bytes": 67108864,
     "keymap|panel.copy": "F5",
     "keymap|panel.move": "F6",
     "input.keyboard|panel.copy": "F5",

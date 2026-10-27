@@ -200,4 +200,4 @@ smb_signing = "prefer"
 smb_encryption = "prefer"
 # Largest allowed download of a single file from a remote source, in bytes.
 # 0 means unlimited — only use this with sources you trust explicitly.
-max_remote_download_bytes = 0
+max_remote_download_bytes = 67108864
