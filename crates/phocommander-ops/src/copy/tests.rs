@@ -10,7 +10,7 @@
 use super::*;
 use crate::edit::JobControl;
 use crate::fake_fs::FakeFileSystem;
-use crate::port::EntryKind;
+use crate::port::{EntryKind, FileSystem};
 use crate::progress::{JobContext, ProgressSink, ProgressUpdate};
 use crate::temporary::temporary_path;
 use std::sync::Arc;
@@ -404,4 +404,170 @@ fn the_copy_of_a_tree_can_be_limited_to_some_items() {
     assert_eq!(outcome.files_copied, 1);
     assert!(fs.exists(Path::new("/backup/a.txt")));
     assert!(!fs.exists(Path::new("/backup/b.txt")));
+}
+
+#[test]
+fn a_verified_copy_whose_destination_differs_ends_in_the_error_of_the_checksum() {
+    // arrange
+    // WHY: the verified mode compares the checksum of the source with the
+    //       checksum of the file that was written. A file system that
+    //       writes the wrong bytes is exactly the case the mode exists for,
+    //       and the job has to end with the error of the checksum — not
+    //       with a success and a damaged file.
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    fs.corrupt_next_copy();
+    let mut context = context();
+
+    // act
+    let result = copy_one_file(
+        &fs,
+        Path::new("/photos/a.txt"),
+        Path::new("/backup/a.txt"),
+        CopyMode::Verified,
+        &CopyPolicy::strict(),
+        &mut context,
+    );
+
+    // assert
+    let error = match result {
+        Err(error) => error,
+        Ok(bytes) => panic!("the copy should have failed, but it wrote {bytes} bytes"),
+    };
+    assert!(
+        matches!(error, OpError::ChecksumMismatch { .. }),
+        "the error should name the checksum: {error:?}"
+    );
+}
+
+#[test]
+fn a_quick_copy_whose_destination_differs_writes_the_file_all_the_same() {
+    // arrange
+    // WHY: the quick mode does not verify, and it therefore writes what the
+    //       file system gave it. The mode is the one that trades the check
+    //       for the speed.
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    fs.corrupt_next_copy();
+    let mut context = context();
+
+    // act
+    let result = copy_one_file(
+        &fs,
+        Path::new("/photos/a.txt"),
+        Path::new("/backup/a.txt"),
+        CopyMode::Quick,
+        &CopyPolicy::strict(),
+        &mut context,
+    );
+
+    // assert
+    // WHY: the quick mode does not compare, and it therefore reports no
+    //       error — even though the medium wrote something else. That is
+    //       the trade of the mode: the speed instead of the proof.
+    assert!(result.is_ok(), "{result:?}");
+    let geschrieben = fs
+        .checksum(Path::new("/backup/a.txt"))
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    let quelle = fs
+        .checksum(Path::new("/photos/a.txt"))
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    // WHY: the file that was written differs from the source, and nobody
+    //       said so — the quick mode is the mode that does not say.
+    assert_ne!(geschrieben, quelle);
+}
+
+#[test]
+fn the_policy_that_always_overwrites_replaces_an_existing_target() {
+    // arrange
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    write_file(&fs, "/backup/a.txt", b"old");
+    let mut context = context();
+    let request = CopyRequest::new("/photos", "/backup")
+        .with_mode(CopyMode::Quick)
+        .with_policy(ConflictPolicy::Always);
+
+    // act
+    let outcome = execute_copy(&fs, &request, &mut context)
+        .unwrap_or_else(|error| panic!("the copy failed: {error}"));
+
+    // assert
+    assert_eq!(outcome.errors.len(), 0, "{:?}", outcome.errors);
+    assert_eq!(outcome.files_copied, 1);
+    assert_eq!(outcome.files_skipped, 0);
+    let content = fs
+        .read_file(Path::new("/backup/a.txt"))
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    assert_eq!(content, b"payload");
+}
+
+#[test]
+fn the_policy_that_keeps_both_writes_a_name_that_does_not_exist_yet() {
+    // arrange
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    write_file(&fs, "/backup/a.txt", b"old");
+    let mut context = context();
+    let request = CopyRequest::new("/photos", "/backup")
+        .with_mode(CopyMode::Quick)
+        .with_policy(ConflictPolicy::KeepBoth);
+
+    // act
+    let outcome = execute_copy(&fs, &request, &mut context)
+        .unwrap_or_else(|error| panic!("the copy failed: {error}"));
+
+    // assert
+    assert_eq!(outcome.errors.len(), 0, "{:?}", outcome.errors);
+    assert_eq!(outcome.files_copied, 1);
+    // WHY: the file that exists already keeps its content — the copy went
+    //       somewhere else.
+    let content = fs
+        .read_file(Path::new("/backup/a.txt"))
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    assert_eq!(content, b"old");
+    // WHY: and the copy carries the content of the source under a name that
+    //       does not exist yet.
+    let namen = fs
+        .read_dir(Path::new("/backup"))
+        .unwrap_or_else(|error| panic!("the directory could not be read: {error}"));
+    let zweiter = namen
+        .iter()
+        .find(|eintrag| eintrag.name != "a.txt")
+        .unwrap_or_else(|| panic!("the copy should have a name of its own: {namen:?}"));
+    let pfad = Path::new("/backup").join(&zweiter.name);
+    let content = fs
+        .read_file(&pfad)
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    assert_eq!(content, b"payload");
+}
+
+#[test]
+fn the_policy_that_asks_leaves_the_existing_target_alone_until_somebody_answers() {
+    // arrange
+    // WHY: the queue of the specification has no room for a question in the
+    //       middle of a copy — the job runs to the end and reports. A file
+    //       that exists already is therefore left alone, and the job counts
+    //       it as skipped. The user decides afterwards, by copying again
+    //       with another policy.
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"payload");
+    write_file(&fs, "/backup/a.txt", b"old");
+    let mut context = context();
+    let request = CopyRequest::new("/photos", "/backup")
+        .with_mode(CopyMode::Quick)
+        .with_policy(ConflictPolicy::Ask);
+
+    // act
+    let outcome = execute_copy(&fs, &request, &mut context)
+        .unwrap_or_else(|error| panic!("the copy failed: {error}"));
+
+    // assert
+    assert_eq!(outcome.errors.len(), 0, "{:?}", outcome.errors);
+    assert_eq!(outcome.files_skipped, 1);
+    assert_eq!(outcome.files_copied, 0);
+    let content = fs
+        .read_file(Path::new("/backup/a.txt"))
+        .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
+    assert_eq!(content, b"old");
 }
