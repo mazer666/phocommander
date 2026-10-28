@@ -170,7 +170,7 @@ release that is only half translated is worse than a release in one language.
 |---|---|---|
 | The twelve common rules R-01 to R-22 | all gates | open — measured at the end |
 | **No hardcoded text in the interface** — every visible word goes through a key | `scripts/check-i18n-hardcoded.py` | fulfilled |
-| English and German are complete, with an **identical set of keys** | `scripts/check-i18n-keys.py` | fulfilled — 155 keys in three languages |
+| English and German are complete, with an **identical set of keys** | `scripts/check-i18n-keys.py` | fulfilled — 158 keys in three languages |
 | The chain of the language lookup: requested → language chain → English → **the key itself** | `phocommander-i18n`, a test per level | fulfilled |
 | A missing key yields **never** an empty text | Test | fulfilled |
 | The language is switchable at run time, without a restart; the interface updates itself at once | Test | **fulfilled** — the actions `app.language.de`, `app.language.en` and `app.language.fr` change it while the program runs, and the choice is written into the configuration file |
@@ -209,7 +209,7 @@ hardcoded and in which a new language needs a single file.
 
 | Point | Evidence | Status |
 |---|---|---|
-| The twelve common rules R-01 to R-22 | all gates | open — 1691 tests, 15 consistency gates, 42 of 42 negative runs green |
+| The twelve common rules R-01 to R-22 | all gates | open — 1721 tests, 15 consistency gates, 42 of 42 negative runs green |
 | The seam of the input: keyboard, pointer, finger, remote control and gamepad bind to the same actions | `phocommander-ui`, `config/keymap.toml` | **fulfilled** |
 | The default bindings in the code, so that the file of the user only overrides them | `keymap_view/defaults.rs` | **fulfilled** |
 | The Gradle project and the Rust `cdylib` | `apps/phocommander-android/` | open |

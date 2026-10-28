@@ -70,7 +70,9 @@ fn summary_of(snapshot: &JobSnapshot) -> JobSummary {
         state_of(snapshot.state),
         progress.items_done,
         progress.items_total,
-    );
+    )
+    .with_rate(progress.bytes_per_second)
+    .with_eta(progress.eta_seconds);
 
     // WHY: the failure of a job is shown in its row. The error of the
     //       operations carries the key of the catalogue and the values that
@@ -146,6 +148,8 @@ mod tests {
                 bytes_total: 0,
                 current_item: None,
                 verification: None,
+                bytes_per_second: None,
+                eta_seconds: None,
             },
             errors: vec![
                 JobError::new(
@@ -195,5 +199,39 @@ mod tests {
         assert_eq!(JobErrorCode::PathTooLong.as_str(), "path.too_long");
         assert_eq!(JobErrorCode::PathTooLong.message_key(), "path-too-long");
         assert_eq!(JobErrorCode::IoRead.message_key(), "io-read");
+    }
+
+    #[test]
+    fn the_row_of_a_job_carries_the_rate_and_the_estimate() {
+        // arrange
+        let mut snapshot = failed_snapshot();
+        snapshot.progress.bytes_per_second = Some(1_048_576);
+        snapshot.progress.eta_seconds = Some(120);
+
+        // act
+        let row = summary_of(&snapshot);
+
+        // assert
+        // WHY: the rate and the estimate tell the user how long the job will
+        //       run. Without them a job that copies ten gigabytes looks as if
+        //       it hangs (FR-24, FR-22g).
+        assert_eq!(row.rate(), Some(1_048_576));
+        assert_eq!(row.eta(), Some(120));
+    }
+
+    #[test]
+    fn a_job_that_has_not_run_long_enough_has_no_rate() {
+        // arrange
+        let mut snapshot = failed_snapshot();
+        snapshot.progress.bytes_per_second = None;
+        snapshot.progress.eta_seconds = None;
+
+        // act
+        let row = summary_of(&snapshot);
+
+        // assert
+        // WHY: the cue shows nothing instead of a number that would be wrong.
+        assert_eq!(row.rate(), None);
+        assert_eq!(row.eta(), None);
     }
 }

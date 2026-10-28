@@ -35,14 +35,14 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1691 green, 0 red, 0 skipped** |
+| Tests | **1721 green, 0 red, 0 skipped** |
 | Test binaries | 57 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
 | The formatting | `cargo fmt --all -- --check` — **without a deviation** |
 | The licences | `cargo deny check` — advisories, bans, licences, sources: **ok** |
 | The consistency gates | 14, all green |
-| The language catalogues | 3 languages, 155 keys, the same set of keys |
+| The language catalogues | 3 languages, 158 keys, the same set of keys |
 
 ## 4. The decisions of the owner
 

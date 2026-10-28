@@ -336,6 +336,29 @@ pub(crate) fn draw_job_list(
                     Argument::total(job.items_total()),
                 ],
             );
+            // WHY: the rate and the estimate tell the user how long the
+            //       job will run. Without them a job that copies ten
+            //       gigabytes is a job that looks as if it hangs (FR-24,
+            //       FR-22g).
+            let rate = job.rate().map(|bytes| {
+                texts.get_with(
+                    TextKey::PanelJobRate,
+                    &[Argument::named("rate", &style.formats.size(bytes))],
+                )
+            });
+            let eta = job.eta().map(|seconds| {
+                if seconds < 60 {
+                    texts.get_with(
+                        TextKey::PanelJobEtaSeconds,
+                        &[Argument::named("seconds", &seconds.to_string())],
+                    )
+                } else {
+                    texts.get_with(
+                        TextKey::PanelJobEtaMinutes,
+                        &[Argument::named("minutes", &(seconds / 60).to_string())],
+                    )
+                }
+            });
             // WHY: the failure of a job is shown in the row of the job. The
             //       text comes from the catalogue, so that it speaks the
             //       language of the interface (FR-05, FR-124).
@@ -356,6 +379,12 @@ pub(crate) fn draw_job_list(
                     ui.label(RichText::new(kind).color(palette.text));
                     ui.label(RichText::new(state).color(palette.text_dimmed));
                     ui.label(RichText::new(progress).color(palette.text_dimmed));
+                    if let Some(rate) = rate {
+                        ui.label(RichText::new(rate).color(palette.text_dimmed));
+                    }
+                    if let Some(eta) = eta {
+                        ui.label(RichText::new(eta).color(palette.text_dimmed));
+                    }
                     if let Some(failure) = failure {
                         ui.label(RichText::new(failure).color(palette.warning));
                     }

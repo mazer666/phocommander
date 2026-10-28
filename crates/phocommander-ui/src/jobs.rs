@@ -184,6 +184,7 @@ pub struct JobSummary {
     items_done: u64,
     items_total: u64,
     rate: Option<u64>,
+    eta: Option<u64>,
     error: Option<JobError>,
 }
 
@@ -203,6 +204,7 @@ impl JobSummary {
             items_done,
             items_total,
             rate: None,
+            eta: None,
             error: None,
         }
     }
@@ -234,6 +236,12 @@ impl JobSummary {
         self
     }
 
+    /// The row with the estimate of the remaining time.
+    pub const fn with_eta(mut self, eta: Option<u64>) -> Self {
+        self.eta = eta;
+        self
+    }
+
     /// The number of the job.
     pub const fn id(&self) -> u64 {
         self.id
@@ -262,6 +270,11 @@ impl JobSummary {
     /// The rate of the job in bytes per second.
     pub const fn rate(&self) -> Option<u64> {
         self.rate
+    }
+
+    /// The seconds that the rest of the job will take.
+    pub const fn eta(&self) -> Option<u64> {
+        self.eta
     }
 
     /// The share of the work that is done, between zero and one.

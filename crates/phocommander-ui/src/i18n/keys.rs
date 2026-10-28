@@ -182,6 +182,12 @@ pub enum TextKey {
     PanelJobListEmpty,
     /// The progress of a job.
     PanelJobProgress,
+    /// The rate of a job, in bytes per second.
+    PanelJobRate,
+    /// The remaining time of a job, in seconds.
+    PanelJobEtaSeconds,
+    /// The remaining time of a job, in minutes.
+    PanelJobEtaMinutes,
     /// The name of the arrangement with the panels next to each other.
     PanelLayoutSideBySide,
     /// The name of the arrangement with the panels below each other.
@@ -376,6 +382,9 @@ impl TextKey {
             TextKey::PanelJobListTitle => "panel-job-list-title",
             TextKey::PanelJobListEmpty => "panel-job-list-empty",
             TextKey::PanelJobProgress => "panel-job-progress",
+            TextKey::PanelJobRate => "panel-job-rate",
+            TextKey::PanelJobEtaSeconds => "panel-job-eta-seconds",
+            TextKey::PanelJobEtaMinutes => "panel-job-eta-minutes",
             TextKey::PanelLayoutSideBySide => "panel-layout-side-by-side",
             TextKey::PanelLayoutStacked => "panel-layout-stacked",
             TextKey::PanelHintNavigation => "panel-hint-navigation",

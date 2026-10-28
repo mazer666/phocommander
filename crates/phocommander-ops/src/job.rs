@@ -272,6 +272,18 @@ pub struct JobProgress {
 
     /// The progress of the verification, if the mode verifies.
     pub verification: Option<VerificationProgress>,
+
+    /// The bytes per second, if the job has run long enough for a number.
+    ///
+    /// WHY: a user who does not know how long a job will run cannot decide
+    ///       whether to wait or to stop (FR-24).
+    pub bytes_per_second: Option<u64>,
+
+    /// The seconds that the rest of the job will take, if that can be said.
+    ///
+    /// WHY: the estimate needs the total and the rate, and it is therefore
+    ///       missing while the job has just begun (FR-22g).
+    pub eta_seconds: Option<u64>,
 }
 
 /// One entry of the history of a job.

@@ -37,6 +37,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+pub mod rate;
+
 use crate::edit::{Edit, JobControl};
 use crate::error::OpError;
 use crate::job::{JobState, VerificationProgress};
@@ -71,6 +73,19 @@ pub struct ProgressUpdate {
 
     /// The progress of the verification, if the mode verifies.
     pub verification: Option<VerificationProgress>,
+
+    /// The bytes per second, if the job has run long enough for a number.
+    ///
+    /// WHY: a user who does not know how long a job will run cannot decide
+    ///       whether to wait or to stop. The cue therefore carries the rate
+    ///       (FR-24).
+    pub bytes_per_second: Option<u64>,
+
+    /// The seconds that the rest of the job will take, if that can be said.
+    ///
+    /// WHY: the estimate needs the total and the rate, and it is therefore
+    ///       missing while the job has just begun (FR-22g).
+    pub eta_seconds: Option<u64>,
 }
 
 /// The place a running job reports its progress to.
@@ -101,9 +116,63 @@ pub struct JobContext {
     current_item: Option<String>,
     verification: Option<VerificationProgress>,
     state: JobState,
+    /// The clock that measures the rate of the job.
+    ///
+    /// WHY: the rate needs the time, and the time comes from the system.
+    ///       A test moves a clock of its own, so that the rate of a test is
+    ///       a number and not a hope.
+    clock: Box<dyn rate::Clock>,
+    /// The measurement of the rate.
+    rate: rate::Rate,
 }
 
 impl JobContext {
+    /// Builds a context for a running job with a clock of its own.
+    ///
+    /// WHY: a test that measures the rate of a job has to know the time.
+    ///       The clock is therefore a parameter, and the test moves it by
+    ///       hand instead of sleeping and hoping.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::edit::JobControl;
+    /// use phocommander_ops::progress::rate::Seconds;
+    /// use phocommander_ops::progress::{JobContext, ProgressSink, ProgressUpdate};
+    /// use std::sync::Arc;
+    ///
+    /// struct Silent;
+    /// impl ProgressSink for Silent {
+    ///     fn report(&mut self, _update: ProgressUpdate) {}
+    /// }
+    ///
+    /// let control = Arc::new(JobControl::new());
+    /// let clock = Box::new(Seconds::new());
+    /// let mut context = JobContext::with_clock(control, Box::new(Silent), clock);
+    /// context.set_totals(1, 1_000);
+    /// context.add_bytes(1_000);
+    /// context.report();
+    /// ```
+    pub fn with_clock(
+        control: Arc<JobControl>,
+        sink: Box<dyn ProgressSink>,
+        clock: Box<dyn rate::Clock>,
+    ) -> Self {
+        let rate = rate::Rate::new(clock.as_ref());
+        Self {
+            control,
+            sink,
+            clock,
+            rate,
+            items_total: 0,
+            items_done: 0,
+            bytes_total: 0,
+            bytes_done: 0,
+            current_item: None,
+            verification: None,
+            state: JobState::Running,
+        }
+    }
+
     /// Builds a context for a running job.
     ///
     /// EXAMPLE:
@@ -123,9 +192,13 @@ impl JobContext {
     /// assert_eq!(context.items_done(), 0);
     /// ```
     pub fn new(control: Arc<JobControl>, sink: Box<dyn ProgressSink>) -> Self {
+        let clock = Box::new(rate::SystemClock::new());
+        let rate = rate::Rate::new(clock.as_ref());
         Self {
             control,
             sink,
+            clock,
+            rate,
             items_total: 0,
             items_done: 0,
             bytes_total: 0,
@@ -505,6 +578,10 @@ impl JobContext {
             bytes_total: self.bytes_total,
             current_item: self.current_item.clone(),
             verification: self.verification,
+            bytes_per_second: self.rate.bytes_per_second(self.bytes_done, &self.clock),
+            eta_seconds: self
+                .rate
+                .eta(self.bytes_done, self.bytes_total, &self.clock),
         });
     }
 }
