@@ -58,6 +58,9 @@ milestone.
 | Delete `panel.delete` | `F8` | `keyboard`, palette | — | The conflict policy applies; the trash is the default path, "secure delete" is an explicit option. M1 |
 | Application menu `app.menu` | `F9` | `keyboard`, palette | — | The menu bar follows the platform convention: the system menu bar on macOS, in-window on Windows, Linux and BSD. M2 |
 | Quit `app.quit` | `F10` | `keyboard`, palette | — | M0 |
+| German `app.language.de` | `Ctrl+Shift+D` | `keyboard`, palette | `Cmd+Shift+L` on macOS/iPadOS | The language of the interface, changed while the program runs. The setting is written into the configuration file. M2b |
+| English `app.language.en` | `Ctrl+Shift+E` | `keyboard`, palette | `Cmd+Shift+E` on macOS/iPadOS | The language of the interface, changed while the program runs. The setting is written into the configuration file. M2b |
+| French `app.language.fr` | `Ctrl+Shift+F` | `keyboard`, palette | `Cmd+Shift+F` on macOS/iPadOS | The language of the interface, changed while the program runs. The setting is written into the configuration file. M2b |
 | Switch the active pane `panel.switch` | `Tab` | `keyboard`, palette | — | The two panes alternate. M0 |
 | Reload the directory listing `panel.reload` | `Ctrl+R` | `keyboard`, palette | `Cmd+R` on macOS/iPadOS | Re-reads the directory of the active pane. The specification names the binding but assigns it to no milestone. |
 | Swap the two panes `panel.swap` | `Ctrl+U` | `keyboard`, palette | `Cmd+U` on macOS/iPadOS | Exchanges source and target. M1 |

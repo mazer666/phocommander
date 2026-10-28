@@ -72,7 +72,7 @@ checked at every acceptance.
 | **M0** — Foundation | Workspace, CI, configuration, threat model, documentation | **accepted** |
 | **M1** — The working file browser | File system model, job queue, rename, viewer stage 1, archives | **in review** — needs the manual protocol on a real macOS machine |
 | **M2** — Maturity on macOS | Tabs, profiles, safe copy modes, layouts per context | **accepted** |
-| **M2b** — Internationalisation | English and German complete, localised formatting, change of the language at run time | **in work** — the trigger of the change is open |
+| **M2b** — Internationalisation | English and German complete, localised formatting, change of the language at run time | **in work** — the third language and the shop files are open |
 | **M3** — The other desktop platforms | Windows, Linux, BSD | **accepted with two open points** — the manual protocol and the signing |
 | **M4** — Android | SAF, touch context, store | **in work** — the seam of the input stands |
 | **M5** — iPadOS | Document picker, bookmarks | open |
@@ -170,10 +170,10 @@ release that is only half translated is worse than a release in one language.
 |---|---|---|
 | The twelve common rules R-01 to R-22 | all gates | open — measured at the end |
 | **No hardcoded text in the interface** — every visible word goes through a key | `scripts/check-i18n-hardcoded.py` | fulfilled |
-| English and German are complete, with an **identical set of keys** | `scripts/check-i18n-keys.py` | fulfilled — 152 keys in three languages |
+| English and German are complete, with an **identical set of keys** | `scripts/check-i18n-keys.py` | fulfilled — 155 keys in three languages |
 | The chain of the language lookup: requested → language chain → English → **the key itself** | `phocommander-i18n`, a test per level | fulfilled |
 | A missing key yields **never** an empty text | Test | fulfilled |
-| The language is switchable at run time, without a restart; the interface updates itself at once | Test | in work — the configuration file is read once per second, a menu entry is the lasting solution |
+| The language is switchable at run time, without a restart; the interface updates itself at once | Test | **fulfilled** — the actions `app.language.de`, `app.language.en` and `app.language.fr` change it while the program runs, and the choice is written into the configuration file |
 | Numbers, sizes, dates and times follow the system of the language | `phocommander-i18n`, `icu` | fulfilled |
 | **A third language comes without a change of the code** — only a directory of catalogues | `locales/fr/` | fulfilled |
 | The interface language and the language of the file names are independent | Test | open |
@@ -209,7 +209,7 @@ hardcoded and in which a new language needs a single file.
 
 | Point | Evidence | Status |
 |---|---|---|
-| The twelve common rules R-01 to R-22 | all gates | open — 1335 tests, 15 consistency gates, 42 of 42 negative runs green |
+| The twelve common rules R-01 to R-22 | all gates | open — 1703 tests, 15 consistency gates, 42 of 42 negative runs green |
 | The seam of the input: keyboard, pointer, finger, remote control and gamepad bind to the same actions | `phocommander-ui`, `config/keymap.toml` | **fulfilled** |
 | The default bindings in the code, so that the file of the user only overrides them | `keymap_view/defaults.rs` | **fulfilled** |
 | The Gradle project and the Rust `cdylib` | `apps/phocommander-android/` | open |

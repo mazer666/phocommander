@@ -134,7 +134,7 @@ impl Action {
 /// {docs/KEYMAP.md}. The gate of the integration tests compares the three
 /// descriptions, so that a new command cannot appear in the code without
 /// appearing in the documentation.
-const ACTIONS: [Action; 44] = [
+const ACTIONS: [Action; 47] = [
     Action {
         id: "panel.rename",
         category: ActionCategory::File,
@@ -184,6 +184,26 @@ const ACTIONS: [Action; 44] = [
         id: "app.quit",
         category: ActionCategory::Application,
         label: TextKey::ActionAppQuit,
+    },
+    // WHY: the language of the interface is a setting like every other, and
+    //       the user writes it down in the configuration file. A program that
+    //       only reads that file makes the user leave the program, change
+    //       the file and come back. The three actions below change the
+    //       language while the program runs (FR-124).
+    Action {
+        id: "app.language.de",
+        category: ActionCategory::Application,
+        label: TextKey::ActionAppLanguageDe,
+    },
+    Action {
+        id: "app.language.en",
+        category: ActionCategory::Application,
+        label: TextKey::ActionAppLanguageEn,
+    },
+    Action {
+        id: "app.language.fr",
+        category: ActionCategory::Application,
+        label: TextKey::ActionAppLanguageFr,
     },
     Action {
         id: "panel.switch",
@@ -413,7 +433,13 @@ const MENU_GROUPS: [MenuGroup; 4] = [
     },
     MenuGroup {
         title: TextKey::MenuApplication,
-        actions: &["app.menu", "app.quit"],
+        actions: &[
+            "app.menu",
+            "app.language.de",
+            "app.language.en",
+            "app.language.fr",
+            "app.quit",
+        ],
     },
 ];
 
@@ -514,8 +540,11 @@ mod tests {
         let identifiers: Vec<&str> = Action::all().iter().map(|action| action.id()).collect();
 
         // assert
-        assert_eq!(identifiers.len(), 44);
+        assert_eq!(identifiers.len(), 47);
         assert!(identifiers.contains(&"palette.open"));
+        assert!(identifiers.contains(&"app.language.de"));
+        assert!(identifiers.contains(&"app.language.en"));
+        assert!(identifiers.contains(&"app.language.fr"));
         assert!(identifiers.contains(&"panel.tab.9"));
         assert!(identifiers.contains(&"rename.conflict_previous"));
         assert!(identifiers.contains(&"panel.filter"));

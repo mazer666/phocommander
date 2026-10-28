@@ -171,6 +171,24 @@ Darin stehen die Einstellungen, die Tastenbelegung, die Favoriten und — wenn S
 wünschen — die zuletzt geöffneten Verzeichnisse. Mehr dazu in
 [`PRIVACY.md`](../../PRIVACY.md).
 
+### Die Sprache wechseln
+
+Die Oberfläche spricht Deutsch, Englisch und Französisch. Sie wechseln die Sprache
+während das Programm läuft — ohne Neustart, und ohne dass etwas verloren geht:
+
+| Aktion | Taste |
+|---|---|
+| Deutsch | `Ctrl+Shift+D` |
+| Englisch | `Ctrl+Shift+E` |
+| Französisch | `Ctrl+Shift+F` |
+
+Auf macOS und iPadOS ist `Ctrl` die `Cmd`-Taste. Auf einem Touchbildschirm stehen die
+drei Einträge im Menü der Anwendung.
+
+Die Wahl wird in die Konfigurationsdatei geschrieben und bleibt damit nach einem
+Neustart erhalten. Geändert wird nur die eine Zeile, die die Sprache trägt — die
+Kommentare in Ihrer Datei bleiben, wo sie sind.
+
 ---
 
 ## 8. Wenn etwas nicht funktioniert

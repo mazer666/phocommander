@@ -17,6 +17,12 @@
 pub enum TextKey {
     /// The label of the action `action-app-menu`.
     ActionAppMenu,
+    /// The interface in German.
+    ActionAppLanguageDe,
+    /// The interface in English.
+    ActionAppLanguageEn,
+    /// The interface in French.
+    ActionAppLanguageFr,
     /// The label of the action `action-app-quit`.
     ActionAppQuit,
     /// The label of the action `action-palette-open`.
@@ -288,6 +294,9 @@ impl TextKey {
     pub const fn as_str(&self) -> &'static str {
         match self {
             TextKey::ActionAppMenu => "action-app-menu",
+            TextKey::ActionAppLanguageDe => "action-app-language-de",
+            TextKey::ActionAppLanguageEn => "action-app-language-en",
+            TextKey::ActionAppLanguageFr => "action-app-language-fr",
             TextKey::ActionAppQuit => "action-app-quit",
             TextKey::ActionPaletteOpen => "action-palette-open",
             TextKey::ActionPanelCopy => "action-panel-copy",
@@ -430,8 +439,11 @@ impl TextKey {
 /// WHY: the list is the contract between the code and the catalogue. The
 /// gate of the workspace compares it with the key sets of the catalogues, so
 /// that a key cannot be used without a translation.
-const KEYS: [TextKey; 129] = [
+const KEYS: [TextKey; 132] = [
     TextKey::ActionAppMenu,
+    TextKey::ActionAppLanguageDe,
+    TextKey::ActionAppLanguageEn,
+    TextKey::ActionAppLanguageFr,
     TextKey::ActionAppQuit,
     TextKey::ActionPaletteOpen,
     TextKey::ActionPanelCopy,

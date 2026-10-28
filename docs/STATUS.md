@@ -27,7 +27,7 @@ commit — with the commit hash in the headline.
 | What | State |
 |---|---|
 | **The acceptance of M1** | The sixth measurement is written. Three reasons remain: the manual protocol on a real macOS machine, the benchmarks of the specification and the property test of the rename |
-| **The milestone M2b** | The catalogues are in sync, the gate against hardcoded texts stands, the error messages are translated, the sizes and the dates follow the language, and the change of the language reaches the interface in the next frame. Open: the trigger of the change — the configuration file is read once per second, a menu entry would be the lasting solution |
+| **The milestone M2b** | The catalogues are in sync, the gate against hardcoded texts stands, the error messages are translated, the sizes and the dates follow the language, and the language changes while the program runs: the actions `app.language.de`, `app.language.en` and `app.language.fr` write the choice into the configuration file and the interface follows in the next frame. Open: the third language as a product promise and the text files of the stores |
 | **The milestone M3** | Accepted with two open points — the manual protocol on real Windows and BSD machines, and the release signing |
 | **The milestone M4** | The seam of the input is drawn. Keyboard, pointer, finger, remote control and gamepad bind to the same actions. Open: the layout of the finger, the sheet dialogs, the Android build |
 
@@ -35,14 +35,14 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1335 green, 0 red, 0 skipped** |
+| Tests | **1703 green, 0 red, 0 skipped** |
 | Test binaries | 57 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
 | The formatting | `cargo fmt --all -- --check` — **without a deviation** |
 | The licences | `cargo deny check` — advisories, bans, licences, sources: **ok** |
 | The consistency gates | 14, all green |
-| The language catalogues | 3 languages, 152 keys, the same set of keys |
+| The language catalogues | 3 languages, 155 keys, the same set of keys |
 
 ## 4. The decisions of the owner
 
@@ -167,7 +167,7 @@ break:
 |---|---|---|
 | 1 | The manual protocol of M1 on a macOS machine | The sandbox has a Linux system and no screen. The acceptance needs this protocol, otherwise M1 stays open |
 | 2 | The benchmarks of NFR-02, NFR-03 and NFR-09a | They need the release profile and a quiet tree |
-| 3 | The trigger of the change of the language | The desktop build reads the configuration file once per second. An entry in the native menu bar would be the lasting solution — `muda` comes with M3 |
+| 3 | The third language as a product promise | The French catalogue exists and is complete, and it proves that a new language needs no change of the code. What is missing is the decision of the owner, whether the French version is shipped and maintained. |
 | 4 | The layout of the finger in M4 | The interface of the telephone stacks the panels, the rows are 44 points high, the dialogs come as a sheet from the bottom, and there is no hover |
 | 5 | The defaults of the bindings in the CI | `scripts/generate-keymap-defaults.py --check` belongs beside the other gates, so that the file of the defaults does not become stale |
 | 6 | The milestone M3 — Windows, Linux, BSD | The first milestone that runs on another platform. First the questions of the portability: the separator of the paths, the long paths under Windows, the key binding per platform and the matrix of the CI |

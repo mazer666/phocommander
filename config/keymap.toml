@@ -58,6 +58,15 @@
 "app.menu" = "F9"
 # Quit the application.
 "app.quit" = "F10"
+# Change the language of the interface to German.
+# WHY: the setting belongs in the file of the settings, and the file is
+#       changed in the one line that carries it — the comments of the
+#       user stay where they are.
+"app.language.de" = "Ctrl+Shift+D"
+# Change the language of the interface to English.
+"app.language.en" = "Ctrl+Shift+E"
+# Change the language of the interface to French.
+"app.language.fr" = "Ctrl+Shift+F"
 # Switch the active pane.
 "panel.switch" = "Tab"
 # Reload the directory listing of the active pane.
@@ -156,6 +165,12 @@
 "app.menu" = "palette:app.menu"
 # Quit the application.
 "app.quit" = "palette:app.quit"
+# Change the language of the interface to German.
+"app.language.de" = "palette:app.language.de"
+# Change the language of the interface to English.
+"app.language.en" = "palette:app.language.en"
+# Change the language of the interface to French.
+"app.language.fr" = "palette:app.language.fr"
 # Switch the active pane.
 "panel.switch" = "palette:panel.switch"
 # Reload the directory listing of the active pane.
@@ -262,6 +277,15 @@
 "app.menu" = "F9"
 # Quit the application.
 "app.quit" = "F10"
+# Change the language of the interface to German.
+# WHY: the setting belongs in the file of the settings, and the file is
+#       changed in the one line that carries it — the comments of the
+#       user stay where they are.
+"app.language.de" = "Ctrl+Shift+D"
+# Change the language of the interface to English.
+"app.language.en" = "Ctrl+Shift+E"
+# Change the language of the interface to French.
+"app.language.fr" = "Ctrl+Shift+F"
 # Switch the active pane.
 "panel.switch" = "Tab"
 # Reload the directory listing of the active pane.
@@ -366,6 +390,12 @@
 "app.menu" = "palette:app.menu"
 # Quit the application.
 "app.quit" = "palette:app.quit"
+# Change the language of the interface to German.
+"app.language.de" = "palette:app.language.de"
+# Change the language of the interface to English.
+"app.language.en" = "palette:app.language.en"
+# Change the language of the interface to French.
+"app.language.fr" = "palette:app.language.fr"
 # Switch the active pane.
 "panel.switch" = "swipe-left"
 # Reload the directory listing of the active pane.
@@ -459,6 +489,12 @@
 "app.menu" = "palette:app.menu"
 # Quit the application.
 "app.quit" = "palette:app.quit"
+# Change the language of the interface to German.
+"app.language.de" = "palette:app.language.de"
+# Change the language of the interface to English.
+"app.language.en" = "palette:app.language.en"
+# Change the language of the interface to French.
+"app.language.fr" = "palette:app.language.fr"
 # Switch the active pane.
 "panel.switch" = "palette:panel.switch"
 # Reload the directory listing of the active pane.

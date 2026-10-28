@@ -9,7 +9,7 @@
 
 use super::*;
 use crate::Argument;
-use crate::keymap_view::{Key, KeyStroke, KeymapView};
+use crate::keymap_view::{InputEvent, Key, KeyStroke, KeymapView};
 use crate::listing::{Entry, EntryKind};
 use crate::panel::PanelSide;
 use std::collections::BTreeMap;
@@ -448,4 +448,57 @@ fn a_swipe_in_the_touch_context_carries_out_the_action() {
     //       command proves that the action was carried out.
     assert_eq!(app.commands().len(), 1);
     assert!(matches!(app.commands()[0], Command::SwapPanels));
+}
+
+#[test]
+fn the_action_of_a_language_names_the_language_to_the_shell() {
+    // arrange
+    let surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
+    let mut keyboard = BTreeMap::new();
+    keyboard.insert("app.language.de".to_string(), "Ctrl+Shift+D".to_string());
+    keyboard.insert("app.language.en".to_string(), "Ctrl+Shift+E".to_string());
+    let mut tables = BTreeMap::new();
+    tables.insert(Context::Keyboard, keyboard);
+    let keymap = match KeymapView::from_context_tables(&tables) {
+        Ok(keymap) => keymap,
+        Err(error) => panic!("the tables should be valid: {error}"),
+    };
+    let mut app = WorkSurfaceApp::new(surface, keymap, Box::new(Echo));
+
+    // act
+    // WHY: the action is triggered the way the user triggers it — with the
+    //       key of the binding table.
+    app.choose_language("de");
+    let gewaehlt = app.take_language_choice();
+
+    // assert
+    // WHY: the shell takes the choice, writes it into the file of the
+    //       settings and builds the new catalogue (FR-124).
+    assert_eq!(gewaehlt, Some("de".to_string()));
+    // WHY: the choice is taken and not only read, so that it is carried out
+    //       once.
+    assert_eq!(app.take_language_choice(), None);
+}
+
+#[test]
+fn the_actions_of_the_languages_are_bound_in_every_context() {
+    // arrange, act
+    let view =
+        KeymapView::with_defaults(&Default::default()).expect("the defaults should be readable");
+
+    // assert
+    // WHY: the language can be changed in every context — the keyboard, the
+    //       finger and the remote control of the television alike.
+    for (kontext, bindung) in [
+        (Context::Keyboard, "Ctrl+Shift+D"),
+        (Context::Pointer, "Ctrl+Shift+D"),
+    ] {
+        let ereignis =
+            InputEvent::Key(KeyStroke::parse(bindung).expect("the binding should be read"));
+        assert_eq!(
+            view.resolve(kontext, &ereignis).map(|a| a.id()),
+            Some("app.language.de"),
+            "the binding should reach the action in {kontext:?}"
+        );
+    }
 }

@@ -7,6 +7,9 @@
 # documentation.
 
 action-app-menu = Application menu
+action-app-language-de = Deutsch
+action-app-language-en = English
+action-app-language-fr = Français
 action-app-quit = Quit
 action-palette-open = Find an action
 action-panel-copy = Copy

@@ -85,6 +85,11 @@ EXTRA_BINDINGS: dict[str, str] = {
     "selection.by_pattern": "Space",
     "panel.drives": "Alt+F1",
     "panel.parent": "Ctrl+PgUp",
+    # The three actions that change the language of the interface. The
+    # specification names the function in FR-124 and names no key for it.
+    "app.language.de": "Ctrl+Shift+D",
+    "app.language.en": "Ctrl+Shift+E",
+    "app.language.fr": "Ctrl+Shift+F",
     **{f"panel.tab.{number}": f"Ctrl+{number}" for number in range(1, 10)},
 }
 

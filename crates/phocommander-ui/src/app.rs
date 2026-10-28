@@ -111,6 +111,14 @@ pub struct WorkSurfaceApp {
     ///       lives in the application and the shell hands it the events of
     ///       the frame (FR-101).
     pointer: PointerTranslator,
+    /// The language the user has chosen, if there is one.
+    ///
+    /// WHY: the language is a setting of the program, and the file that
+    ///       holds the settings belongs to the composition root. The
+    ///       surface remembers the choice, and the shell takes it — the
+    ///       shell writes it into the file and builds the new catalogue
+    ///       (FR-124).
+    language_choice: Option<String>,
 }
 
 /// A transfer that waits for the confirmation of the user.
@@ -167,6 +175,7 @@ impl WorkSurfaceApp {
             template_store: None,
             egui_context: None,
             pointer: PointerTranslator::new(),
+            language_choice: None,
         }
     }
 
@@ -528,6 +537,12 @@ impl WorkSurfaceApp {
             "selection.by_pattern" => self.defer(action),
             "app.menu" => self.commands.push(Command::Menu),
             "app.quit" => self.commands.push(Command::Quit),
+            // WHY: the language of the interface is a setting of the
+            //       program. The surface names the language, and the shell
+            //       writes it into the configuration file (FR-124).
+            "app.language.de" => self.choose_language("de"),
+            "app.language.en" => self.choose_language("en"),
+            "app.language.fr" => self.choose_language("fr"),
             "palette.open" => self.defer(action),
             "viewer.find_next" | "viewer.find_previous" => self.defer(action),
             "rename.conflict_next" | "rename.conflict_previous" => self.defer(action),

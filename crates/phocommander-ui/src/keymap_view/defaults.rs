@@ -42,6 +42,9 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.delete".to_string(), "F8".to_string());
         tabelle.insert("app.menu".to_string(), "F9".to_string());
         tabelle.insert("app.quit".to_string(), "F10".to_string());
+        tabelle.insert("app.language.de".to_string(), "Ctrl+Shift+D".to_string());
+        tabelle.insert("app.language.en".to_string(), "Ctrl+Shift+E".to_string());
+        tabelle.insert("app.language.fr".to_string(), "Ctrl+Shift+F".to_string());
         tabelle.insert("panel.switch".to_string(), "Tab".to_string());
         tabelle.insert("panel.reload".to_string(), "Ctrl+R".to_string());
         tabelle.insert("panel.swap".to_string(), "Ctrl+U".to_string());
@@ -100,6 +103,9 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.delete".to_string(), "F8".to_string());
         tabelle.insert("app.menu".to_string(), "F9".to_string());
         tabelle.insert("app.quit".to_string(), "F10".to_string());
+        tabelle.insert("app.language.de".to_string(), "Ctrl+Shift+D".to_string());
+        tabelle.insert("app.language.en".to_string(), "Ctrl+Shift+E".to_string());
+        tabelle.insert("app.language.fr".to_string(), "Ctrl+Shift+F".to_string());
         tabelle.insert("panel.switch".to_string(), "Tab".to_string());
         tabelle.insert("panel.reload".to_string(), "Ctrl+R".to_string());
         tabelle.insert("panel.swap".to_string(), "Ctrl+U".to_string());
@@ -167,6 +173,18 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         );
         tabelle.insert("app.menu".to_string(), "palette:app.menu".to_string());
         tabelle.insert("app.quit".to_string(), "palette:app.quit".to_string());
+        tabelle.insert(
+            "app.language.de".to_string(),
+            "palette:app.language.de".to_string(),
+        );
+        tabelle.insert(
+            "app.language.en".to_string(),
+            "palette:app.language.en".to_string(),
+        );
+        tabelle.insert(
+            "app.language.fr".to_string(),
+            "palette:app.language.fr".to_string(),
+        );
         tabelle.insert("panel.switch".to_string(), "swipe-left".to_string());
         tabelle.insert(
             "panel.reload".to_string(),
@@ -288,6 +306,18 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         );
         tabelle.insert("app.menu".to_string(), "palette:app.menu".to_string());
         tabelle.insert("app.quit".to_string(), "palette:app.quit".to_string());
+        tabelle.insert(
+            "app.language.de".to_string(),
+            "palette:app.language.de".to_string(),
+        );
+        tabelle.insert(
+            "app.language.en".to_string(),
+            "palette:app.language.en".to_string(),
+        );
+        tabelle.insert(
+            "app.language.fr".to_string(),
+            "palette:app.language.fr".to_string(),
+        );
         tabelle.insert(
             "panel.switch".to_string(),
             "palette:panel.switch".to_string(),
@@ -416,6 +446,18 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         );
         tabelle.insert("app.menu".to_string(), "palette:app.menu".to_string());
         tabelle.insert("app.quit".to_string(), "palette:app.quit".to_string());
+        tabelle.insert(
+            "app.language.de".to_string(),
+            "palette:app.language.de".to_string(),
+        );
+        tabelle.insert(
+            "app.language.en".to_string(),
+            "palette:app.language.en".to_string(),
+        );
+        tabelle.insert(
+            "app.language.fr".to_string(),
+            "palette:app.language.fr".to_string(),
+        );
         tabelle.insert(
             "panel.switch".to_string(),
             "palette:panel.switch".to_string(),

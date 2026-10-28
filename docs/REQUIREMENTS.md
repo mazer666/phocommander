@@ -349,7 +349,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-121 | The catalogue key set is identical in every language | M2b | Must | Gate comparing the catalogues |
 | FR-122 | A missing translation falls back to English and then to the key, never to an empty string | M2b | Must | Unit test |
 | FR-123 | Numbers, sizes, dates and times follow the system locale | M2b | Must | Unit test |
-| FR-124 | The language can be changed at run time without a restart | M2b | Must | Manual test |
+| FR-124 | The language can be changed at run time without a restart, through the actions `app.language.de`, `app.language.en` and `app.language.fr`; the choice is written into the configuration file | M2b | Must | Manual test |
 | FR-125 | Adding a language requires no change to the source code | M2b | Must | Documentation review |
 | FR-126 | The interface language and the content language are independent | M2b | Should | Manual test |
 

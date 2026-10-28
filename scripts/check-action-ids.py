@@ -89,6 +89,11 @@ DERIVED_BINDINGS = {
     "panel.tree.toggle": "Ctrl+B",
     "panel.quick_view.toggle": "Ctrl+Q",
     "panel.job_list.toggle": "Ctrl+J",
+    # The three actions that change the language of the interface. The
+    # specification names the function in FR-124 and names no key for it.
+    "app.language.de": "Ctrl+Shift+D",
+    "app.language.en": "Ctrl+Shift+E",
+    "app.language.fr": "Ctrl+Shift+F",
 }
 
 # The action IDs that are not part of the catalogue but of the surface.

@@ -24,6 +24,7 @@
 //! # }
 //! ```
 
+pub mod edit;
 pub mod loader;
 pub mod notice;
 pub mod rule;

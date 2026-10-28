@@ -93,6 +93,40 @@ impl DesktopApp {
         self.locale = locale;
     }
 
+    /// Carries out the language the user has chosen in the interface.
+    ///
+    /// WHY: the actions `app.language.de`, `app.language.en` and
+    ///       `app.language.fr` name the language in the interface. The
+    ///       choice belongs to the user, and it belongs in the file of the
+    ///       settings — the place where the user keeps what belongs to the
+    ///       machine. The choice is therefore written into the file and
+    ///       applied to the screen at once, without a restart (FR-124).
+    ///
+    /// WHY: the file is changed with the editor of the configuration, and
+    ///       not written anew. The file belongs to the user: it carries
+    ///       comments that explain every setting, and a program that
+    ///       rewrites the whole file takes them away.
+    pub fn apply_the_chosen_language(&mut self) {
+        let Some(locale) = self.surface.take_language_choice() else {
+            return;
+        };
+
+        if let Some(path) = self.watcher.path().map(Path::to_path_buf)
+            && let Err(error) = write_the_language(&path, &locale)
+        {
+            // WHY: a file that cannot be written is not a reason to stop
+            //       the program. The language changes on the screen all the
+            //       same, and the file keeps the language it had.
+            eprintln!("the language cannot be written down: {error}");
+        }
+
+        // WHY: the locale of a catalogue is the name of its directory, and
+        //       a locale whose catalogue does not exist falls back to the
+        //       chain of the lookup — the interface stays readable.
+        let locale = Locale::of(&locale);
+        self.set_language(locale);
+    }
+
     /// Applies the language of the configuration file, if the file names
     /// another language than the one on the screen.
     ///
@@ -118,8 +152,30 @@ impl DesktopApp {
     }
 }
 
+/// Writes the language into the configuration file.
+///
+/// WHY: the file belongs to the user. The editor of the configuration
+///       changes the one line that carries the language and leaves the
+///       comments and the order of the file as they are. A program that
+///       writes the file anew would take the comments away.
+fn write_the_language(path: &Path, locale: &str) -> Result<(), String> {
+    let text = std::fs::read_to_string(path).map_err(|error| error.to_string())?;
+    let language = match locale {
+        "de" => phocommander_config::Language::De,
+        "en" => phocommander_config::Language::En,
+        _ => phocommander_config::Language::System,
+    };
+    let geaendert = phocommander_config::edit::set_language(&text, language)
+        .map_err(|error| error.to_string())?;
+    std::fs::write(path, geaendert).map_err(|error| error.to_string())
+}
+
 impl eframe::App for DesktopApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        // WHY: the choice of the user comes first. It is the language the
+        //       user has asked for, and the file may still name the old one
+        //       until the writing is done.
+        self.apply_the_chosen_language();
         self.apply_the_language_of_the_configuration();
         self.surface.update(ui);
         // WHY: the configuration file is watched, so the program wakes up
@@ -127,5 +183,54 @@ impl eframe::App for DesktopApp {
         //       of the language would only be noticed when the user happens
         //       to press a key (FR-124).
         ui.ctx().request_repaint_after(CHECK_INTERVAL);
+    }
+}
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_language_is_written_into_the_file_of_the_settings() {
+        // arrange
+        let directory = std::env::temp_dir().join("phocommander-language-write-test");
+        std::fs::create_dir_all(&directory)
+            .unwrap_or_else(|error| panic!("the directory should be created: {error}"));
+        let path = directory.join("config.toml");
+        std::fs::write(
+            &path,
+            "# The settings of the user.\n[general]\n# The language.\nlanguage = \"de\"\n",
+        )
+        .unwrap_or_else(|error| panic!("the file should be written: {error}"));
+
+        // act
+        write_the_language(&path, "en")
+            .unwrap_or_else(|error| panic!("the language should be written: {error}"));
+
+        // assert
+        let text = std::fs::read_to_string(&path)
+            .unwrap_or_else(|error| panic!("the file should be read: {error}"));
+        // WHY: the comments of the user stay where they are, and only the
+        //       value of the one line changes.
+        assert_eq!(
+            text,
+            "# The settings of the user.\n[general]\n# The language.\nlanguage = \"en\"\n"
+        );
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn a_file_that_cannot_be_written_gives_an_error_and_no_panic() {
+        // arrange
+        let path = std::env::temp_dir().join("phocommander-language-missing-test/config.toml");
+
+        // act
+        let ergebnis = write_the_language(&path, "en");
+
+        // assert
+        assert!(ergebnis.is_err());
     }
 }

@@ -7,6 +7,9 @@
 # clés dans le fichier de configuration et dans la documentation.
 
 action-app-menu = Menu de l'application
+action-app-language-de = Deutsch
+action-app-language-en = English
+action-app-language-fr = Français
 action-app-quit = Quitter
 action-palette-open = Trouver une action
 action-panel-copy = Copier

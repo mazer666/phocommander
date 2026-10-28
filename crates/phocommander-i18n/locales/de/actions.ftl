@@ -6,6 +6,9 @@
 # weil sie Schlüssel in der Konfigurationsdatei und in der Dokumentation sind.
 
 action-app-menu = Anwendungsmenü
+action-app-language-de = Deutsch
+action-app-language-en = English
+action-app-language-fr = Français
 action-app-quit = Beenden
 action-palette-open = Aktion suchen
 action-panel-copy = Kopieren

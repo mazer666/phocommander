@@ -167,6 +167,24 @@ operating system prescribes:
 It holds the settings, the key bindings, the favourites and — if you want that — the
 recently opened directories. More about that in [`PRIVACY.md`](../../PRIVACY.md).
 
+### Changing the language
+
+The interface speaks German, English and French. You change the language while the
+program is running — no restart, and nothing is lost:
+
+| Action | Key |
+|---|---|
+| German | `Ctrl+Shift+D` |
+| English | `Ctrl+Shift+E` |
+| French | `Ctrl+Shift+F` |
+
+On macOS and iPadOS `Ctrl` is `Cmd`. On a touch screen the three entries lie in the
+menu of the application.
+
+The choice is written into the configuration file, so that it stays after a restart.
+Only the one line that carries the language is changed — the comments in your file
+stay where they are.
+
 ---
 
 ## 8. If something does not work

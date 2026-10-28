@@ -110,6 +110,49 @@ impl WorkSurfaceApp {
     /// app.set_catalogue(Box::new(German));
     /// assert_eq!(app.catalogue().lookup("common-cancel"), Some("Abbrechen".to_string()));
     /// ```
+    ///
+    /// Names the language the user has chosen.
+    ///
+    /// WHY: the language of the interface is a setting of the program, and
+    ///       the file that holds the settings belongs to the composition
+    ///       root. The surface therefore remembers the choice and lets the
+    ///       shell take it — the shell writes it into the file and builds
+    ///       the new catalogue (FR-124).
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::app::WorkSurfaceApp;
+    /// # use phocommander_ui::{Catalogue, WorkSurface};
+    /// # use phocommander_ui::keymap_view::KeymapView;
+    /// # use std::path::PathBuf;
+    /// # struct Empty;
+    /// # impl Catalogue for Empty {
+    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::Argument<'_>]) -> Option<String> {
+    /// #         None
+    /// #     }
+    /// # }
+    /// # let keymap = KeymapView::from_context_tables(&Default::default()).unwrap();
+    /// # let surface = WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var"));
+    /// # let mut app = WorkSurfaceApp::new(surface, keymap, Box::new(Empty));
+    /// app.choose_language("de");
+    /// assert_eq!(app.take_language_choice(), Some("de".to_string()));
+    /// ```
+    pub fn choose_language(&mut self, locale: &str) {
+        self.language_choice = Some(locale.to_string());
+    }
+
+    /// Takes the language the user has chosen, if there is one.
+    ///
+    /// WHY: the choice is taken, and not only read, so that it is carried
+    ///       out once. The shell asks for it once per frame.
+    pub fn take_language_choice(&mut self) -> Option<String> {
+        self.language_choice.take()
+    }
+
+    /// Replaces the catalogue of the texts of the interface.
+    ///
+    /// WHY: the shell hands the catalogue over when the language changes, and
+    ///       the change reaches the screen in the next frame.
     pub fn set_catalogue(&mut self, catalogue: Box<dyn Catalogue>) {
         self.catalogue = catalogue;
         self.request_repaint();
