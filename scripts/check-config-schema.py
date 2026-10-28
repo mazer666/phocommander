@@ -60,6 +60,8 @@ EXPECTED_VALUES = {
     "panels|layout": "horizontal",
     "panels|right_click_action": "context_menu",
     "panels|overwrite_policy": "ask",
+    "copy|mode": "verified",
+    "copy|sync_mode": "sync-preview",
     "viewer|max_file_size": 10485760,
     "viewer|max_text_size": 4194304,
     "archives|max_extracted_bytes": 2147483648,

@@ -38,10 +38,29 @@
 
 use std::path::Path;
 
+use std::sync::Arc;
+
 use phocommander_i18n::Locale;
+use phocommander_ops::copy::CopyMode;
+use phocommander_ops::queue::JobQueue;
 use phocommander_ui::WorkSurfaceApp;
 
+use crate::execute::submit;
+
 use crate::language::{CHECK_INTERVAL, ConfigWatcher, InterfaceLanguage, locale_of};
+
+/// A waiting room that has no file system.
+///
+/// WHY: the host of the sandbox has no file system of its own, and a
+///       waiting room without one can hold the jobs but cannot carry them
+///       out. It is the fallback for the tests and for the places where the
+///       application is built without a host.
+fn queue_without_a_file() -> Arc<JobQueue> {
+    Arc::new(JobQueue::new(
+        Arc::new(phocommander_ops::fake_fs::FakeFileSystem::new()),
+        1,
+    ))
+}
 
 /// The application of the desktop build.
 pub struct DesktopApp {
@@ -53,16 +72,52 @@ pub struct DesktopApp {
 
     /// The watcher of the configuration file.
     watcher: ConfigWatcher,
+
+    /// The waiting room of the operations.
+    ///
+    /// WHY: the commands of the surface become the jobs of the waiting
+    ///       room, and the worker of the room carries them out. Without
+    ///       the room the commands of the surface would stay commands and
+    ///       nothing would ever be copied.
+    queue: Arc<JobQueue>,
+
+    /// The way a file is copied.
+    ///
+    /// WHY: the way is a setting of the user (FR-22b), and it stands in
+    ///       the configuration file.
+    copy_mode: CopyMode,
 }
 
 impl DesktopApp {
     /// The application with a shell, a locale and a watcher.
     pub fn new(surface: WorkSurfaceApp, locale: Locale, watcher: ConfigWatcher) -> Self {
+        Self::with_queue(surface, locale, watcher, queue_without_a_file())
+    }
+
+    /// The application with a waiting room of its own.
+    ///
+    /// WHY: the waiting room holds the file system of the host, and the
+    ///       host of the sandbox has no file system of its own. The
+    ///       application therefore takes the room from outside, and the
+    ///       composition root builds it with the file system of the host.
+    pub fn with_queue(
+        surface: WorkSurfaceApp,
+        locale: Locale,
+        watcher: ConfigWatcher,
+        queue: Arc<JobQueue>,
+    ) -> Self {
         Self {
             surface,
             locale,
             watcher,
+            queue,
+            copy_mode: CopyMode::Verified,
         }
+    }
+
+    /// Sets the way a file is copied.
+    pub fn set_copy_mode(&mut self, mode: CopyMode) {
+        self.copy_mode = mode;
     }
 
     /// The shell of the interface.
@@ -177,6 +232,20 @@ impl eframe::App for DesktopApp {
         //       until the writing is done.
         self.apply_the_chosen_language();
         self.apply_the_language_of_the_configuration();
+
+        // WHY: the commands of the surface are the requests of the user, and
+        //       they become the jobs of the waiting room. Without this the
+        //       copy, the move, the deletion and the rename would stay
+        //       commands and nothing would ever be carried out.
+        let commands = self.surface.take_commands();
+        if !commands.is_empty() {
+            submit(
+                &commands,
+                self.surface.surface(),
+                &self.queue,
+                self.copy_mode,
+            );
+        }
         self.surface.update(ui);
         // WHY: the configuration file is watched, so the program wakes up
         //       once a second to look at it. Without that wake-up a change

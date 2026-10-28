@@ -15,13 +15,17 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use phocommander_config::{
-    Config, ConfigNotice, EffectiveSecurity, NoticeSeverity, resolve_security,
+    Config, ConfigNotice, CopyMode as ConfigCopyMode, EffectiveSecurity, NoticeSeverity,
+    resolve_security,
 };
 use phocommander_desktop::desktop::DesktopApp;
 use phocommander_desktop::filesystem::HostFileSystem;
+use phocommander_desktop::jobs::QueueJobSource;
 use phocommander_desktop::language::{ConfigWatcher, InterfaceLanguage, locale_of};
 use phocommander_desktop::rename::{FileTemplateStore, OpsRenameEngine};
 use phocommander_desktop::security::SecurityPlan;
+use phocommander_ops::copy::CopyMode as OpsCopyMode;
+use phocommander_ops::queue::JobQueue;
 use phocommander_platform::config_directory;
 use phocommander_ui::{
     Context, KeymapView, Metrics, Platform, Theme, WorkSurface, WorkSurfaceApp, visuals,
@@ -100,7 +104,33 @@ pub fn build_desktop_app(config: &Config) -> DesktopApp {
         None => ConfigWatcher::without_file(),
     };
 
-    DesktopApp::new(build_application(config), locale, watcher)
+    // WHY: the waiting room holds the file system of the host, and the
+    //       worker of the room carries the jobs out. The room is therefore
+    //       built here, where the file system of the host lives.
+    let queue = Arc::new(JobQueue::new(Arc::new(HostFileSystem::new()), 1));
+
+    // WHY: the list of the jobs reads from the same room, so that the user
+    //       sees the jobs that are really running.
+    let application =
+        build_application(config).with_job_source(Box::new(QueueJobSource::new(queue.clone())));
+
+    let mut app = DesktopApp::with_queue(application, locale, watcher, queue);
+    // WHY: the way a file is copied is a setting of the user (FR-22b).
+    app.set_copy_mode(copy_mode_of(config));
+    app
+}
+
+/// The way a file is copied, out of the configuration file.
+///
+/// WHY: the configuration names the way in the spelling of the catalogue,
+///       and the operations know the way in their own spelling. The two
+///       meet here, in the one place that knows both.
+fn copy_mode_of(config: &Config) -> OpsCopyMode {
+    match config.copy.mode {
+        ConfigCopyMode::Quick => OpsCopyMode::Quick,
+        ConfigCopyMode::Atomic => OpsCopyMode::Atomic,
+        ConfigCopyMode::Verified => OpsCopyMode::Verified,
+    }
 }
 
 /// Builds the application.

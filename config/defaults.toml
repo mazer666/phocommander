@@ -43,6 +43,19 @@ show_system_files = false
 # the IEC prefixes KiB, MiB, GiB).
 file_size_format = "binary"
 
+# The ways of copying and of synchronising.
+[copy]
+# The way a file is copied: "quick" copies the bytes without a check,
+# "verified" compares the checksums of the source and of the target, and
+# "atomic" writes into a temporary file, checks it and renames it.
+mode = "verified"
+# The way a directory is synchronised: "sync-mirror" makes the target an
+# exact copy, "sync-update" brings it up to date without deleting, and
+# "sync-two-way" lets the newer version win on both sides. The default
+# moves no data at all: "sync-preview" only produces the plan, and the
+# user sees it before anything is moved.
+sync_mode = "sync-preview"
+
 # Behaviour of the two-panel workspace.
 [panels]
 # Default arrangement of the two panes: "horizontal" (side by side) or

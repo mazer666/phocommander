@@ -291,6 +291,74 @@ impl SmbEncryption {
     }
 }
 
+/// The way a file is copied.
+///
+/// WHY: the specification names three ways of copying and four ways of
+/// synchronising (FR-22b). The values live here, in the crate of the
+/// configuration, and not in the crate of the operations: a crate below
+/// `crates/` may not depend on a sibling, and the configuration is the
+/// crate that every other one may read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CopyMode {
+    /// The file is copied byte by byte, without a check.
+    Quick,
+
+    /// The file is copied and the checksums are compared.
+    #[default]
+    Verified,
+
+    /// The file is written into a temporary file, checked and renamed.
+    Atomic,
+}
+
+impl CopyMode {
+    /// The spelling of this value in the configuration file.
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::Quick => "quick",
+            Self::Verified => "verified",
+            Self::Atomic => "atomic",
+        }
+    }
+}
+
+/// The way a directory is synchronised.
+///
+/// WHY: the four ways differ in what they delete and in what they take
+///       from which side. The preview moves no data at all, and it is the
+///       default: a synchronisation that moves data before the user has
+///       seen the plan is a synchronisation that the user cannot stop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SyncMode {
+    /// The destination becomes an exact copy of the source.
+    SyncMirror,
+
+    /// The destination is brought up to date with the source; nothing is
+    /// deleted.
+    SyncUpdate,
+
+    /// The newer version wins in both directions.
+    SyncTwoWay,
+
+    /// No data is moved; the comparison produces a plan.
+    #[default]
+    SyncPreview,
+}
+
+impl SyncMode {
+    /// The spelling of this value in the configuration file.
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::SyncMirror => "sync-mirror",
+            Self::SyncUpdate => "sync-update",
+            Self::SyncTwoWay => "sync-two-way",
+            Self::SyncPreview => "sync-preview",
+        }
+    }
+}
+
 #[cfg(test)]
 // WHY: a test may fail loudly when its arrangement is wrong. The rule
 // that forbids a panic applies to the production code, and it is enforced

@@ -25,6 +25,7 @@
 
 pub mod catalogue;
 pub mod desktop;
+pub mod execute;
 pub mod filesystem;
 pub mod jobs;
 pub mod language;

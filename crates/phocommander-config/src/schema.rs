@@ -23,8 +23,8 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::values::{
-    FileSizeFormat, InputContext, Language, LogLevel, OverwritePolicy, PanelLayout,
-    RightClickAction, SmbEncryption, SmbSigning, Theme,
+    CopyMode, FileSizeFormat, InputContext, Language, LogLevel, OverwritePolicy, PanelLayout,
+    RightClickAction, SmbEncryption, SmbSigning, SyncMode, Theme,
 };
 
 /// The complete configuration of Phocommander.
@@ -49,6 +49,10 @@ pub struct Config {
     /// The behaviour of the two panels.
     #[serde(default)]
     pub panels: Panels,
+
+    /// The ways of copying and of synchronising.
+    #[serde(default)]
+    pub copy: Copy,
 
     /// Overrides of the platform default key bindings.
     #[serde(default)]
@@ -147,6 +151,22 @@ pub struct Appearance {
     /// The format in which file sizes are shown.
     #[serde(default)]
     pub file_size_format: FileSizeFormat,
+}
+
+/// The {[copy]} section of the configuration file.
+///
+/// WHY: the way a file is copied and the way a directory is synchronised
+///       are settings of the user, and they stand in the file like every
+///       other setting (FR-22b).
+#[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
+pub struct Copy {
+    /// The way a file is copied.
+    #[serde(default)]
+    pub mode: CopyMode,
+
+    /// The way a directory is synchronised.
+    #[serde(default)]
+    pub sync_mode: SyncMode,
 }
 
 /// The {[panels]} section of the configuration file.

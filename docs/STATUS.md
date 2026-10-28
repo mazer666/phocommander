@@ -30,12 +30,13 @@ commit — with the commit hash in the headline.
 | **The milestone M2b** | The catalogues are in sync, the gate against hardcoded texts stands, the error messages are translated, the sizes and the dates follow the language, and the language changes while the program runs: the actions `app.language.de`, `app.language.en` and `app.language.fr` write the choice into the configuration file and the interface follows in the next frame. Open: the third language as a product promise and the text files of the stores |
 | **The milestone M3** | Accepted with two open points — the manual protocol on real Windows and BSD machines, and the release signing |
 | **The milestone M4** | The seam of the input is drawn. Keyboard, pointer, finger, remote control and gamepad bind to the same actions. Open: the layout of the finger, the sheet dialogs, the Android build |
+| **The chain from the key to the file** | The commands of the surface became the jobs of the waiting room. The copy, the move, the deletion and the rename now reach the file system of the host. Open: the run on a machine with a screen, which the sandbox does not have |
 
 ## 3. The measured state
 
 | What | Number |
 |---|---|
-| Tests | **1910 green, 0 red, 0 skipped** |
+| Tests | **1839 green, 0 red, 0 skipped** |
 | Test binaries | 57 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -144,6 +145,7 @@ and in the tests:
     measured on them whether every action is bound. The contexts `pointer` and `touch` were
     unchecked — and would have stayed empty without a gate noticing.
 36. The formatter of `benches/interaction.rs` had never run.
+37. **The commands of the surface were never read.** The surface produced the commands — copy, move, delete, rename — and `take_commands()` had no caller in the whole tree. The engine, the waiting room and the interface existed, and nothing joined them: the application could not copy a file. The adapter that translates the commands into the jobs closes the chain.
 
 ## 6. The rules that follow from this milestone
 

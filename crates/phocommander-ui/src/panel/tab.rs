@@ -471,3 +471,107 @@ impl Tab {
         self.refresh();
     }
 }
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+mod tests {
+    use super::*;
+    use crate::listing::{Entry, EntryKind};
+
+    /// A tab with three entries.
+    fn tab() -> Tab {
+        let mut tab = Tab::new(PathBuf::from("/photos"));
+        tab.set_entries(vec![
+            Entry::new("a.txt", EntryKind::File),
+            Entry::new("b.txt", EntryKind::File),
+            Entry::new("c.txt", EntryKind::File),
+        ]);
+        tab
+    }
+
+    #[test]
+    fn a_new_tab_shows_the_columns_and_the_detailed_list() {
+        // arrange
+        let tab = Tab::new(PathBuf::from("/photos"));
+
+        // act, assert
+        // WHY: the order of a tab is the order of the specification: the
+        //       name comes first, and the rest follows (FR-18).
+        assert_eq!(tab.columns(), Column::all().as_slice());
+        assert_eq!(tab.view(), ViewMode::Details);
+    }
+
+    #[test]
+    fn every_tab_has_its_own_path_and_its_own_cursor() {
+        // arrange
+        let mut erstes = tab();
+        let mut zweites = tab();
+
+        // act
+        erstes.set_path(PathBuf::from("/photos/2024"));
+        erstes.set_cursor(2);
+        zweites.set_cursor(0);
+
+        // assert
+        // WHY: two tabs of one panel are two directories, and the cursor of
+        //       one is not the cursor of the other.
+        assert_eq!(erstes.path(), Path::new("/photos/2024"));
+        assert_eq!(zweites.path(), Path::new("/photos"));
+        assert_eq!(erstes.cursor(), 2);
+        assert_eq!(zweites.cursor(), 0);
+    }
+
+    #[test]
+    fn the_sort_of_a_tab_is_the_one_of_its_own() {
+        // arrange
+        let mut erstes = tab();
+        let zweites = tab();
+
+        // act
+        erstes.set_sort(Sort::by(crate::listing::SortKey::Size));
+
+        // assert
+        // WHY: the sort belongs to the tab, and not to the panel. Two tabs
+        //       of one panel can show the same directory in two orders.
+        assert_eq!(erstes.sort(), Sort::by(crate::listing::SortKey::Size));
+        assert_eq!(zweites.sort(), Sort::by(crate::listing::SortKey::Name));
+    }
+
+    #[test]
+    fn the_selection_of_a_tab_is_its_own() {
+        // arrange
+        let mut erstes = tab();
+        let zweites = tab();
+
+        // act
+        erstes.toggle_at(0);
+        erstes.toggle_at(2);
+
+        // assert
+        // WHY: the marks of a tab are the marks of that tab. A tab that
+        //       takes the marks of another one would delete the wrong
+        //       files.
+        assert!(erstes.is_marked(0));
+        assert!(erstes.is_marked(2));
+        assert!(!zweites.is_marked(0));
+        assert_eq!(erstes.marked_entries().len(), 2);
+    }
+
+    #[test]
+    fn the_filter_of_a_tab_is_its_own() {
+        // arrange
+        let mut erstes = tab();
+        let zweites = tab();
+
+        // act
+        erstes.set_filter_text("a");
+
+        // assert
+        // WHY: the filter belongs to the tab, and not to the panel.
+        assert_eq!(erstes.filter_text(), "a");
+        assert_eq!(zweites.filter_text(), "");
+        assert_eq!(erstes.matching_count(), 1);
+    }
+}

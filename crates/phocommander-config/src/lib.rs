@@ -48,6 +48,6 @@ pub use session::{
     SESSION_FILE_NAME, SessionError, SessionState, load_session_state, write_session_state,
 };
 pub use values::{
-    FileSizeFormat, InputContext, Language, LogLevel, OverwritePolicy, PanelLayout,
-    RightClickAction, SmbEncryption, SmbSigning, Theme,
+    CopyMode, FileSizeFormat, InputContext, Language, LogLevel, OverwritePolicy, PanelLayout,
+    RightClickAction, SmbEncryption, SmbSigning, SyncMode, Theme,
 };

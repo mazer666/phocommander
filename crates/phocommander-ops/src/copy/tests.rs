@@ -571,3 +571,66 @@ fn the_policy_that_asks_leaves_the_existing_target_alone_until_somebody_answers(
         .unwrap_or_else(|error| panic!("the file could not be read: {error}"));
     assert_eq!(content, b"old");
 }
+
+#[test]
+fn a_job_collects_several_failures_and_keeps_going() {
+    // arrange
+    // WHY: a copy of a thousand files fails on the file that is locked, and
+    //       it fails on the next one as well. A job that stops at the first
+    //       failure would leave the user with nine hundred and ninety-eight
+    //       files copied and no idea which two are missing. The job
+    //       therefore collects every failure and runs to the end (FR-25).
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"a");
+    write_file(&fs, "/photos/b.txt", b"b");
+    write_file(&fs, "/photos/c.txt", b"c");
+    fs.fail_copy_of(Path::new("/photos/a.txt"));
+    fs.fail_copy_of(Path::new("/photos/c.txt"));
+    let mut context = context();
+    let request = CopyRequest::new("/photos", "/backup").with_mode(CopyMode::Quick);
+
+    // act
+    let outcome = execute_copy(&fs, &request, &mut context)
+        .unwrap_or_else(|error| panic!("the copy failed: {error}"));
+
+    // assert
+    assert_eq!(outcome.errors.len(), 2, "{:?}", outcome.errors);
+    // WHY: the file between the two failures was copied. The job did not
+    //       stop at the first failure.
+    assert_eq!(outcome.files_copied, 1);
+    // WHY: and every failure names the file it belongs to.
+    let pfade: Vec<String> = outcome
+        .errors
+        .iter()
+        .map(|error| error.item().to_string_lossy().to_string())
+        .collect();
+    assert!(pfade.contains(&"/photos/a.txt".to_string()), "{pfade:?}");
+    assert!(pfade.contains(&"/photos/c.txt".to_string()), "{pfade:?}");
+}
+
+#[test]
+fn the_items_that_failed_can_be_copied_again_on_their_own() {
+    // arrange
+    // WHY: the retry of the failed items (FR-22k) copies the items that
+    //       failed and nothing else. The list of the failures is therefore
+    //       the list that the retry uses.
+    let fs = FakeFileSystem::new();
+    write_file(&fs, "/photos/a.txt", b"a");
+    write_file(&fs, "/photos/b.txt", b"b");
+    fs.fail_copy_of(Path::new("/photos/a.txt"));
+    let mut context = context();
+    let request = CopyRequest::new("/photos", "/backup").with_mode(CopyMode::Quick);
+
+    // act
+    let outcome = execute_copy(&fs, &request, &mut context)
+        .unwrap_or_else(|error| panic!("the copy failed: {error}"));
+
+    // assert
+    assert_eq!(outcome.errors.len(), 1);
+    let fehlgeschlagen = outcome
+        .errors
+        .first()
+        .map(|error| error.item().to_path_buf())
+        .unwrap_or_else(|| panic!("the failure should name its file"));
+    assert_eq!(fehlgeschlagen, Path::new("/photos/a.txt"));
+}
