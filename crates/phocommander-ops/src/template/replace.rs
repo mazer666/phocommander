@@ -162,3 +162,140 @@ pub(crate) fn apply(rules: &[Compiled], text: &str) -> String {
     }
     result
 }
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+mod tests {
+    use super::*;
+    use crate::template::{RenameInput, RenameRule, form_names};
+    use proptest::prelude::*;
+
+    /// A text and a rule that may be anything.
+    fn rule() -> impl Strategy<Value = (String, String, bool)> {
+        (any::<String>(), any::<String>(), proptest::bool::ANY)
+    }
+
+    proptest! {
+        /// The rules of a rename never panic and never lose the text.
+        ///
+        /// WHY: the user writes the search text and the replacement, and
+        ///       the engine has to survive whatever they write. A rule that
+        ///       panics would take the whole rename with it, and a rule
+        ///       that loses the text would produce names that the user
+        ///       never asked for.
+        #[test]
+        fn the_rules_of_a_rename_never_panic_and_never_lose_the_text(
+            (search, replacement, is_regex) in rule(),
+            text in any::<String>(),
+        ) {
+            // arrange
+            let regel = ReplaceRule {
+                search: search.clone(),
+                replacement: replacement.clone(),
+                regex: is_regex,
+            };
+
+            // act
+            let ergebnis = compile(&[regel]);
+
+            // assert
+            // WHY: a pattern that the engine cannot read is an error and
+            //       not a panic. The error stops the formation, so that a
+            //       broken rule changes no name at all.
+            if is_regex {
+                // Der Fehler ist erlaubt — der entscheidende Punkt ist, dass
+                // es keiner ist, der das Programm beendet.
+                if let Ok(compiled) = ergebnis {
+                    let _ = apply(&compiled, &text);
+                }
+            } else {
+                let compiled = ergebnis.unwrap_or_else(|error| panic!("a literal rule should always compile: {error}"));
+                let ergebnis = apply(&compiled, &text);
+                prop_assert!(!ergebnis.is_empty() || text.is_empty());
+            }
+        }
+
+        /// The rules without a search text do nothing.
+        #[test]
+        fn a_rule_without_a_search_text_does_nothing(text in any::<String>()) {
+            // arrange
+            let regel = ReplaceRule::literal("", "etwas");
+
+            // act
+            let compiled = compile(&[regel]).unwrap_or_else(|error| panic!("the rule should compile: {error}"));
+            let ergebnis = apply(&compiled, &text);
+
+            // assert
+            prop_assert_eq!(ergebnis, text);
+        }
+
+        /// The rules survive the path of the file, like the fuzz target
+        /// draws them.
+        ///
+        /// WHY: the fuzz target of the night job cuts its input into a
+        ///       search text, a replacement and a name of a file, and
+        ///       hands all three to the engine. The target needs a nightly
+        ///       compiler and a sanitizer, and it only runs in the night.
+        ///       The test stands next to it and proves on the stable
+        ///       compiler that the same call does not panic — the target
+        ///       then only has to look for the input that this test cannot
+        ///       draw.
+        #[test]
+        fn the_rules_survive_the_path_of_the_file(
+            (search, replacement, is_regex) in rule(),
+            name in any::<String>(),
+        ) {
+            // arrange
+            let pfad = std::path::PathBuf::from(format!("/photos/{name}"));
+            let regel = RenameRule::new("[name]_[n].[ext]").with_replacement(ReplaceRule {
+                search: search.clone(),
+                replacement: replacement.clone(),
+                regex: is_regex,
+            });
+            let input = RenameInput::new(pfad).with_size(1_024).with_checksum(42);
+
+            // act
+            let ergebnis = form_names(
+                &regel,
+                &[input],
+                std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000),
+            );
+
+            // assert
+            // WHY: the engine may refuse the rule — a pattern that it
+            //       cannot read is an error and not a panic.
+            if is_regex {
+                let _ = ergebnis;
+            } else {
+                let namen = ergebnis.unwrap_or_else(|error| panic!("a literal rule should always work: {error}"));
+                prop_assert_eq!(namen.len(), 1);
+            }
+        }
+
+        /// The same rules always give the same result.
+        #[test]
+        fn the_rules_of_a_rename_are_deterministic(
+            (search, replacement, is_regex) in rule(),
+            text in any::<String>(),
+        ) {
+            // arrange
+            let regel = ReplaceRule {
+                search: search.clone(),
+                replacement: replacement.clone(),
+                regex: is_regex,
+            };
+            let Ok(compiled) = compile(&[regel]) else {
+                return Ok(());
+            };
+
+            // act
+            let erste = apply(&compiled, &text);
+            let zweite = apply(&compiled, &text);
+
+            // assert
+            prop_assert_eq!(erste, zweite);
+        }
+    }
+}

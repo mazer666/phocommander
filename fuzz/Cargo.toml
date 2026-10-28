@@ -1,0 +1,51 @@
+# The fuzzing of the parsers of Phocommander.
+#
+# WHAT: the package that carries the fuzz targets of the project.
+# WHY:  the property tests prove that a rule of the rename behaves. They
+#       draw their inputs from a generator that the author chose, and a
+#       generator that the author chose cannot find the input that the
+#       author did not think of. The fuzzer draws the inputs itself, and
+#       it keeps the input that broke something.
+#
+#       The night job of the CI runs these targets for ten minutes. The
+#       job carries `continue-on-error`, because a fuzzer that finds
+#       something is a success of the night and not a failure of the
+#       project — the input is in the crash directory of the target, and
+#       the next step is a test that reproduces it.
+#
+# EXAMPLE:
+# ```text
+# cargo +nightly fuzz run rename_rule
+# ```
+[package]
+name = "phocommander-fuzz"
+description = "The fuzz targets of Phocommander."
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+# The crate that holds the rules of the rename. The fuzz target draws the
+# search text, the replacement and the name of the file, and the engine
+# has to survive all three.
+phocommander-ops = { path = "../crates/phocommander-ops" }
+
+[[bin]]
+name = "rename_rule"
+path = "fuzz_targets/rename_rule.rs"
+test = false
+doc = false
+bench = false
+
+# The directory of the inputs that broke something. It is not in the
+# history of the repository — a crash sample is an input that a machine
+# found, and it belongs to the machine that found it.
+[package.metadata.cargo-fuzz]
+fuzz_targets = ["fuzz_targets"]

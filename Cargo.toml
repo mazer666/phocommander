@@ -18,6 +18,11 @@ members = [
     "tests",
     "xtask",
 ]
+# The fuzzing package is not a member of the workspace: it needs the
+# nightly compiler and the sanitizer of the fuzzer, and the stable build of
+# the project must not depend on it. The night job of the CI runs it with
+# `cargo +nightly fuzz run`, which finds the package in this directory.
+exclude = ["fuzz"]
 
 [workspace.package]
 version = "0.1.0"

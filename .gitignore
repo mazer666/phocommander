@@ -5,3 +5,9 @@
 __pycache__/
 *.pyc
 .scratch/
+
+# The artefacts of the fuzzer: the inputs that broke something and the
+# corpus that the fuzzer collects. They belong to the machine that found
+# them, and a crash sample is not a file of the project.
+fuzz/artifacts/
+fuzz/corpus/
