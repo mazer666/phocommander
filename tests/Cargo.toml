@@ -34,6 +34,11 @@ autobenches = false
 name = "phocommander_testkit"
 path = "common/mod.rs"
 
+# The dependencies of the test kit. The kit counts the bytes that a file
+# system reads, and it therefore needs the file system of the operations.
+[dependencies]
+phocommander-ops = { path = "../crates/phocommander-ops" }
+
 [dev-dependencies]
 phocommander-archive = { path = "../crates/phocommander-archive" }
 phocommander-config = { path = "../crates/phocommander-config" }
@@ -52,6 +57,10 @@ zip = { workspace = true }
 [[test]]
 name = "config_defaults"
 path = "integration/config_defaults.rs"
+
+[[test]]
+name = "copy_read_volume"
+path = "integration/copy_read_volume.rs"
 
 [[test]]
 name = "directory_entries"
@@ -107,6 +116,11 @@ harness = false
 [[bench]]
 name = "interaction"
 path = "../benches/interaction.rs"
+harness = false
+
+[[bench]]
+name = "copy_verification_read_volume"
+path = "../benches/copy_verification_read_volume.rs"
 harness = false
 
 [lints]

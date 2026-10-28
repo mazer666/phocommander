@@ -121,13 +121,13 @@ executed tests.
 | FR-100 | Every operation is a named action; the identifiers are unique, every action has a label key, and the catalogue holds exactly the actions of the configuration file. | `crates/phocommander-ui/src/actions.rs`: `every_identifier_is_unique`, `finds_an_action_by_its_identifier`, `every_action_belongs_to_exactly_one_category`, `the_catalogue_holds_the_actions_of_the_configuration_file`, `every_action_has_a_label_key`; `scripts/check-action-ids.py` → 9 of 9 checks — green | measured |
 | FR-101 | The three contexts hold the same actions; the D-pad and the controller reach them through the palette; the same event resolves differently in two contexts, and the resolution is deterministic. | `tests/integration/keymap_bindings.rs` (5 tests); `crates/phocommander-ui/src/keymap_view.rs`: `the_same_event_resolves_differently_in_two_contexts`, `the_resolution_is_deterministic`, `a_palette_entry_resolves_in_the_context_that_uses_it` — green | measured |
 | NFR-09 | **No operation blocks the interface — not measured.** The queue and the executor carry no test, and no test measures the gap between two frames during a copy. | `crates/phocommander-ops/src/queue.rs` — no `mod tests` | no test |
-| NFR-09a | **The read volume of a verified copy is not measured.** The benchmark `benches/copy_verification_read_volume.rs` that the criterion AC-M1-45 names does not exist. | `ls benches/` → only `directory_listing.rs` | not measured |
+| NFR-09a | The read volume of a verified copy is at most twice the copied volume. The measured volume is **exactly twice**: the copy reads the source once and the verification reads the file that was written once. | `benches/copy_verification_read_volume.rs` — the benchmark fails when the volume is too big; `tests/integration/copy_read_volume.rs` — three tests, green | measured |
 | NFR-09b | **The update rate of the job cue is not measured.** The queue holds the constant `REPORT_INTERVAL` of 100 ms, but no test counts the updates. | `crates/phocommander-ops/src/queue.rs:51` — the constant, no test | no test |
 | NFR-17 | **Partly.** The public functions of the crates of M1 carry tests, with the exceptions of `phocommander-ops/src/queue.rs`, `phocommander-ops/src/executor.rs`, `phocommander-ops/src/copy/policy.rs`, `crates/phocommander-archive/src/formats/`, `crates/phocommander-ui/src/panel/columns.rs` and `crates/phocommander-ui/src/panel/tab.rs` — six modules without a test module. | the review of the tree of the commit `514ca0b`; `grep -rn "mod tests" crates apps platform tests` | partly |
 | NFR-17b | **Not measured.** The review of the public API against the rule "the name states what a thing is" was not carried out in this session. | — | not measured |
 
 **Count.** Of the 54 requirements of the milestone M1: **19 are measured**, **19 are partly measured**,
-**14 have no test at all**, and **2 are not measured** (NFR-09a, NFR-17b). The 14 without a test are:
+**14 have no test at all**, and **1 is not measured** (NFR-17b). The 14 without a test are:
 FR-17, FR-21, FR-22, FR-27, FR-30, FR-31, FR-32, FR-33, FR-34, FR-35, FR-39, FR-50, FR-51, FR-52 —
 together with FR-53, FR-54, FR-65, FR-66, FR-67, FR-68 and NFR-09, NFR-09b, whose gaps are named in
 the table above and in section 7.
@@ -206,7 +206,7 @@ measured is reported as "not measured", never as "met".
 | Start time until the operable surface (NFR-04) | < 800 ms | — | the application opens no window | **not measured** |
 | Memory in idle, two panels open (NFR-05) | < 120 MB | — | the application opens no window | **not measured** |
 | File copy, sequential (NFR-06) | ≥ 80 % of the bandwidth | — | no benchmark exists | **not measured** |
-| Read volume of a verified copy (NFR-09a) | ≤ twice the copied volume | — | no benchmark exists | **not measured** |
+| Read volume of a verified copy (NFR-09a) | ≤ twice the copied volume | `cargo bench -p phocommander-integration-tests --bench copy_verification_read_volume` (release profile) | see section 3.3 | **met** — 8 388 608 bytes read for 4 194 304 bytes that were copied, exactly twice |
 | Archive listing, 5 000 entries (NFR-08) | < 500 ms | — | no benchmark exists | **not measured** |
 
 ### 3.1 The directory listing
@@ -346,7 +346,7 @@ something to list.
 | Field | Value |
 |---|---|
 | Decision | **not accepted — the fifth measurement** |
-| Reasons | 1. The manual protocol of the milestone has not been run on a macOS machine; the sandbox has one Linux system and no screen. The definition of done says that a user can browse, select, copy, move, rename with a template, inspect a file and open an archive on macOS, all of it with the keyboard — the parts that a machine without a screen cannot show are not measured. 2. The read volume of the verified copy (NFR-09a) has no benchmark. NFR-02 and NFR-03 are measured since the fourth measurement and hold. |
+| Reasons | 1. The manual protocol of the milestone has not been run on a macOS machine; the sandbox has one Linux system and no screen. The definition of done says that a user can browse, select, copy, move, rename with a template, inspect a file and open an archive on macOS, all of it with the keyboard — the parts that a machine without a screen cannot show are not measured. 2. The read volume of the verified copy (NFR-09a) was not measured when this decision was written; it is measured now — 8 388 608 bytes read for 4 194 304 bytes that were copied, exactly the twice that the rule allows. NFR-02 and NFR-03 are measured since the fourth measurement and hold. |
 | What the fifth measurement added | The **dialog** of the multiple rename: the live preview of every new name (FR-34), the conflict jump list reachable with F3 and Shift+F3 (FR-35) and the stored templates (FR-36), with twenty-two new keys in three languages. The engine behind the dialog and the dialog itself are now covered by 26 tests. |
 | What the third measurement repaired | The 32 tests of the container adapters (TAR 8, ZIP 8, 7z 7, the detection 9), the detection of the compressed TAR containers — the four compressions of the TAR adapter were unreachable over the public API — the symmetry of the three adapters about directories, the integration test of the directory entries that was dead code, and the split of the input layer that had grown to 999 lines. |
 | What the third measurement **found** | That the rename of the milestone is only half. The execution of a rename exists and is tested; the formation of the new name does not. The earlier report of this document named the missing rename engine as a whole, and that was too coarse: the engine was never missing — the *formation* was. |

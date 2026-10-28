@@ -25,7 +25,7 @@ five inputs meet:
 
 | What | How it was measured | Result |
 |---|---|---|
-| The tests of the workspace | `cargo test --workspace --locked` | **1703 green, 0 red, 0 skipped** |
+| The tests of the workspace | `cargo test --workspace --locked` | **1710 green, 0 red, 0 skipped** |
 | The formatting | `cargo fmt --all -- --check` | **without a deviation** |
 | The warnings of the linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **without a warning** |
 | The consistency gates | `scripts/check-*.py`, `scripts/check-*.sh` | **15, all PASS** |
