@@ -122,7 +122,7 @@ pub fn execute(
             let mut errors = outcome.errors;
             if errors.is_empty()
                 && job.restricted_items.is_none()
-                && let Err(error) = remove_tree(fs, source)
+                && let Err(error) = remove_entry(fs, source)
             {
                 errors.push(
                     JobError::new(source.clone(), error.code(), error.to_string(), false)
@@ -215,40 +215,17 @@ fn state_of(errors: &[JobError]) -> JobState {
     }
 }
 
-/// Removes a file or a directory, whatever it is.
+/// Moves a file or a directory into the trash, whatever it is.
+///
+/// WHY: the deletion of a file goes into the trash and not into the void
+///       (FR-27). The user can undo it there, and the file keeps its data
+///       until the trash is emptied. A directory goes as one piece, with
+///       everything it holds.
 fn remove_entry(fs: &dyn FileSystem, path: &Path) -> Result<(), OpError> {
     match fs.metadata(path) {
-        Ok(info) => {
-            if info.kind.is_directory() {
-                fs.remove_dir(path)
-            } else {
-                fs.remove_file(path)
-            }
-        }
+        Ok(_) => fs.move_to_trash(path),
         Err(error) => Err(error),
     }
-}
-
-/// Removes a directory with everything it contains.
-fn remove_tree(fs: &dyn FileSystem, root: &Path) -> Result<(), OpError> {
-    let entries = match fs.read_dir(root) {
-        Ok(entries) => entries,
-        Err(error) => {
-            // The source of a move may be a single file.
-            return fs.remove_file(root).map_err(|_| error);
-        }
-    };
-
-    for entry in entries {
-        let path = root.join(&entry.name);
-        if entry.kind.is_directory() {
-            remove_tree(fs, &path)?;
-        } else {
-            fs.remove_file(&path)?;
-        }
-    }
-
-    fs.remove_dir(root)
 }
 
 /// Builds the job of a synchronisation from a plan that the user confirmed.
@@ -287,4 +264,147 @@ pub fn confirmed_job(
         return Err(OpError::NotConfirmed);
     }
     Ok(crate::job::Job::new(JobKind::Sync { plan }, priority))
+}
+
+#[cfg(test)]
+// WHY: a test may fail loudly when its arrangement is wrong. The rule
+// that forbids a panic applies to the production code, and it is enforced
+// there.
+mod tests {
+    use super::*;
+    use crate::copy::CopyMode;
+    use crate::fake_fs::FakeFileSystem;
+    use crate::job::{JobState, Priority};
+    use std::path::Path;
+    use std::sync::Arc;
+
+    /// The sink that discards the progress.
+    struct Silent;
+
+    impl crate::progress::ProgressSink for Silent {
+        fn report(&mut self, _update: crate::progress::ProgressUpdate) {}
+    }
+
+    /// A context of a running job.
+    fn context() -> crate::progress::JobContext {
+        crate::progress::JobContext::new(Arc::new(crate::edit::JobControl::new()), Box::new(Silent))
+    }
+
+    #[test]
+    fn the_deletion_of_a_file_goes_into_the_trash() {
+        // arrange
+        // WHY: the deletion of a file is the one operation of a file
+        //       manager that can destroy data that the user cannot get back.
+        //       The specification therefore names the trash as the default
+        //       path of the deletion (FR-27).
+        let fs = FakeFileSystem::new();
+        fs.write_file(Path::new("/photos/a.txt"), b"payload")
+            .unwrap_or_else(|error| panic!("the file should have been written: {error}"));
+        let mut context = context();
+        let job = Job::new(
+            JobKind::Delete {
+                paths: vec![Path::new("/photos/a.txt").to_path_buf()],
+            },
+            Priority::Normal,
+        );
+
+        // act
+        let result = execute(&fs, &job, &mut context)
+            .unwrap_or_else(|error| panic!("the job should have worked: {error}"));
+
+        // assert
+        assert_eq!(result.state, JobState::Done);
+        // WHY: the file is in the trash and not gone.
+        assert_eq!(fs.trashed(), vec![Path::new("/photos/a.txt").to_path_buf()]);
+        // WHY: and it is not in the file system any more.
+        assert!(fs.metadata(Path::new("/photos/a.txt")).is_err());
+    }
+
+    #[test]
+    fn the_deletion_of_a_directory_goes_into_the_trash_as_one_piece() {
+        // arrange
+        let fs = FakeFileSystem::new();
+        fs.write_file(Path::new("/photos/ordner/a.txt"), b"payload")
+            .unwrap_or_else(|error| panic!("the file should have been written: {error}"));
+        fs.create_dir_all(Path::new("/photos/ordner"))
+            .unwrap_or_else(|error| panic!("the directory should have been created: {error}"));
+        let mut context = context();
+        let job = Job::new(
+            JobKind::Delete {
+                paths: vec![Path::new("/photos/ordner").to_path_buf()],
+            },
+            Priority::Normal,
+        );
+
+        // act
+        let result = execute(&fs, &job, &mut context)
+            .unwrap_or_else(|error| panic!("the job should have been worked: {error}"));
+
+        // assert
+        assert_eq!(result.state, JobState::Done);
+        // WHY: the directory goes with everything it holds, and not as a
+        //       pile of empty folders.
+        let mut trashed = fs.trashed();
+        trashed.sort();
+        assert_eq!(
+            trashed,
+            vec![
+                Path::new("/photos/ordner").to_path_buf(),
+                Path::new("/photos/ordner/a.txt").to_path_buf(),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_file_that_cannot_be_moved_into_the_trash_makes_the_job_fail() {
+        // arrange
+        let fs = FakeFileSystem::new();
+        let mut context = context();
+        let job = Job::new(
+            JobKind::Delete {
+                paths: vec![Path::new("/photos/gibt-es-nicht.txt").to_path_buf()],
+            },
+            Priority::Normal,
+        );
+
+        // act
+        let result = execute(&fs, &job, &mut context)
+            .unwrap_or_else(|error| panic!("the job should have been worked: {error}"));
+
+        // assert
+        // WHY: a deletion that did not happen has to be reported. A job
+        //       that says "done" while the file is still there teaches the
+        //       user that the file is gone.
+        assert_eq!(result.state, JobState::Failed);
+        assert_eq!(result.errors.len(), 1);
+        assert!(fs.trashed().is_empty());
+    }
+
+    #[test]
+    fn the_move_of_a_file_leaves_the_source_in_the_trash() {
+        // arrange
+        let fs = FakeFileSystem::new();
+        fs.write_file(Path::new("/photos/a.txt"), b"payload")
+            .unwrap_or_else(|error| panic!("the file should have been written: {error}"));
+        let mut context = context();
+        let job = Job::new(
+            JobKind::Move {
+                source: Path::new("/photos/a.txt").to_path_buf(),
+                destination: Path::new("/backup/a.txt").to_path_buf(),
+                mode: CopyMode::Verified,
+            },
+            Priority::Normal,
+        );
+
+        // act
+        let result = execute(&fs, &job, &mut context)
+            .unwrap_or_else(|error| panic!("the job should have worked: {error}"));
+
+        // assert
+        // WHY: the move copies the file and then removes the source. The
+        //       removal goes into the trash, so that the user can undo the
+        //       move.
+        assert_eq!(result.state, JobState::Done);
+        assert_eq!(fs.trashed(), vec![Path::new("/photos/a.txt").to_path_buf()]);
+    }
 }

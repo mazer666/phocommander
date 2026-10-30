@@ -191,7 +191,26 @@ Kommentare in Ihrer Datei bleiben, wo sie sind.
 
 ---
 
-## 8. Wenn etwas nicht funktioniert
+## 8. Eine Datei löschen
+
+`F8` löscht die markierten Einträge. Eine gelöschte Datei verschwindet **nicht**: sie landet
+im **Papierkorb Ihres Betriebssystems**, genau wie eine Datei, die Sie im Dateimanager des
+Systems in den Papierkorb ziehen. Sie können sie von dort zurückholen, bis Sie den Papierkorb
+leeren.
+
+Ein Ordner landet als Ganzes im Papierkorb, mit allem, was er enthält.
+
+Eine Ausnahme gibt es: eine **Synchronisation** löscht endgültig. Sie haben ihren Plan gesehen
+und bestätigt, und der Plan nennt jede Datei, die geht. Ein Papierkorb, der eine Kopie des Ziels
+jeder Synchronisation enthielte, füllte das Medium.
+
+Ein Datenträger ohne Papierkorb — eine Netzwerkfreigabe, eine eingebundene Festplatte — meldet
+den Fehler, statt still zu löschen. Wählen Sie dort einen anderen Weg, um die Datei zu
+entfernen.
+
+---
+
+## 9. Wenn etwas nicht funktioniert
 
 | Symptom | Ursache und Abhilfe |
 |---|---|

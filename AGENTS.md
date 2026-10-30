@@ -348,6 +348,11 @@ cargo audit
 python3 scripts/check-links.py
 ```
 
+In the sandbox the licence check and the advisory check run through
+`./scripts/audit.sh`. The home of the sandbox lies on an NFS mount, and the
+advisory database of `cargo deny` needs a lock file that NFS cannot hold — the
+script puts the database and the home on a local disk.
+
 - [ ] Every file I touched was read before it was written.
 - [ ] No stub, no `todo!()`, no fake return value, no placeholder page.
 - [ ] No `unwrap()`/`expect()` on a path reachable from outside the module.

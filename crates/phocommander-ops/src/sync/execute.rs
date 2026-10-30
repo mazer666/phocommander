@@ -108,6 +108,13 @@ pub fn execute_sync(
                 continue;
             }
             SyncAction::Delete => {
+                // WHY: the deletion of a synchronisation is the one
+                //       deletion that does not go into the trash. The user
+                //       has seen the plan and confirmed it, and the plan
+                //       names every file that goes. A trash that holds a
+                //       copy of the target of every synchronisation would
+                //       fill the medium and would hold the files that the
+                //       user wanted gone.
                 if entry.kind.is_directory() {
                     fs.remove_dir(&destination_path)
                 } else {

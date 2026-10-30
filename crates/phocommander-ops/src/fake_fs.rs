@@ -47,6 +47,13 @@ struct FakeEntry {
 #[derive(Debug, Default)]
 pub struct FakeFileSystem {
     entries: Mutex<HashMap<PathBuf, FakeEntry>>,
+    /// The files that went into the trash.
+    ///
+    /// WHY: the deletion of a file goes into the trash (FR-27), and a test
+    ///       has to be able to see that the file is there and not gone. The
+    ///       trash of the test therefore keeps the entries, and the test
+    ///       reads them.
+    trash: Mutex<HashMap<PathBuf, FakeEntry>>,
     checksums: AtomicU64,
     corrupt_next: AtomicBool,
     failing: Mutex<std::collections::HashSet<PathBuf>>,
@@ -75,6 +82,7 @@ impl FakeFileSystem {
         );
         Self {
             entries: Mutex::new(entries),
+            trash: Mutex::new(HashMap::new()),
             checksums: AtomicU64::new(0),
             corrupt_next: AtomicBool::new(false),
             failing: Mutex::new(std::collections::HashSet::new()),
@@ -318,6 +326,28 @@ impl FakeFileSystem {
         self.lock_failing().contains(path)
     }
 
+    /// The files that went into the trash.
+    ///
+    /// WHY: a test has to see that the file is in the trash and not gone.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::fake_fs::FakeFileSystem;
+    /// use phocommander_ops::port::FileSystem;
+    /// use std::path::Path;
+    ///
+    /// let fs = FakeFileSystem::new();
+    /// fs.write_file(Path::new("/photos/a.txt"), b"payload").unwrap_or_default();
+    /// fs.move_to_trash(Path::new("/photos/a.txt")).unwrap_or_default();
+    /// assert_eq!(fs.trashed().len(), 1);
+    /// ```
+    pub fn trashed(&self) -> Vec<PathBuf> {
+        let trash = self.lock_trash();
+        let mut pfade: Vec<PathBuf> = trash.keys().cloned().collect();
+        pfade.sort();
+        pfade
+    }
+
     /// The number of entries the file system holds.
     ///
     /// EXAMPLE:
@@ -383,6 +413,11 @@ impl FakeFileSystem {
     /// ```
     pub fn corrupt_next_copy(&self) {
         self.corrupt_next.store(true, Ordering::SeqCst);
+    }
+
+    /// Locks the trash of the file system.
+    fn lock_trash(&self) -> std::sync::MutexGuard<'_, HashMap<PathBuf, FakeEntry>> {
+        self.trash.lock().unwrap_or_else(|error| error.into_inner())
     }
 
     /// Locks the entries of the file system.
@@ -571,6 +606,30 @@ impl FileSystem for FakeFileSystem {
             path: from.to_path_buf(),
         })?;
         entries.insert(to.to_path_buf(), entry);
+        Ok(())
+    }
+
+    fn move_to_trash(&self, path: &Path) -> Result<(), OpError> {
+        // WHY: the whole tree goes into the trash as one piece, so that a
+        //       directory reaches the trash with its content and not as a
+        //       pile of empty folders.
+        let mut entries = self.lock();
+        let mut trash = self.lock_trash();
+        let mut bewegt = Vec::new();
+        for (pfad, eintrag) in entries.iter() {
+            if pfad == path || pfad.starts_with(path) {
+                bewegt.push((pfad.clone(), eintrag.clone()));
+            }
+        }
+        if bewegt.is_empty() {
+            return Err(OpError::NotFound {
+                path: path.to_path_buf(),
+            });
+        }
+        for (pfad, eintrag) in bewegt {
+            entries.remove(&pfad);
+            trash.insert(pfad, eintrag);
+        }
         Ok(())
     }
 

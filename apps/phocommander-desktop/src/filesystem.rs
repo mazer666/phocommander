@@ -145,6 +145,16 @@ impl FileSystem for HostFileSystem {
         fs::rename(from, to).map_err(|error| io_error(from, error))
     }
 
+    fn move_to_trash(&self, path: &Path) -> Result<(), OpError> {
+        // WHY: the deletion of a file goes into the trash of the operating
+        //       system and not into the void (FR-27). The platform knows
+        //       where the trash of the three systems lies.
+        phocommander_platform::trash::move_to_trash(path).map_err(|error| OpError::Io {
+            path: path.to_path_buf(),
+            source: std::io::Error::other(error.to_string()),
+        })
+    }
+
     fn remove_file(&self, path: &Path) -> Result<(), OpError> {
         fs::remove_file(path).map_err(|error| io_error(path, error))
     }

@@ -20,6 +20,8 @@ publish = false
 [dependencies]
 phocommander-core = { path = "../../crates/phocommander-core" }
 dirs = { workspace = true }
+# The trash of the operating system (FR-27).
+trash = { workspace = true }
 
 [lints]
 workspace = true

@@ -234,7 +234,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-24 | Every job reports progress with a rate and can be cancelled | M1 | Must | Unit test on the job queue |
 | FR-25 | A job collects its errors instead of stopping at the first one | M1 | Should | Unit test with a partially failing copy |
 | FR-26 | Undo exists for copy operations and is labelled as partial | M2 | Should | Manual test plus documentation review |
-| FR-27 | The trash is the default path for deletion | M1 | Must | Manual test |
+| FR-27 | The trash of the operating system is the default path for deletion; a synchronisation that the user confirmed deletes finally, and a drive without a trash reports the error instead of deleting silently | M1 | Must | Manual test |
 | FR-28 | The path length limit of the platform is detected and reported in plain language | M3 | Must | Manual test on Windows [35] |
 
 ### 4.4 Multiple rename

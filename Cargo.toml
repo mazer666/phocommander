@@ -155,6 +155,9 @@ criterion = "0.8"
 rustix = "1"
 camino = "1"
 dirs = "7"
+# The trash of the operating system. The deletion of a file goes into the
+# trash of the system and not into a folder of our own (FR-27).
+trash = "5.2"
 opener = "0.9"
 keyring = "4"
 

@@ -187,7 +187,24 @@ stay where they are.
 
 ---
 
-## 8. If something does not work
+## 8. Deleting a file
+
+`F8` deletes the marked entries. A deleted file does **not** disappear: it goes into the
+**trash of your operating system**, exactly like a file that you drag into the trash in the
+file manager of the system. You can take it back from there until you empty the trash.
+
+A directory goes into the trash as one piece, with everything it holds.
+
+There is one exception: a **synchronisation** deletes finally. You have seen its plan and
+confirmed it, and the plan names every file that goes. A trash that held a copy of the target
+of every synchronisation would fill the medium.
+
+A drive that has no trash — a network share, a mounted disk — reports the error instead of
+deleting silently. Choose another way to remove the file there.
+
+---
+
+## 9. If something does not work
 
 | Symptom | Cause and remedy |
 |---|---|

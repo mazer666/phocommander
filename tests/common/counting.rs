@@ -100,6 +100,10 @@ impl<F: FileSystem> FileSystem for CountingFileSystem<F> {
         self.inner.rename(from, to)
     }
 
+    fn move_to_trash(&self, path: &Path) -> Result<(), OpError> {
+        self.inner.move_to_trash(path)
+    }
+
     fn remove_file(&self, path: &Path) -> Result<(), OpError> {
         self.inner.remove_file(path)
     }

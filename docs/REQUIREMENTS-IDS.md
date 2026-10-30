@@ -80,7 +80,7 @@ Every row names the section **and the line** of the specification it was taken f
 | FR-24 | Every job reports progress with a rate and can be cancelled | §4.3 File operations, line 234 | M1 | Must | automated — Unit test on the job queue | AC-M1-16 |
 | FR-25 | A job collects its errors instead of stopping at the first one | §4.3 File operations, line 235 | M1 | Should | automated — Unit test with a partially failing copy | AC-M1-17 |
 | FR-26 | Undo exists for copy operations and is labelled as partial | §4.3 File operations, line 236 | M2 | Should | manual — Manual test plus documentation review | AC-M2-11 |
-| FR-27 | The trash is the default path for deletion | §4.3 File operations, line 237 | M1 | Must | manual — Manual test | AC-M1-18 |
+| FR-27 | The trash of the operating system is the default path for deletion; a synchronisation that the user confirmed deletes finally, and a drive without a trash reports the error instead of deleting silently | §4.3 File operations, line 237 | M1 | Must | manual — Manual test | AC-M1-18 |
 | FR-28 | The path length limit of the platform is detected and reported in plain language | §4.3 File operations, line 238 | M3 | Must | manual — Manual test on Windows [35] | not yet assigned |
 
 ## 4.4 Multiple rename

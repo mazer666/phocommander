@@ -21,6 +21,7 @@
 
 pub mod host;
 pub mod portable;
+pub mod trash;
 
 pub use host::{Platform, host_platform, primary_modifier};
 pub use portable::{
@@ -28,3 +29,4 @@ pub use portable::{
     executable_directory, is_portable, is_portable_in, portable_config_directory,
     portable_config_directory_in,
 };
+pub use trash::{TrashError, move_to_trash};

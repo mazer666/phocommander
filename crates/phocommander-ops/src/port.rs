@@ -202,6 +202,9 @@ pub struct CopyResult {
 ///     fn rename(&self, _from: &Path, _to: &Path) -> Result<(), OpError> {
 ///         Err(OpError::Cancelled)
 ///     }
+///     fn move_to_trash(&self, _path: &Path) -> Result<(), OpError> {
+///         Err(OpError::Cancelled)
+///     }
 ///     fn remove_file(&self, _path: &Path) -> Result<(), OpError> {
 ///         Err(OpError::Cancelled)
 ///     }
@@ -239,6 +242,19 @@ pub trait FileSystem: Send + Sync {
 
     /// Moves or renames the file or the directory at {from} to {to}.
     fn rename(&self, from: &Path, to: &Path) -> Result<(), OpError>;
+
+    /// Moves the file or the directory at {path} into the trash.
+    ///
+    /// WHY: the deletion of a file is the one operation of a file manager
+    ///       that can destroy data that the user cannot get back. The
+    ///       specification therefore names the trash as the default path of
+    ///       the deletion (FR-27), and the trash keeps the data until the
+    ///       user empties it.
+    ///
+    /// The method takes the directory with everything it holds, so that a
+    /// directory reaches the trash as one piece and not as a pile of empty
+    /// folders.
+    fn move_to_trash(&self, path: &Path) -> Result<(), OpError>;
 
     /// Deletes the file at {path}.
     fn remove_file(&self, path: &Path) -> Result<(), OpError>;
