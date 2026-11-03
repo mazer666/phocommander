@@ -89,6 +89,28 @@ fn submit_one(
             panel.set_entries(eintraege);
             true
         }
+        Command::OpenInOtherPanel {
+            destination, entry, ..
+        } => {
+            // WHY: the entry is opened in the other panel, and the other
+            //       panel shows its directory. The command names the entry
+            //       and the panel, and the adapter asks the file system
+            //       what the entry is — a directory is shown in the panel,
+            //       and a file is shown in the quick view of the panel.
+            let Ok(metadata) = fs.metadata(entry) else {
+                return false;
+            };
+            if metadata.kind.is_directory() {
+                let eintraege = match read_entries(fs, entry) {
+                    Ok(eintraege) => eintraege,
+                    Err(_) => return false,
+                };
+                let panel = surface.panel_mut(*destination);
+                panel.set_path(entry.clone());
+                panel.set_entries(eintraege);
+            }
+            true
+        }
         Command::Copy { transfer } => {
             let (quelle, ziel) = directories_of(transfer, surface);
             queue.enqueue(
@@ -382,6 +404,34 @@ mod tests {
         //       panel that pretends the directory is empty.
         assert_eq!(anzahl, 0);
         assert_eq!(surface.panel(PanelSide::Left).path(), Path::new("/photos"));
+    }
+
+    #[test]
+    fn the_command_of_the_other_panel_opens_the_directory_there() {
+        // arrange
+        // WHY: the hand-over to the other panel is explicit (FR-16), and it
+        //       is the way the user moves in the file system without the
+        //       keyboard.
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        fs.create_dir_all(Path::new("/photos/2024"))
+            .unwrap_or_else(|error| panic!("the directory should have been created: {error}"));
+        fs.write_file(Path::new("/photos/2024/a.txt"), b"payload")
+            .unwrap_or_else(|error| panic!("the file should have been written: {error}"));
+        let commands = vec![Command::OpenInOtherPanel {
+            source: PanelSide::Left,
+            destination: PanelSide::Right,
+            entry: PathBuf::from("/photos/2024"),
+        }];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert
+        assert_eq!(anzahl, 1);
+        let panel = surface.panel(PanelSide::Right);
+        assert_eq!(panel.path(), Path::new("/photos/2024"));
+        assert_eq!(panel.row_count(), 1);
     }
 
     #[test]
