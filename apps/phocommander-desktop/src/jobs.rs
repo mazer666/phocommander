@@ -151,6 +151,7 @@ mod tests {
                 bytes_per_second: None,
                 eta_seconds: None,
             },
+            rules: phocommander_ops::copy::CopyPolicy::strict(),
             errors: vec![
                 JobError::new(
                     PathBuf::from("/photos/a.txt"),

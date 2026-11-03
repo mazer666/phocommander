@@ -33,7 +33,7 @@
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use crate::copy::CopyMode;
+use crate::copy::{CopyMode, CopyPolicy};
 use crate::error::JobError;
 
 /// The identifier of a job.
@@ -336,6 +336,13 @@ pub struct JobSnapshot {
     /// WHY: `None` means that the job touches every item of its work. A
     ///       value means that the job touches these items and nothing else.
     pub restricted_items: Option<Vec<PathBuf>>,
+
+    /// The rules that decide how the job treats the files it touches.
+    ///
+    /// WHY: the snapshot is the state of the job as the interface reads
+    ///       it, and the rules are a part of that state — the user has to
+    ///       be able to see whether the copy compares the checksums.
+    pub rules: CopyPolicy,
 }
 
 /// A job of the queue.
@@ -367,6 +374,15 @@ pub struct Job {
 
     /// The items this job is limited to, if it is limited to some.
     pub restricted_items: Option<Vec<PathBuf>>,
+
+    /// The rules that decide how the job treats the files it touches.
+    ///
+    /// WHY: the rules come from the configuration of the user, and they
+    /// belong to the job and not to the program. A program that decided
+    /// them on its own would behave the same on a private machine and on
+    /// a managed one — and the difference between the two is the setting,
+    /// not the program (section 9.8).
+    pub rules: CopyPolicy,
 }
 
 impl Job {
@@ -390,7 +406,24 @@ impl Job {
             history: Vec::new(),
             failed_items: Vec::new(),
             restricted_items: None,
+            rules: CopyPolicy::strict(),
         }
+    }
+
+    /// Sets the rules that decide how the job treats the files it touches.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ops::copy::CopyPolicy;
+    /// use phocommander_ops::job::{Job, JobKind, Priority};
+    ///
+    /// let job = Job::new(JobKind::CreateDirectory { path: "/tmp/x".into() }, Priority::Normal)
+    ///     .with_rules(CopyPolicy::new(false, false));
+    /// assert!(!job.rules.verifies_checksums());
+    /// ```
+    pub fn with_rules(mut self, rules: CopyPolicy) -> Self {
+        self.rules = rules;
+        self
     }
 
     /// Limits the job to the given items.
@@ -498,6 +531,7 @@ impl Job {
             history: self.history.clone(),
             failed_items: self.failed_items.clone(),
             restricted_items: self.restricted_items.clone(),
+            rules: self.rules,
         }
     }
 }

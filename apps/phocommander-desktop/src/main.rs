@@ -22,6 +22,7 @@ use phocommander_desktop::desktop::DesktopApp;
 use phocommander_desktop::filesystem::HostFileSystem;
 use phocommander_desktop::jobs::QueueJobSource;
 use phocommander_desktop::language::{ConfigWatcher, InterfaceLanguage, locale_of};
+use phocommander_desktop::preview::ViewerPreviewSource;
 use phocommander_desktop::rename::{FileTemplateStore, OpsRenameEngine};
 use phocommander_desktop::security::SecurityPlan;
 use phocommander_ops::copy::CopyMode as OpsCopyMode;
@@ -30,6 +31,7 @@ use phocommander_platform::config_directory;
 use phocommander_ui::{
     Context, KeymapView, Metrics, Platform, Theme, WorkSurface, WorkSurfaceApp, visuals,
 };
+use phocommander_viewer::reader::ViewerReader;
 
 /// Der Name der Konfigurationsdatei im Konfigurationsverzeichnis.
 ///
@@ -99,6 +101,10 @@ fn main() -> eframe::Result<()> {
 /// ```
 pub fn build_desktop_app(config: &Config) -> DesktopApp {
     let locale = locale_of(config.general.language);
+    // WHY: the rules of the security section decide what a copy may do, and
+    //       they reach the jobs through the plan.
+    let rules = resolve_security(&config.security);
+    let plan = SecurityPlan::from_effective(&rules);
     let watcher = match configuration_path() {
         Some(path) => ConfigWatcher::new(path),
         None => ConfigWatcher::without_file(),
@@ -111,12 +117,25 @@ pub fn build_desktop_app(config: &Config) -> DesktopApp {
 
     // WHY: the list of the jobs reads from the same room, so that the user
     //       sees the jobs that are really running.
-    let application =
-        build_application(config).with_job_source(Box::new(QueueJobSource::new(queue.clone())));
+    let application = build_application(config)
+        .with_job_source(Box::new(QueueJobSource::new(queue.clone())))
+        // WHY: the quick view reads the file that the user marked, and it
+        //       reads it only when the rules allow it. The reader knows the
+        //       rules, and the adapter hands the content to the surface.
+        .with_preview_source(Box::new(ViewerPreviewSource::new(ViewerReader::new(
+            *plan.read_policy(),
+            config.viewer.max_file_size.unwrap_or(10_485_760),
+        ))));
 
     let mut app = DesktopApp::with_queue(application, locale, watcher, queue);
     // WHY: the way a file is copied is a setting of the user (FR-22b).
     app.set_copy_mode(copy_mode_of(config));
+    // WHY: the rules that decide whether the copy compares the checksums
+    //       and whether a link is dereferenced come from the security
+    //       section of the configuration. Without them the plan would be
+    //       reported and never applied — and the copy would never compare
+    //       a single checksum.
+    app.set_copy_rules(*plan.copy_policy());
     app
 }
 

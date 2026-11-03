@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1744 green, 0 red, 0 skipped** |
+| Tests | **1763 green, 0 red, 0 skipped** |
 | Test binaries | 57 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -146,6 +146,10 @@ and in the tests:
     unchecked — and would have stayed empty without a gate noticing.
 36. The formatter of `benches/interaction.rs` had never run.
 37. **The commands of the surface were never read.** The surface produced the commands — copy, move, delete, rename — and `take_commands()` had no caller in the whole tree. The engine, the waiting room and the interface existed, and nothing joined them: the application could not copy a file. The adapter that translates the commands into the jobs closes the chain.
+38. **The directory was never read.** The command that asks for a directory was produced and read by nobody. The panels stayed empty, and a file manager with empty panels shows nothing at all. This was the fourth gap of the same kind, and it is the one that made the application a file manager in name only.
+39. **The quick view never showed anything.** The seam `PreviewSource` existed, and the desktop build never implemented it. The viewer could read a file and the quick view could show lines — and the two never met.
+40. **The security rules were never applied.** The plan of the rules was reported on the screen and never reached a job: the copy compared no checksum, and the quick view read files that the rule forbade. The rules travel with the job now.
+41. **The licence check never ran.** The advisory database needs a lock file, and the home of the sandbox lies on an NFS mount that cannot hold one. The check failed with the message of the lock, and nobody read it as a failure of the check. A withdrawn version of a crate was therefore in the tree. The script `scripts/audit.sh` puts the database on a local disk, and the withdrawn version was replaced.
 
 ## 6. The rules that follow from this milestone
 
@@ -154,6 +158,7 @@ break:
 
 | Rule | Why |
 |---|---|
+| **A check that fails for a reason of its environment is a check that does not run.** The licence check failed with the message of a lock file that NFS cannot hold, and the failure was read as a problem of the lock. A check that reports a reason of the environment has to be made to report the result, or it has to be called with another tool. |
 | **One single cargo process in the workspace.** Every agent gets a `CARGO_HOME` and a `CARGO_TARGET_DIR` of its own on local disk. | Three gigabytes of RAM. Two builds at the same time kill both — and the agent then waits for an answer that never comes. |
 | **The negative test builds into a target directory of its own.** | A test binary carries the path of the repository it was built in. A binary from the copy looks for the configuration of the copy — and that is gone when the script ends. |
 | **The agents do not build.** They write, the lead instance builds and checks. | A build in a foreign directory eats 1 to 5 GB and blocks the NAS volume on which the repository lies. |

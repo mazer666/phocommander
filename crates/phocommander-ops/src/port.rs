@@ -222,8 +222,15 @@ pub struct CopyResult {
 ///     }
 /// }
 /// ```
+/// The file system that the operations work on.
+///
+/// WHY: the operations do not touch the disk themselves. They ask the trait
+///       for the entries of a directory, for the checksum of a file and for
+///       the copy of a file — and the composition root hands the file system
+///       of the host over. The trait is therefore the seam between the
+///       operations and the machine.
 pub trait FileSystem: Send + Sync {
-    /// Lists the entries of the directory at {path}.
+    /// Lists the entries of the directory at {path}
     ///
     /// WHY: the comparison of two directories needs the content of both
     /// sides, and the listing is the only call that provides it.
@@ -278,6 +285,48 @@ pub trait FileSystem: Send + Sync {
     /// The operation belongs to the source, because only the source knows how a
     /// link is stored on the machine it works on.
     fn copy_symlink(&self, from: &Path, to: &Path) -> Result<(), OpError>;
+}
+
+impl FileSystem for Box<dyn FileSystem> {
+    fn read_dir(&self, path: &Path) -> Result<Vec<DirEntry>, OpError> {
+        (**self).read_dir(path)
+    }
+
+    fn metadata(&self, path: &Path) -> Result<FileInfo, OpError> {
+        (**self).metadata(path)
+    }
+
+    fn copy_file(&self, from: &Path, to: &Path) -> Result<CopyResult, OpError> {
+        (**self).copy_file(from, to)
+    }
+
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), OpError> {
+        (**self).rename(from, to)
+    }
+
+    fn move_to_trash(&self, path: &Path) -> Result<(), OpError> {
+        (**self).move_to_trash(path)
+    }
+
+    fn remove_file(&self, path: &Path) -> Result<(), OpError> {
+        (**self).remove_file(path)
+    }
+
+    fn remove_dir(&self, path: &Path) -> Result<(), OpError> {
+        (**self).remove_dir(path)
+    }
+
+    fn create_dir_all(&self, path: &Path) -> Result<(), OpError> {
+        (**self).create_dir_all(path)
+    }
+
+    fn checksum(&self, path: &Path) -> Result<u64, OpError> {
+        (**self).checksum(path)
+    }
+
+    fn copy_symlink(&self, from: &Path, to: &Path) -> Result<(), OpError> {
+        (**self).copy_symlink(from, to)
+    }
 }
 
 #[cfg(test)]

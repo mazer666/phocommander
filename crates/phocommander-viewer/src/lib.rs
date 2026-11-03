@@ -30,9 +30,13 @@
 //! ```
 
 pub mod content;
+pub mod encoding;
+pub mod hex;
 pub mod policy;
 pub mod reader;
 
-pub use content::OpenedFile;
+pub use content::{ContentKind, OpenedFile};
+pub use encoding::Encoding;
+pub use hex::{HexDump, HexLine};
 pub use policy::{ReadPolicy, ReadTrigger};
 pub use reader::{ViewerError, ViewerReader};

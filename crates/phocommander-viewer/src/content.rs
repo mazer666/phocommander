@@ -19,6 +19,39 @@
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+/// The kind of the content of a file.
+///
+/// WHY: the viewer shows a text as a text, and a file that is no text as a
+/// hex dump. The decision belongs to the content and not to the drawing,
+/// so that every place that shows a file decides the same way (FR-51,
+/// FR-52).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ContentKind {
+    /// The file is a text of the given character set.
+    Text(crate::encoding::Encoding),
+
+    /// The file is no text.
+    Binary,
+}
+
+impl ContentKind {
+    /// The kind of the given bytes.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_viewer::content::ContentKind;
+    /// use phocommander_viewer::encoding::Encoding;
+    ///
+    /// assert_eq!(ContentKind::of(b"hallo"), ContentKind::Text(Encoding::Utf8));
+    /// ```
+    pub fn of(bytes: &[u8]) -> ContentKind {
+        match crate::encoding::Encoding::detect(bytes) {
+            crate::encoding::Encoding::Binary => ContentKind::Binary,
+            zeichensatz => ContentKind::Text(zeichensatz),
+        }
+    }
+}
+
 /// The content of a file that the user opened.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpenedFile {
@@ -82,6 +115,15 @@ impl OpenedFile {
     /// ```
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    /// The kind of the content, as the viewer shows it.
+    ///
+    /// WHY: the viewer has to know whether the file is a text before it can
+    /// show it as one. A file that is no text is shown as a hex dump
+    /// (FR-51, FR-52).
+    pub fn kind(&self) -> ContentKind {
+        ContentKind::of(&self.bytes)
     }
 
     /// The bytes that were read.

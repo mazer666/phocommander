@@ -101,6 +101,7 @@ pub fn execute(
         } => {
             let request = CopyRequest::new(source.clone(), destination.clone())
                 .with_mode(*mode)
+                .with_rules(job.rules)
                 .with_restriction(job.restricted_items.clone());
             let outcome = execute_copy(fs, &request, context)?;
             Ok(JobResult {
@@ -272,7 +273,7 @@ pub fn confirmed_job(
 // there.
 mod tests {
     use super::*;
-    use crate::copy::CopyMode;
+    use crate::copy::{CopyMode, CopyPolicy};
     use crate::fake_fs::FakeFileSystem;
     use crate::job::{JobState, Priority};
     use std::path::Path;
@@ -378,6 +379,66 @@ mod tests {
         assert_eq!(result.state, JobState::Failed);
         assert_eq!(result.errors.len(), 1);
         assert!(fs.trashed().is_empty());
+    }
+
+    #[test]
+    fn the_copy_compares_the_checksums_only_when_the_rule_says_so() {
+        // arrange
+        // WHY: the rule "checksum_on_copy" is a setting of the user. A
+        //       program that compared the checksums on its own would read
+        //       the target a second time on a machine where the user has
+        //       switched the comparison off — and it would spend the time
+        //       for it.
+        let fs = FakeFileSystem::new();
+        fs.write_file(Path::new("/photos/a.txt"), b"payload")
+            .unwrap_or_else(|error| panic!("the file should have been written: {error}"));
+        let mut context = context();
+        let job = Job::new(
+            JobKind::Copy {
+                source: Path::new("/photos").to_path_buf(),
+                destination: Path::new("/backup").to_path_buf(),
+                mode: CopyMode::Verified,
+            },
+            Priority::Normal,
+        )
+        .with_rules(CopyPolicy::new(false, false));
+
+        // act
+        let result = execute(&fs, &job, &mut context)
+            .unwrap_or_else(|error| panic!("the job should have worked: {error}"));
+
+        // assert
+        assert_eq!(result.state, JobState::Done);
+        // WHY: the target was not read a second time.
+        assert_eq!(fs.checksum_calls(), 0);
+    }
+
+    #[test]
+    fn the_copy_compares_the_checksums_when_the_rule_is_in_force() {
+        // arrange
+        let fs = FakeFileSystem::new();
+        fs.write_file(Path::new("/photos/a.txt"), b"payload")
+            .unwrap_or_else(|error| panic!("the file should have been written: {error}"));
+        let mut context = context();
+        let job = Job::new(
+            JobKind::Copy {
+                source: Path::new("/photos").to_path_buf(),
+                destination: Path::new("/backup").to_path_buf(),
+                mode: CopyMode::Verified,
+            },
+            Priority::Normal,
+        )
+        .with_rules(CopyPolicy::strict());
+
+        // act
+        let result = execute(&fs, &job, &mut context)
+            .unwrap_or_else(|error| panic!("the job should have worked: {error}"));
+
+        // assert
+        assert_eq!(result.state, JobState::Done);
+        // WHY: the target was read a second time and the checksums were
+        //       compared.
+        assert_eq!(fs.checksum_calls(), 1);
     }
 
     #[test]

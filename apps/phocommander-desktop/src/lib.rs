@@ -30,6 +30,8 @@ pub mod filesystem;
 pub mod jobs;
 pub mod language;
 pub mod linux;
+pub mod listing;
+pub mod preview;
 pub mod rename;
 pub mod security;
 pub mod windows;

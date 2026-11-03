@@ -41,11 +41,13 @@ use std::path::Path;
 use std::sync::Arc;
 
 use phocommander_i18n::Locale;
-use phocommander_ops::copy::CopyMode;
+use phocommander_ops::copy::{CopyMode, CopyPolicy};
+use phocommander_ops::port::FileSystem;
 use phocommander_ops::queue::JobQueue;
 use phocommander_ui::WorkSurfaceApp;
 
 use crate::execute::submit;
+use crate::filesystem::HostFileSystem;
 
 use crate::language::{CHECK_INTERVAL, ConfigWatcher, InterfaceLanguage, locale_of};
 
@@ -86,6 +88,23 @@ pub struct DesktopApp {
     /// WHY: the way is a setting of the user (FR-22b), and it stands in
     ///       the configuration file.
     copy_mode: CopyMode,
+
+    /// The file system of the host.
+    ///
+    /// WHY: the commands of the surface ask for directories, and the
+    ///       directory is read from the disk. The file system of the host
+    ///       is therefore part of the application and not of the surface.
+    file_system: Box<dyn FileSystem>,
+
+    /// The rules that decide how a copy treats the files it copies.
+    ///
+    /// WHY: the rules come from the configuration of the user, and they
+    ///       decide whether the copy compares the checksums and whether a
+    ///       link is dereferenced. A program that decided them on its own
+    ///       would behave the same on a private machine and on a managed
+    ///       one — and the difference is the setting, not the program
+    ///       (section 9.8).
+    copy_rules: CopyPolicy,
 }
 
 impl DesktopApp {
@@ -106,18 +125,47 @@ impl DesktopApp {
         watcher: ConfigWatcher,
         queue: Arc<JobQueue>,
     ) -> Self {
+        Self::with_file_system(
+            surface,
+            locale,
+            watcher,
+            queue,
+            Box::new(HostFileSystem::new()),
+        )
+    }
+
+    /// The application with a file system of its own.
+    ///
+    /// WHY: the host of the sandbox has no file system of its own, and a
+    ///       test needs one that it can fill. The file system is therefore
+    ///       a parameter of the construction, and the composition root
+    ///       hands the file system of the host over.
+    pub fn with_file_system(
+        surface: WorkSurfaceApp,
+        locale: Locale,
+        watcher: ConfigWatcher,
+        queue: Arc<JobQueue>,
+        file_system: Box<dyn FileSystem>,
+    ) -> Self {
         Self {
             surface,
             locale,
             watcher,
             queue,
+            file_system,
             copy_mode: CopyMode::Verified,
+            copy_rules: CopyPolicy::strict(),
         }
     }
 
     /// Sets the way a file is copied.
     pub fn set_copy_mode(&mut self, mode: CopyMode) {
         self.copy_mode = mode;
+    }
+
+    /// Sets the rules that decide how a copy treats the files it copies.
+    pub fn set_copy_rules(&mut self, rules: CopyPolicy) {
+        self.copy_rules = rules;
     }
 
     /// The shell of the interface.
@@ -241,9 +289,11 @@ impl eframe::App for DesktopApp {
         if !commands.is_empty() {
             submit(
                 &commands,
-                self.surface.surface(),
+                self.surface.surface_mut(),
                 &self.queue,
+                &self.file_system,
                 self.copy_mode,
+                self.copy_rules,
             );
         }
         self.surface.update(ui);
