@@ -46,7 +46,7 @@ pub use entry_name::{EntryNameError, MAX_ENTRY_NAME_BYTES, resolve_entry_name};
 pub use error::{ArchiveError, LimitKind, RefusalReason};
 pub use extract::{
     ConflictPolicy, EntryOutcome, ExtractionOptions, ExtractionReport, SkipReason, extract_archive,
-    extract_from,
+    extract_entry, extract_from,
 };
 pub use formats::{
     ArchiveReader, ArchiveWriter, ContainerFormat, EntryVisitor, TarCompression, VisitDecision,

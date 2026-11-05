@@ -32,7 +32,7 @@ use std::path::Path;
 
 use phocommander_archive::{
     ArchiveError, EntryNameError, EntryOutcome, ExtractionOptions, RefusalReason, SkipReason,
-    extract_archive,
+    extract_archive, extract_entry,
 };
 use phocommander_testkit::{TempTree, count_files, directory_names};
 use zip::write::SimpleFileOptions;
@@ -486,4 +486,42 @@ fn an_entry_written_through_an_existing_symbolic_link_is_refused() {
         Vec::<String>::new(),
         "a file was written outside of the destination directory"
     );
+}
+
+#[test]
+fn the_extraction_of_one_entry_writes_that_entry_and_nothing_else() {
+    // arrange
+    // WHY: the user browses the contents of an archive and takes out the
+    //       one file that he wants. The other entries stay in the archive.
+    let tree = TempTree::new("archive-one-entry")
+        .unwrap_or_else(|error| panic!("the directory should exist: {error}"));
+    let archive = tree.path().join("archiv.zip");
+    let destination = tree.path().join("heraus");
+    build_archive(
+        &archive,
+        &[
+            ("notes.txt", b"der Inhalt der Notizen"),
+            ("bild.png", b"die Bytes des Bildes"),
+            ("ordner/datei.txt", b"die Datei im Ordner"),
+        ],
+    );
+
+    // act
+    let report = match extract_entry(
+        &archive,
+        "bild.png",
+        &destination,
+        &ExtractionOptions::default(),
+    ) {
+        Ok(report) => report,
+        Err(error) => panic!("the entry should have been extracted: {error}"),
+    };
+
+    // assert
+    assert_eq!(report.written_entries, 1, "{:?}", report.outcomes);
+    // WHY: the file that was named is on the disk.
+    assert!(destination.join("bild.png").exists());
+    // WHY: and the other entries are not.
+    assert!(!destination.join("notes.txt").exists());
+    assert!(!destination.join("ordner").exists());
 }

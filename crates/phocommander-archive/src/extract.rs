@@ -247,6 +247,41 @@ pub fn extract_archive(
     extract_from(reader.as_mut(), destination, options)
 }
 
+/// Extracts one entry of an archive into a destination directory.
+///
+/// WHY: the user browses the contents of an archive and takes out the one
+///       file that he wants. Everything else stays in the archive — the
+///       extraction writes the entry that is named and nothing else
+///       (FR-54).
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_archive::{ExtractionOptions, extract_entry};
+///
+/// # fn main() -> Result<(), phocommander_archive::ArchiveError> {
+/// let report = extract_entry(
+///     std::path::Path::new("holiday.zip"),
+///     "notes.txt",
+///     std::path::Path::new("/tmp/holiday"),
+///     &ExtractionOptions::default(),
+/// )?;
+/// assert_eq!(report.written_entries, 1);
+/// # Ok(())
+/// # }
+/// ```
+pub fn extract_entry(
+    archive: &Path,
+    entry_name: &str,
+    destination: &Path,
+    options: &ExtractionOptions,
+) -> Result<ExtractionReport, ArchiveError> {
+    let mut reader = crate::formats::open_archive(archive)?;
+    let mut extraction = Extraction::new(destination, options)?;
+    extraction.only_entry = Some(entry_name.to_string());
+    reader.for_each_entry(&mut extraction)?;
+    Ok(extraction.into_report())
+}
+
 /// Extracts the entries of a reader into a destination directory.
 ///
 /// EXAMPLE:
@@ -289,6 +324,14 @@ struct Extraction {
     handle: OwnedFd,
     limits: ExtractionLimits,
     conflict: ConflictPolicy,
+    /// The name of the entry that is written, if only one is wanted.
+    ///
+    /// WHY: the user browses the contents of an archive and takes out the
+    ///       one file that he wants. The filter stands **before** the write
+    ///       and not in it: an entry that is not wanted is never written,
+    ///       and the limits and the path resolution apply to the whole
+    ///       archive all the same.
+    only_entry: Option<String>,
     abort_on_refused_entry: bool,
     written_bytes: u64,
     entry_count: u64,
@@ -322,6 +365,7 @@ impl Extraction {
             limits: options.limits,
             conflict: options.conflict,
             abort_on_refused_entry: options.abort_on_refused_entry,
+            only_entry: None,
             written_bytes: 0,
             entry_count: 0,
             outcomes: Vec::new(),
@@ -681,6 +725,16 @@ impl EntryVisitor for Extraction {
                 actual: self.entry_count,
                 limit: self.limits.max_entries,
             });
+        }
+
+        // WHY: the filter stands before the write. An entry that the user
+        //       does not want is never written, and the name of an entry
+        //       that leaves the destination is never resolved and never
+        //       reaches the disk.
+        if let Some(only) = &self.only_entry
+            && entry.name.trim_end_matches('/') != only
+        {
+            return Ok(VisitDecision::Continue);
         }
 
         match entry.kind {
