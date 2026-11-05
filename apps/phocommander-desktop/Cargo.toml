@@ -36,6 +36,7 @@ path = "src/lib.rs"
 eframe = { workspace = true }
 egui = { workspace = true }
 
+phocommander-archive = { path = "../../crates/phocommander-archive" }
 phocommander-config = { path = "../../crates/phocommander-config" }
 phocommander-core = { path = "../../crates/phocommander-core" }
 phocommander-i18n = { path = "../../crates/phocommander-i18n" }

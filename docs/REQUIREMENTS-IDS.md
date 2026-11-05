@@ -107,7 +107,7 @@ Every row names the section **and the line** of the specification it was taken f
 | FR-50 | The viewer opens in an additional area without leaving the application | §4.5 Viewer, line 261 | M1 | Must | manual — Manual test | AC-M1-30 |
 | FR-51 | Text is shown with character set detection for UTF-8 and UTF-16 | §4.5 Viewer, line 262 | M1 | Must | automated — Unit test per encoding | AC-M1-31 |
 | FR-52 | A hex dump shows offset, hex and printable ASCII | §4.5 Viewer, line 263 | M1 | Must | automated — Unit test | AC-M1-32 |
-| FR-53 | Common image formats are displayed | §4.5 Viewer, line 264 | M1 | Must | automated — Unit test per format | AC-M1-33 |
+| FR-53 | Common image formats are displayed — PNG, JPEG, GIF, BMP and WebP; the format is recognised by its mark and not by the extension of the file | §4.5 Viewer, line 264 | M1 | Must | automated — Unit test per format | AC-M1-33 |
 | FR-54 | The contents of an archive can be browsed and a single entry extracted | §4.5 Viewer, line 265 | M1 | Must | automated — Integration test | AC-M1-34 |
 | FR-55 | File metadata is shown: size, type, timestamps, checksum | §4.5 Viewer, line 266 | M1 | Must | automated — Unit test | AC-M1-35 |
 | FR-56 | PDF text and page navigation are supported | §4.5 Viewer, line 267 | M2 | Should | manual — Manual test | AC-M2-13 |

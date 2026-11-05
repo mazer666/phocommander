@@ -36,6 +36,13 @@ pub struct Preview {
     size: u64,
     lines: Vec<String>,
     binary: bool,
+    /// The bytes of the picture, if the file is one.
+    ///
+    /// WHY: the quick view shows a picture and not a notice about it. The
+    ///       bytes travel with the preview, because the interface crate
+    ///       may not depend on the crate of the viewer — and the drawing
+    ///       needs the bytes of the picture and not only its format.
+    image: Option<(String, Vec<u8>)>,
 }
 
 impl Preview {
@@ -55,7 +62,52 @@ impl Preview {
             size,
             lines,
             binary,
+            image: None,
         }
+    }
+
+    /// The preview of a picture.
+    ///
+    /// WHY: the bytes of the picture are the content of the preview. The
+    ///       drawing loads them into a texture and shows the picture.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_ui::preview::Preview;
+    /// use std::path::PathBuf;
+    ///
+    /// let preview = Preview::of_image(PathBuf::from("/photos/a.png"), 2048, "png", vec![1, 2, 3]);
+    /// assert!(preview.is_image());
+    /// assert_eq!(preview.image_extension(), Some("png"));
+    /// ```
+    pub fn of_image(
+        path: PathBuf,
+        size: u64,
+        extension: impl Into<String>,
+        bytes: Vec<u8>,
+    ) -> Self {
+        Self {
+            path,
+            size,
+            lines: Vec::new(),
+            binary: false,
+            image: Some((extension.into(), bytes)),
+        }
+    }
+
+    /// Whether the file is a picture.
+    pub const fn is_image(&self) -> bool {
+        self.image.is_some()
+    }
+
+    /// The bytes of the picture, if the file is one.
+    pub fn image_bytes(&self) -> Option<&[u8]> {
+        self.image.as_ref().map(|(_, bytes)| bytes.as_slice())
+    }
+
+    /// The extension of the picture, if the file is one.
+    pub fn image_extension(&self) -> Option<&str> {
+        self.image.as_ref().map(|(extension, _)| extension.as_str())
     }
 
     /// The path of the file.

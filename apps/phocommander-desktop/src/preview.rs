@@ -62,6 +62,46 @@ impl PreviewSource for ViewerPreviewSource {
         //       that the user has not opened, and the quick view honours it.
         let datei = self.reader.preview(path).ok()?;
 
+        // WHY: an archive is shown as the list of its entries, and the
+        //       container decides itself whether it can be opened. A file
+        //       that is no archive gives no entries, and the surface asks
+        //       every file (FR-54).
+        let eintraege = crate::archive::list_entries(path);
+        if !eintraege.is_empty() {
+            let zeilen: Vec<String> = eintraege
+                .iter()
+                .map(|eintrag| {
+                    // WHY: the ZIP format writes the name of a directory
+                    //       with a slash at the end. The name is shown as
+                    //       the format carries it — one slash, not two.
+                    let name = eintrag.name.trim_end_matches('/');
+                    if eintrag.is_directory {
+                        format!("{name}/")
+                    } else {
+                        format!("{name}  ({} bytes)", eintrag.size)
+                    }
+                })
+                .collect();
+            return Some(Preview::new(
+                datei.path().to_path_buf(),
+                datei.size(),
+                zeilen,
+                false,
+            ));
+        }
+
+        // WHY: a picture is shown as a picture, and the bytes travel with
+        //       the preview, because the surface may not depend on the
+        //       crate of the viewer (FR-53).
+        if let ContentKind::Image(format) = datei.kind() {
+            return Some(Preview::of_image(
+                datei.path().to_path_buf(),
+                datei.size(),
+                format.extension(),
+                datei.bytes().to_vec(),
+            ));
+        }
+
         let (zeilen, binaer) = match datei.kind() {
             ContentKind::Text(zeichensatz) => {
                 // WHY: the text of the file is decoded with the character set
@@ -71,7 +111,7 @@ impl PreviewSource for ViewerPreviewSource {
                 let zeilen: Vec<String> = text.lines().map(str::to_string).collect();
                 (zeilen, false)
             }
-            ContentKind::Binary => {
+            ContentKind::Binary | ContentKind::Image(_) => {
                 // WHY: a file that is no text is shown as a hex dump. The
                 //       dump shows the bytes and nothing else.
                 let dump = HexDump::new(datei.bytes(), 0);
@@ -166,9 +206,12 @@ mod tests {
     #[test]
     fn a_file_that_is_no_text_is_shown_as_a_hex_dump() {
         // arrange
+        // WHY: the bytes are no picture and no text. The mark of a picture
+        //       would make it a picture — the reader knows the format by
+        //       its mark and not by its name.
         let datei = TempFile::with_content(
             "phocommander-preview-binary.bin",
-            &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01],
+            &[0x00, 0x01, 0x02, 0x03, 0xFE, 0xFF, 0x00, 0x0A, 0x1B, 0x00],
         );
         let source = source();
 
@@ -181,8 +224,33 @@ mod tests {
         assert!(vorschau.is_binary());
         assert_eq!(vorschau.lines().len(), 1);
         let zeile = &vorschau.lines()[0];
-        assert!(zeile.contains("89 50 4e 47"), "{zeile}");
+        assert!(zeile.contains("00 01 02 03 fe ff"), "{zeile}");
         assert!(zeile.starts_with("00000000"), "{zeile}");
+    }
+
+    #[test]
+    fn a_picture_is_shown_as_a_picture() {
+        // arrange
+        // WHY: the bytes of a picture that begins with the mark of the PNG
+        //       are a picture — and the extension of the file lies often
+        //       enough.
+        let datei = TempFile::with_content(
+            "phocommander-preview-picture.png",
+            &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01],
+        );
+        let source = source();
+
+        // act
+        let vorschau = source.preview(&datei.path);
+
+        // assert
+        // WHY: the preview carries the bytes and the format, and the
+        //       surface draws the picture and not a notice about it.
+        let vorschau = vorschau.unwrap_or_else(|| panic!("the file should have been read"));
+        assert!(vorschau.is_image());
+        assert_eq!(vorschau.image_extension(), Some("png"));
+        assert_eq!(vorschau.image_bytes().map(|bytes| bytes.len()), Some(10));
+        assert!(vorschau.lines().is_empty());
     }
 
     #[test]

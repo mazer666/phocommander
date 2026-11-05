@@ -235,6 +235,31 @@ pub(crate) fn draw_quick_view(
             },
         );
 
+        // WHY: a picture is shown as a picture and not as a notice about
+        //       one. The bytes travel with the preview, and the framework
+        //       loads them into a texture and keeps it (FR-53).
+        if let (Some(bytes), Some(extension)) = (preview.image_bytes(), preview.image_extension()) {
+            let bild_rect = Rect::from_min_size(
+                egui::pos2(rect.min.x, name_rect.bottom()),
+                Vec2::new(rect.width(), rect.height() - name_rect.height()),
+            );
+            ui.scope_builder(egui::UiBuilder::new().max_rect(bild_rect), |ui| {
+                // WHY: the URI carries the extension, because the loader of
+                //       the framework reads the format out of it.
+                ui.add(
+                    egui::Image::new(egui::ImageSource::Bytes {
+                        uri: format!("bytes://bild.{extension}").into(),
+                        // WHY: the bytes of the framework are owned. The copy
+                        //       happens once for every picture, and the
+                        //       framework keeps the texture.
+                        bytes: bytes.to_vec().into(),
+                    })
+                    .fit_to_exact_size(bild_rect.size()),
+                );
+            });
+            return;
+        }
+
         if preview.is_binary() {
             let binary_rect = Rect::from_min_size(
                 egui::pos2(rect.min.x, name_rect.bottom()),

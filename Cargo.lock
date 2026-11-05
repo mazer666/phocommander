@@ -3490,6 +3490,7 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
+ "phocommander-archive",
  "phocommander-config",
  "phocommander-core",
  "phocommander-i18n",

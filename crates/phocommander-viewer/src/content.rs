@@ -30,6 +30,9 @@ pub enum ContentKind {
     /// The file is a text of the given character set.
     Text(crate::encoding::Encoding),
 
+    /// The file is a picture of the given format.
+    Image(crate::image::ImageFormat),
+
     /// The file is no text.
     Binary,
 }
@@ -45,6 +48,12 @@ impl ContentKind {
     /// assert_eq!(ContentKind::of(b"hallo"), ContentKind::Text(Encoding::Utf8));
     /// ```
     pub fn of(bytes: &[u8]) -> ContentKind {
+        // WHY: the picture comes before the text. A picture whose bytes are
+        //       valid UTF-8 is still a picture, and the reader of the file
+        //       must not show it as a text (FR-53).
+        if let Some(format) = crate::image::ImageFormat::detect(bytes) {
+            return ContentKind::Image(format);
+        }
         match crate::encoding::Encoding::detect(bytes) {
             crate::encoding::Encoding::Binary => ContentKind::Binary,
             zeichensatz => ContentKind::Text(zeichensatz),

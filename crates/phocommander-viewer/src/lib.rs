@@ -32,11 +32,13 @@
 pub mod content;
 pub mod encoding;
 pub mod hex;
+pub mod image;
 pub mod policy;
 pub mod reader;
 
 pub use content::{ContentKind, OpenedFile};
 pub use encoding::Encoding;
 pub use hex::{HexDump, HexLine};
+pub use image::ImageFormat;
 pub use policy::{ReadPolicy, ReadTrigger};
 pub use reader::{ViewerError, ViewerReader};

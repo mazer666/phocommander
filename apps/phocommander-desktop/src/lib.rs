@@ -23,6 +23,7 @@
 //! assert!(plan.copy_policy().verifies_checksums());
 //! ```
 
+pub mod archive;
 pub mod catalogue;
 pub mod desktop;
 pub mod execute;
