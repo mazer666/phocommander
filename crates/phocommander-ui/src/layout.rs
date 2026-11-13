@@ -120,6 +120,13 @@ pub struct VisibleAreas {
     toolbar: bool,
     directory_tree: bool,
     quick_view: bool,
+    /// The area of the viewer.
+    ///
+    /// WHY: the viewer opens in an additional area of the surface and not
+    ///       in a window of its own (FR-50). The area is there on the
+    ///       desktop and not on the telephone, where the space is too
+    ///       small for a list and a viewer at the same time.
+    viewer: bool,
     job_list: bool,
     status_bar: bool,
 }
@@ -132,6 +139,7 @@ impl VisibleAreas {
             toolbar: true,
             directory_tree: true,
             quick_view: true,
+            viewer: true,
             job_list: true,
             status_bar: true,
         }
@@ -144,6 +152,7 @@ impl VisibleAreas {
             toolbar: false,
             directory_tree: false,
             quick_view: false,
+            viewer: false,
             job_list: false,
             status_bar: true,
         }
@@ -167,6 +176,11 @@ impl VisibleAreas {
     /// Whether the quick view is shown.
     pub const fn quick_view(&self) -> bool {
         self.quick_view
+    }
+
+    /// Whether the area of the viewer is shown.
+    pub const fn viewer(&self) -> bool {
+        self.viewer
     }
 
     /// Whether the list of the jobs is shown.
@@ -254,6 +268,10 @@ impl LayoutProfile {
                     toolbar: false,
                     directory_tree: true,
                     quick_view: false,
+                    // WHY: the screen of a telephone is too small for a
+                    //       list and a viewer at the same time. The viewer
+                    //       opens there as a sheet above the list.
+                    viewer: false,
                     job_list: true,
                     status_bar: true,
                 };

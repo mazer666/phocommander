@@ -1,15 +1,16 @@
-//! The quick view of the desktop build.
+//! The quick view and the viewer of the desktop build.
 //!
-//! WHAT: the source that produces the content of the quick view
-//! ([`ViewerPreviewSource`]).
-//! WHY: the surface knows the quick view and not the reader of the viewer,
-//! and the reader knows the file system and not the surface. The adapter
-//! is the one place where the two meet: it opens the file with the reader,
-//! recognises the character set of the text, and hands the lines to the
-//! surface (FR-51, FR-52).
+//! WHAT: the source that produces the content of a file
+//!       ([`ViewerPreviewSource`]).
+//! WHY: the surface knows the quick view and the viewer and not the reader
+//! of the viewer, and the reader knows the file system and not the
+//! surface. The adapter is the one place where the two meet: it opens the
+//! file with the reader, recognises the character set of the text, and
+//! hands the lines to the surface (FR-51, FR-52).
 //! A file that is no text is shown as a hex dump — the offset, the bytes in
 //! hexadecimal and the printable characters. That is the only way to show
-//! what such a file really holds.
+//! what such a file really holds. An archive is shown as the list of its
+//! entries (FR-54), and a picture as a picture (FR-53).
 //!
 //! EXAMPLE:
 //! ```no_run
@@ -20,6 +21,7 @@
 //!
 //! let source = ViewerPreviewSource::new(ViewerReader::new(ReadPolicy::strict(), 10_485_760));
 //! assert!(source.preview(std::path::Path::new("/notes.txt")).is_none());
+//! ```
 //! ```
 
 use std::path::Path;
@@ -32,7 +34,7 @@ use phocommander_viewer::reader::ViewerReader;
 /// The number of the lines that the quick view shows.
 const MAX_LINES: usize = 200;
 
-/// The source of the quick view.
+/// The source of the quick view and of the viewer.
 pub struct ViewerPreviewSource {
     /// The reader that opens the file.
     reader: ViewerReader,
@@ -53,6 +55,27 @@ impl ViewerPreviewSource {
     pub fn new(reader: ViewerReader) -> Self {
         Self { reader }
     }
+
+    /// The content of the file, as the user asked for it.
+    ///
+    /// WHY: the viewer opens a file that the user has named himself. That
+    ///       is a different trigger than the preview of the marked entry,
+    ///       and the rule "read_only_on_demand" is about the second one.
+    ///
+    /// EXAMPLE:
+    /// ```no_run
+    /// use phocommander_desktop::preview::ViewerPreviewSource;
+    /// use phocommander_viewer::policy::ReadPolicy;
+    /// use phocommander_viewer::reader::ViewerReader;
+    ///
+    /// let source = ViewerPreviewSource::new(ViewerReader::new(ReadPolicy::strict(), 1024));
+    /// assert!(source.open(std::path::Path::new("/notes.txt")).is_none());
+    /// ```
+    pub fn open(&self, path: &Path) -> Option<Preview> {
+        // WHY: the reader decides whether the file may be read at all.
+        let datei = self.reader.open(path).ok()?;
+        preview_of(&datei, path)
+    }
 }
 
 impl PreviewSource for ViewerPreviewSource {
@@ -61,71 +84,77 @@ impl PreviewSource for ViewerPreviewSource {
         //       rule "read_only_on_demand" refuses the reading of a file
         //       that the user has not opened, and the quick view honours it.
         let datei = self.reader.preview(path).ok()?;
+        preview_of(&datei, path)
+    }
+}
 
-        // WHY: an archive is shown as the list of its entries, and the
-        //       container decides itself whether it can be opened. A file
-        //       that is no archive gives no entries, and the surface asks
-        //       every file (FR-54).
-        let eintraege = crate::archive::list_entries(path);
-        if !eintraege.is_empty() {
-            let zeilen: Vec<String> = eintraege
-                .iter()
-                .map(|eintrag| {
-                    // WHY: the ZIP format writes the name of a directory
-                    //       with a slash at the end. The name is shown as
-                    //       the format carries it — one slash, not two.
-                    let name = eintrag.name.trim_end_matches('/');
-                    if eintrag.is_directory {
-                        format!("{name}/")
-                    } else {
-                        format!("{name}  ({} bytes)", eintrag.size)
-                    }
-                })
-                .collect();
-            return Some(Preview::new(
-                datei.path().to_path_buf(),
-                datei.size(),
-                zeilen,
-                false,
-            ));
-        }
-
-        // WHY: a picture is shown as a picture, and the bytes travel with
-        //       the preview, because the surface may not depend on the
-        //       crate of the viewer (FR-53).
-        if let ContentKind::Image(format) = datei.kind() {
-            return Some(Preview::of_image(
-                datei.path().to_path_buf(),
-                datei.size(),
-                format.extension(),
-                datei.bytes().to_vec(),
-            ));
-        }
-
-        let (zeilen, binaer) = match datei.kind() {
-            ContentKind::Text(zeichensatz) => {
-                // WHY: the text of the file is decoded with the character set
-                //       that was recognised, and the mark at the head of the
-                //       file is not a character of the text.
-                let text = zeichensatz.decode(datei.bytes())?;
-                let zeilen: Vec<String> = text.lines().map(str::to_string).collect();
-                (zeilen, false)
-            }
-            ContentKind::Binary | ContentKind::Image(_) => {
-                // WHY: a file that is no text is shown as a hex dump. The
-                //       dump shows the bytes and nothing else.
-                let dump = HexDump::new(datei.bytes(), 0);
-                (dump.to_lines(), true)
-            }
-        };
-
-        Some(Preview::new(
+/// The preview of an opened file.
+///
+/// WHY: the path is needed beside the bytes, because an archive is opened
+///       by its path and not by its content.
+fn preview_of(datei: &phocommander_viewer::content::OpenedFile, path: &Path) -> Option<Preview> {
+    // WHY: an archive is shown as the list of its entries, and the container
+    //       decides itself whether it can be opened. A file that is no archive
+    //       gives no entries, and the surface asks every file (FR-54).
+    let eintraege = crate::archive::list_entries(path);
+    if !eintraege.is_empty() {
+        let zeilen: Vec<String> = eintraege
+            .iter()
+            .map(|eintrag| {
+                // WHY: the ZIP format writes the name of a directory with a
+                //       slash at the end. The name is shown as the format
+                //       carries it — one slash, not two.
+                let name = eintrag.name.trim_end_matches('/');
+                if eintrag.is_directory {
+                    format!("{name}/")
+                } else {
+                    format!("{name}  ({} bytes)", eintrag.size)
+                }
+            })
+            .collect();
+        return Some(Preview::new(
             datei.path().to_path_buf(),
             datei.size(),
-            zeilen.into_iter().take(MAX_LINES).collect(),
-            binaer,
-        ))
+            zeilen,
+            false,
+        ));
     }
+
+    // WHY: a picture is shown as a picture, and the bytes travel with the
+    //       preview, because the surface may not depend on the crate of the
+    //       viewer (FR-53).
+    if let ContentKind::Image(format) = datei.kind() {
+        return Some(Preview::of_image(
+            datei.path().to_path_buf(),
+            datei.size(),
+            format.extension(),
+            datei.bytes().to_vec(),
+        ));
+    }
+
+    let (zeilen, binaer) = match datei.kind() {
+        ContentKind::Text(zeichensatz) => {
+            // WHY: the text of the file is decoded with the character set
+            //       that was recognised, and the mark at the head of the
+            //       file is not a character of the text.
+            let text = zeichensatz.decode(datei.bytes())?;
+            let zeilen: Vec<String> = text.lines().map(str::to_string).collect();
+            (zeilen, false)
+        }
+        ContentKind::Binary | ContentKind::Image(_) => {
+            // WHY: a file that is no text is shown as a hex dump. The dump
+            //       shows the bytes and nothing else.
+            let dump = HexDump::new(datei.bytes(), 0);
+            (dump.to_lines(), true)
+        }
+    };
+
+    Some(Preview::new(
+        datei.path().to_path_buf(),
+        datei.size(),
+        zeilen.into_iter().take(MAX_LINES).collect(),
+        binaer,
+    ))
 }
 
 #[cfg(test)]
@@ -135,7 +164,6 @@ impl PreviewSource for ViewerPreviewSource {
 mod tests {
     use super::*;
     use phocommander_viewer::policy::ReadPolicy;
-    use phocommander_viewer::reader::ViewerReader;
 
     /// A temporary file that removes itself.
     struct TempFile {
@@ -277,5 +305,22 @@ mod tests {
 
         // act, assert
         assert!(source.preview(&datei.path).is_none());
+    }
+
+    #[test]
+    fn the_viewer_reads_the_file_that_the_user_asked_for() {
+        // arrange
+        // WHY: the viewer opens a file that the user has named himself. The
+        //       rule "read_only_on_demand" is about the preview of the
+        //       marked entry, and not about the file that the user opens.
+        let datei = TempFile::with_content("phocommander-viewer-opened.txt", b"hallo");
+        let source = ViewerPreviewSource::new(ViewerReader::new(ReadPolicy::new(true), 1_048_576));
+
+        // act
+        let inhalt = source.open(&datei.path);
+
+        // assert
+        let inhalt = inhalt.unwrap_or_else(|| panic!("the file should have been read"));
+        assert_eq!(inhalt.lines(), &["hallo".to_string()]);
     }
 }

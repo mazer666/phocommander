@@ -258,7 +258,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 
 | ID | Requirement | Milestone | Priority | Verification |
 |---|---|---|---|---|
-| FR-50 | The viewer opens in an additional area without leaving the application | M1 | Must | Manual test |
+| FR-50 | The viewer opens in an additional area without leaving the application — the area lies below the panels, and the content comes from the reader of the viewer | M1 | Must | Manual test |
 | FR-51 | Text is shown with character set detection for UTF-8 and UTF-16 | M1 | Must | Unit test per encoding |
 | FR-52 | A hex dump shows offset, hex and printable ASCII | M1 | Must | Unit test |
 | FR-53 | Common image formats are displayed — PNG, JPEG, GIF, BMP and WebP; the format is recognised by its mark and not by the extension of the file | M1 | Must | Unit test per format |

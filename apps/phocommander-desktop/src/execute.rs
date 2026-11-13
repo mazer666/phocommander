@@ -24,6 +24,12 @@
 //!     &mut surface,
 //!     &queue,
 //!     &phocommander_ops::fake_fs::FakeFileSystem::new(),
+//!     &phocommander_desktop::preview::ViewerPreviewSource::new(
+//!         phocommander_viewer::reader::ViewerReader::new(
+//!             phocommander_viewer::policy::ReadPolicy::strict(),
+//!             10_485_760,
+//!         ),
+//!     ),
 //!     phocommander_ops::copy::CopyMode::Verified,
 //!     phocommander_ops::copy::CopyPolicy::strict(),
 //! );
@@ -40,6 +46,7 @@ use phocommander_ui::surface::{WorkSurface, panel_path};
 
 use crate::archive::{entries_of_the_archive, entries_of_the_archive_at};
 use crate::listing::read_entries;
+use crate::preview::ViewerPreviewSource;
 
 /// Submits the commands of the surface to the waiting room.
 ///
@@ -52,12 +59,13 @@ pub fn submit(
     surface: &mut WorkSurface,
     queue: &JobQueue,
     fs: &dyn FileSystem,
+    viewer: &ViewerPreviewSource,
     mode: CopyMode,
     rules: CopyPolicy,
 ) -> usize {
     let mut anzahl = 0;
     for command in commands {
-        if submit_one(command, surface, queue, fs, mode, rules) {
+        if submit_one(command, surface, queue, fs, viewer, mode, rules) {
             anzahl += 1;
         }
     }
@@ -70,6 +78,7 @@ fn submit_one(
     surface: &mut WorkSurface,
     queue: &JobQueue,
     fs: &dyn FileSystem,
+    viewer: &ViewerPreviewSource,
     mode: CopyMode,
     rules: CopyPolicy,
 ) -> bool {
@@ -125,6 +134,19 @@ fn submit_one(
             let panel = surface.panel_mut(*side);
             panel.set_path(path.clone());
             panel.set_entries(eintraege);
+            true
+        }
+        Command::OpenViewer { entry, .. } => {
+            // WHY: the viewer opens in an additional area of the surface and
+            //       not in a window of its own, so that the user does not
+            //       leave the application to look at a file (FR-50). The
+            //       content comes from the reader of the viewer, and it
+            //       travels to the area that shows it.
+            let preview = match viewer.open(entry) {
+                Some(preview) => preview,
+                None => return false,
+            };
+            surface.set_viewer(preview);
             true
         }
         Command::ExtractFromArchive {
@@ -274,6 +296,8 @@ mod tests {
     use phocommander_ops::job::JobKind;
     use phocommander_ui::panel::PanelSide;
     use phocommander_ui::surface::TransferRequest;
+    use phocommander_viewer::policy::ReadPolicy;
+    use phocommander_viewer::reader::ViewerReader;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
 
@@ -318,11 +342,16 @@ mod tests {
         queue: &JobQueue,
         fs: &dyn FileSystem,
     ) -> usize {
+        let viewer = Box::new(ViewerPreviewSource::new(ViewerReader::new(
+            ReadPolicy::strict(),
+            10_485_760,
+        )));
         super::submit(
             commands,
             surface,
             queue,
             fs,
+            &viewer,
             CopyMode::Verified,
             CopyPolicy::strict(),
         )
@@ -439,11 +468,16 @@ mod tests {
         let regeln = CopyPolicy::new(false, false);
 
         // act
+        let viewer = Box::new(ViewerPreviewSource::new(ViewerReader::new(
+            ReadPolicy::strict(),
+            10_485_760,
+        )));
         super::submit(
             &commands,
             &mut surface,
             &queue,
             &fs,
+            &viewer,
             CopyMode::Verified,
             regeln,
         );
@@ -602,6 +636,33 @@ mod tests {
         );
         let _ = std::fs::remove_file(&archive);
         let _ = std::fs::remove_dir_all(&ziel);
+    }
+
+    #[test]
+    fn the_command_of_the_viewer_puts_the_file_into_the_area() {
+        // arrange
+        // WHY: the viewer opens in an additional area of the surface and
+        //       not in a window of its own, so that the user does not leave
+        //       the application to look at a file (FR-50).
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        let datei = std::env::temp_dir().join("phocommander-viewer-area.txt");
+        let _ = std::fs::write(&datei, b"hallo welt");
+        let commands = vec![Command::OpenViewer {
+            side: PanelSide::Left,
+            entry: datei.clone(),
+        }];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert
+        assert_eq!(anzahl, 1);
+        let viewer = surface
+            .viewer()
+            .unwrap_or_else(|| panic!("the viewer should show the file"));
+        assert_eq!(viewer.lines(), &["hallo welt".to_string()]);
+        let _ = std::fs::remove_file(&datei);
     }
 
     #[test]

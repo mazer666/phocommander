@@ -303,6 +303,102 @@ pub(crate) fn draw_quick_view(
     });
 }
 
+/// Draws the area of the viewer.
+///
+/// WHY: the viewer opens in an additional area of the surface and not in a
+///       window of its own, so that the user does not leave the application
+///       to look at a file (FR-50). The area shows the name of the file,
+///       the lines of a text, the hex dump of a file that is no text and
+///       the picture of an image.
+pub(crate) fn draw_viewer(
+    ui: &mut egui::Ui,
+    rect: Rect,
+    surface: &WorkSurface,
+    style: &DrawStyle<'_>,
+) {
+    let metrics = style.metrics;
+    let palette = style.palette;
+    let texts = style.texts;
+
+    let Some(preview) = surface.viewer() else {
+        return;
+    };
+
+    ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
+        ui.spacing_mut().item_spacing.y = 0.0;
+        let row_height = metrics.row_height();
+
+        let name_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), row_height));
+        ui.advance_cursor_after_rect(name_rect);
+        ui.scope_builder(
+            egui::UiBuilder::new()
+                .max_rect(name_rect)
+                .layout(Layout::left_to_right(Align::Center)),
+            |ui| {
+                ui.label(RichText::new(preview.name()).strong());
+            },
+        );
+
+        if let Some(bytes) = preview.image_bytes()
+            && let Some(extension) = preview.image_extension()
+        {
+            let bild_rect = Rect::from_min_size(
+                egui::pos2(rect.min.x, name_rect.bottom()),
+                Vec2::new(rect.width(), rect.height() - name_rect.height()),
+            );
+            ui.scope_builder(egui::UiBuilder::new().max_rect(bild_rect), |ui| {
+                ui.add(
+                    egui::Image::new(egui::ImageSource::Bytes {
+                        uri: format!("bytes://bild.{extension}").into(),
+                        bytes: bytes.to_vec().into(),
+                    })
+                    .fit_to_exact_size(bild_rect.size()),
+                );
+            });
+            return;
+        }
+
+        if preview.is_binary() {
+            let binary_rect = Rect::from_min_size(
+                egui::pos2(rect.min.x, name_rect.bottom()),
+                Vec2::new(rect.width(), row_height),
+            );
+            ui.scope_builder(egui::UiBuilder::new().max_rect(binary_rect), |ui| {
+                ui.label(
+                    RichText::new(texts.get(TextKey::PanelQuickViewBinary))
+                        .color(palette.text_dimmed),
+                );
+            });
+            return;
+        }
+
+        let mut y = name_rect.bottom();
+        for line in preview.lines() {
+            let line_rect = Rect::from_min_size(
+                egui::pos2(rect.min.x, y),
+                Vec2::new(rect.width(), row_height),
+            );
+            if line_rect.bottom() > rect.bottom() {
+                break;
+            }
+            ui.advance_cursor_after_rect(line_rect);
+            ui.scope_builder(
+                egui::UiBuilder::new()
+                    .max_rect(line_rect)
+                    .layout(Layout::left_to_right(Align::Center)),
+                |ui| {
+                    ui.add_sized(
+                        [line_rect.width(), row_height],
+                        egui::Label::new(RichText::new(line).color(palette.text).monospace())
+                            .truncate(),
+                    );
+                },
+            );
+            y += row_height;
+        }
+    });
+}
+
 /// Draws the list of the jobs.
 pub(crate) fn draw_job_list(
     ui: &mut egui::Ui,

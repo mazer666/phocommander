@@ -39,6 +39,13 @@ pub struct WorkSurface {
     arrangement: PanelArrangement,
     overlay: Option<PanelSide>,
     quick_view: QuickView,
+    /// The file that the viewer shows, if the viewer shows one.
+    ///
+    /// WHY: the viewer opens in an additional area of the surface and not
+    ///       in a window of its own, so that the user does not leave the
+    ///       application to look at a file (FR-50). The content is the one
+    ///       that the reader of the viewer produced.
+    viewer: Option<crate::preview::Preview>,
     jobs: Vec<JobSummary>,
     job_list_visible: bool,
 }
@@ -53,6 +60,7 @@ impl WorkSurface {
             arrangement: PanelArrangement::default(),
             overlay: None,
             quick_view: QuickView::new(),
+            viewer: None,
             jobs: Vec::new(),
             job_list_visible: true,
         }
@@ -262,7 +270,26 @@ impl WorkSurface {
     pub fn quick_view(&self) -> &QuickView {
         &self.quick_view
     }
-    /// The quick view of the marked file.
+
+    /// The file that the viewer shows, if the viewer shows one.
+    pub fn viewer(&self) -> Option<&crate::preview::Preview> {
+        self.viewer.as_ref()
+    }
+
+    /// Shows a file in the viewer.
+    ///
+    /// WHY: the content comes from the reader of the viewer, and the
+    ///       surface only carries it to the area that shows it (FR-50).
+    pub fn set_viewer(&mut self, preview: crate::preview::Preview) {
+        self.viewer = Some(preview);
+    }
+
+    /// Closes the viewer.
+    pub fn close_viewer(&mut self) {
+        self.viewer = None;
+    }
+
+    /// The quick view of the marked file, for the change.
     pub fn quick_view_mut(&mut self) -> &mut QuickView {
         &mut self.quick_view
     }

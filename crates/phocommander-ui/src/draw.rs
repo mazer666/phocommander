@@ -128,7 +128,16 @@ pub(crate) fn draw_surface(
     } else {
         0.0
     };
-    let furniture = menu_height + toolbar_height + job_height + status_height;
+    // WHY: the viewer takes the space below the panels, and it is only
+    //       there when a file is open. The area grows with the file and
+    //       takes at most the half of the window, so that the panels stay
+    //       visible (FR-50).
+    let viewer_height = if profile.areas().viewer() && surface.viewer().is_some() {
+        (area.height() * 0.5).max(row * 4.0)
+    } else {
+        0.0
+    };
+    let furniture = menu_height + toolbar_height + viewer_height + job_height + status_height;
 
     let mut y = area.min.y;
 
@@ -177,6 +186,15 @@ pub(crate) fn draw_surface(
             Vec2::new(quick_width, panels_height),
         );
         areas::draw_quick_view(ui, rect, surface, style);
+    }
+
+    if viewer_height > 0.0 {
+        let rect = Rect::from_min_size(
+            egui::pos2(area.min.x, y),
+            Vec2::new(area.width(), viewer_height),
+        );
+        y += viewer_height;
+        areas::draw_viewer(ui, rect, surface, style);
     }
 
     if job_height > 0.0 {

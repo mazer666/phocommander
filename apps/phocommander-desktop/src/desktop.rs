@@ -45,9 +45,12 @@ use phocommander_ops::copy::{CopyMode, CopyPolicy};
 use phocommander_ops::port::FileSystem;
 use phocommander_ops::queue::JobQueue;
 use phocommander_ui::WorkSurfaceApp;
+use phocommander_viewer::policy::ReadPolicy;
+use phocommander_viewer::reader::ViewerReader;
 
 use crate::execute::submit;
 use crate::filesystem::HostFileSystem;
+use crate::preview::ViewerPreviewSource;
 
 use crate::language::{CHECK_INTERVAL, ConfigWatcher, InterfaceLanguage, locale_of};
 
@@ -88,6 +91,14 @@ pub struct DesktopApp {
     /// WHY: the way is a setting of the user (FR-22b), and it stands in
     ///       the configuration file.
     copy_mode: CopyMode,
+
+    /// The source of the content of the files.
+    ///
+    /// WHY: the viewer opens a file that the user has named himself, and
+    ///       the quick view shows the file that is marked. Both go through
+    ///       the reader of the viewer, and the reader knows the rules that
+    ///       say which file may be read (FR-50).
+    viewer: Box<ViewerPreviewSource>,
 
     /// The file system of the host.
     ///
@@ -147,12 +158,39 @@ impl DesktopApp {
         queue: Arc<JobQueue>,
         file_system: Box<dyn FileSystem>,
     ) -> Self {
+        Self::with_everything(
+            surface,
+            locale,
+            watcher,
+            queue,
+            file_system,
+            Box::new(ViewerPreviewSource::new(ViewerReader::new(
+                ReadPolicy::strict(),
+                10_485_760,
+            ))),
+        )
+    }
+
+    /// The application with a source of the content of the files.
+    ///
+    /// WHY: the reader of the viewer needs the rule of the security
+    ///       section, and the limit of the size of a file. The composition
+    ///       root knows both and hands them over.
+    pub fn with_everything(
+        surface: WorkSurfaceApp,
+        locale: Locale,
+        watcher: ConfigWatcher,
+        queue: Arc<JobQueue>,
+        file_system: Box<dyn FileSystem>,
+        viewer: Box<ViewerPreviewSource>,
+    ) -> Self {
         Self {
             surface,
             locale,
             watcher,
             queue,
             file_system,
+            viewer,
             copy_mode: CopyMode::Verified,
             copy_rules: CopyPolicy::strict(),
         }
@@ -292,6 +330,7 @@ impl eframe::App for DesktopApp {
                 self.surface.surface_mut(),
                 &self.queue,
                 &self.file_system,
+                &self.viewer,
                 self.copy_mode,
                 self.copy_rules,
             );
