@@ -24,6 +24,7 @@ use std::path::Path;
 
 use phocommander_archive::entry::ArchiveEntry;
 use phocommander_archive::formats::{EntryVisitor, VisitDecision, open_archive};
+use phocommander_ui::panel::ArchiveView;
 
 /// One entry of an archive, as the surface shows it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +75,66 @@ pub fn list_entries(path: &Path) -> Vec<ArchiveItem> {
         return Vec::new();
     }
     collector.items
+}
+
+/// The entries of a place inside an archive.
+///
+/// WHY: the place inside the archive is a path of names, and the container
+///       carries the entries with their whole path. The entries that lie
+///       below the place are the ones of the place, and the others are not
+///       shown (FR-65).
+pub fn entries_of_the_archive(view: &ArchiveView) -> Vec<phocommander_ui::listing::Entry> {
+    let eintraege = list_entries(view.archive());
+    let inside = view.inside();
+    if inside.is_empty() {
+        return eintraege.iter().map(entry_of).collect();
+    }
+    eintraege
+        .iter()
+        .filter(|eintrag| {
+            eintrag
+                .name
+                .trim_end_matches('/')
+                .strip_prefix(inside)
+                .is_some_and(|rest| rest.starts_with('/'))
+        })
+        .map(|eintrag| {
+            let name = eintrag
+                .name
+                .trim_end_matches('/')
+                .strip_prefix(inside)
+                .unwrap_or_default()
+                .trim_start_matches('/')
+                .to_string();
+            let mut eintrag = entry_of(eintrag);
+            eintrag.name = name;
+            eintrag
+        })
+        .collect()
+}
+
+/// The entries of the root of the archive at the given path.
+pub fn entries_of_the_archive_at(
+    path: &Path,
+    inside: &str,
+) -> Vec<phocommander_ui::listing::Entry> {
+    let view = ArchiveView::new(path.to_path_buf()).at(inside);
+    entries_of_the_archive(&view)
+}
+
+/// The entry of the surface, out of the entry of the archive.
+fn entry_of(eintrag: &ArchiveItem) -> phocommander_ui::listing::Entry {
+    phocommander_ui::listing::Entry {
+        name: eintrag.name.trim_end_matches('/').to_string(),
+        kind: if eintrag.is_directory {
+            phocommander_ui::listing::EntryKind::Directory
+        } else {
+            phocommander_ui::listing::EntryKind::File
+        },
+        size: Some(eintrag.size),
+        modified: None,
+        depth: 0,
+    }
 }
 
 #[cfg(test)]

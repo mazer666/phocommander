@@ -23,6 +23,7 @@ action-panel-mkdir = Create directory
 action-panel-move = Move
 action-panel-next-tab = Next tab
 action-panel-open-in-other = Open in the other panel
+action-panel-open = Open
 action-panel-parent = Parent directory
 action-panel-prev-tab = Previous tab
 action-panel-quick-view-toggle = Quick view

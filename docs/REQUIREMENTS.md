@@ -274,7 +274,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 
 | ID | Requirement | Milestone | Priority | Verification |
 |---|---|---|---|---|
-| FR-65 | An archive appears as a normal entry and opens as a virtual directory | M1 | Must | Integration test |
+| FR-65 | An archive appears as a normal entry and opens as a virtual directory — the action `panel.open` opens the marked entry, and a directory is read while an archive opens as its content | M1 | Must | Integration test |
 | FR-66 | Entries can be listed, viewed and copied to the other panel without extracting the archive first | M1 | Must | Integration test |
 | FR-67 | ZIP, TAR with GZip, BZip2, XZ and Zstd, and 7z are supported | M1 | Must | Integration test per format |
 | FR-68 | Archives can be created, including encrypted | M1 | Must | Integration test |

@@ -17,6 +17,7 @@
 use std::path::PathBuf;
 
 use crate::actions::Action;
+use crate::panel::ArchiveView;
 use crate::panel::PanelSide;
 use crate::rename::RenamePair;
 use crate::surface::TransferRequest;
@@ -90,6 +91,60 @@ pub enum Command {
 
         /// The path of the new directory.
         path: PathBuf,
+    },
+
+    /// Open the marked entry of a panel.
+    ///
+    /// WHY: the surface knows the name of the entry and not its kind — a
+    ///       directory is read, and an archive opens as a virtual directory
+    ///       (FR-65). The shell decides, because the shell knows the file
+    ///       system and the formats.
+    OpenEntry {
+        /// The panel the entry is opened in.
+        side: PanelSide,
+
+        /// The path of the entry.
+        path: PathBuf,
+
+        /// The archive the panel shows, if it shows one.
+        ///
+        /// WHY: the path of an entry of an archive is a path inside the
+        ///       container and not a path of the disk. The command carries
+        ///       the place in the archive beside the path, so that the shell
+        ///       knows where to look.
+        archive: Option<ArchiveView>,
+    },
+
+    /// Show the inside of an archive in a panel.
+    ///
+    /// WHY: an archive opens as a virtual directory (FR-65). The command
+    ///       names the archive and the place inside it, and the shell reads
+    ///       the entries of that place and hands them to the panel.
+    LoadArchive {
+        /// The panel the archive is opened in.
+        side: PanelSide,
+
+        /// The path of the archive on the disk.
+        archive: PathBuf,
+
+        /// The place inside the archive.
+        inside: String,
+    },
+
+    /// Take one entry out of an archive into the other panel.
+    ///
+    /// WHY: the user browses the content of an archive and takes out the
+    ///       one file that he wants — everything else stays in the archive
+    ///       (FR-66).
+    ExtractFromArchive {
+        /// The path of the archive on the disk.
+        archive: PathBuf,
+
+        /// The name of the entry inside the archive.
+        entry: String,
+
+        /// The panel the entry is written into.
+        destination: PanelSide,
     },
 
     /// Open an entry in the other panel.

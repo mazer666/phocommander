@@ -36,8 +36,8 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **2004 green, 0 red, 0 skipped** |
-| Test binaries | 57 |
+| Tests | **1448 green, 0 red, 0 skipped** |
+| Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
 | The formatting | `cargo fmt --all -- --check` — **without a deviation** |
@@ -150,6 +150,7 @@ and in the tests:
 39. **The quick view never showed anything.** The seam `PreviewSource` existed, and the desktop build never implemented it. The viewer could read a file and the quick view could show lines — and the two never met.
 40. **The security rules were never applied.** The plan of the rules was reported on the screen and never reached a job: the copy compared no checksum, and the quick view read files that the rule forbade. The rules travel with the job now.
 41. **The licence check never ran.** The advisory database needs a lock file, and the home of the sandbox lies on an NFS mount that cannot hold one. The check failed with the message of the lock, and nobody read it as a failure of the check. A withdrawn version of a crate was therefore in the tree. The script `scripts/audit.sh` puts the database on a local disk, and the withdrawn version was replaced.
+42. **The number of the tests was too high in the reports.** The count was taken over the output of the test run with `strings`, which joins lines that the program wrote into one buffer without a line break — and the count then added up every number of a line, the zeros behind *failed*, *ignored* and *measured* with it. The figure was four times the number of the test binaries too high, and it looked plausible enough to be believed. The script `scripts/count-tests.sh` counts the tests now, and the figure in this document is 1448 and not 2004.
 
 ## 6. The rules that follow from this milestone
 

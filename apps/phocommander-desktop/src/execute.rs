@@ -35,8 +35,10 @@ use phocommander_ops::job::{Job, JobKind, Priority};
 use phocommander_ops::port::FileSystem;
 use phocommander_ops::queue::JobQueue;
 use phocommander_ui::commands::Command;
+use phocommander_ui::panel::ArchiveView;
 use phocommander_ui::surface::{WorkSurface, panel_path};
 
+use crate::archive::{entries_of_the_archive, entries_of_the_archive_at};
 use crate::listing::read_entries;
 
 /// Submits the commands of the surface to the waiting room.
@@ -72,6 +74,75 @@ fn submit_one(
     rules: CopyPolicy,
 ) -> bool {
     match command {
+        Command::OpenEntry {
+            side,
+            path,
+            archive,
+        } => {
+            // WHY: the surface knows the name of the entry and not its kind.
+            //       The shell decides: a directory is read, and an archive
+            //       opens as a virtual directory (FR-65).
+            if let Some(view) = archive {
+                // WHY: the entry lies inside the archive. The place below
+                //       the entry is the place that the panel shows.
+                let name = path
+                    .file_name()
+                    .map(|name| name.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                let innen = view.below(&name);
+                let panel = surface.panel_mut(*side);
+                panel.set_archive(innen.clone());
+                let eintraege = entries_of_the_archive(&innen);
+                panel.set_entries(eintraege);
+                return true;
+            }
+
+            // WHY: an archive opens as a virtual directory. The container
+            //       decides itself whether it can be opened, and the entries
+            //       of its root fill the panel (FR-65). The archive comes
+            //       first, because the container knows a file that the
+            //       file system of the host does not — an archive is a
+            //       file of the disk, and the host knows it as well.
+            let eintraege = entries_of_the_archive_at(path, "");
+            if !eintraege.is_empty() {
+                let panel = surface.panel_mut(*side);
+                panel.set_archive(ArchiveView::new(path.clone()));
+                panel.set_entries(eintraege);
+                return true;
+            }
+
+            let Ok(metadata) = fs.metadata(path) else {
+                return false;
+            };
+            if !metadata.kind.is_directory() {
+                // WHY: a file that is no archive is no directory. The
+                //       viewer opens it, and the panel keeps what it shows.
+                return false;
+            }
+            let Ok(eintraege) = read_entries(fs, path) else {
+                return false;
+            };
+            let panel = surface.panel_mut(*side);
+            panel.set_path(path.clone());
+            panel.set_entries(eintraege);
+            true
+        }
+        Command::ExtractFromArchive {
+            archive,
+            entry,
+            destination,
+        } => {
+            // WHY: the entry is taken out of the archive into the other
+            //       panel. Everything else stays in the archive, and the
+            //       extraction carries the limits and the rules of the
+            //       security section (FR-66).
+            let ziel = surface.panel(*destination).path().to_path_buf();
+            let options = phocommander_archive::ExtractionOptions::default();
+            match phocommander_archive::extract_entry(archive, entry, &ziel, &options) {
+                Ok(report) => report.written_entries > 0,
+                Err(_) => false,
+            }
+        }
         Command::LoadDirectory { side, path } => {
             // WHY: the directory is read here and not in the surface. The
             //       surface knows the panel, and the file system knows the
@@ -214,6 +285,30 @@ mod tests {
             1,
         );
         (surface, queue)
+    }
+
+    /// Builds a ZIP archive with the given entries.
+    ///
+    /// WHY: the archive is a real file on the disk. The reader of the
+    ///       container reads it, and the panel shows what it carries.
+    fn build_zip(path: &std::path::Path, entries: &[(&str, &[u8])]) {
+        use phocommander_archive::formats::ArchiveWriter;
+        use phocommander_archive::formats::zip::ZipArchiveWriter;
+
+        let mut writer = ZipArchiveWriter::create(path)
+            .unwrap_or_else(|error| panic!("the archive should have been created: {error}"));
+        for (name, content) in entries {
+            writer
+                .add_file(
+                    name,
+                    content.len() as u64,
+                    &mut std::io::Cursor::new(content.to_vec()),
+                )
+                .unwrap_or_else(|error| panic!("the entry should have been added: {error}"));
+        }
+        Box::new(writer)
+            .finish()
+            .unwrap_or_else(|error| panic!("the archive should have been closed: {error}"));
     }
 
     /// Hands the commands over to the adapter.
@@ -432,6 +527,81 @@ mod tests {
         let panel = surface.panel(PanelSide::Right);
         assert_eq!(panel.path(), Path::new("/photos/2024"));
         assert_eq!(panel.row_count(), 1);
+    }
+
+    #[test]
+    fn the_command_of_an_archive_fills_the_panel_with_its_entries() {
+        // arrange
+        // WHY: an archive opens as a virtual directory (FR-65). The panel
+        //       shows the entries of the archive, and the user can mark one
+        //       of them and take it out.
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        let archive = std::env::temp_dir().join("phocommander-virtual-directory.zip");
+        let _ = std::fs::remove_file(&archive);
+        build_zip(&archive, &[("notes.txt", b"der Inhalt")]);
+
+        let commands = vec![Command::OpenEntry {
+            side: PanelSide::Left,
+            path: archive.clone(),
+            archive: None,
+        }];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert
+        assert_eq!(anzahl, 1);
+        let panel = surface.panel(PanelSide::Left);
+        assert_eq!(panel.row_count(), 1, "the panel should show the entry");
+        // WHY: the panel remembers that it shows an archive, and the path of
+        //       the archive is the way out of it.
+        let view = panel
+            .archive()
+            .unwrap_or_else(|| panic!("the panel should show an archive"));
+        assert_eq!(view.archive(), archive.as_path());
+        assert!(view.at_root());
+
+        let _ = std::fs::remove_file(&archive);
+    }
+
+    #[test]
+    fn the_entry_of_an_archive_is_taken_out_into_the_other_panel() {
+        // arrange
+        // WHY: the user browses the content of an archive and takes out the
+        //       one file that he wants — everything else stays in the
+        //       archive (FR-66).
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        let archive = std::env::temp_dir().join("phocommander-take-out.zip");
+        let ziel = std::env::temp_dir().join("phocommander-take-out-ziel");
+        let _ = std::fs::remove_file(&archive);
+        let _ = std::fs::remove_dir_all(&ziel);
+        build_zip(&archive, &[("notes.txt", b"der Inhalt der Notizen")]);
+        std::fs::create_dir_all(&ziel)
+            .unwrap_or_else(|error| panic!("the target should have been created: {error}"));
+        // WHY: the other panel shows the place the entry is taken out into.
+        surface.panel_mut(PanelSide::Right).set_path(ziel.clone());
+
+        let commands = vec![Command::ExtractFromArchive {
+            archive: archive.clone(),
+            entry: "notes.txt".to_string(),
+            destination: PanelSide::Right,
+        }];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert
+        assert_eq!(anzahl, 1);
+        // WHY: the file lies in the other panel, and the archive keeps the
+        //       rest.
+        assert!(
+            ziel.join("notes.txt").exists(),
+            "the file should be taken out"
+        );
+        let _ = std::fs::remove_file(&archive);
+        let _ = std::fs::remove_dir_all(&ziel);
     }
 
     #[test]

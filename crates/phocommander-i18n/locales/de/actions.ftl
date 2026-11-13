@@ -22,6 +22,7 @@ action-panel-mkdir = Verzeichnis anlegen
 action-panel-move = Verschieben
 action-panel-next-tab = Nächster Reiter
 action-panel-open-in-other = Im anderen Panel öffnen
+action-panel-open = Öffnen
 action-panel-parent = Übergeordnetes Verzeichnis
 action-panel-prev-tab = Vorheriger Reiter
 action-panel-quick-view-toggle = Schnellansicht

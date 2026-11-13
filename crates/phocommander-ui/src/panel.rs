@@ -27,6 +27,7 @@
 //! assert_eq!(panel.selection().len(), 1);
 //! ```
 
+pub mod archive_view;
 pub mod columns;
 pub mod selection;
 pub mod tab;
@@ -37,6 +38,7 @@ use std::path::{Path, PathBuf};
 use crate::filter::{Filter, FilterDepth, FilterKind};
 use crate::listing::{Entry, ListingState, Row, Sort};
 
+pub use archive_view::ArchiveView;
 pub use columns::{Column, ViewMode};
 pub use selection::Selection;
 pub use tab::Tab;
@@ -267,6 +269,29 @@ impl PanelState {
     /// The path of the tab that is shown.
     pub fn path(&self) -> &Path {
         self.active_tab().path()
+    }
+
+    /// The place inside an archive, if the panel shows one.
+    ///
+    /// WHY: an archive opens as a virtual directory (FR-65), and the
+    ///       surface has to know whether the entries of the listing come
+    ///       from the disk or from a container.
+    pub fn archive(&self) -> Option<&ArchiveView> {
+        self.active_tab().archive()
+    }
+
+    /// Shows the inside of an archive.
+    ///
+    /// WHY: the entries of the place are read by the shell and handed
+    ///       over. The panel remembers the place and not the entries
+    ///       (FR-66).
+    pub fn set_archive(&mut self, view: ArchiveView) {
+        self.active_tab_mut().set_archive(view);
+    }
+
+    /// Shows a directory of the disk again.
+    pub fn clear_archive(&mut self) {
+        self.active_tab_mut().clear_archive();
     }
 
     /// Changes the path of the tab that is shown.

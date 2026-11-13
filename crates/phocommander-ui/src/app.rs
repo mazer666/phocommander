@@ -484,8 +484,48 @@ impl WorkSurfaceApp {
                         .push(Command::OpenViewer { side, entry: path });
                 }
             }
+            "panel.open" => {
+                // WHY: the surface knows the name of the entry and not its
+                //       kind. A directory is read and an archive opens as a
+                //       virtual directory — and the shell decides, because
+                //       the shell knows the file system and the formats
+                //       (FR-65).
+                let side = self.surface.active_side();
+                let archive = self.surface.active().archive().cloned();
+                if let Some(entry) = self.surface.active().cursor_entry() {
+                    let path = self.surface.active().path().join(&entry.name);
+                    self.commands.push(Command::OpenEntry {
+                        side,
+                        path,
+                        archive,
+                    });
+                }
+            }
             "panel.open_in_other" => {
                 let source = self.surface.active_side();
+
+                // WHY: an entry of an archive is not a file of the disk. The
+                //       user takes it out of the archive into the other
+                //       panel, and everything else stays in the archive
+                //       (FR-66).
+                if let Some(view) = self.surface.active().archive().cloned()
+                    && let Some(entry) = self.surface.active().cursor_entry()
+                {
+                    // WHY: the name of the entry is the name that the
+                    //       container carries — with the place above it.
+                    let full = if view.inside().is_empty() {
+                        entry.name.clone()
+                    } else {
+                        format!("{}/{}", view.inside(), entry.name.trim_end_matches('/'))
+                    };
+                    self.commands.push(Command::ExtractFromArchive {
+                        archive: view.archive().to_path_buf(),
+                        entry: full,
+                        destination: source.other(),
+                    });
+                    return;
+                }
+
                 let destination = source.other();
                 if let Some(entry) = self.surface.active().cursor_entry() {
                     let path = self.surface.active().path().join(&entry.name);

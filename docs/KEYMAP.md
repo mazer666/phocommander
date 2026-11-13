@@ -58,6 +58,7 @@ milestone.
 | Delete `panel.delete` | `F8` | `keyboard`, palette | — | The conflict policy applies; the trash is the default path, "secure delete" is an explicit option. M1 |
 | Application menu `app.menu` | `F9` | `keyboard`, palette | — | The menu bar follows the platform convention: the system menu bar on macOS, in-window on Windows, Linux and BSD. M2 |
 | Quit `app.quit` | `F10` | `keyboard`, palette | — | M0 |
+| Open the marked entry `panel.open` | `Enter` | `keyboard`, palette | — | A directory is read, and an archive opens as a virtual directory whose entries the user can browse and take out (FR-65, FR-66). M1 |
 | German `app.language.de` | `Ctrl+Shift+D` | `keyboard`, palette | `Cmd+Shift+L` on macOS/iPadOS | The language of the interface, changed while the program runs. The setting is written into the configuration file. M2b |
 | English `app.language.en` | `Ctrl+Shift+E` | `keyboard`, palette | `Cmd+Shift+E` on macOS/iPadOS | The language of the interface, changed while the program runs. The setting is written into the configuration file. M2b |
 | French `app.language.fr` | `Ctrl+Shift+F` | `keyboard`, palette | `Cmd+Shift+F` on macOS/iPadOS | The language of the interface, changed while the program runs. The setting is written into the configuration file. M2b |

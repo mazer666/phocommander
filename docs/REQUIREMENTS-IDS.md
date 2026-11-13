@@ -120,7 +120,7 @@ Every row names the section **and the line** of the specification it was taken f
 
 | ID | Title | Source | Milestone | Priority | Verification | Acceptance criterion |
 |---|---|---|---|---|---|---|
-| FR-65 | An archive appears as a normal entry and opens as a virtual directory | §4.6 Archives, line 277 | M1 | Must | automated — Integration test | AC-M1-37 |
+| FR-65 | An archive appears as a normal entry and opens as a virtual directory — the action `panel.open` opens the marked entry, and a directory is read while an archive opens as its content | §4.6 Archives, line 277 | M1 | Must | automated — Integration test | AC-M1-37 |
 | FR-66 | Archive entries can be listed, viewed and copied to the other panel without extracting first | §4.6 Archives, line 278 | M1 | Must | automated — Integration test | AC-M1-38 |
 | FR-67 | ZIP, TAR with GZip, BZip2, XZ and Zstd, and 7z are supported | §4.6 Archives, line 279 | M1 | Must | automated — Integration test per format | AC-M1-39 |
 | FR-68 | Archives can be created, including encrypted ones | §4.6 Archives, line 280 | M1 | Must | automated — Integration test | AC-M1-40 |

@@ -75,6 +75,8 @@
 "panel.swap" = "Ctrl+U"
 # Open the selection in the other pane.
 "panel.open_in_other" = "Ctrl+Enter"
+# Open the marked entry. A directory is read, an archive opens as a virtual directory.
+"panel.open" = "Enter"
 # Switch to tab 1 of the active pane.
 "panel.tab.1" = "Ctrl+1"
 # Switch to tab 2 of the active pane.
@@ -179,6 +181,8 @@
 "panel.swap" = "palette:panel.swap"
 # Open the selection in the other pane.
 "panel.open_in_other" = "palette:panel.open_in_other"
+# Open the marked entry. A directory is read, an archive opens as a virtual directory.
+"panel.open" = "palette:panel.open"
 # Switch to tab 1 of the active pane.
 "panel.tab.1" = "palette:panel.tab.1"
 # Switch to tab 2 of the active pane.
@@ -294,6 +298,8 @@
 "panel.swap" = "Ctrl+U"
 # Open the selection in the other pane.
 "panel.open_in_other" = "Ctrl+Enter"
+# Open the marked entry. A directory is read, an archive opens as a virtual directory.
+"panel.open" = "Enter"
 # Switch to tab 1 of the active pane.
 "panel.tab.1" = "Ctrl+1"
 # Switch to tab 2 of the active pane.
@@ -404,6 +410,8 @@
 "panel.swap" = "palette:panel.swap"
 # Open the selection in the other pane.
 "panel.open_in_other" = "palette:panel.open_in_other"
+# Open the marked entry. A directory is read, an archive opens as a virtual directory.
+"panel.open" = "palette:panel.open"
 # Switch to tab 1 of the active pane.
 "panel.tab.1" = "palette:panel.tab.1"
 # Switch to tab 2 of the active pane.
@@ -503,6 +511,8 @@
 "panel.swap" = "palette:panel.swap"
 # Open the selection in the other pane.
 "panel.open_in_other" = "palette:panel.open_in_other"
+# Open the marked entry. A directory is read, an archive opens as a virtual directory.
+"panel.open" = "palette:panel.open"
 # Switch to tab 1 of the active pane.
 "panel.tab.1" = "palette:panel.tab.1"
 # Switch to tab 2 of the active pane.

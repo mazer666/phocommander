@@ -24,6 +24,7 @@ use std::path::{Path, PathBuf};
 
 use crate::filter::{Filter, FilterDepth, FilterField, FilterKind, FilteredIndex};
 use crate::listing::{Entry, ListingState, Row, Sort};
+use crate::panel::archive_view::ArchiveView;
 use crate::panel::columns::{Column, ViewMode};
 use crate::panel::selection::Selection;
 
@@ -36,6 +37,12 @@ use crate::panel::selection::Selection;
 #[derive(Debug)]
 pub struct Tab {
     path: PathBuf,
+    /// The place inside an archive, if the tab shows one.
+    ///
+    /// WHY: an archive opens as a virtual directory (FR-65), and the tab
+    ///       has to remember where in the archive the user is. `None` means
+    ///       that the tab shows a directory of the disk.
+    archive_view: Option<ArchiveView>,
     sort: Sort,
     columns: Vec<Column>,
     view: ViewMode,
@@ -65,6 +72,7 @@ impl Tab {
         Self {
             listing: ListingState::new(path.clone()),
             path,
+            archive_view: None,
             sort: Sort::by(crate::listing::SortKey::Name),
             columns: Column::all().to_vec(),
             view: ViewMode::default(),
@@ -88,6 +96,34 @@ impl Tab {
     ///
     /// WHY: the path belongs to the tab and to the listing of the tab, and
     /// the two must not drift apart. The method therefore sets both.
+    /// The place inside an archive, if the tab shows one.
+    ///
+    /// WHY: an archive opens as a virtual directory (FR-65), and the tab
+    ///       has to remember where in the archive the user is. `None` means
+    ///       that the tab shows a directory of the disk.
+    pub fn archive(&self) -> Option<&ArchiveView> {
+        self.archive_view.as_ref()
+    }
+
+    /// Shows the inside of an archive.
+    ///
+    /// WHY: the entries of the place are read by the shell and handed
+    ///       over. The tab remembers only the place — where in the archive
+    ///       the user is — and not the entries themselves (FR-66).
+    pub fn set_archive(&mut self, view: ArchiveView) {
+        self.archive_view = Some(view);
+        self.set_entries(Vec::new());
+    }
+
+    /// Shows a directory of the disk again.
+    pub fn clear_archive(&mut self) {
+        self.archive_view = None;
+    }
+
+    /// Changes the path of the tab that is shown.
+    ///
+    /// WHY: the path belongs to the tab, so that it survives the change of
+    ///       the directory of that tab.
     pub fn set_path(&mut self, path: PathBuf) {
         self.listing.set_path(path.clone());
         self.path = path;

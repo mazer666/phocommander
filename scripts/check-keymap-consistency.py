@@ -65,6 +65,9 @@ EXTRA_BINDINGS: dict[str, str] = {
     "panel.reload": "Ctrl+R",
     "panel.swap": "Ctrl+U",
     "panel.open_in_other": "Ctrl+Enter",
+    # The action that opens the marked entry. The specification names the
+    # function in FR-65 and names no key for it.
+    "panel.open": "Enter",
     "panel.next_tab": "Ctrl+Tab",
     "panel.filter": "Ctrl+F",
     # The commands of the work surface of milestone M2 — the tabs, the

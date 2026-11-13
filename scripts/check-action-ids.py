@@ -89,6 +89,9 @@ DERIVED_BINDINGS = {
     "panel.tree.toggle": "Ctrl+B",
     "panel.quick_view.toggle": "Ctrl+Q",
     "panel.job_list.toggle": "Ctrl+J",
+    # The action that opens the marked entry. The specification names the
+    # function in FR-65 and names no key for it.
+    "panel.open": "Enter",
     # The three actions that change the language of the interface. The
     # specification names the function in FR-124 and names no key for it.
     "app.language.de": "Ctrl+Shift+D",

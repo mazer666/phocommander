@@ -49,6 +49,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.reload".to_string(), "Ctrl+R".to_string());
         tabelle.insert("panel.swap".to_string(), "Ctrl+U".to_string());
         tabelle.insert("panel.open_in_other".to_string(), "Ctrl+Enter".to_string());
+        tabelle.insert("panel.open".to_string(), "Enter".to_string());
         tabelle.insert("panel.tab.1".to_string(), "Ctrl+1".to_string());
         tabelle.insert("panel.tab.2".to_string(), "Ctrl+2".to_string());
         tabelle.insert("panel.tab.3".to_string(), "Ctrl+3".to_string());
@@ -110,6 +111,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.reload".to_string(), "Ctrl+R".to_string());
         tabelle.insert("panel.swap".to_string(), "Ctrl+U".to_string());
         tabelle.insert("panel.open_in_other".to_string(), "Ctrl+Enter".to_string());
+        tabelle.insert("panel.open".to_string(), "Enter".to_string());
         tabelle.insert("panel.tab.1".to_string(), "Ctrl+1".to_string());
         tabelle.insert("panel.tab.2".to_string(), "Ctrl+2".to_string());
         tabelle.insert("panel.tab.3".to_string(), "Ctrl+3".to_string());
@@ -195,6 +197,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
             "panel.open_in_other".to_string(),
             "palette:panel.open_in_other".to_string(),
         );
+        tabelle.insert("panel.open".to_string(), "palette:panel.open".to_string());
         tabelle.insert("panel.tab.1".to_string(), "palette:panel.tab.1".to_string());
         tabelle.insert("panel.tab.2".to_string(), "palette:panel.tab.2".to_string());
         tabelle.insert("panel.tab.3".to_string(), "palette:panel.tab.3".to_string());
@@ -331,6 +334,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
             "panel.open_in_other".to_string(),
             "palette:panel.open_in_other".to_string(),
         );
+        tabelle.insert("panel.open".to_string(), "palette:panel.open".to_string());
         tabelle.insert("panel.tab.1".to_string(), "palette:panel.tab.1".to_string());
         tabelle.insert("panel.tab.2".to_string(), "palette:panel.tab.2".to_string());
         tabelle.insert("panel.tab.3".to_string(), "palette:panel.tab.3".to_string());
@@ -471,6 +475,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
             "panel.open_in_other".to_string(),
             "palette:panel.open_in_other".to_string(),
         );
+        tabelle.insert("panel.open".to_string(), "palette:panel.open".to_string());
         tabelle.insert("panel.tab.1".to_string(), "palette:panel.tab.1".to_string());
         tabelle.insert("panel.tab.2".to_string(), "palette:panel.tab.2".to_string());
         tabelle.insert("panel.tab.3".to_string(), "palette:panel.tab.3".to_string());

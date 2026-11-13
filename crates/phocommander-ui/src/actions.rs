@@ -134,7 +134,7 @@ impl Action {
 /// {docs/KEYMAP.md}. The gate of the integration tests compares the three
 /// descriptions, so that a new command cannot appear in the code without
 /// appearing in the documentation.
-const ACTIONS: [Action; 47] = [
+const ACTIONS: [Action; 48] = [
     Action {
         id: "panel.rename",
         category: ActionCategory::File,
@@ -224,6 +224,11 @@ const ACTIONS: [Action; 47] = [
         id: "panel.open_in_other",
         category: ActionCategory::Navigate,
         label: TextKey::ActionPanelOpenInOther,
+    },
+    Action {
+        id: "panel.open",
+        category: ActionCategory::Navigate,
+        label: TextKey::ActionPanelOpen,
     },
     Action {
         id: "panel.tab.1",
@@ -540,7 +545,7 @@ mod tests {
         let identifiers: Vec<&str> = Action::all().iter().map(|action| action.id()).collect();
 
         // assert
-        assert_eq!(identifiers.len(), 47);
+        assert_eq!(identifiers.len(), 48);
         assert!(identifiers.contains(&"palette.open"));
         assert!(identifiers.contains(&"app.language.de"));
         assert!(identifiers.contains(&"app.language.en"));
@@ -549,6 +554,7 @@ mod tests {
         assert!(identifiers.contains(&"rename.conflict_previous"));
         assert!(identifiers.contains(&"panel.filter"));
         assert!(identifiers.contains(&"panel.tab.new"));
+        assert!(identifiers.contains(&"panel.open"));
         assert!(identifiers.contains(&"panel.tab.close"));
         assert!(identifiers.contains(&"panel.tab.move_to_other"));
         assert!(identifiers.contains(&"panel.layout.toggle"));

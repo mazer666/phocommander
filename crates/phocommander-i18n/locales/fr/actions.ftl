@@ -21,6 +21,7 @@ action-panel-mkdir = Créer un dossier
 action-panel-move = Déplacer
 action-panel-next-tab = Onglet suivant
 action-panel-open-in-other = Ouvrir dans l'autre panneau
+action-panel-open = Ouvrir
 action-panel-parent = Dossier parent
 action-panel-prev-tab = Onglet précédent
 action-panel-reload = Recharger

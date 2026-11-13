@@ -45,6 +45,8 @@ pub enum TextKey {
     ActionPanelNextTab,
     /// The label of the action `action-panel-open-in-other`.
     ActionPanelOpenInOther,
+    /// The action that opens the marked entry.
+    ActionPanelOpen,
     /// The label of the action `action-panel-parent`.
     ActionPanelParent,
     /// The label of the action `action-panel-prev-tab`.
@@ -314,6 +316,7 @@ impl TextKey {
             TextKey::ActionPanelMove => "action-panel-move",
             TextKey::ActionPanelNextTab => "action-panel-next-tab",
             TextKey::ActionPanelOpenInOther => "action-panel-open-in-other",
+            TextKey::ActionPanelOpen => "action-panel-open",
             TextKey::ActionPanelParent => "action-panel-parent",
             TextKey::ActionPanelPrevTab => "action-panel-prev-tab",
             TextKey::ActionPanelRename => "action-panel-rename",
@@ -448,7 +451,7 @@ impl TextKey {
 /// WHY: the list is the contract between the code and the catalogue. The
 /// gate of the workspace compares it with the key sets of the catalogues, so
 /// that a key cannot be used without a translation.
-const KEYS: [TextKey; 132] = [
+const KEYS: [TextKey; 133] = [
     TextKey::ActionAppMenu,
     TextKey::ActionAppLanguageDe,
     TextKey::ActionAppLanguageEn,
@@ -464,6 +467,7 @@ const KEYS: [TextKey; 132] = [
     TextKey::ActionPanelMove,
     TextKey::ActionPanelNextTab,
     TextKey::ActionPanelOpenInOther,
+    TextKey::ActionPanelOpen,
     TextKey::ActionPanelParent,
     TextKey::ActionPanelPrevTab,
     TextKey::ActionPanelRename,
