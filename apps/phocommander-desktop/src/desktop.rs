@@ -40,6 +40,7 @@ use std::path::Path;
 
 use std::sync::Arc;
 
+use phocommander_config::EffectiveSecurity;
 use phocommander_i18n::Locale;
 use phocommander_ops::copy::{CopyMode, CopyPolicy};
 use phocommander_ops::port::FileSystem;
@@ -100,6 +101,14 @@ pub struct DesktopApp {
     ///       knows. The desktop keeps the ledger, because it is the place
     ///       that copies (FR-26).
     undo: UndoLedger,
+
+    /// The rules that decide whether the state of the session is written.
+    ///
+    /// WHY: the rule of the security section says that the program leaves
+    ///       nothing behind. The rule decides whether the state of the
+    ///       session is written at the end, and the application carries it
+    ///       because the application is what ends (FR-16).
+    security_rules: EffectiveSecurity,
 
     /// The source of the content of the files.
     ///
@@ -204,7 +213,44 @@ impl DesktopApp {
             sync_mode: CopyMode::SyncPreview,
             undo: UndoLedger::new(),
             copy_rules: CopyPolicy::strict(),
+            security_rules: EffectiveSecurity::safe(),
         }
+    }
+
+    /// Writes the state of the session, if the rules allow it.
+    ///
+    /// WHY: the rule of the security section decides whether the program
+    ///       leaves anything behind. The state of the session is the two
+    ///       directories that the panels showed, and nothing else — no
+    ///       history, no names of files, no credentials (FR-16).
+    pub fn write_the_session(&self) {
+        let Some(directory) = crate::composition::configuration_directory() else {
+            return;
+        };
+        let state = phocommander_config::SessionState::new(
+            self.surface
+                .surface()
+                .panel(phocommander_ui::panel::PanelSide::Left)
+                .path(),
+            self.surface
+                .surface()
+                .panel(phocommander_ui::panel::PanelSide::Right)
+                .path(),
+        );
+        if let Err(error) =
+            phocommander_config::write_session_state(&directory, &state, &self.security_rules)
+        {
+            eprintln!("the state of the session could not be written: {error}");
+        }
+    }
+
+    /// Sets the rules that decide whether the state of the session is written.
+    ///
+    /// WHY: the rule of the security section decides whether the program
+    ///       leaves anything behind, and the state of the session is such
+    ///       a thing (FR-16).
+    pub fn set_security_rules(&mut self, rules: EffectiveSecurity) {
+        self.security_rules = rules;
     }
 
     /// Sets the way a file is copied.
@@ -338,6 +384,14 @@ fn write_the_language(path: &Path, locale: &str) -> Result<(), String> {
 }
 
 impl eframe::App for DesktopApp {
+    fn on_exit(&mut self) {
+        // WHY: the state of the session is written when the program ends,
+        //       and not earlier: the state of the panels is the state of
+        //       the last moment, and the program writes it exactly once
+        //       (FR-16).
+        self.write_the_session();
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         // WHY: the choice of the user comes first. It is the language the
         //       user has asked for, and the file may still name the old one

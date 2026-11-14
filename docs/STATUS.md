@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1475 green, 0 red, 0 skipped** |
+| Tests | **1480 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -173,6 +173,8 @@ and in the tests:
 62. **Six tests shared one name in the temporary directory.** Two runs of the tests worked on the same file, and one of them removed what the other one needed. The test of the archive that is taken out of the container was flaky because of it, and it failed once in thirty runs. The names carry the number of the process now.
 63. **The undo existed and no key reached it.** The ledger of the undo was a library, the notice of the undo area was drawn — and the state that says "there is something to take back" was never set. The user copied a file and could not take it back. The action `panel.undo` is in the catalogue now, the adapter records what it copies, and the undo removes the copies — the notice names the limitation, because the undo of the product is partial (FR-26).
 64. **The right mouse button had no binding at all.** The setting `right_click_action` was read and never used, and the button itself was bound to nothing: the user pressed it and nothing happened. The action `panel.right_click` is in the catalogue, the setting reaches the shell, and the button either marks the file under the pointer or says that the menu of the system comes with the milestone of the platform integration (FR-17, FR-28).
+65. **The plan of the synchronisation was shown nowhere.** The document of the plan was built and then thrown away: the user started the synchronisation and saw nothing that told him what it was going to do. The plan stands in the area of the viewer now, in the mode `sync-preview`, and the user reads it before he lets anything happen (FR-22b).
+66. **The state of the session was never written and never read.** The setting `restore_session` was read and never used, and the program always opened in the working directory — the user walked to the same place again and again. The two directories of the last time are the ones that the panels show now. The rule of the security section decides whether the state is written at all: the profile `safe` leaves nothing behind (FR-16).
 
 ## 6. The rules that follow from this milestone
 

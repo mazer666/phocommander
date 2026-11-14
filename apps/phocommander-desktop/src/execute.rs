@@ -220,6 +220,23 @@ fn submit_one(command: &Command, surface: &mut WorkSurface, adapter: &mut Adapte
                     return false;
                 }
             };
+            // WHY: the preview of the synchronisation shows the plan of the
+            //       comparison, and the plan is a document that the user can
+            //       read. The preview of the mode "sync-preview" therefore
+            //       goes into the area of the viewer, and the user sees
+            //       what the synchronisation would do before anything
+            //       happens (FR-22b).
+            if matches!(adapter.ways.sync, CopyMode::SyncPreview) {
+                let document = plan.to_document();
+                let zeilen: Vec<String> = document.lines().map(str::to_string).collect();
+                let groesse = document.len() as u64;
+                surface.set_viewer(phocommander_ui::preview::Preview::new(
+                    ziel.clone(),
+                    groesse,
+                    zeilen,
+                    false,
+                ));
+            }
             let job = phocommander_ops::executor::confirmed_job(
                 plan,
                 phocommander_ops::Approval::Granted,
@@ -875,6 +892,35 @@ mod tests {
         assert!(
             matches!(jobs[0].kind, JobKind::Sync { .. }),
             "the job should be the synchronisation: {jobs:?}"
+        );
+    }
+
+    #[test]
+    fn the_preview_of_the_synchronisation_shows_the_plan() {
+        // arrange — two directories with a file in the one and nothing in
+        // the other.
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        fs.write_file(Path::new("/photos/a.txt"), b"hallo")
+            .unwrap_or_else(|error| panic!("the file should be writable: {error:?}"));
+        let commands = vec![Command::Sync {
+            side: phocommander_ui::panel::PanelSide::Left,
+        }];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert — the plan of the comparison stands in the area of the
+        // viewer, and the user sees what the synchronisation would do
+        // (FR-22b).
+        assert_eq!(anzahl, 1);
+        let viewer = surface
+            .viewer()
+            .unwrap_or_else(|| panic!("the plan should stand in the viewer"));
+        let text = viewer.lines().join("\n");
+        assert!(
+            text.contains("phocommander-sync-plan"),
+            "the plan should be shown: {text}"
         );
     }
 

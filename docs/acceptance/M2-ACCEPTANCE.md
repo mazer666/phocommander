@@ -13,11 +13,18 @@ an acceptance document that does not name its own gaps is worth nothing.
 | What | Why it is open | Where |
 |---|---|---|
 | **The undo takes the last copy back.** The ledger of the undo existed as a library, and no key reached it: the user copied a file and could not take it back. The action `panel.undo` is in the catalogue, the adapter records what it copies, and the notice of the undo area names the limitation — the undo removes the copies and restores nothing. | FR-26 — the undo exists for the copy operations and is marked as partial. | closed |
-| **The plan of the synchronisation is written nowhere.** The document of the plan exists (`to_document`), and the synchronisation of the files never writes it. The preview shows the plan and forgets it. | FR-22b — the default of the synchronisation is `sync-preview`. | M2 |
+| **The plan of the synchronisation is shown before anything happens.** The document of the plan exists (`to_document`), and the synchronisation never showed it. The preview of the mode `sync-preview` stands in the area of the viewer now, and the user reads what the synchronisation would do before he lets it happen. | FR-22b — the default of the synchronisation is `sync-preview`. | closed |
+| **The state of the session comes back when the user asked for it.** The setting `restore_session` was read and never used. The two directories of the last time are the ones that the panels show now, and the rule of the security section decides whether the state is written at all. | FR-16 — the panels keep their own state. | closed |
 | **The way of a synchronisation is applied.** The setting `sync_mode` reaches the job, and the action `panel.sync` starts the synchronisation. The comparison of the two directories became a job of the waiting room, and a test proves it. | FR-22b. | closed |
 | **The mouse button of the right does what the user asked for.** The setting `right_click_action` reaches the shell, and the action `panel.right_click` carries it out: the button marks the file under the pointer, or it says that the menu of the system comes with the milestone of the platform integration (FR-28). | FR-17. | closed |
 
-The three settings and the two functions are in the gate `scripts/check-dead-code.py` with the
+The state of the session is the fourth point that this audit found. The setting `restore_session`
+was read and never used, and the program always opened in the working directory — the user walked
+to the same place again and again. The state of the last session comes back now, and the rule of
+the security section decides whether it is written at all: the profile `safe` leaves nothing
+behind.
+
+The eleven functions that nobody calls are in the gate `scripts/check-dead-code.py` with the
 reason why they stay. The gate asks every public function of the workspace: who calls it?
 
 ## 1. What this milestone covers

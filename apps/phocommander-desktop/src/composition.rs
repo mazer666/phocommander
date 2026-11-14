@@ -20,7 +20,7 @@
 //! ```
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::desktop::DesktopApp;
@@ -59,10 +59,8 @@ use phocommander_viewer::reader::ViewerReader;
 /// assert!(app.surface().visibility().show_hidden);
 /// ```
 pub fn build_application(config: &Config) -> WorkSurfaceApp {
-    let surface = WorkSurface::new(
-        std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")),
-        std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")),
-    );
+    let (links, rechts) = starting_directories(config);
+    let surface = WorkSurface::new(links, rechts);
 
     let keymap = read_keymap().unwrap_or_default();
     let metrics = Metrics::for_platform(host_platform());
@@ -186,6 +184,11 @@ pub fn build_desktop_app(config: &Config) -> DesktopApp {
     //       reported and never applied — and the copy would never compare
     //       a single checksum.
     app.set_copy_rules(*plan.copy_policy());
+    // WHY: the rule of the security section decides whether the state of
+    //       the session is written at the end. Without it the program
+    //       would leave nothing behind — which is what the rule of the
+    //       safe profile says, but not what the user asked for.
+    app.set_security_rules(rules);
     app
 }
 
@@ -201,6 +204,42 @@ fn worker_count_of(config: &Config) -> usize {
         std::thread::available_parallelism().map_or(1, |n| n.get())
     } else {
         eingestellt
+    }
+}
+
+/// The directories that the panels show when the program starts.
+///
+/// WHY: the user asks in the configuration file whether the state of the
+///       last session comes back. If it does, the two directories of the
+///       last time are the ones that the panels show — and a program that
+///       always opens in the working directory makes the user walk to the
+///       same place again and again (FR-16).
+fn starting_directories(config: &Config) -> (PathBuf, PathBuf) {
+    let Some(directory) = configuration_directory() else {
+        let arbeitsverzeichnis =
+            std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+        return (arbeitsverzeichnis.clone(), arbeitsverzeichnis);
+    };
+    starting_directories_in(config, &directory)
+}
+
+/// The directories that the panels show, out of a directory of the user.
+///
+/// WHY: the function takes the directory as a parameter, so that a test can
+///       show that the state of the session really comes back — a test that
+///       cannot reach the place where the state lies proves nothing.
+pub fn starting_directories_in(config: &Config, directory: &Path) -> (PathBuf, PathBuf) {
+    let arbeitsverzeichnis =
+        std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    if !config.general.restore_session {
+        return (arbeitsverzeichnis.clone(), arbeitsverzeichnis);
+    }
+    match phocommander_config::load_session_state(directory) {
+        Ok(Some(state)) => (state.left, state.right),
+        // WHY: a session that cannot be read is not an error that stops the
+        //       application. The panels show the working directory, and the
+        //       program goes on.
+        Ok(None) | Err(_) => (arbeitsverzeichnis.clone(), arbeitsverzeichnis),
     }
 }
 
@@ -369,7 +408,11 @@ pub fn configuration_path() -> Option<PathBuf> {
 }
 
 /// The directory in which the files of the user live.
-fn configuration_directory() -> Option<PathBuf> {
+///
+/// WHY: the configuration file, the bindings and the state of the session
+///       live beside each other. The directory is therefore asked for in
+///       one place, and every caller of it gets the same answer.
+pub fn configuration_directory() -> Option<PathBuf> {
     phocommander_platform::config_directory().ok()
 }
 
