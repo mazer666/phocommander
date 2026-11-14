@@ -349,6 +349,32 @@ def check_defaults_overrides(defaults: Path, contexts: dict[str, dict[str, str]]
     return failures
 
 
+def check_reference(document: str, catalogue: set[str]) -> list[str]:
+    """Return the failures for an action that the reference does not name.
+
+    WHAT: every action of the catalogue has to be named in the reference
+          of the bindings, with its key. An action that is missing there
+          leaves the user without a way to find it.
+
+    WHY: the reference names the tab bindings in one line, with the
+          numbers of the tabs in the name of the first one. The check
+          therefore counts a name that stands for a series as a naming of
+          every member of the series.
+    """
+    failures: list[str] = []
+    genannte = set(re.findall(r"`([a-z][a-z0-9_.]*)`", document))
+    for action in sorted(catalogue):
+        if action in genannte:
+            continue
+        # Der Verweis auf die Reihe der Reiter zaehlt fuer jedes Mitglied.
+        if re.fullmatch(r"[a-z][a-z0-9_.]*\.\d+", action):
+            praefix = action.rsplit(".", 1)[0]
+            if any(name.startswith(f"{praefix}.") for name in genannte):
+                continue
+        failures.append(f"the action {action} is not named in the reference")
+    return failures
+
+
 def main() -> int:
     """Run every check and report the result."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -357,6 +383,7 @@ def main() -> int:
     parser.add_argument("--defaults", type=Path, default=root / "config" / "defaults.toml")
     parser.add_argument("--acceptance", type=Path, default=root / "docs" / "ACCEPTANCE-CRITERIA.md")
     parser.add_argument("--specification", type=Path, default=root / "docs" / "REQUIREMENTS.md")
+    parser.add_argument("--keymap-doc", type=Path, default=root / "docs" / "KEYMAP.md")
     arguments = parser.parse_args()
 
     contexts = read_contexts(arguments.keymap)
@@ -368,6 +395,13 @@ def main() -> int:
         ("every action occurs exactly once per context", check_single_occurrence(contexts)),
         ("the keyboard bindings match the key table of the specification", check_keyboard_bindings(contexts)),
         ("dpad and controller refer to the action palette", check_palette_references(contexts)),
+        (
+            "the reference names every action of the catalogue",
+            check_reference(
+                arguments.keymap_doc.read_text(encoding="utf-8"),
+                set(contexts.get("input.keyboard", {})),
+            ),
+        ),
         (
             "no key is bound to two actions of the same surface",
             check_surface_conflicts(contexts),

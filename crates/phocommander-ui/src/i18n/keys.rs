@@ -47,6 +47,8 @@ pub enum TextKey {
     ActionPanelOpenInOther,
     /// The action that opens the marked entry.
     ActionPanelOpen,
+    /// The notice that an action belongs to a later milestone.
+    ActionDeferred,
     /// The label of the action `action-panel-parent`.
     ActionPanelParent,
     /// The label of the action `action-panel-prev-tab`.
@@ -317,6 +319,7 @@ impl TextKey {
             TextKey::ActionPanelNextTab => "action-panel-next-tab",
             TextKey::ActionPanelOpenInOther => "action-panel-open-in-other",
             TextKey::ActionPanelOpen => "action-panel-open",
+            TextKey::ActionDeferred => "action-deferred",
             TextKey::ActionPanelParent => "action-panel-parent",
             TextKey::ActionPanelPrevTab => "action-panel-prev-tab",
             TextKey::ActionPanelRename => "action-panel-rename",
@@ -451,7 +454,7 @@ impl TextKey {
 /// WHY: the list is the contract between the code and the catalogue. The
 /// gate of the workspace compares it with the key sets of the catalogues, so
 /// that a key cannot be used without a translation.
-const KEYS: [TextKey; 133] = [
+const KEYS: [TextKey; 134] = [
     TextKey::ActionAppMenu,
     TextKey::ActionAppLanguageDe,
     TextKey::ActionAppLanguageEn,
@@ -468,6 +471,7 @@ const KEYS: [TextKey; 133] = [
     TextKey::ActionPanelNextTab,
     TextKey::ActionPanelOpenInOther,
     TextKey::ActionPanelOpen,
+    TextKey::ActionDeferred,
     TextKey::ActionPanelParent,
     TextKey::ActionPanelPrevTab,
     TextKey::ActionPanelRename,

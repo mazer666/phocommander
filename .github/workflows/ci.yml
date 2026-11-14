@@ -48,6 +48,18 @@ jobs:
       - name: Rust-Cache
         uses: Swatinem/rust-cache@v2
 
+      # WHY: die Konsistenzgates vergleichen die Dateien des Repositorys
+      #       miteinander und bauen nichts. Sie laufen deshalb in JEDEM
+      #       Lauf der Matrix — ein Gate, das nur in einem von sechs Jobs
+      #       laeuft, findet den Fehler in einem von sechs Faellen.
+      - name: Konsistenzgates prüfen
+        # WHY: die Shell wird auf bash gestellt, weil der Job auf Windows
+        #       laeuft und dort die Standard-Shell PowerShell ist. Das
+        #       Skript ist ein Shell-Skript und laeuft unter bash auf
+        #       allen drei Systemen.
+        shell: bash
+        run: ./scripts/check-consistency.sh
+
       - name: Formatierung prüfen
         run: cargo fmt --all --check
 
@@ -96,6 +108,9 @@ jobs:
       - name: Sprache der Dokumentation prüfen
         run: python3 scripts/check-docs-language.py
 
+      - name: Die Befehle der Oberfläche prüfen
+        run: python3 scripts/check-commands.py
+
       - name: cargo-deny installieren
         run: cargo install cargo-deny --version "$CARGO_DENY_VERSION" --locked
 
@@ -138,6 +153,13 @@ jobs:
 
       - name: Rust-Cache
         uses: Swatinem/rust-cache@v2
+
+      # WHY: die Konsistenzgates vergleichen die Dateien des Repositorys
+      #       miteinander und bauen nichts. Sie laufen deshalb in JEDEM
+      #       Lauf der Matrix — ein Gate, das nur in einem von sechs Jobs
+      #       laeuft, findet den Fehler in einem von sechs Faellen.
+      - name: Konsistenzgates prüfen
+        run: ./scripts/check-consistency.sh
 
       # Die Spezifikation verlangt diese Gates in JEDEM Lauf, nicht nur im
       # Linux-Job. Deshalb laufen sie hier mit.
@@ -230,6 +252,13 @@ jobs:
 
       - name: Rust-Cache
         uses: Swatinem/rust-cache@v2
+
+      # WHY: die Konsistenzgates vergleichen die Dateien des Repositorys
+      #       miteinander und bauen nichts. Sie laufen deshalb in JEDEM
+      #       Lauf der Matrix — ein Gate, das nur in einem von sechs Jobs
+      #       laeuft, findet den Fehler in einem von sechs Faellen.
+      - name: Konsistenzgates prüfen
+        run: ./scripts/check-consistency.sh
         with:
           key: ${{ matrix.target }}
 
@@ -294,6 +323,13 @@ jobs:
 
       - name: Rust-Cache
         uses: Swatinem/rust-cache@v2
+
+      # WHY: die Konsistenzgates vergleichen die Dateien des Repositorys
+      #       miteinander und bauen nichts. Sie laufen deshalb in JEDEM
+      #       Lauf der Matrix — ein Gate, das nur in einem von sechs Jobs
+      #       laeuft, findet den Fehler in einem von sechs Faellen.
+      - name: Konsistenzgates prüfen
+        run: ./scripts/check-consistency.sh
         with:
           key: ${{ matrix.target }}
 
@@ -362,6 +398,13 @@ jobs:
       - name: Rust-Cache
         uses: Swatinem/rust-cache@v2
 
+      # WHY: die Konsistenzgates vergleichen die Dateien des Repositorys
+      #       miteinander und bauen nichts. Sie laufen deshalb in JEDEM
+      #       Lauf der Matrix — ein Gate, das nur in einem von sechs Jobs
+      #       laeuft, findet den Fehler in einem von sechs Faellen.
+      - name: Konsistenzgates prüfen
+        run: ./scripts/check-consistency.sh
+
       - name: Messungen
         run: cargo bench --workspace -- --output-format bencher
 
@@ -390,6 +433,13 @@ jobs:
 
       - name: Rust-Cache
         uses: Swatinem/rust-cache@v2
+
+      # WHY: die Konsistenzgates vergleichen die Dateien des Repositorys
+      #       miteinander und bauen nichts. Sie laufen deshalb in JEDEM
+      #       Lauf der Matrix — ein Gate, das nur in einem von sechs Jobs
+      #       laeuft, findet den Fehler in einem von sechs Faellen.
+      - name: Konsistenzgates prüfen
+        run: ./scripts/check-consistency.sh
 
       - name: Fuzzing
         run: |

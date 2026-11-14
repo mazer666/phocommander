@@ -840,6 +840,34 @@ report "the gate is green again" 0 "$positive"
 echo
 
 echo "=============================================================="
+echo "Gate 19 — the commands of the surface: scripts/check-commands.py"
+echo "=============================================================="
+echo "19.1 negative run (a command is produced and never carried out):"
+cp "$COPY/apps/phocommander-desktop/src/execute.rs" "$SCRATCH/execute.rs"
+python3 - "$COPY/apps/phocommander-desktop/src/execute.rs" <<'PYTHON'
+import sys, pathlib
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+# Der Zweig, der den Befehl traegt, wird entfernt — der Befehl wird
+# erzeugt, und niemand fuehrt ihn aus.
+start = text.index("        Command::Deferred { action } => {")
+ende = text.index("        Command::OpenViewer { entry, .. } => {")
+path.write_text(text[:start] + text[ende:], encoding="utf-8")
+PYTHON
+(cd "$COPY" && python3 scripts/check-commands.py) > "$SCRATCH/commands-negative.log" 2>&1
+negative=$?
+show "FEHLER|RESULT" "$SCRATCH/commands-negative.log"
+report "the gate is red when a command leads nowhere" 1 "$negative"
+echo
+cp "$SCRATCH/execute.rs" "$COPY/apps/phocommander-desktop/src/execute.rs"
+echo "19.2 positive run (the command is carried out again):"
+(cd "$COPY" && python3 scripts/check-commands.py) > "$SCRATCH/commands-positive.log" 2>&1
+positive=$?
+show "^RESULT" "$SCRATCH/commands-positive.log"
+report "the gate is green again" 0 "$positive"
+echo
+
+echo "=============================================================="
 if [ "$failures" -eq 0 ]; then
   echo "RESULT: PASS — every gate turned red on a broken state and green again."
   echo "Gates proved: ${gates}"

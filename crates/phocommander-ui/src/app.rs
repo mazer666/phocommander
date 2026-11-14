@@ -59,7 +59,7 @@ use crate::metrics::{Metrics, Platform};
 use crate::preview::PreviewSource;
 use crate::refresh::RefreshPolicy;
 use crate::rename::{RenameDialog, RenameEngine, TemplateStore};
-use crate::surface::{TransferRequest, WorkSurface};
+use crate::surface::{StatusMessage, TransferRequest, WorkSurface};
 use crate::theme::{Palette, Theme};
 use crate::undo::UndoAvailability;
 
@@ -130,23 +130,6 @@ pub struct WorkSurfaceApp {
 struct PendingTransfer {
     copy: bool,
     transfer: TransferRequest,
-}
-
-/// The message of the status line, before it is read from the catalogue.
-///
-/// WHY: the status line shows the message of the last command. The message
-///       is kept as a key of the catalogue and as its arguments, and it is
-///       read in the frame that draws it. A change of the language of the
-///       interface therefore reaches the status line as well, and not only
-///       the labels of the panels (FR-124).
-#[derive(Debug, Clone)]
-struct StatusMessage {
-    /// The key of the catalogue that carries the message.
-    key: String,
-
-    /// The values that the message carries, with the names that the message
-    /// of the catalogue expects.
-    arguments: Vec<(&'static str, String)>,
 }
 
 impl WorkSurfaceApp {
@@ -402,6 +385,31 @@ impl WorkSurfaceApp {
         self.status
             .as_ref()
             .map(|message| self.message_of_error(&message.key, &message.arguments))
+    }
+
+    /// Reports that an action belongs to a later milestone.
+    ///
+    /// WHY: the user presses a key and the program does nothing. A program
+    ///       that says nothing about it leaves the user with the
+    ///       impression that the key is broken. The notice names the action
+    ///       and the reason (FR-05, FR-124).
+    pub fn report_deferred(&mut self, action: Action) {
+        let name = self.text_of_action(action);
+        self.surface.set_status(crate::surface::StatusMessage {
+            key: "action-deferred".to_string(),
+            arguments: vec![("action", name)],
+        });
+    }
+
+    /// The name of an action, as the catalogue writes it.
+    ///
+    /// WHY: the notice names the action, and the name of the action is the
+    ///       label of the catalogue. The label speaks the language of the
+    ///       interface.
+    fn text_of_action(&self, action: Action) -> String {
+        self.catalogue
+            .lookup_with(action.label().as_str(), &[])
+            .unwrap_or_else(|| action.id().to_string())
     }
 
     /// The number of changes of the shell.
@@ -766,9 +774,14 @@ impl WorkSurfaceApp {
         //       the frame that draws it, so that it speaks the language of
         //       the interface — also after a change of that language
         //       (FR-124).
+        // WHY: the message of the surface is the one of the status line
+        //       when the shell has no message of its own. The shell writes
+        //       its own messages into the status line as well, and the
+        //       newer one wins.
         let status = self
             .status
             .as_ref()
+            .or_else(|| self.surface.status())
             .map(|message| self.message_of_error(&message.key, &message.arguments));
         let WorkSurfaceApp {
             surface,

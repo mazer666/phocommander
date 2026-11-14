@@ -30,6 +30,22 @@ use crate::layout::{LayoutProfile, PanelArrangement};
 use crate::panel::{PanelSide, PanelState};
 use crate::preview::QuickView;
 
+/// The message of the status line.
+///
+/// WHY: the status line belongs to the surface, and the message that it
+///       shows belongs to it as well. The shell of the application reads
+///       the message from the surface and draws it in the language of the
+///       interface (FR-05, FR-124).
+#[derive(Debug, Clone)]
+pub struct StatusMessage {
+    /// The key of the catalogue that carries the message.
+    pub key: String,
+
+    /// The values that the message carries, with the names that the message
+    /// of the catalogue expects.
+    pub arguments: Vec<(&'static str, String)>,
+}
+
 /// The two panels of the work surface.
 #[derive(Debug)]
 pub struct WorkSurface {
@@ -46,6 +62,8 @@ pub struct WorkSurface {
     ///       application to look at a file (FR-50). The content is the one
     ///       that the reader of the viewer produced.
     viewer: Option<crate::preview::Preview>,
+    /// The message of the status line, if there is one.
+    status: Option<StatusMessage>,
     jobs: Vec<JobSummary>,
     job_list_visible: bool,
 }
@@ -61,6 +79,7 @@ impl WorkSurface {
             overlay: None,
             quick_view: QuickView::new(),
             viewer: None,
+            status: None,
             jobs: Vec::new(),
             job_list_visible: true,
         }
@@ -269,6 +288,16 @@ impl WorkSurface {
     /// The quick view of the marked file.
     pub fn quick_view(&self) -> &QuickView {
         &self.quick_view
+    }
+
+    /// Reports a message in the status line.
+    pub fn set_status(&mut self, message: StatusMessage) {
+        self.status = Some(message);
+    }
+
+    /// The message of the status line, if there is one.
+    pub fn status(&self) -> Option<&StatusMessage> {
+        self.status.as_ref()
     }
 
     /// The file that the viewer shows, if the viewer shows one.

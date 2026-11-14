@@ -136,6 +136,17 @@ fn submit_one(
             panel.set_entries(eintraege);
             true
         }
+        Command::Deferred { action } => {
+            // WHY: the user pressed a key and the program cannot do it yet.
+            //       The surface says so in the status line, and the notice
+            //       names the action — a key that does nothing without a
+            //       word looks like a broken key (FR-05, FR-124).
+            surface.set_status(phocommander_ui::surface::StatusMessage {
+                key: "action-deferred".to_string(),
+                arguments: vec![("action", action.label().as_str().to_string())],
+            });
+            true
+        }
         Command::OpenViewer { entry, .. } => {
             // WHY: the viewer opens in an additional area of the surface and
             //       not in a window of its own, so that the user does not
@@ -663,6 +674,30 @@ mod tests {
             .unwrap_or_else(|| panic!("the viewer should show the file"));
         assert_eq!(viewer.lines(), &["hallo welt".to_string()]);
         let _ = std::fs::remove_file(&datei);
+    }
+
+    #[test]
+    fn a_deferred_action_says_so_in_the_status_line() {
+        // arrange
+        // WHY: the user presses a key and the program cannot do it yet. A
+        //       program that says nothing about it leaves the user with the
+        //       impression that the key is broken.
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        let action = phocommander_ui::actions::Action::from_id("palette.open")
+            .unwrap_or_else(|| panic!("the action should be known"));
+        let commands = vec![Command::Deferred { action }];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert
+        assert_eq!(anzahl, 1);
+        let meldung = surface
+            .status()
+            .unwrap_or_else(|| panic!("the status line should carry the notice"));
+        assert_eq!(meldung.key, "action-deferred");
+        assert_eq!(meldung.arguments.len(), 1);
     }
 
     #[test]
