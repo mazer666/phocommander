@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1453 green, 0 red, 0 skipped** |
+| Tests | **1456 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -151,6 +151,10 @@ and in the tests:
 40. **The security rules were never applied.** The plan of the rules was reported on the screen and never reached a job: the copy compared no checksum, and the quick view read files that the rule forbade. The rules travel with the job now.
 41. **The licence check never ran.** The advisory database needs a lock file, and the home of the sandbox lies on an NFS mount that cannot hold one. The check failed with the message of the lock, and nobody read it as a failure of the check. A withdrawn version of a crate was therefore in the tree. The script `scripts/audit.sh` puts the database on a local disk, and the withdrawn version was replaced.
 42. **The number of the tests was too high in the reports.** The count was taken over the output of the test run with `strings`, which joins lines that the program wrote into one buffer without a line break — and the count then added up every number of a line, the zeros behind *failed*, *ignored* and *measured* with it. The figure was four times the number of the test binaries too high, and it looked plausible enough to be believed. The script `scripts/count-tests.sh` counts the tests now, and the figure in this document is 1448 and not 2004.
+43. **A key that does nothing said nothing.** The surface reports the actions that belong to a later milestone — the drive list, the action palette, the search in the viewer — and the command that carries the report was never read. The user pressed a key, the program did nothing, and **nothing said so**. A key that does nothing without a word looks like a broken key. The status line carries the notice now, and it names the action. The gate `scripts/check-commands.py` proves that no command of the surface leads nowhere.
+44. **Two getters carried a `get` where the project writes `lookup_with`.** In Rust a getter carries no `get`, and the rule of NFR-17b is that a name says what a thing is. The check of the names found them: `Texts::get_with` and `Texts::get_by_key`.
+45. **The hex dump was calculated and never shown.** The desktop adapter builds the dump of a file that is no text, the lines are handed to the viewer — and the viewer replaced them with a notice: "this file is no text file". The bytes the user asked for were computed, carried across the interface, and then dropped at the last moment. The dump stands in the area now, the notice stands above it.
+46. **The surface was never drawn in a test.** Every test of the interface proved the *state* of the shell; none of them drew it. A file that the shell carries and never draws is a file the user does not see. Three tests draw the surface now: the viewer with a text, the viewer without a file, and the viewer with the bytes of a file that is no text.
 
 ## 6. The rules that follow from this milestone
 

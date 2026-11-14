@@ -358,9 +358,15 @@ pub(crate) fn draw_viewer(
             return;
         }
 
+        let mut y = name_rect.bottom();
+
+        // WHY: a file that is no text is shown as a hex dump, and the dump
+        //       is the content of the file — the user asked for the bytes
+        //       of the file and not for a notice about them (FR-52). The
+        //       notice stands above the dump and says what the lines are.
         if preview.is_binary() {
             let binary_rect = Rect::from_min_size(
-                egui::pos2(rect.min.x, name_rect.bottom()),
+                egui::pos2(rect.min.x, y),
                 Vec2::new(rect.width(), row_height),
             );
             ui.scope_builder(egui::UiBuilder::new().max_rect(binary_rect), |ui| {
@@ -369,10 +375,8 @@ pub(crate) fn draw_viewer(
                         .color(palette.text_dimmed),
                 );
             });
-            return;
+            y = binary_rect.bottom();
         }
-
-        let mut y = name_rect.bottom();
         for line in preview.lines() {
             let line_rect = Rect::from_min_size(
                 egui::pos2(rect.min.x, y),

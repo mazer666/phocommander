@@ -8,6 +8,10 @@
 //!       what it does and not how the shell is assembled.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
+// WHY: every test compiles this module on its own, and every test uses
+//       another part of it. A helper that this one test does not need is
+//       not a helper that nobody needs.
+#![allow(dead_code)]
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
