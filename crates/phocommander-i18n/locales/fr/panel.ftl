@@ -35,6 +35,7 @@ panel-focus = Panneau actif
 panel-undo-notice = L'annulation supprime uniquement les copies ; l'état précédent n'est pas restauré.
 panel-undo-done = { $count } copies annulées
 panel-menu-hint = Le menu se trouve dans la barre en haut de la fenêtre.
+policy-read-only = Ce document ne peut être que lu. L'autorisation du système ne permet pas de l'écrire.
 
 # Les clés qui manquaient encore — la parité avec l'anglais est complète.
 job-kind-copy = Copie

@@ -3452,6 +3452,9 @@ dependencies = [
 [[package]]
 name = "phocommander-android"
 version = "0.1.0"
+dependencies = [
+ "phocommander-core",
+]
 
 [[package]]
 name = "phocommander-archive"

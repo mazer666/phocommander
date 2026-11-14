@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The texts of the application of Android.
+
+  WHY: the strings of the system belong in the resources of the system,
+       and the texts of the product belong in the catalogue of the core.
+       The two sets do not mix: the catalogue carries the three languages
+       of the product, and this file carries the name of the application and
+       the names that the system itself asks for.
+-->
+<resources>
+    <string name="app_name">Phocommander</string>
+</resources>

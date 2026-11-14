@@ -23,6 +23,9 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+# The rules of the documents are the rules of the product, and they live in
+# the core. The bridge asks the core and hands the answer over.
+phocommander-core = { path = "../../crates/phocommander-core" }
 
 [lints]
 workspace = true

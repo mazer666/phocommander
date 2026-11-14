@@ -66,6 +66,7 @@ panel-focus = Focused panel
 panel-undo-notice = Undo removes the copies only; the previous state is not restored.
 panel-undo-done = { $count } copies taken back
 panel-menu-hint = The menu stands in the bar at the top of the window.
+policy-read-only = This document may only be read. The permission of the system does not allow writing to it.
 
 # The messages of the errors of the surface.
 

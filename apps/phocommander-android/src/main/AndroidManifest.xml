@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The manifest of the Android application of Phocommander.
+
+  WHY: the application works without any special permission. The Storage
+  Access Framework grants access to the directories that the user selects,
+  and the application asks for them when the user wants a directory that it
+  does not have yet. The permission for the whole storage is optional and
+  is asked for only when the user asks for it — the Play Console allows it
+  for file managers, and it requires an explanation in the entry of the
+  store.
+
+  The two permissions below are therefore the two halves of the product:
+  the first one is the SAF mode, the second one is the optional full access.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      The permission for the whole storage of the device. It is optional:
+      the application works without it, and it asks for it only when the
+      user wants a directory that SAF does not offer.
+    -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage"
+        xmlns:tools="http://schemas.android.com/tools" />
+
+    <!--
+      The SAF mode needs no permission at all: the user selects the
+      directories in the dialog of the system, and the application receives
+      the permission for them.
+    -->
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Phocommander">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|uiMode"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

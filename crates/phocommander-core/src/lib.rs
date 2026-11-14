@@ -36,10 +36,12 @@
 
 pub mod checksum;
 pub mod config;
+pub mod document;
 pub mod entry;
 pub mod error;
 pub mod local;
 pub mod path;
+pub mod policy;
 pub mod source;
 
 pub use checksum::{Crc32, crc32, crc32_bytes, crc32_file};

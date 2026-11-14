@@ -209,14 +209,14 @@ hardcoded and in which a new language needs a single file.
 
 | Point | Evidence | Status |
 |---|---|---|
-| The twelve common rules R-01 to R-22 | all gates | open — 1485 tests, 14 consistency gates, 46 of 46 negative runs green |
+| The twelve common rules R-01 to R-22 | all gates | open — 1540 tests, 14 consistency gates, 46 of 46 negative runs green |
 | The seam of the input: keyboard, pointer, finger, remote control and gamepad bind to the same actions | `phocommander-ui`, `config/keymap.toml` | **fulfilled** |
 | The default bindings in the code, so that the file of the user only overrides them | `keymap_view/defaults.rs` | **fulfilled** |
-| The Gradle project and the Rust `cdylib` | `apps/phocommander-android/` | open |
-| The SAF mode without the special permission | `apps/` | open |
+| The Gradle project and the Rust `cdylib` | `apps/phocommander-android/` | **fulfilled** — the project, the manifest, the Kotlin shell and the C interface of the Rust core stand; the build of the library needs the NDK of the machine that builds |
+| The SAF mode without the special permission | `apps/` | **partially** — the rules of the documents and the C interface stand in the Rust core, the shell of Android reads the granted directories; the build of the package needs the NDK |
 | The optional full access, declared in the Play Console and explained | `apps/`, `docs/` | open |
 | The touch context with the stacked panels and the 44-point targets | `phocommander-ui` | **fulfilled** — the panels stand below each other in the touch context, and the rows, the fields and the buttons of the bars are targets of forty-four points |
-| The explanation in the first start, why the permission is needed | `apps/` | open |
+| The explanation in the first start, why the permission is needed | `apps/` | **fulfilled** — the explanation of the Kotlin shell says what the permission reaches and what happens without it |
 
 ---
 
