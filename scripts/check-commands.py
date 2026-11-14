@@ -38,8 +38,18 @@ PRODUCERS = (
     REPO_ROOT / "crates" / "phocommander-ui" / "src" / "app",
 )
 
-# The place that carries the commands out.
-CONSUMER = REPO_ROOT / "apps" / "phocommander-desktop" / "src" / "execute.rs"
+# The places that carry the commands out.
+#
+# WHY: most of the commands become jobs of the waiting room, and the
+#       adapter carries them out. The command that leaves the application
+#       belongs to the frame and not to the file system, and the frame
+#       carries it out. Both places count — a command that nobody carries
+#       out is a command that leads nowhere.
+CONSUMERS = (
+    REPO_ROOT / "apps" / "phocommander-desktop" / "src" / "execute.rs",
+    REPO_ROOT / "apps" / "phocommander-desktop" / "src" / "desktop.rs",
+)
+CONSUMER = CONSUMERS[0]
 
 # The actions that belong to a later milestone.
 #
@@ -53,10 +63,18 @@ DEFERRED_ACTIONS = {
     # PDF and the navigation between the pages (FR-56).
     "viewer.find_next",
     "viewer.find_previous",
+    # The menu of the application is a native menu of the system, and it
+    # belongs to the milestone of the platform integration (FR-28).
+    "app.menu",
 }
 
 # The name of a variant of the command.
-VARIANT = re.compile(r"^    ([A-Z][A-Za-z]*) \{", re.MULTILINE)
+#
+# WHY: a variant may carry a field or carry nothing. The pattern has to
+#       know both — the variant that carries nothing is written with a
+#       comma, and a pattern that only knows the brace saw twelve of the
+#       fifteen commands.
+VARIANT = re.compile(r"^    ([A-Z][A-Za-z]*)\s*(?:\{|,|$)", re.MULTILINE)
 
 # The use of a variant.
 USE = re.compile(r"Command::([A-Z][A-Za-z]*)")
@@ -66,11 +84,31 @@ HANDLING = re.compile(r'"([a-z][a-z0-9_.]*)" =>')
 
 
 def read_commands() -> list[str]:
-    """Return the names of the variants of the command."""
+    """Return the names of the variants of the command.
+
+    WHY: the block of the enumeration ends at the closing brace in the
+          first column, and not at the first brace after the opening one.
+          A variant that carries a field ends with a brace in the column of
+          the variant, and the search for that brace cut the enumeration
+          after the twelfth variant — the commands behind it were never
+          seen by this gate.
+    """
     text = COMMANDS.read_text(encoding="utf-8")
     start = text.index("pub enum Command {")
-    block = text[start : text.index("\n}\n", start)]
-    return VARIANT.findall(block)
+    ende = text.index("\n}\n", start)
+    # Das Ende der Aufzaehlung ist die schliessende Klammer in der ersten
+    # Spalte. Die Klammern werden gezaehlt, damit ein Feld des Befehls den
+    # Block nicht verkuerzt.
+    tiefe = 0
+    for index in range(start, len(text)):
+        if text[index] == "{":
+            tiefe += 1
+        elif text[index] == "}":
+            tiefe -= 1
+            if tiefe == 0:
+                ende = index
+                break
+    return VARIANT.findall(text[start:ende])
 
 
 def read_uses(paths: tuple[Path, ...], nur_produktion: bool = False) -> set[str]:
@@ -134,7 +172,7 @@ def main() -> int:
 
     varianten = read_commands()
     erzeugt = read_uses(PRODUCERS)
-    bearbeitet = read_uses((CONSUMER,), nur_produktion=True)
+    bearbeitet = read_uses(CONSUMERS, nur_produktion=True)
     ausgefuehrt = read_handled_actions() | read_grouped_actions()
 
     failures: list[str] = []
@@ -149,13 +187,16 @@ def main() -> int:
     # The consumer carries out every command in one arm of its match. Two
     # arms for the same command mean that the second one is unreachable —
     # and the unreachable arm is the one that was written last.
-    text = CONSUMER.read_text(encoding="utf-8")
-    # WHY: the tests of the adapter build the commands as well, and they
-    #       count twice. Only the arms of the match are of interest.
-    if "#[cfg(test)]" in text:
-        text = text[: text.index("#[cfg(test)]")]
     for name in varianten:
-        anzahl = len(re.findall(rf"Command::{name}\b", text))
+        anzahl = 0
+        for consumer in CONSUMERS:
+            text = consumer.read_text(encoding="utf-8")
+            # WHY: the tests of the adapter build the commands as well, and
+            #       they count twice. Only the arms of the match are of
+            #       interest.
+            if "#[cfg(test)]" in text:
+                text = text[: text.index("#[cfg(test)]")]
+            anzahl += len(re.findall(rf"Command::{name}\b", text))
         if anzahl > 1:
             failures.append(
                 f"the command {name} is carried out {anzahl} times — one of "

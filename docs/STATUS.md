@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1469 green, 0 red, 0 skipped** |
+| Tests | **1470 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -164,6 +164,10 @@ and in the tests:
 53. **Six settings of the configuration were read and never applied.** The user writes in the file whether the hidden files and the files of the system shall be shown, how many workers the waiting room shall have, what the right mouse button does, how a directory is synchronised, and whether the session comes back. All six were read — and nothing happened. The user writes the value, sees nothing change, and concludes that the program is broken.
 54. **The composition could not be tested.** The functions that build the application out of the configuration lived in the binary, and a composition that lives in the binary drifts apart from the configuration without anyone noticing. The composition is a module of the library now, and the settings of the user are proven to reach the shell.
 55. **Eleven functions of the workspace are called by nobody.** A library has functions that its own workspace does not use — that is what a library is for. But eleven public functions were called nowhere, and three of them are the seams of the tests. The gate `scripts/check-dead-code.py` asks every function: who calls it? The eleven are named in the gate with the reason why they stay, so that a new one is noticed.
+56. **The gate of the commands was blind in one eye.** The gate read the enumeration of the commands until the first brace after the opening one — and a command that carries a field ends with a brace. It saw twelve of the fifteen commands. The three it did not see were never carried out: the exchange of the two panels, the menu and the command that leaves the application. F10 did not close the program. The gate sees all fifteen now, and it knows both places that carry commands out — the adapter of the file system and the frame of the window.
+57. **The exchange of the two panels did nothing.** The command was produced and nobody carried it out — the user pressed Ctrl+U and the two panels stayed where they were. The adapter exchanges them now, and a test proves it.
+58. **The program could not be closed with the keyboard.** The command that leaves the application was produced and never carried out. The frame closes the window now, and the program ends with it. On macOS this is the difference between an application that can be left and one that cannot.
+59. **The menu of the application says that it comes later.** The menu is a native menu of the system, and it belongs to the milestone of the platform integration (FR-28). The action says so in the status line instead of pretending that a menu opened.
 
 ## 6. The rules that follow from this milestone
 

@@ -35,7 +35,7 @@ product and not a detail of the presentation.
 
 | What | How it was measured | Result |
 |---|---|---|
-| The tests of the whole workspace | `cargo test --workspace --locked` | **1469 green, 0 red, 0 skipped** |
+| The tests of the whole workspace | `cargo test --workspace --locked` | **1470 green, 0 red, 0 skipped** |
 | The formatting | `cargo fmt --all -- --check` | **without a deviation** |
 | The warnings of the linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **without a warning** |
 | The licences | `cargo deny check` | **advisories, bans, licences, sources: ok** |

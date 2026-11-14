@@ -147,6 +147,13 @@ fn submit_one(
             let _ = action;
             true
         }
+        Command::SwapPanels => {
+            // WHY: the user exchanges the two panels. The surface knows
+            //       the panels, and the surface carries out the exchange
+            //       (FR-11).
+            surface.swap_panels();
+            true
+        }
         Command::OpenViewer { entry, .. } => {
             // WHY: the viewer opens in an additional area of the surface and
             //       not in a window of its own, so that the user does not
@@ -702,20 +709,51 @@ mod tests {
     }
 
     #[test]
+    fn the_command_of_the_swap_exchanges_the_panels() {
+        // arrange
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        surface
+            .panel_mut(phocommander_ui::panel::PanelSide::Left)
+            .set_path("/left".into());
+        surface
+            .panel_mut(phocommander_ui::panel::PanelSide::Right)
+            .set_path("/right".into());
+        let commands = vec![Command::SwapPanels];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert — the panels have exchanged their places.
+        assert_eq!(anzahl, 1);
+        assert_eq!(
+            surface
+                .panel(phocommander_ui::panel::PanelSide::Left)
+                .path(),
+            std::path::Path::new("/right")
+        );
+        assert_eq!(
+            surface
+                .panel(phocommander_ui::panel::PanelSide::Right)
+                .path(),
+            std::path::Path::new("/left")
+        );
+    }
+
+    #[test]
     fn a_command_that_moves_no_file_becomes_no_job() {
         // arrange
         let (mut surface, queue) = parts();
         let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
-        let commands = vec![Command::SwapPanels, Command::Menu];
+        let commands = vec![Command::SwapPanels];
 
         // act
         let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
 
         // assert
-        // WHY: the menu and the arrangement of the panels belong to the
-        //       surface itself. They change no file, and they become no
-        //       job.
-        assert_eq!(anzahl, 0);
+        // WHY: the exchange of the panels belongs to the surface itself.
+        //       It changes no file, and it becomes no job.
+        assert_eq!(anzahl, 1);
         assert!(queue.snapshot().is_empty());
     }
 }

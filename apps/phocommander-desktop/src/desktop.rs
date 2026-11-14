@@ -45,6 +45,7 @@ use phocommander_ops::copy::{CopyMode, CopyPolicy};
 use phocommander_ops::port::FileSystem;
 use phocommander_ops::queue::JobQueue;
 use phocommander_ui::WorkSurfaceApp;
+use phocommander_ui::commands::Command;
 use phocommander_viewer::policy::ReadPolicy;
 use phocommander_viewer::reader::ViewerReader;
 
@@ -325,6 +326,16 @@ impl eframe::App for DesktopApp {
         //       commands and nothing would ever be carried out.
         let commands = self.surface.take_commands();
         if !commands.is_empty() {
+            // WHY: the command to leave the application belongs to the
+            //       frame and not to the file system. The window closes,
+            //       and the program ends with it (FR-04).
+            if commands
+                .iter()
+                .any(|command| matches!(command, Command::Quit))
+            {
+                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                return;
+            }
             submit(
                 &commands,
                 self.surface.surface_mut(),

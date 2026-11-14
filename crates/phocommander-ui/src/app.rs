@@ -580,7 +580,13 @@ impl WorkSurfaceApp {
             "selection.none" => self.surface.active_mut().clear_selection(),
             "selection.invert" => self.surface.active_mut().invert_selection(),
             "selection.by_pattern" => self.defer(action),
-            "app.menu" => self.commands.push(Command::Menu),
+            "app.menu" => {
+                // WHY: the menu of the application is a native menu of the
+                //       system, and it belongs to the milestone of the
+                //       platform integration (FR-28). The shell says so
+                //       instead of pretending that it happened.
+                self.defer(action);
+            }
             "app.quit" => self.commands.push(Command::Quit),
             // WHY: the language of the interface is a setting of the
             //       program. The surface names the language, and the shell

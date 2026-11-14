@@ -844,15 +844,31 @@ echo "Gate 19 — the commands of the surface: scripts/check-commands.py"
 echo "=============================================================="
 echo "19.1 negative run (a command is produced and never carried out):"
 cp "$COPY/apps/phocommander-desktop/src/execute.rs" "$SCRATCH/execute.rs"
-python3 - "$COPY/apps/phocommander-desktop/src/execute.rs" <<'PYTHON'
+cp "$COPY/apps/phocommander-desktop/src/desktop.rs" "$SCRATCH/desktop.rs"
+python3 - "$COPY/apps/phocommander-desktop/src/execute.rs" "$COPY/apps/phocommander-desktop/src/desktop.rs" <<'PYTHON'
 import sys, pathlib
-path = pathlib.Path(sys.argv[1])
-text = path.read_text(encoding="utf-8")
 # Der Zweig, der den Befehl traegt, wird entfernt — der Befehl wird
-# erzeugt, und niemand fuehrt ihn aus.
+# erzeugt, und niemand fuehrt ihn aus. Das gilt fuer beide Orte, die
+# Befehle ausfuehren: der Adapter und der Rahmen des Fensters.
+adapter = pathlib.Path(sys.argv[1])
+text = adapter.read_text(encoding="utf-8")
 start = text.index("        Command::Deferred { action } => {")
-ende = text.index("        Command::OpenViewer { entry, .. } => {")
-path.write_text(text[:start] + text[ende:], encoding="utf-8")
+ende = text.index("        Command::SwapPanels => {")
+adapter.write_text(text[:start] + text[ende:], encoding="utf-8")
+
+rahmen = pathlib.Path(sys.argv[2])
+text = rahmen.read_text(encoding="utf-8")
+alt = """            if commands
+                .iter()
+                .any(|command| matches!(command, Command::Quit))
+            {
+                ui.ctx()
+                    .send_viewport_cmd(egui::ViewportCommand::Close);
+                return;
+            }
+"""
+assert alt in text
+rahmen.write_text(text.replace(alt, "", 1), encoding="utf-8")
 PYTHON
 (cd "$COPY" && python3 scripts/check-commands.py) > "$SCRATCH/commands-negative.log" 2>&1
 negative=$?
@@ -860,6 +876,7 @@ show "FEHLER|RESULT" "$SCRATCH/commands-negative.log"
 report "the gate is red when a command leads nowhere" 1 "$negative"
 echo
 cp "$SCRATCH/execute.rs" "$COPY/apps/phocommander-desktop/src/execute.rs"
+cp "$SCRATCH/desktop.rs" "$COPY/apps/phocommander-desktop/src/desktop.rs"
 echo "19.2 positive run (the command is carried out again):"
 (cd "$COPY" && python3 scripts/check-commands.py) > "$SCRATCH/commands-positive.log" 2>&1
 positive=$?

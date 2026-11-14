@@ -180,9 +180,6 @@ pub enum Command {
     /// Exchange the content of the two panels.
     SwapPanels,
 
-    /// Open the menu of the application.
-    Menu,
-
     /// Leave the application.
     Quit,
 
