@@ -870,14 +870,14 @@ echo
 echo "Gate 20 — the functions that nobody calls: scripts/check-dead-code.py"
 echo "=============================================================="
 echo "20.1 negative run (a function is called nowhere):"
-cp "$COPY/crates/phocommander-ui/src/surface.rs" "$SCRATCH/surface.rs"
-python3 - "$COPY/crates/phocommander-ui/src/surface.rs" <<'PYTHON'
+cp "$COPY/crates/phocommander-ui/src/app.rs" "$SCRATCH/app.rs"
+python3 - "$COPY/crates/phocommander-ui/src/app.rs" <<'PYTHON'
 import sys, pathlib
 path = pathlib.Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
 # Der Aufruf der Funktion, die niemand sonst ruft, wird entfernt.
-alt = "        self.surface.close_viewer();"
-neu = "        let _ = self.surface.viewer();"
+alt = "                self.surface.close_viewer();"
+neu = "                let _ = self.surface.viewer();"
 assert alt in text
 path.write_text(text.replace(alt, neu, 1), encoding="utf-8")
 PYTHON
@@ -886,7 +886,7 @@ negative=$?
 show "FRAGE|RESULT" "$SCRATCH/dead-code-negative.log"
 report "the gate is red when a function is called nowhere" 1 "$negative"
 echo
-cp "$SCRATCH/surface.rs" "$COPY/crates/phocommander-ui/src/surface.rs"
+cp "$SCRATCH/app.rs" "$COPY/crates/phocommander-ui/src/app.rs"
 echo "20.2 positive run (the function is called again):"
 (cd "$COPY" && python3 scripts/check-dead-code.py) > "$SCRATCH/dead-code-positive.log" 2>&1
 positive=$?

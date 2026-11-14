@@ -66,6 +66,13 @@ pub struct WorkSurface {
     status: Option<StatusMessage>,
     jobs: Vec<JobSummary>,
     job_list_visible: bool,
+
+    /// What the user wants to see of a directory.
+    ///
+    /// WHY: the setting of the user reaches the reading of the directory,
+    ///       and the surface is what the adapter knows. The surface carries
+    ///       it therefore (FR-74).
+    visibility: crate::visibility::ListingOptions,
 }
 
 impl WorkSurface {
@@ -82,6 +89,7 @@ impl WorkSurface {
             status: None,
             jobs: Vec::new(),
             job_list_visible: true,
+            visibility: crate::visibility::ListingOptions::ALL,
         }
     }
 
@@ -319,6 +327,20 @@ impl WorkSurface {
     /// Puts the rows of the list of the jobs into the surface.
     pub fn set_jobs(&mut self, jobs: Vec<JobSummary>) {
         self.jobs = jobs;
+    }
+
+    /// What the user wants to see of a directory.
+    pub const fn visibility(&self) -> crate::visibility::ListingOptions {
+        self.visibility
+    }
+
+    /// Sets what the user wants to see of a directory.
+    ///
+    /// WHY: the setting of the user is read once when the program starts,
+    ///       and the surface is what the adapter asks before it reads a
+    ///       directory (FR-74).
+    pub fn set_visibility(&mut self, visibility: crate::visibility::ListingOptions) {
+        self.visibility = visibility;
     }
 
     /// Whether the list of the jobs is shown.

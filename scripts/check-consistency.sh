@@ -30,6 +30,7 @@ GATES=(
     "scripts/check-action-ids.py"
     "scripts/check-api-names.py"
     "scripts/check-dead-code.py"
+    "scripts/check-config-used.py"
     "scripts/check-commands.py"
     "scripts/check-config-schema.py"
     "scripts/check-docs-language.py"

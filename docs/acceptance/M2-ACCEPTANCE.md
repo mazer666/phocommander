@@ -4,6 +4,22 @@
 
 ---
 
+## 0. The open points that the audit of the 5th of November found
+
+The owner asked whether everything is really implemented and not only present. The audit of the
+workspace found four points of this milestone that are not finished. They are named here, because
+an acceptance document that does not name its own gaps is worth nothing.
+
+| What | Why it is open | Where |
+|---|---|---|
+| **The button that undoes does not show whether it can do anything.** The state of the undo exists (`undo_availability`), and the interface never reads it. The user sees a button that does nothing. | FR-26 — the undo exists for the copy operations and is marked as partial. | M2 |
+| **The plan of the synchronisation is written nowhere.** The document of the plan exists (`to_document`), and the synchronisation of the files never writes it. The preview shows the plan and forgets it. | FR-22b — the default of the synchronisation is `sync-preview`. | M2 |
+| **The way of a synchronisation is not applied.** The setting `sync_mode` is read and never used. | FR-22b. | M2 |
+| **The mouse button of the right does always the same.** The setting `right_click_action` is read and never used. | FR-17. | M2 |
+
+The three settings and the two functions are in the gate `scripts/check-dead-code.py` with the
+reason why they stay. The gate asks every public function of the workspace: who calls it?
+
 ## 1. What this milestone covers
 
 M2 turns the working file browser into an application that can replace a file browser in everyday
@@ -19,7 +35,7 @@ product and not a detail of the presentation.
 
 | What | How it was measured | Result |
 |---|---|---|
-| The tests of the whole workspace | `cargo test --workspace --locked` | **924 green, 0 red, 0 skipped** |
+| The tests of the whole workspace | `cargo test --workspace --locked` | **1469 green, 0 red, 0 skipped** |
 | The formatting | `cargo fmt --all -- --check` | **without a deviation** |
 | The warnings of the linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **without a warning** |
 | The licences | `cargo deny check` | **advisories, bans, licences, sources: ok** |
@@ -27,7 +43,7 @@ product and not a detail of the presentation.
 | The size of the files | `scripts/check-file-size.sh` | **0 above the maximum of 900**, 6 above the target value of 600 with the reason in the module header |
 | No telemetry | `scripts/check-no-telemetry.sh` | **0 violations, 0 forbidden crates** |
 | The consistency scripts | `scripts/check-*.py` | **all PASS** |
-| The gates themselves | `scripts/check-gates-negative.sh` | **34 gates**: each turns red on a defect and green again |
+| The gates themselves | `scripts/check-gates-negative.sh` | **46 gates**: each turns red on a defect and green again |
 
 The protocols lie under `docs/acceptance/logs/`.
 

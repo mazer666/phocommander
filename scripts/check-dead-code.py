@@ -67,6 +67,58 @@ def ist_testzeile(text: str, zeile: int) -> bool:
     return False
 
 
+# The functions that nobody calls, and the reason why they stay.
+#
+# A library has functions that its own workspace does not use — that is
+# what a library is for. A function that belongs to the product and that
+# nobody calls is a promise that the project does not keep, and the name
+# of such a function does not belong on this list.
+ACCEPTED: dict[str, str] = {
+    "confirmed_job": (
+        "the helper of the executor that builds a job out of a plan; it is the "
+        "seam of the tests of the executor"
+    ),
+    "for_requested": (
+        "the translator of the i18n crate that answers with the language of "
+        "the request; the crate is a library and this is part of its API"
+    ),
+    "for_system": (
+        "the formats of the i18n crate for the language of the system; the "
+        "crate is a library and this is part of its API"
+    ),
+    "has_context": (
+        "the question of the keymap view whether a context has a table; the "
+        "view answers it for a caller outside the workspace"
+    ),
+    "is_case_sensitive": (
+        "the property of the local source; the core crate is a library and "
+        "this is part of its API"
+    ),
+    "set_state": (
+        "the seam of the progress of the jobs; it is the way the tests set a "
+        "state that the production code never sets"
+    ),
+    "to_document": (
+        "the document of a synchronisation plan; the plan is written to the "
+        "disk by the synchronisation of the files, and the document is the "
+        "form of that plan"
+    ),
+    "undo_availability": (
+        "the state of the button that undoes; the button is drawn by the "
+        "interface of the M2"
+    ),
+    "with_case_sensitivity": (
+        "the seam of the tests of the local source"
+    ),
+    "with_clock": (
+        "the seam of the tests of the progress"
+    ),
+    "with_undo_availability": (
+        "the seam of the tests of the shell"
+    ),
+}
+
+
 def main() -> int:
     """Run the check and report the result."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -87,8 +139,16 @@ def main() -> int:
     for datei in dateien:
         texte[datei] = datei.read_text(encoding="utf-8")
 
-    # The whole text of the repository, for the count.
-    alles = "\n".join(texte.values())
+    # WHY: a name in a comment is a name that nobody calls, and a name in
+    #       a string is a name that nobody calls either. The count looks at
+    #       the code and not at the prose around it.
+    alles = "\n".join(
+        "\n".join(
+            re.sub(r'"[^"]*"', "", zeile.split("//")[0])
+            for zeile in text.split("\n")
+        )
+        for text in texte.values()
+    )
 
     funktionen: dict[str, list[str]] = {}
     for datei, text in texte.items():
@@ -103,7 +163,7 @@ def main() -> int:
     for name, orte in sorted(funktionen.items()):
         # The name must occur once more than in its own definition.
         vorkommen = len(re.findall(rf"\b{re.escape(name)}\b", alles))
-        if vorkommen <= len(orte):
+        if vorkommen <= len(orte) and name not in ACCEPTED:
             fragen.append(
                 f"  FRAGE: the function `{name}` is defined in "
                 f"{', '.join(orte)} and is called nowhere in the workspace"
@@ -113,8 +173,12 @@ def main() -> int:
         for name, orte in sorted(funktionen.items()):
             print(f"  {name} — {', '.join(orte)}")
 
+    angenommen = [name for name in funktionen if name in ACCEPTED]
     print(f"Public functions read : {len(funktionen)}")
     print(f"Functions never called: {len(fragen)}")
+    print(f"Accepted on purpose   : {len(angenommen)}")
+    for name in sorted(angenommen):
+        print(f"  - {name}: {ACCEPTED[name]}")
 
     if fragen:
         for frage in fragen:

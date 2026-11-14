@@ -314,6 +314,17 @@ impl WorkSurfaceApp {
         self
     }
 
+    /// The shell with another view of the directories.
+    ///
+    /// WHY: the user writes in the configuration file whether the hidden
+    ///       files and the files of the system shall be shown. The setting
+    ///       reaches the surface, and the surface is what the adapter asks
+    ///       before it reads a directory (FR-74).
+    pub fn with_visibility(mut self, visibility: crate::visibility::ListingOptions) -> Self {
+        self.surface.set_visibility(visibility);
+        self
+    }
+
     /// The shell with other metrics.
     pub fn with_metrics(mut self, metrics: Metrics) -> Self {
         self.metrics = metrics;

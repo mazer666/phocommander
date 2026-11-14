@@ -25,10 +25,10 @@ five inputs meet:
 
 | What | How it was measured | Result |
 |---|---|---|
-| The tests of the workspace | `cargo test --workspace --locked` | **1461 green, 0 red, 0 skipped** |
+| The tests of the workspace | `cargo test --workspace --locked` | **1469 green, 0 red, 0 skipped** |
 | The formatting | `cargo fmt --all -- --check` | **without a deviation** |
 | The warnings of the linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` | **without a warning** |
-| The consistency gates | `scripts/check-*.py`, `scripts/check-*.sh` | **18, all PASS** |
+| The consistency gates | `scripts/check-*.py`, `scripts/check-*.sh` | **19, all PASS** |
 | The gates prove themselves | `scripts/check-gates-negative.sh` | **39 gates in 42 runs**, each turns red and green again |
 
 The number of the tests has risen from 1277 at the acceptance of M3 to **1703**: 426 new tests

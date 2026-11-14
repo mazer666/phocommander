@@ -24,6 +24,7 @@ use std::path::Path;
 
 use phocommander_ops::port::{DirEntry, EntryKind as OpsEntryKind, FileSystem};
 use phocommander_ui::listing::{Entry, EntryKind};
+use phocommander_ui::visibility::ListingOptions;
 
 /// Reads the entries of the directory at the given path.
 ///
@@ -35,8 +36,26 @@ pub fn read_entries(
     fs: &dyn FileSystem,
     path: &Path,
 ) -> Result<Vec<Entry>, phocommander_ops::error::OpError> {
+    read_entries_with(fs, path, ListingOptions::ALL)
+}
+
+/// Reads the entries of the directory that the user wants to see.
+///
+/// WHY: the hidden files and the files of the system are left out here and
+///       not in the panel. The panel shows what it gets, and the amount of
+///       data that travels across the interface is smaller when the
+///       entries that the user does not want to see never enter it.
+pub fn read_entries_with(
+    fs: &dyn FileSystem,
+    path: &Path,
+    options: ListingOptions,
+) -> Result<Vec<Entry>, phocommander_ops::error::OpError> {
     let eintraege = fs.read_dir(path)?;
-    Ok(eintraege.iter().map(entry_of).collect())
+    Ok(eintraege
+        .iter()
+        .filter(|eintrag| options.accepts(&eintrag.name))
+        .map(entry_of)
+        .collect())
 }
 
 /// The entry of the surface, out of the entry of the file system.

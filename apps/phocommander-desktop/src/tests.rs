@@ -17,6 +17,9 @@
 
 use super::*;
 use phocommander_config::Language;
+use phocommander_desktop::composition::{build_application, parse_keymap};
+use phocommander_desktop::language::locale_of;
+use phocommander_ui::Context;
 
 #[test]
 fn the_parser_reads_the_bindings_of_every_context() {

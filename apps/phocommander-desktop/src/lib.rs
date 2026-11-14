@@ -25,6 +25,7 @@
 
 pub mod archive;
 pub mod catalogue;
+pub mod composition;
 pub mod desktop;
 pub mod execute;
 pub mod filesystem;

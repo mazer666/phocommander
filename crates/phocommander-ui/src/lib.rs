@@ -44,6 +44,7 @@ pub mod rename;
 pub mod surface;
 pub mod theme;
 pub mod undo;
+pub mod visibility;
 
 pub use actions::{Action, ActionCategory, MenuGroup};
 pub use app::WorkSurfaceApp;

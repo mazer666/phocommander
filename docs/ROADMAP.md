@@ -209,7 +209,7 @@ hardcoded and in which a new language needs a single file.
 
 | Point | Evidence | Status |
 |---|---|---|
-| The twelve common rules R-01 to R-22 | all gates | open — 1461 tests, 18 consistency gates, 46 of 46 negative runs green |
+| The twelve common rules R-01 to R-22 | all gates | open — 1469 tests, 19 consistency gates, 46 of 46 negative runs green |
 | The seam of the input: keyboard, pointer, finger, remote control and gamepad bind to the same actions | `phocommander-ui`, `config/keymap.toml` | **fulfilled** |
 | The default bindings in the code, so that the file of the user only overrides them | `keymap_view/defaults.rs` | **fulfilled** |
 | The Gradle project and the Rust `cdylib` | `apps/phocommander-android/` | open |

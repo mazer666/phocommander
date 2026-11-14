@@ -36,13 +36,13 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1461 green, 0 red, 0 skipped** |
+| Tests | **1469 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
 | The formatting | `cargo fmt --all -- --check` — **without a deviation** |
 | The licences | `cargo deny check` — advisories, bans, licences, sources: **ok** |
-| The consistency gates | 18, all green — and they run in **every** job of the matrix, not only in the one that checks the quality |
+| The consistency gates | 19, all green — and they run in **every** job of the matrix, not only in the one that checks the quality |
 | The language catalogues | 3 languages, 158 keys, the same set of keys |
 
 ## 4. The decisions of the owner
@@ -161,6 +161,9 @@ and in the tests:
 50. **The priority of a job did not change the list.** The queue runs the job with the highest priority first, and the list of the jobs showed the order in which they were submitted. The list shows now the order of the execution — what is going to happen next.
 51. **The notice of an action that cannot do anything was built twice.** The shell built it in the language of the interface, the adapter built it again in English. The shell is the only place that knows the language, and it is the only place that builds the notice.
 52. **Five getters and setters were never used.** `is_case_insensitive`, `other_mut`, `rename_dialog_mut`, `toggle_overlay`, `set_active_side`, `set_arrangement` — doors into rooms that nobody entered. Two of them now carry the path that sets the state, the others are gone. The gate `scripts/check-dead-code.py` asks for every public function of the workspace: who calls it?
+53. **Six settings of the configuration were read and never applied.** The user writes in the file whether the hidden files and the files of the system shall be shown, how many workers the waiting room shall have, what the right mouse button does, how a directory is synchronised, and whether the session comes back. All six were read — and nothing happened. The user writes the value, sees nothing change, and concludes that the program is broken.
+54. **The composition could not be tested.** The functions that build the application out of the configuration lived in the binary, and a composition that lives in the binary drifts apart from the configuration without anyone noticing. The composition is a module of the library now, and the settings of the user are proven to reach the shell.
+55. **Eleven functions of the workspace are called by nobody.** A library has functions that its own workspace does not use — that is what a library is for. But eleven public functions were called nowhere, and three of them are the seams of the tests. The gate `scripts/check-dead-code.py` asks every function: who calls it? The eleven are named in the gate with the reason why they stay, so that a new one is noticed.
 
 ## 6. The rules that follow from this milestone
 

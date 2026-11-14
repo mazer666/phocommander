@@ -45,7 +45,7 @@ use phocommander_ui::panel::ArchiveView;
 use phocommander_ui::surface::{WorkSurface, panel_path};
 
 use crate::archive::{entries_of_the_archive, entries_of_the_archive_at};
-use crate::listing::read_entries;
+use crate::listing::read_entries_with;
 use crate::preview::ViewerPreviewSource;
 
 /// Submits the commands of the surface to the waiting room.
@@ -128,7 +128,7 @@ fn submit_one(
                 //       viewer opens it, and the panel keeps what it shows.
                 return false;
             }
-            let Ok(eintraege) = read_entries(fs, path) else {
+            let Ok(eintraege) = read_entries_with(fs, path, surface.visibility()) else {
                 return false;
             };
             let panel = surface.panel_mut(*side);
@@ -185,7 +185,7 @@ fn submit_one(
             //       A directory that cannot be read leaves the panel as it
             //       was. An empty panel and a reason in the log are better
             //       than a panel that pretends the directory is empty.
-            let Ok(eintraege) = read_entries(fs, path) else {
+            let Ok(eintraege) = read_entries_with(fs, path, surface.visibility()) else {
                 return false;
             };
             let panel = surface.panel_mut(*side);
@@ -205,7 +205,7 @@ fn submit_one(
                 return false;
             };
             if metadata.kind.is_directory() {
-                let eintraege = match read_entries(fs, entry) {
+                let eintraege = match read_entries_with(fs, entry, surface.visibility()) {
                     Ok(eintraege) => eintraege,
                     Err(_) => return false,
                 };
