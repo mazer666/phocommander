@@ -216,36 +216,11 @@ impl WorkSurfaceApp {
     ///     Box::new(Empty),
     /// )
     /// .with_undo_availability(UndoAvailability::available(UndoScope::RemovesCopiesOnly));
-    /// assert!(app.undo_availability().is_available());
+    /// assert!(app.surface().undo().is_available());
     /// ```
     pub fn with_undo_availability(mut self, undo: UndoAvailability) -> Self {
         self.surface.set_undo(undo);
         self
-    }
-
-    /// The undo that the surface can take back.
-    ///
-    /// EXAMPLE:
-    /// ```no_run
-    /// use phocommander_ui::app::WorkSurfaceApp;
-    /// # use phocommander_ui::{Catalogue, WorkSurface};
-    /// # use phocommander_ui::keymap_view::KeymapView;
-    /// # use std::path::PathBuf;
-    /// # struct Empty;
-    /// # impl Catalogue for Empty {
-    /// #     fn lookup_with(&self, _key: &str, _arguments: &[phocommander_ui::i18n::Argument<'_>]) -> Option<String> {
-    /// #         None
-    /// #     }
-    /// # }
-    /// let app = WorkSurfaceApp::new(
-    ///     WorkSurface::new(PathBuf::from("/tmp"), PathBuf::from("/var")),
-    ///     KeymapView::default(),
-    ///     Box::new(Empty),
-    /// );
-    /// assert!(!app.undo_availability().is_available());
-    /// ```
-    pub fn undo_availability(&self) -> UndoAvailability {
-        self.surface.undo()
     }
 
     /// The shell with another rule for reading a directory again.

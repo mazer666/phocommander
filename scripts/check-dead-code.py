@@ -74,10 +74,6 @@ def ist_testzeile(text: str, zeile: int) -> bool:
 # nobody calls is a promise that the project does not keep, and the name
 # of such a function does not belong on this list.
 ACCEPTED: dict[str, str] = {
-    "confirmed_job": (
-        "the helper of the executor that builds a job out of a plan; it is the "
-        "seam of the tests of the executor"
-    ),
     "for_requested": (
         "the translator of the i18n crate that answers with the language of "
         "the request; the crate is a library and this is part of its API"
@@ -97,15 +93,6 @@ ACCEPTED: dict[str, str] = {
     "set_state": (
         "the seam of the progress of the jobs; it is the way the tests set a "
         "state that the production code never sets"
-    ),
-    "to_document": (
-        "the document of a synchronisation plan; the plan is written to the "
-        "disk by the synchronisation of the files, and the document is the "
-        "form of that plan"
-    ),
-    "undo_availability": (
-        "the state of the button that undoes; the button is drawn by the "
-        "interface of the M2"
     ),
     "with_case_sensitivity": (
         "the seam of the tests of the local source"
