@@ -19,7 +19,7 @@
 //!
 //! EXAMPLE:
 //! ```no_run
-//! use phocommander_android::bridge;
+//! use phocommander_bridge::bridge;
 //!
 //! // The shell calls this and reads the answer.
 //! let antwort = bridge::listing_text("root/1\ta.jpg\t0\t1");
@@ -39,7 +39,7 @@ const SEPARATOR: char = '\t';
 ///
 /// EXAMPLE:
 /// ```no_run
-/// use phocommander_android::bridge;
+/// use phocommander_bridge::bridge;
 ///
 /// let antwort = bridge::listing_text("root/1\ta.jpg\t0\t1");
 /// assert_eq!(antwort.lines().count(), 1);
@@ -91,7 +91,7 @@ pub fn listing_text(documents: &str) -> String {
 /// The pointer must stand for `len` readable bytes, or be null. The caller
 /// is the shell of the system, and it passes the bytes of a string that it
 /// built itself.
-pub unsafe extern "C" fn listing(documents: *const u8, len: usize) -> *mut u8 {
+pub unsafe extern "C" fn phocommander_bridge_listing(documents: *const u8, len: usize) -> *mut u8 {
     let input = if documents.is_null() || len == 0 {
         String::new()
     } else {
@@ -123,11 +123,11 @@ pub unsafe extern "C" fn listing(documents: *const u8, len: usize) -> *mut u8 {
 ///
 /// EXAMPLE:
 /// ```no_run
-/// use phocommander_android::bridge;
+/// use phocommander_bridge::bridge;
 ///
 /// // The shell calls this when it is done with the answer.
 /// unsafe {
-///     let _ = bridge::free_text(std::ptr::null_mut());
+///     let _ = bridge::phocommander_bridge_free(std::ptr::null_mut());
 /// }
 /// ```
 ///
@@ -140,7 +140,7 @@ pub unsafe extern "C" fn listing(documents: *const u8, len: usize) -> *mut u8 {
 ///
 /// The pointer must be null, or it must be the answer that `listing`
 /// returned and that has not been given back yet.
-pub unsafe extern "C" fn free_text(pointer: *mut u8) {
+pub unsafe extern "C" fn phocommander_bridge_free(pointer: *mut u8) {
     if pointer.is_null() {
         return;
     }
@@ -164,7 +164,7 @@ fn bool_text(value: bool) -> &'static str {
 ///
 /// EXAMPLE:
 /// ```no_run
-/// use phocommander_android::bridge;
+/// use phocommander_bridge::bridge;
 ///
 /// let records = bridge::parse("root/1\ta.jpg\t0\t1");
 /// assert_eq!(records.len(), 1);

@@ -17,7 +17,7 @@
 //!
 //! EXAMPLE:
 //! ```no_run
-//! use phocommander_android::rules::Listing;
+//! use phocommander_bridge::rules::Listing;
 //!
 //! let listing = Listing::of(&[
 //!     ("root", "Photos", true, false),
@@ -56,7 +56,7 @@ impl DocumentRecord {
     ///
     /// EXAMPLE:
     /// ```no_run
-    /// use phocommander_android::rules::DocumentRecord;
+    /// use phocommander_bridge::rules::DocumentRecord;
     ///
     /// let record = DocumentRecord::new("root/1", "a.jpg", false, false);
     /// assert_eq!(record.name, "a.jpg");
@@ -80,7 +80,7 @@ impl DocumentRecord {
 ///
 /// EXAMPLE:
 /// ```no_run
-/// use phocommander_android::rules::Listing;
+/// use phocommander_bridge::rules::Listing;
 ///
 /// let listing = Listing::of(&[("root", "Photos", true, true)]);
 /// assert_eq!(listing.len(), 1);
@@ -100,7 +100,7 @@ impl Listing {
     ///
     /// EXAMPLE:
     /// ```no_run
-    /// use phocommander_android::rules::Listing;
+    /// use phocommander_bridge::rules::Listing;
     ///
     /// let listing = Listing::of(&[
     ///     ("root/2", "Zoo", true, true),
@@ -224,7 +224,7 @@ pub const READ_ONLY_REASON: &str = "policy-read-only";
 ///
 /// EXAMPLE:
 /// ```no_run
-/// use phocommander_android::rules::READ_ONLY_REASON;
+/// use phocommander_bridge::rules::READ_ONLY_REASON;
 ///
 /// assert_eq!(READ_ONLY_REASON, "policy-read-only");
 /// ```

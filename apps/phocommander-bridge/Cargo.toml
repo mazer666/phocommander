@@ -1,0 +1,32 @@
+# The bridge between the Rust core and the shells of the mobile systems.
+#
+# WHAT: the crate that carries the C interface of the library of Rust and
+#       the rules of the documents that the shells ask for.
+# WHY: Android and iPadOS speak the languages of their systems — Java and
+#       Swift — and the rules of the product live in the Rust core. Both
+#       shells need the same rules and the same interface, and a copy of
+#       them in two places drifts apart. The bridge is therefore one crate,
+#       and the two shells load it.
+# EXAMPLE: the public API arrives in milestone M4.
+
+[package]
+name = "phocommander-bridge"
+description = "The C interface of Phocommander for the shells of the mobile systems."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+# `cdylib` is the library that the application of the system loads, `rlib`
+# is the library that the tests and the other crates link against.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The rules of the documents are the rules of the product, and they live in
+# the core. The bridge asks the core and hands the answer over.
+phocommander-core = { path = "../../crates/phocommander-core" }
+
+[lints]
+workspace = true

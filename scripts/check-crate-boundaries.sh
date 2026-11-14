@@ -215,7 +215,7 @@ awk -F'\t' -v catalogue_file="$root_map" -v member_list="$members" '
         if (from == "tests" && to == "platform") return "the integration tests must not depend on a platform adapter"
         if (from == "tests" && to == "xtask") return "the integration tests must not depend on the build helpers"
         if (from == "tests" && to == "tests") return "the integration tests must not depend on themselves"
-        if (from == "apps" && to == "apps") return "an application must not depend on another application"
+        if (from == "apps" && to == "apps" && target != "apps/phocommander-bridge") return "an application must not depend on another application"
         if (from == "apps" && to == "xtask") return "an application must not depend on the build helpers"
         if (from == "xtask" && to == "apps") return "the build helpers must not depend on an application"
         if (from == "xtask" && to == "platform") return "the build helpers must not depend on a platform adapter"
@@ -264,6 +264,12 @@ awk -F'\t' -v catalogue_file="$root_map" -v member_list="$members" '
         allowed = 0
         if (from == "platform" && to == "crates") allowed = 1
         if (from == "apps" && (to == "crates" || to == "platform")) allowed = 1
+        # WHY: the bridge is the one place where the Rust core and the
+        #       shells of the mobile systems meet. It is not a product
+        #       kernel and not an application either, and the two shells
+        #       share it — a copy of it in two places drifts apart.
+        if (from == "apps" && to == "apps" && target == "apps/phocommander-bridge") allowed = 1
+        if (from == "apps/phocommander-bridge" && to == "crates") allowed = 1
         if (from == "xtask" && to == "crates") allowed = 1
         if (from == "tests" && to == "crates") allowed = 1
 

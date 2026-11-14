@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1540 green, 0 red, 0 skipped** |
+| Tests | **1541 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -179,6 +179,8 @@ and in the tests:
 68. **The drawing promised a thing that it did not do.** The comment in the drawing said: "on a touch screen the panels are always stacked" — and the drawing took the arrangement of the user, whatever the context was. The panels stood next to each other on a tablet, and the finger had to reach a target of twenty points. The decision stands in a function now, and the function is tested.
 69. **The buttons of the menu bar and of the toolbar were not targets of a finger.** The rows of the list grew to forty-four points in the touch context, the fields and the buttons of the dialog as well — the buttons of the two bars did not. They used the measures of the platform and not those of the context, and on a Windows tablet that meant twenty points. The bars ask the profile now, and the profile knows the context (FR-106).
 70. **The Android application was a name on a list.** The crate existed since M0 and said what it would become — but there was no project, no manifest, no shell and no bridge. The rules of the documents now stand in the Rust core (the order of the list, the operations that a document allows, the reason for a refusal), the C interface that the shell calls stands beside them, and the Gradle project, the manifest and the Kotlin shell stand in the repository. The build of the library needs the NDK of the machine that builds — the sandbox has none — but the code is here and it is tested.
+71. **The bridge of the mobile systems was written twice.** The rules of the documents and the C interface were written in the crate of Android — and the shell of iPadOS would have needed a copy of them, and a copy drifts apart. The bridge is a crate of its own now, and the two shells load the same one. The rule of the boundaries of the crates learned the case: an application may share the bridge, and the bridge may stand on the crates of the product.
+72. **The iPadOS shell was a name on a list.** The Swift package, the shell with the split view, the bookmarks of the released directories and the handling of a revoked permission stand in the repository now. The permission is the decision of the user, and the application asks before it reads — and it says that the permission is gone instead of failing silently.
 
 ## 6. The rules that follow from this milestone
 

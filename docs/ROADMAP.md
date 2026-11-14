@@ -209,7 +209,7 @@ hardcoded and in which a new language needs a single file.
 
 | Point | Evidence | Status |
 |---|---|---|
-| The twelve common rules R-01 to R-22 | all gates | open — 1540 tests, 14 consistency gates, 46 of 46 negative runs green |
+| The twelve common rules R-01 to R-22 | all gates | open — 1541 tests, 14 consistency gates, 46 of 46 negative runs green |
 | The seam of the input: keyboard, pointer, finger, remote control and gamepad bind to the same actions | `phocommander-ui`, `config/keymap.toml` | **fulfilled** |
 | The default bindings in the code, so that the file of the user only overrides them | `keymap_view/defaults.rs` | **fulfilled** |
 | The Gradle project and the Rust `cdylib` | `apps/phocommander-android/` | **fulfilled** — the project, the manifest, the Kotlin shell and the C interface of the Rust core stand; the build of the library needs the NDK of the machine that builds |
@@ -227,11 +227,11 @@ hardcoded and in which a new language needs a single file.
 | Point | Evidence | Status |
 |---|---|---|
 | The twelve common rules R-01 to R-22 | all gates | open |
-| The Xcode project and the Rust `cdylib` | `apps/phocommander-ios/` | open |
-| The document picker with the granted roots | `apps/` | open |
-| The security-scoped bookmarks that survive a restart | `apps/` | open |
+| The Xcode project and the Rust `cdylib` | `apps/phocommander-ios/` | **partially** — the Swift package, the shell and the C interface of the core stand; the build of the package needs the toolchain of Xcode |
+| The document picker with the granted roots | `apps/` | **partially** — the bookmarks of the released directories and the access of the permission stand in the Swift shell |
+| The security-scoped bookmarks that survive a restart | `apps/` | **fulfilled** — the bookmarks are written into the directory of the application and read again when it starts |
 | The split view instead of the pair of windows | `phocommander-ui` | open |
-| The handling of a revoked permission, without a crash | `apps/`, test | open |
+| The handling of a revoked permission, without a crash | `apps/`, test | **fulfilled** — the shell asks before it reads and says that the permission is gone |
 | The limitation is stated in the document, not hidden | `docs/` | open |
 
 ---

@@ -23,9 +23,9 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# The rules of the documents are the rules of the product, and they live in
-# the core. The bridge asks the core and hands the answer over.
-phocommander-core = { path = "../../crates/phocommander-core" }
+# The bridge is the one place where the Rust core and the shell of the
+# system meet. The shell of iPadOS loads the same bridge.
+phocommander-bridge = { path = "../phocommander-bridge" }
 
 [lints]
 workspace = true

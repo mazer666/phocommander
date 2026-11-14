@@ -30,5 +30,9 @@
 //! EXAMPLE:
 //! ```no_run
 //! // Milestone M5 will look like this:
+//! // let documents = phocommander_bridge::rules::Listing::of(&records);
 //! // phocommander_ios::resolve_bookmark(&data)?;
 //! ```
+
+/// The bridge that the shell of the system loads.
+pub use phocommander_bridge as bridge;

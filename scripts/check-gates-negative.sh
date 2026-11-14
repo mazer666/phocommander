@@ -843,9 +843,9 @@ echo "=============================================================="
 echo "Gate 19 — the commands of the surface: scripts/check-commands.py"
 echo "=============================================================="
 echo "19.1 negative run (a command is produced and never carried out):"
-cp "$COPY/apps/phocommander-desktop/src/execute.rs" "$SCRATCH/execute.rs"
+cp "$COPY/apps/phocommander-desktop/src/execute/mod.rs" "$SCRATCH/execute-mod.rs"
 cp "$COPY/apps/phocommander-desktop/src/desktop.rs" "$SCRATCH/desktop.rs"
-python3 - "$COPY/apps/phocommander-desktop/src/execute.rs" "$COPY/apps/phocommander-desktop/src/desktop.rs" <<'PYTHON'
+python3 - "$COPY/apps/phocommander-desktop/src/execute/mod.rs" "$COPY/apps/phocommander-desktop/src/desktop.rs" <<'PYTHON'
 import sys, pathlib
 # Der Zweig, der den Befehl traegt, wird entfernt — der Befehl wird
 # erzeugt, und niemand fuehrt ihn aus. Das gilt fuer beide Orte, die
@@ -875,7 +875,7 @@ negative=$?
 show "FEHLER|RESULT" "$SCRATCH/commands-negative.log"
 report "the gate is red when a command leads nowhere" 1 "$negative"
 echo
-cp "$SCRATCH/execute.rs" "$COPY/apps/phocommander-desktop/src/execute.rs"
+cp "$SCRATCH/execute-mod.rs" "$COPY/apps/phocommander-desktop/src/execute/mod.rs"
 cp "$SCRATCH/desktop.rs" "$COPY/apps/phocommander-desktop/src/desktop.rs"
 echo "19.2 positive run (the command is carried out again):"
 (cd "$COPY" && python3 scripts/check-commands.py) > "$SCRATCH/commands-positive.log" 2>&1
