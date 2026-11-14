@@ -491,7 +491,10 @@ mod tests {
     #[test]
     fn a_file_that_cannot_be_read_gives_the_safe_configuration() {
         // arrange
-        let path = std::env::temp_dir().join("phocommander-does-not-exist.toml");
+        let path = std::env::temp_dir().join(format!(
+            "phocommander-does-not-exist-{}.toml",
+            std::process::id()
+        ));
 
         // act
         let (config, notices) = load_file_or_safe(&path);

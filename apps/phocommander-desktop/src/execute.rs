@@ -647,7 +647,10 @@ mod tests {
         //       of them and take it out.
         let (mut surface, queue) = parts();
         let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
-        let archive = std::env::temp_dir().join("phocommander-virtual-directory.zip");
+        let archive = std::env::temp_dir().join(format!(
+            "phocommander-virtual-directory-{}.zip",
+            std::process::id()
+        ));
         let _ = std::fs::remove_file(&archive);
         build_zip(&archive, &[("notes.txt", b"der Inhalt")]);
 
@@ -683,8 +686,12 @@ mod tests {
         //       archive (FR-66).
         let (mut surface, queue) = parts();
         let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
-        let archive = std::env::temp_dir().join("phocommander-take-out.zip");
-        let ziel = std::env::temp_dir().join("phocommander-take-out-ziel");
+        // WHY: the name of the file carries the number of the process, so
+        //       that two runs of the tests never work on the same file.
+        //       The test was flaky: it removed the target of another run.
+        let eigen = format!("phocommander-take-out-{}", std::process::id());
+        let archive = std::env::temp_dir().join(format!("{eigen}.zip"));
+        let ziel = std::env::temp_dir().join(format!("{eigen}-ziel"));
         let _ = std::fs::remove_file(&archive);
         let _ = std::fs::remove_dir_all(&ziel);
         build_zip(&archive, &[("notes.txt", b"der Inhalt der Notizen")]);

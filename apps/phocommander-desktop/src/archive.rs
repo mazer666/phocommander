@@ -153,7 +153,10 @@ mod tests {
         use phocommander_archive::formats::ArchiveWriter;
         use phocommander_archive::formats::zip::ZipArchiveWriter;
 
-        let pfad = std::env::temp_dir().join("phocommander-archive-entries.zip");
+        let pfad = std::env::temp_dir().join(format!(
+            "phocommander-archive-entries-{}.zip",
+            std::process::id()
+        ));
         let _ = std::fs::remove_file(&pfad);
         {
             let mut writer = ZipArchiveWriter::create(&pfad)

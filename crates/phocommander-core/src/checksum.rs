@@ -275,7 +275,8 @@ mod tests {
     #[test]
     fn the_checksum_of_a_file_is_the_checksum_of_its_content() {
         // arrange
-        let path = std::env::temp_dir().join("phocommander-checksum.txt");
+        let path =
+            std::env::temp_dir().join(format!("phocommander-checksum-{}.txt", std::process::id()));
         fs::write(&path, b"123456789").unwrap_or_else(|error| {
             panic!("the file {path:?} could not be written: {error}");
         });

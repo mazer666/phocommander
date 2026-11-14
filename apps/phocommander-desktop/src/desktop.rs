@@ -385,7 +385,10 @@ mod tests {
     #[test]
     fn the_language_is_written_into_the_file_of_the_settings() {
         // arrange
-        let directory = std::env::temp_dir().join("phocommander-language-write-test");
+        let directory = std::env::temp_dir().join(format!(
+            "phocommander-language-write-test-{}",
+            std::process::id()
+        ));
         std::fs::create_dir_all(&directory)
             .unwrap_or_else(|error| panic!("the directory should be created: {error}"));
         let path = directory.join("config.toml");
@@ -414,7 +417,10 @@ mod tests {
     #[test]
     fn a_file_that_cannot_be_written_gives_an_error_and_no_panic() {
         // arrange
-        let path = std::env::temp_dir().join("phocommander-language-missing-test/config.toml");
+        let path = std::env::temp_dir().join(format!(
+            "phocommander-language-missing-test-{}/config.toml",
+            std::process::id()
+        ));
 
         // act
         let ergebnis = write_the_language(&path, "en");
