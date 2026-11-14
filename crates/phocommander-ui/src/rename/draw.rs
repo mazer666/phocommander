@@ -329,7 +329,7 @@ fn draw_preview(ui: &mut egui::Ui, dialog: &mut RenameDialog, style: &DrawStyle<
         .preview()
         .and_then(|preview| preview.problem.as_ref())
         .map(|problem| {
-            texts.get_with(
+            texts.lookup_with(
                 problem.message_key(),
                 &[Argument::named("value", problem.detail.as_str())],
             )
@@ -379,7 +379,7 @@ fn conflict_text_of(
                 .is_some_and(|target| conflict.path == *target)
     })?;
     let path = conflict.path.to_string_lossy().to_string();
-    Some(texts.get_with(
+    Some(texts.lookup_with(
         conflict.message_key(),
         &[Argument::named("value", path.as_str())],
     ))
@@ -406,7 +406,7 @@ fn draw_preview_row(
     let (text, color) = match (&row.name, &row.problem) {
         (Some(name), _) => (name.clone(), palette.text),
         (None, Some(problem)) => (
-            texts.get_with(
+            texts.lookup_with(
                 problem.message_key(),
                 &[Argument::named("value", problem.detail.as_str())],
             ),

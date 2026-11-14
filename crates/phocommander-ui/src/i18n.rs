@@ -188,11 +188,11 @@ impl<'a> Texts<'a> {
     /// assert_eq!(texts.get(TextKey::CommonOk), "common-ok");
     /// ```
     pub fn get(&self, key: TextKey) -> String {
-        self.get_with(key, &[])
+        self.lookup_with(key, &[])
     }
 
     /// The text of a key with the given arguments, or the key itself.
-    pub fn get_with(&self, key: TextKey, arguments: &[Argument<'_>]) -> String {
+    pub fn lookup_with(&self, key: TextKey, arguments: &[Argument<'_>]) -> String {
         match self.catalogue.lookup_with(key.as_str(), arguments) {
             Some(text) if !text.is_empty() => text,
             _ => key.as_str().to_string(),
@@ -220,9 +220,9 @@ impl<'a> Texts<'a> {
     /// }
     ///
     /// let texts = Texts::new(&Empty);
-    /// assert_eq!(texts.get_by_key("path-too-long", &[]), "path-too-long");
+    /// assert_eq!(texts.lookup_by_key("path-too-long", &[]), "path-too-long");
     /// ```
-    pub fn get_by_key(&self, key: &str, arguments: &[Argument<'_>]) -> String {
+    pub fn lookup_by_key(&self, key: &str, arguments: &[Argument<'_>]) -> String {
         match self.catalogue.lookup_with(key, arguments) {
             Some(text) if !text.is_empty() => text,
             _ => key.to_string(),
@@ -316,7 +316,7 @@ mod tests {
         let texts = Texts::new(&counting);
 
         // act
-        let text = texts.get_with(TextKey::PanelStatusEntries, &[Argument::count(7)]);
+        let text = texts.lookup_with(TextKey::PanelStatusEntries, &[Argument::count(7)]);
 
         // assert
         assert_eq!(text, "7 entries");

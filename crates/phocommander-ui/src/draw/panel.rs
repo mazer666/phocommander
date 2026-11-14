@@ -239,7 +239,7 @@ fn draw_tabs(
         |ui| {
             for index in 0..panel.tab_count() {
                 let selected = index == panel.active_tab_index();
-                let label = texts.get_with(
+                let label = texts.lookup_with(
                     TextKey::PanelTab,
                     &[Argument::named("number", &(index + 1).to_string())],
                 );
@@ -325,7 +325,7 @@ fn draw_filter_line(
 
             let matches = panel.matching_count();
             ui.label(
-                RichText::new(texts.get_with(
+                RichText::new(texts.lookup_with(
                     TextKey::PanelFilterMatches,
                     &[Argument::count(matches as u64)],
                 ))

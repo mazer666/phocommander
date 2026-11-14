@@ -450,7 +450,7 @@ pub(crate) fn draw_job_list(
             ui.advance_cursor_after_rect(row_rect);
             let kind = texts.get(job.kind().text_key());
             let state = texts.get(job.state().text_key());
-            let progress = texts.get_with(
+            let progress = texts.lookup_with(
                 TextKey::PanelJobProgress,
                 &[
                     Argument::count(job.items_done()),
@@ -462,19 +462,19 @@ pub(crate) fn draw_job_list(
             //       gigabytes is a job that looks as if it hangs (FR-24,
             //       FR-22g).
             let rate = job.rate().map(|bytes| {
-                texts.get_with(
+                texts.lookup_with(
                     TextKey::PanelJobRate,
                     &[Argument::named("rate", &style.formats.size(bytes))],
                 )
             });
             let eta = job.eta().map(|seconds| {
                 if seconds < 60 {
-                    texts.get_with(
+                    texts.lookup_with(
                         TextKey::PanelJobEtaSeconds,
                         &[Argument::named("seconds", &seconds.to_string())],
                     )
                 } else {
-                    texts.get_with(
+                    texts.lookup_with(
                         TextKey::PanelJobEtaMinutes,
                         &[Argument::named("minutes", &(seconds / 60).to_string())],
                     )
@@ -489,7 +489,7 @@ pub(crate) fn draw_job_list(
                     .iter()
                     .map(|(name, value)| Argument::named(name, value.as_str()))
                     .collect();
-                texts.get_by_key(error.key(), &arguments)
+                texts.lookup_by_key(error.key(), &arguments)
             });
 
             ui.scope_builder(
@@ -547,7 +547,7 @@ pub(crate) fn draw_status_bar(
             .layout(Layout::left_to_right(Align::Center)),
         |ui| {
             let mut parts = vec![if filtered {
-                texts.get_with(
+                texts.lookup_with(
                     TextKey::PanelStatusFiltered,
                     &[
                         Argument::count(entries as u64),
@@ -555,13 +555,13 @@ pub(crate) fn draw_status_bar(
                     ],
                 )
             } else {
-                texts.get_with(
+                texts.lookup_with(
                     TextKey::PanelStatusEntries,
                     &[Argument::count(entries as u64)],
                 )
             }];
             if marked > 0 {
-                parts.push(texts.get_with(
+                parts.push(texts.lookup_with(
                     TextKey::PanelStatusSelected,
                     &[Argument::count(marked as u64)],
                 ));
