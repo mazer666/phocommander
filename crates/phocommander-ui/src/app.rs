@@ -387,20 +387,6 @@ impl WorkSurfaceApp {
             .map(|message| self.message_of_error(&message.key, &message.arguments))
     }
 
-    /// Reports that an action belongs to a later milestone.
-    ///
-    /// WHY: the user presses a key and the program does nothing. A program
-    ///       that says nothing about it leaves the user with the
-    ///       impression that the key is broken. The notice names the action
-    ///       and the reason (FR-05, FR-124).
-    pub fn report_deferred(&mut self, action: Action) {
-        let name = self.text_of_action(action);
-        self.surface.set_status(crate::surface::StatusMessage {
-            key: "action-deferred".to_string(),
-            arguments: vec![("action", name)],
-        });
-    }
-
     /// The name of an action, as the catalogue writes it.
     ///
     /// WHY: the notice names the action, and the name of the action is the
@@ -593,6 +579,12 @@ impl WorkSurfaceApp {
             "app.language.fr" => self.choose_language("fr"),
             "palette.open" => self.defer(action),
             "viewer.find_next" | "viewer.find_previous" => self.defer(action),
+            "viewer.close" => {
+                // WHY: the viewer opens in an area of the surface, and the
+                //       area takes the room of the panels. The user must be
+                //       able to give the room back (FR-50).
+                self.surface.close_viewer();
+            }
             "rename.conflict_next" | "rename.conflict_previous" => self.defer(action),
             other => {
                 // WHY: the tab bindings are the only actions whose
@@ -636,7 +628,18 @@ impl WorkSurfaceApp {
     }
 
     /// Reports an action that this milestone does not carry out.
+    ///
+    /// WHY: the user presses a key and the program cannot do it yet. A
+    ///       program that says nothing about it leaves the user with the
+    ///       impression that the key is broken. The notice names the
+    ///       action in the language of the interface and stands in the
+    ///       status line (FR-05, FR-124).
     fn defer(&mut self, action: Action) {
+        let name = self.text_of_action(action);
+        self.surface.set_status(crate::surface::StatusMessage {
+            key: "action-deferred".to_string(),
+            arguments: vec![("action", name)],
+        });
         self.commands.push(Command::Deferred { action });
     }
 

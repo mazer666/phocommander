@@ -46,6 +46,7 @@ action-selection-by-pattern = Sélectionner par motif
 action-selection-invert = Inverser la sélection
 action-selection-none = Effacer la sélection
 action-selection-toggle = Basculer la sélection
+action-viewer-close = Fermer la visionneuse
 action-viewer-find-next = Trouver le suivant
 action-viewer-find-previous = Trouver le précédent
 

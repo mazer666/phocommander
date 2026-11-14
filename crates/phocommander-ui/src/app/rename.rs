@@ -116,11 +116,6 @@ impl WorkSurfaceApp {
         self.rename.as_ref()
     }
 
-    /// The dialog of the multiple rename, if it is open.
-    pub fn rename_dialog_mut(&mut self) -> Option<&mut RenameDialog> {
-        self.rename.as_mut()
-    }
-
     /// Opens the dialog of the multiple rename.
     ///
     /// WHY: the dialog works on the marked entries of the panel that has the

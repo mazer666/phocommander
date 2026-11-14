@@ -109,6 +109,8 @@ pub enum TextKey {
     ActionSelectionNone,
     /// The label of the action `action-selection-toggle`.
     ActionSelectionToggle,
+    /// The label of the action `action-viewer-close`.
+    ActionViewerClose,
     /// The label of the action `action-viewer-find-next`.
     ActionViewerFindNext,
     /// The label of the action `action-viewer-find-previous`.
@@ -350,6 +352,7 @@ impl TextKey {
             TextKey::ActionSelectionInvert => "action-selection-invert",
             TextKey::ActionSelectionNone => "action-selection-none",
             TextKey::ActionSelectionToggle => "action-selection-toggle",
+            TextKey::ActionViewerClose => "action-viewer-close",
             TextKey::ActionViewerFindNext => "action-viewer-find-next",
             TextKey::ActionViewerFindPrevious => "action-viewer-find-previous",
             TextKey::CommonOk => "common-ok",
@@ -454,7 +457,7 @@ impl TextKey {
 /// WHY: the list is the contract between the code and the catalogue. The
 /// gate of the workspace compares it with the key sets of the catalogues, so
 /// that a key cannot be used without a translation.
-const KEYS: [TextKey; 134] = [
+const KEYS: [TextKey; 135] = [
     TextKey::ActionAppMenu,
     TextKey::ActionAppLanguageDe,
     TextKey::ActionAppLanguageEn,
@@ -502,6 +505,7 @@ const KEYS: [TextKey; 134] = [
     TextKey::ActionSelectionInvert,
     TextKey::ActionSelectionNone,
     TextKey::ActionSelectionToggle,
+    TextKey::ActionViewerClose,
     TextKey::ActionViewerFindNext,
     TextKey::ActionViewerFindPrevious,
     TextKey::CommonOk,

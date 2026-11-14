@@ -135,6 +135,8 @@
 "viewer.find_next" = "F3"
 # Search backward in the viewer.
 "viewer.find_previous" = "Shift+F3"
+# Close the viewer and give the area to the panels again.
+"viewer.close" = "Ctrl+Shift+W"
 # Jump to the next conflict in the multiple rename dialog.
 "rename.conflict_next" = "F3"
 # Jump to the previous conflict in the multiple rename dialog.
@@ -237,6 +239,8 @@
 "viewer.find_next" = "palette:viewer.find_next"
 # Search backward in the viewer.
 "viewer.find_previous" = "palette:viewer.find_previous"
+# Close the viewer and give the area to the panels again.
+"viewer.close" = "palette:viewer.close"
 # Jump to the next conflict in the multiple rename dialog.
 "rename.conflict_next" = "palette:rename.conflict_next"
 # Jump to the previous conflict in the multiple rename dialog.
@@ -358,6 +362,8 @@
 "viewer.find_next" = "F3"
 # Search backward in the viewer.
 "viewer.find_previous" = "Shift+F3"
+# Close the viewer and give the area to the panels again.
+"viewer.close" = "double-click"
 # Jump to the next conflict in the multiple rename dialog.
 "rename.conflict_next" = "F3"
 # Jump to the previous conflict in the multiple rename dialog.
@@ -470,6 +476,8 @@
 "viewer.find_next" = "palette:viewer.find_next"
 # Search backward in the viewer.
 "viewer.find_previous" = "palette:viewer.find_previous"
+# Close the viewer and give the area to the panels again.
+"viewer.close" = "swipe-down"
 # Jump to the next conflict in the multiple rename dialog.
 "rename.conflict_next" = "palette:rename.conflict_next"
 # Jump to the previous conflict in the multiple rename dialog.
@@ -567,6 +575,8 @@
 "viewer.find_next" = "palette:viewer.find_next"
 # Search backward in the viewer.
 "viewer.find_previous" = "palette:viewer.find_previous"
+# Close the viewer and give the area to the panels again.
+"viewer.close" = "palette:viewer.close"
 # Jump to the next conflict in the multiple rename dialog.
 "rename.conflict_next" = "palette:rename.conflict_next"
 # Jump to the previous conflict in the multiple rename dialog.

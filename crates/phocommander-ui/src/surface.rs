@@ -100,7 +100,8 @@ impl WorkSurface {
     /// WHY: the panels alternate, and the operation acts on the panel that
     /// has the focus. The method therefore moves the focus and nothing else.
     pub fn switch_active(&mut self) {
-        self.active = self.active.other();
+        let other = self.active.other();
+        self.set_active_side(other);
     }
 
     /// The panel of the given side.
@@ -133,12 +134,6 @@ impl WorkSurface {
     /// The panel that does not have the focus.
     pub fn other(&self) -> &PanelState {
         self.panel(self.active.other())
-    }
-
-    /// The panel that does not have the focus.
-    pub fn other_mut(&mut self) -> &mut PanelState {
-        let side = self.active.other();
-        self.panel_mut(side)
     }
 
     /// The two panels as an operation sees them.
@@ -257,7 +252,8 @@ impl WorkSurface {
         if !profile.allows(self.arrangement) {
             return false;
         }
-        self.arrangement = self.arrangement.other();
+        let other = self.arrangement.other();
+        self.set_arrangement(other);
         true
     }
 
@@ -275,14 +271,6 @@ impl WorkSurface {
     /// Shows the panel of the given side as an overlay, or hides it.
     pub fn set_overlay(&mut self, side: Option<PanelSide>) {
         self.overlay = side;
-    }
-
-    /// Shows the other panel as an overlay, or hides the overlay.
-    pub fn toggle_overlay(&mut self) {
-        self.overlay = match self.overlay {
-            Some(_) => None,
-            None => Some(self.active.other()),
-        };
     }
 
     /// The quick view of the marked file.

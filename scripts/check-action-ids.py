@@ -92,6 +92,9 @@ DERIVED_BINDINGS = {
     # The action that opens the marked entry. The specification names the
     # function in FR-65 and names no key for it.
     "panel.open": "Enter",
+    # The action that closes the viewer again. The specification names the
+    # function in FR-50 and names no key for it.
+    "viewer.close": "Ctrl+Shift+W",
     # The three actions that change the language of the interface. The
     # specification names the function in FR-124 and names no key for it.
     "app.language.de": "Ctrl+Shift+D",

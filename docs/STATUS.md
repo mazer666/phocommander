@@ -36,13 +36,13 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1456 green, 0 red, 0 skipped** |
+| Tests | **1461 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
 | The formatting | `cargo fmt --all -- --check` — **without a deviation** |
 | The licences | `cargo deny check` — advisories, bans, licences, sources: **ok** |
-| The consistency gates | 17, all green — and they run in **every** job of the matrix, not only in the one that checks the quality |
+| The consistency gates | 18, all green — and they run in **every** job of the matrix, not only in the one that checks the quality |
 | The language catalogues | 3 languages, 158 keys, the same set of keys |
 
 ## 4. The decisions of the owner
@@ -155,6 +155,12 @@ and in the tests:
 44. **Two getters carried a `get` where the project writes `lookup_with`.** In Rust a getter carries no `get`, and the rule of NFR-17b is that a name says what a thing is. The check of the names found them: `Texts::get_with` and `Texts::get_by_key`.
 45. **The hex dump was calculated and never shown.** The desktop adapter builds the dump of a file that is no text, the lines are handed to the viewer — and the viewer replaced them with a notice: "this file is no text file". The bytes the user asked for were computed, carried across the interface, and then dropped at the last moment. The dump stands in the area now, the notice stands above it.
 46. **The surface was never drawn in a test.** Every test of the interface proved the *state* of the shell; none of them drew it. A file that the shell carries and never draws is a file the user does not see. Three tests draw the surface now: the viewer with a text, the viewer without a file, and the viewer with the bytes of a file that is no text.
+47. **The primary key of the platform was never set.** The actions are the same everywhere, only the key differs: `Cmd` on macOS and on iPadOS, `Ctrl` everywhere else. The shell always listened for the control key — on a mac every shortcut with a modifier was dead, and the key looked broken. M1 is the milestone of macOS. The composition root decides now, and the test drives both keys.
+48. **The viewer could not be closed.** The viewer opens in an area below the panels, and the area takes the room of the panels. The function `close_viewer` existed and nobody called it, and no action existed at all. The action `viewer.close` is in the catalogue now, in all five contexts.
+49. **The theme of the project was never shown.** The colours are built in one place — and that place was never called. The window showed the standard colours of the framework, and the theme of the project existed only in the source.
+50. **The priority of a job did not change the list.** The queue runs the job with the highest priority first, and the list of the jobs showed the order in which they were submitted. The list shows now the order of the execution — what is going to happen next.
+51. **The notice of an action that cannot do anything was built twice.** The shell built it in the language of the interface, the adapter built it again in English. The shell is the only place that knows the language, and it is the only place that builds the notice.
+52. **Five getters and setters were never used.** `is_case_insensitive`, `other_mut`, `rename_dialog_mut`, `toggle_overlay`, `set_active_side`, `set_arrangement` — doors into rooms that nobody entered. Two of them now carry the path that sets the state, the others are gone. The gate `scripts/check-dead-code.py` asks for every public function of the workspace: who calls it?
 
 ## 6. The rules that follow from this milestone
 

@@ -52,5 +52,6 @@ action-selection-by-pattern = Nach Muster auswählen
 action-selection-invert = Auswahl umkehren
 action-selection-none = Auswahl aufheben
 action-selection-toggle = Auswahl umschalten
+action-viewer-close = Betrachter schließen
 action-viewer-find-next = Weitersuchen
 action-viewer-find-previous = Rückwärts suchen

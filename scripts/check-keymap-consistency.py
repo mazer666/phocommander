@@ -69,6 +69,10 @@ EXTRA_BINDINGS: dict[str, str] = {
     # function in FR-65 and names no key for it.
     "panel.open": "Enter",
     "panel.next_tab": "Ctrl+Tab",
+    # The action that closes the viewer again and gives the area to the
+    # panels. The specification names the function in FR-50 and names no
+    # key for it.
+    "viewer.close": "Ctrl+Shift+W",
     "panel.filter": "Ctrl+F",
     # The commands of the work surface of milestone M2 — the tabs, the
     # arrangement of the two panels, the tree of the directories, the quick

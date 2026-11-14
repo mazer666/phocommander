@@ -46,6 +46,9 @@ fn keymap() -> KeymapView {
     keyboard.insert("panel.filter".to_string(), "Ctrl+F".to_string());
     keyboard.insert("panel.switch".to_string(), "Tab".to_string());
     keyboard.insert("selection.toggle".to_string(), "Ins".to_string());
+    keyboard.insert("viewer.close".to_string(), "Ctrl+Shift+W".to_string());
+    keyboard.insert("app.menu".to_string(), "F9".to_string());
+    keyboard.insert("panel.drives".to_string(), "Alt+F1".to_string());
 
     let mut tables = BTreeMap::new();
     tables.insert(Context::Keyboard, keyboard);

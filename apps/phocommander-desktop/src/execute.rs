@@ -138,13 +138,13 @@ fn submit_one(
         }
         Command::Deferred { action } => {
             // WHY: the user pressed a key and the program cannot do it yet.
-            //       The surface says so in the status line, and the notice
-            //       names the action — a key that does nothing without a
-            //       word looks like a broken key (FR-05, FR-124).
-            surface.set_status(phocommander_ui::surface::StatusMessage {
-                key: "action-deferred".to_string(),
-                arguments: vec![("action", action.label().as_str().to_string())],
-            });
+            //       The shell has already said so in the status line, and
+            //       the notice names the action — a key that does nothing
+            //       without a word looks like a broken key (FR-05, FR-124).
+            //       The shell is the only place that knows the language of
+            //       the interface, and therefore the only place that can
+            //       write the name of the action in that language.
+            let _ = action;
             true
         }
         Command::OpenViewer { entry, .. } => {
@@ -677,11 +677,13 @@ mod tests {
     }
 
     #[test]
-    fn a_deferred_action_says_so_in_the_status_line() {
+    fn a_deferred_action_is_carried_out_without_a_job() {
         // arrange
-        // WHY: the user presses a key and the program cannot do it yet. A
-        //       program that says nothing about it leaves the user with the
-        //       impression that the key is broken.
+        // WHY: the user presses a key and the program cannot do it yet. The
+        //       shell says so in the status line — in the language of the
+        //       interface, and the shell is the only place that knows it.
+        //       The adapter therefore carries the command out and starts
+        //       no job.
         let (mut surface, queue) = parts();
         let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
         let action = phocommander_ui::actions::Action::from_id("palette.open")
@@ -691,13 +693,12 @@ mod tests {
         // act
         let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
 
-        // assert
+        // assert — the command is carried out, and it starts no job.
         assert_eq!(anzahl, 1);
-        let meldung = surface
-            .status()
-            .unwrap_or_else(|| panic!("the status line should carry the notice"));
-        assert_eq!(meldung.key, "action-deferred");
-        assert_eq!(meldung.arguments.len(), 1);
+        assert!(
+            queue.snapshot().is_empty(),
+            "a deferred action starts no job"
+        );
     }
 
     #[test]

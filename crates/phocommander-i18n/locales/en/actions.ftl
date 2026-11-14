@@ -53,5 +53,6 @@ action-selection-by-pattern = Select by pattern
 action-selection-invert = Invert the selection
 action-selection-none = Clear the selection
 action-selection-toggle = Toggle the selection
+action-viewer-close = Close the viewer
 action-viewer-find-next = Find next
 action-viewer-find-previous = Find previous

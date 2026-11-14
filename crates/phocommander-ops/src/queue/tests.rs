@@ -169,6 +169,26 @@ fn the_priority_of_a_job_can_be_changed_while_it_waits() {
 }
 
 #[test]
+fn the_list_of_the_jobs_shows_the_order_of_the_execution() {
+    // arrange — two jobs, and the second one gets the higher priority.
+    let fs = file_system();
+    let queue = JobQueue::new(fs.clone(), 1);
+    let first = queue.enqueue(copy_job("/photos", "/backup"));
+    let second = queue.enqueue(copy_job("/music", "/backup"));
+
+    // act
+    let result = queue.apply_edit(second, Edit::Priority(Priority::High));
+
+    // assert — the list of the jobs shows the job with the higher priority
+    // first, because that is the one that runs next.
+    assert!(result.is_ok(), "{result:?}");
+    let snapshot = queue.snapshot();
+    assert_eq!(snapshot.len(), 2, "{snapshot:?}");
+    assert_eq!(snapshot[0].id, second, "{snapshot:?}");
+    assert_eq!(snapshot[1].id, first, "{snapshot:?}");
+}
+
+#[test]
 fn the_destination_of_a_job_can_be_changed_while_it_waits() {
     // arrange
     let fs = file_system();

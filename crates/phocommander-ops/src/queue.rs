@@ -190,13 +190,20 @@ impl JobQueue {
     /// let queue = JobQueue::new(Arc::new(FakeFileSystem::new()), 1);
     /// assert!(queue.snapshot().is_empty());
     /// ```
+    ///
+    /// WHY: the list of the jobs shows what is going to happen next, and
+    ///       what happens next is the job with the highest priority. The
+    ///       order of the snapshot is therefore the order of the
+    ///       execution, and not the order in which the jobs were submitted
+    ///       (FR-24).
     pub fn snapshot(&self) -> Vec<JobSnapshot> {
         let state = self.lock();
-        state
+        let snapshots: Vec<JobSnapshot> = state
             .records
             .iter()
             .map(|record| record.job.snapshot())
-            .collect()
+            .collect();
+        worker::ordered_snapshots(&snapshots)
     }
 
     /// The state of one job.

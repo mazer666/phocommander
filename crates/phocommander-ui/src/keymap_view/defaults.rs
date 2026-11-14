@@ -83,6 +83,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.parent".to_string(), "Ctrl+PgUp".to_string());
         tabelle.insert("viewer.find_next".to_string(), "F3".to_string());
         tabelle.insert("viewer.find_previous".to_string(), "Shift+F3".to_string());
+        tabelle.insert("viewer.close".to_string(), "Ctrl+Shift+W".to_string());
         tabelle.insert("rename.conflict_next".to_string(), "F3".to_string());
         tabelle.insert(
             "rename.conflict_previous".to_string(),
@@ -145,6 +146,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.parent".to_string(), "Ctrl+PgUp".to_string());
         tabelle.insert("viewer.find_next".to_string(), "F3".to_string());
         tabelle.insert("viewer.find_previous".to_string(), "Shift+F3".to_string());
+        tabelle.insert("viewer.close".to_string(), "double-click".to_string());
         tabelle.insert("rename.conflict_next".to_string(), "F3".to_string());
         tabelle.insert(
             "rename.conflict_previous".to_string(),
@@ -276,6 +278,7 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
             "viewer.find_previous".to_string(),
             "palette:viewer.find_previous".to_string(),
         );
+        tabelle.insert("viewer.close".to_string(), "swipe-down".to_string());
         tabelle.insert(
             "rename.conflict_next".to_string(),
             "palette:rename.conflict_next".to_string(),
@@ -417,6 +420,10 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
             "palette:viewer.find_previous".to_string(),
         );
         tabelle.insert(
+            "viewer.close".to_string(),
+            "palette:viewer.close".to_string(),
+        );
+        tabelle.insert(
             "rename.conflict_next".to_string(),
             "palette:rename.conflict_next".to_string(),
         );
@@ -553,6 +560,10 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert(
             "viewer.find_previous".to_string(),
             "palette:viewer.find_previous".to_string(),
+        );
+        tabelle.insert(
+            "viewer.close".to_string(),
+            "palette:viewer.close".to_string(),
         );
         tabelle.insert(
             "rename.conflict_next".to_string(),

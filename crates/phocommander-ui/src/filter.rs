@@ -273,11 +273,6 @@ impl FilterPattern {
         self.parts.is_empty()
     }
 
-    /// Whether the pattern ignores the case.
-    pub fn is_case_insensitive(&self) -> bool {
-        self.case_insensitive
-    }
-
     /// Whether the name matches the pattern.
     ///
     /// WHY: the evaluation is a pure function. The same name and the same

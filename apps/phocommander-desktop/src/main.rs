@@ -29,7 +29,8 @@ use phocommander_ops::copy::CopyMode as OpsCopyMode;
 use phocommander_ops::queue::JobQueue;
 use phocommander_platform::config_directory;
 use phocommander_ui::{
-    Context, KeymapView, Metrics, Platform, Theme, WorkSurface, WorkSurfaceApp, visuals,
+    Context, KeymapView, Metrics, Platform, Theme, WorkSurface, WorkSurfaceApp,
+    input::PrimaryModifier, visuals,
 };
 use phocommander_viewer::reader::ViewerReader;
 
@@ -78,7 +79,15 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Phocommander",
         options,
-        Box::new(|_creation| Ok(Box::new(build_desktop_app(&config)))),
+        Box::new(|creation| {
+            // WHY: the colours of the application are built in one place,
+            //       and that place is the only one that may build them.
+            //       Without this line the window shows the standard colours
+            //       of the framework, and the theme of the project exists
+            //       only in the source.
+            creation.egui_ctx.set_visuals(theme_visuals(true));
+            Ok(Box::new(build_desktop_app(&config)))
+        }),
     )
 }
 
@@ -187,6 +196,13 @@ pub fn build_application(config: &Config) -> WorkSurfaceApp {
         .with_theme(Theme::Dark)
         .with_metrics(metrics)
         .with_context(Context::Keyboard)
+        // WHY: the primary key is the command key on macOS and on iPadOS
+        //       and the control key everywhere else. The actions are the
+        //       same on every platform; only the key that triggers them
+        //       differs. Without this line the user of a mac presses
+        //       Ctrl+F, the filter does not open, and the key looks
+        //       broken (FR-101).
+        .with_primary_modifier(primary_modifier_of(host_platform()))
         // WHY: the dialog of the multiple rename asks the engine for the new
         //       names, and the engine of the operations lives in another
         //       crate. The composition root hands the implementation over
@@ -234,6 +250,37 @@ fn host_platform() -> Platform {
         phocommander_platform::Platform::Windows => Platform::Windows,
         phocommander_platform::Platform::Linux => Platform::Linux,
         phocommander_platform::Platform::Bsd => Platform::Bsd,
+    }
+}
+
+/// The key that carries the primary meaning on the given platform.
+///
+/// WHY: the actions are the same on every platform, only the key that
+///       triggers them differs. `Cmd` is the primary key on macOS and on
+///       iPadOS, `Ctrl` everywhere else. The platform decides, and the
+///       decision belongs here — the composition root is the one place
+///       that knows on which system the program runs (FR-101).
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ui::input::PrimaryModifier;
+/// use phocommander_ui::metrics::Platform;
+///
+/// assert_eq!(
+///     primary_modifier_of(Platform::MacOs),
+///     PrimaryModifier::Command
+/// );
+/// assert_eq!(
+///     primary_modifier_of(Platform::Linux),
+///     PrimaryModifier::Control
+/// );
+/// ```
+pub fn primary_modifier_of(platform: Platform) -> PrimaryModifier {
+    match platform {
+        Platform::MacOs | Platform::Ios => PrimaryModifier::Command,
+        Platform::Windows | Platform::Linux | Platform::Bsd | Platform::Android => {
+            PrimaryModifier::Control
+        }
     }
 }
 
