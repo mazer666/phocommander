@@ -46,7 +46,7 @@ PRODUCERS = (
 #       carries it out. Both places count — a command that nobody carries
 #       out is a command that leads nowhere.
 CONSUMERS = (
-    REPO_ROOT / "apps" / "phocommander-desktop" / "src" / "execute.rs",
+    REPO_ROOT / "apps" / "phocommander-desktop" / "src" / "execute",
     REPO_ROOT / "apps" / "phocommander-desktop" / "src" / "desktop.rs",
 )
 CONSUMER = CONSUMERS[0]
@@ -119,6 +119,12 @@ def read_uses(paths: tuple[Path, ...], nur_produktion: bool = False) -> set[str]
     for path in paths:
         dateien = path.rglob("*.rs") if path.is_dir() else [path]
         for datei in dateien:
+            # WHY: a file that is named `tests.rs` **is** a module of tests,
+            #       and it counts as none of the production. The rule
+            #       applies to every crate of the workspace and not only to
+            #       the one that happens to use it now.
+            if datei.name == "tests.rs":
+                continue
             text = datei.read_text(encoding="utf-8")
             if nur_produktion and "#[cfg(test)]" in text:
                 text = text[: text.index("#[cfg(test)]")]
@@ -187,13 +193,19 @@ def main() -> int:
     for name in varianten:
         anzahl = 0
         for consumer in CONSUMERS:
-            text = consumer.read_text(encoding="utf-8")
-            # WHY: the tests of the adapter build the commands as well, and
-            #       they count twice. Only the arms of the match are of
-            #       interest.
-            if "#[cfg(test)]" in text:
-                text = text[: text.index("#[cfg(test)]")]
-            anzahl += len(re.findall(rf"Command::{name}\b", text))
+            dateien = consumer.rglob("*.rs") if consumer.is_dir() else [consumer]
+            for datei in dateien:
+                # WHY: a file that is named `tests.rs` is a module of tests
+                #       and counts as none of the production.
+                if datei.name == "tests.rs":
+                    continue
+                text = datei.read_text(encoding="utf-8")
+                # WHY: the tests of the adapter build the commands as well,
+                #       and they count twice. Only the arms of the match are
+                #       of interest.
+                if "#[cfg(test)]" in text:
+                    text = text[: text.index("#[cfg(test)]")]
+                anzahl += len(re.findall(rf"Command::{name}\b", text))
         if anzahl > 1:
             failures.append(
                 f"the command {name} is carried out {anzahl} times — one of "
