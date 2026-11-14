@@ -65,6 +65,7 @@ panel-view-compact = Kompakt
 panel-focus = Fokussiertes Panel
 panel-undo-notice = Rückgängig entfernt nur die Kopien; der vorherige Zustand wird nicht wiederhergestellt.
 panel-undo-done = { $count } Kopien zurückgenommen
+panel-menu-hint = Das Menü steht in der Leiste am oberen Rand des Fensters.
 
 # The messages of the errors of the surface.
 

@@ -47,3 +47,21 @@ fn a_key_that_cannot_do_anything_says_so() {
         "the notice should name the action"
     );
 }
+
+#[test]
+fn the_key_of_the_menu_says_where_the_menu_is() {
+    // arrange — the shell with an entry in the panel that has the focus.
+    let app = app_with(vec![Entry::new("notes.txt", EntryKind::File)]);
+    let mut harness = harness(app);
+
+    // act — the user presses the key of the menu.
+    harness.key_press(egui::Key::F9);
+    harness.step();
+
+    // assert — the status line says where the menu stands. The interface
+    // draws a menu bar in the top of the window, and the action tells the
+    // user who looks for it with the keyboard that it is there.
+    let status = harness.state().surface().status();
+    let status = status.expect("the status line should carry the notice");
+    assert_eq!(status.key, "panel-menu-hint");
+}

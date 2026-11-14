@@ -593,11 +593,15 @@ impl WorkSurfaceApp {
             "selection.invert" => self.surface.active_mut().invert_selection(),
             "selection.by_pattern" => self.defer(action),
             "app.menu" => {
-                // WHY: the menu of the application is a native menu of the
-                //       system, and it belongs to the milestone of the
-                //       platform integration (FR-28). The shell says so
-                //       instead of pretending that it happened.
-                self.defer(action);
+                // WHY: the interface draws a menu bar in the top of the
+                //       window, and it carries every action of the
+                //       catalogue. The action therefore does not open a
+                //       menu — it says where the menu is, so that the user
+                //       who looks for it with the keyboard finds it.
+                self.surface.set_status(crate::surface::StatusMessage {
+                    key: "panel-menu-hint".to_string(),
+                    arguments: Vec::new(),
+                });
             }
             "app.quit" => self.commands.push(Command::Quit),
             // WHY: the language of the interface is a setting of the

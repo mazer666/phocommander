@@ -65,6 +65,7 @@ panel-view-compact = Compact
 panel-focus = Focused panel
 panel-undo-notice = Undo removes the copies only; the previous state is not restored.
 panel-undo-done = { $count } copies taken back
+panel-menu-hint = The menu stands in the bar at the top of the window.
 
 # The messages of the errors of the surface.
 

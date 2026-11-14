@@ -34,6 +34,7 @@ panel-view-compact = Compact
 panel-focus = Panneau actif
 panel-undo-notice = L'annulation supprime uniquement les copies ; l'état précédent n'est pas restauré.
 panel-undo-done = { $count } copies annulées
+panel-menu-hint = Le menu se trouve dans la barre en haut de la fenêtre.
 
 # Les clés qui manquaient encore — la parité avec l'anglais est complète.
 job-kind-copy = Copie

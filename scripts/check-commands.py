@@ -63,9 +63,6 @@ DEFERRED_ACTIONS = {
     # PDF and the navigation between the pages (FR-56).
     "viewer.find_next",
     "viewer.find_previous",
-    # The menu of the application is a native menu of the system, and it
-    # belongs to the milestone of the platform integration (FR-28).
-    "app.menu",
 }
 
 # The name of a variant of the command.
