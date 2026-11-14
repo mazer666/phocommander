@@ -42,7 +42,7 @@ commit — with the commit hash in the headline.
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
 | The formatting | `cargo fmt --all -- --check` — **without a deviation** |
 | The licences | `cargo deny check` — advisories, bans, licences, sources: **ok** |
-| The consistency gates | 19, all green — and they run in **every** job of the matrix, not only in the one that checks the quality |
+| The consistency gates | **14 in the collection** of `scripts/check-consistency.sh`, all green — and they run in **every** job of the matrix, not only in the one that checks the quality |
 | The language catalogues | 3 languages, 158 keys, the same set of keys |
 
 ## 4. The decisions of the owner
