@@ -98,6 +98,12 @@ DERIVED_BINDINGS = {
     # The action that synchronises the two panels. The specification names
     # the function in FR-22b and names no key for it.
     "panel.sync": "F11",
+    # The action of the right mouse button. The specification names the
+    # function in FR-17 and names no key for it.
+    "panel.right_click": "Shift+F10",
+    # The action that takes the last copy back. The specification names the
+    # function in FR-26 and names no key for it.
+    "panel.undo": "Ctrl+Z",
     # The three actions that change the language of the interface. The
     # specification names the function in FR-124 and names no key for it.
     "app.language.de": "Ctrl+Shift+D",

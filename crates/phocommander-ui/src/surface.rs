@@ -73,6 +73,19 @@ pub struct WorkSurface {
     ///       and the surface is what the adapter knows. The surface carries
     ///       it therefore (FR-74).
     visibility: crate::visibility::ListingOptions,
+
+    /// Whether an undo is on offer.
+    ///
+    /// WHY: the adapter knows what it has copied, and it is the adapter that
+    ///       records it. The surface carries the state, so that the notice
+    ///       of the undo area can be shown (FR-26).
+    undo: crate::undo::UndoAvailability,
+
+    /// What the right mouse button does.
+    ///
+    /// WHY: the setting of the user reaches the shell, and the shell is
+    ///       what carries the action out (FR-17).
+    right_click: crate::visibility::RightClickAction,
 }
 
 impl WorkSurface {
@@ -90,6 +103,8 @@ impl WorkSurface {
             jobs: Vec::new(),
             job_list_visible: true,
             visibility: crate::visibility::ListingOptions::ALL,
+            undo: crate::undo::UndoAvailability::Unavailable,
+            right_click: crate::visibility::RightClickAction::default(),
         }
     }
 
@@ -327,6 +342,34 @@ impl WorkSurface {
     /// Puts the rows of the list of the jobs into the surface.
     pub fn set_jobs(&mut self, jobs: Vec<JobSummary>) {
         self.jobs = jobs;
+    }
+
+    /// What the right mouse button does.
+    pub const fn right_click(&self) -> crate::visibility::RightClickAction {
+        self.right_click
+    }
+
+    /// Sets what the right mouse button does.
+    ///
+    /// WHY: the setting of the user is read once when the program starts,
+    ///       and the surface is what the shell asks before it carries the
+    ///       action out (FR-17).
+    pub fn set_right_click(&mut self, right_click: crate::visibility::RightClickAction) {
+        self.right_click = right_click;
+    }
+
+    /// Whether an undo is on offer.
+    pub const fn undo(&self) -> crate::undo::UndoAvailability {
+        self.undo
+    }
+
+    /// Sets whether an undo is on offer.
+    ///
+    /// WHY: the adapter records what it has copied, and the surface shows
+    ///       the notice of the undo area as long as an undo is on offer
+    ///       (FR-26).
+    pub fn set_undo(&mut self, undo: crate::undo::UndoAvailability) {
+        self.undo = undo;
     }
 
     /// What the user wants to see of a directory.

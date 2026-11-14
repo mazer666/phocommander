@@ -31,7 +31,8 @@ use crate::preview::ViewerPreviewSource;
 use crate::rename::{FileTemplateStore, OpsRenameEngine};
 use crate::security::SecurityPlan;
 use phocommander_config::{
-    Config, CopyMode as ConfigCopyMode, SyncMode as ConfigSyncMode, resolve_security,
+    Config, CopyMode as ConfigCopyMode, RightClickAction as ConfigRightClick,
+    SyncMode as ConfigSyncMode, resolve_security,
 };
 use phocommander_ops::copy::CopyMode as OpsCopyMode;
 use phocommander_ops::queue::JobQueue;
@@ -80,8 +81,20 @@ pub fn build_application(config: &Config) -> WorkSurfaceApp {
         show_system: config.appearance.show_system_files,
     };
 
+    // WHY: the user writes in the configuration file whether the right
+    //       mouse button opens a menu or marks the file under the pointer.
+    //       The setting reaches the shell, and the shell is what carries
+    //       the action out (FR-17).
+    let right_click = match config.panels.right_click_action {
+        ConfigRightClick::ContextMenu => phocommander_ui::visibility::RightClickAction::ContextMenu,
+        ConfigRightClick::ToggleSelection => {
+            phocommander_ui::visibility::RightClickAction::ToggleSelection
+        }
+    };
+
     WorkSurfaceApp::new(surface, keymap, language.take_catalogue())
         .with_visibility(visibility)
+        .with_right_click(right_click)
         .with_formats(language.take_formats())
         .with_theme(Theme::Dark)
         .with_metrics(metrics)

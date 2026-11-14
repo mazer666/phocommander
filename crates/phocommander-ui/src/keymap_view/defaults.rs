@@ -35,6 +35,8 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.rename".to_string(), "F2".to_string());
         tabelle.insert("panel.view".to_string(), "F3".to_string());
         tabelle.insert("panel.sync".to_string(), "F11".to_string());
+        tabelle.insert("panel.undo".to_string(), "Ctrl+Z".to_string());
+        tabelle.insert("panel.right_click".to_string(), "Shift+F10".to_string());
         tabelle.insert("panel.edit".to_string(), "F4".to_string());
         tabelle.insert("panel.filter".to_string(), "Ctrl+F".to_string());
         tabelle.insert("panel.copy".to_string(), "F5".to_string());
@@ -99,6 +101,8 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         tabelle.insert("panel.rename".to_string(), "F2".to_string());
         tabelle.insert("panel.view".to_string(), "double-click".to_string());
         tabelle.insert("panel.sync".to_string(), "drag".to_string());
+        tabelle.insert("panel.undo".to_string(), "palette:panel.undo".to_string());
+        tabelle.insert("panel.right_click".to_string(), "right-click".to_string());
         tabelle.insert("panel.edit".to_string(), "F4".to_string());
         tabelle.insert("panel.filter".to_string(), "Ctrl+F".to_string());
         tabelle.insert("panel.copy".to_string(), "F5".to_string());
@@ -166,6 +170,11 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         );
         tabelle.insert("panel.view".to_string(), "tap".to_string());
         tabelle.insert("panel.sync".to_string(), "swipe-right".to_string());
+        tabelle.insert("panel.undo".to_string(), "palette:panel.undo".to_string());
+        tabelle.insert(
+            "panel.right_click".to_string(),
+            "palette:panel.right_click".to_string(),
+        );
         tabelle.insert("panel.edit".to_string(), "palette:panel.edit".to_string());
         tabelle.insert(
             "panel.filter".to_string(),
@@ -302,6 +311,11 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         );
         tabelle.insert("panel.view".to_string(), "palette:file.view".to_string());
         tabelle.insert("panel.sync".to_string(), "palette:panel.sync".to_string());
+        tabelle.insert("panel.undo".to_string(), "palette:panel.undo".to_string());
+        tabelle.insert(
+            "panel.right_click".to_string(),
+            "palette:panel.right_click".to_string(),
+        );
         tabelle.insert("panel.edit".to_string(), "palette:file.edit".to_string());
         tabelle.insert(
             "panel.filter".to_string(),
@@ -448,6 +462,11 @@ pub fn default_bindings() -> BTreeMap<Context, BTreeMap<String, String>> {
         );
         tabelle.insert("panel.view".to_string(), "palette:file.view".to_string());
         tabelle.insert("panel.sync".to_string(), "palette:panel.sync".to_string());
+        tabelle.insert("panel.undo".to_string(), "palette:panel.undo".to_string());
+        tabelle.insert(
+            "panel.right_click".to_string(),
+            "palette:panel.right_click".to_string(),
+        );
         tabelle.insert("panel.edit".to_string(), "palette:file.edit".to_string());
         tabelle.insert(
             "panel.filter".to_string(),

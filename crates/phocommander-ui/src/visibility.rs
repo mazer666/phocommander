@@ -78,3 +78,23 @@ const FILES_OF_THE_SYSTEM: [&str; 4] = [".DS_Store", "Thumbs.db", "desktop.ini",
 pub fn is_file_of_the_system(name: &str) -> bool {
     FILES_OF_THE_SYSTEM.contains(&name)
 }
+
+/// What the right mouse button does.
+///
+/// WHY: the user writes in the configuration file whether the right mouse
+///       button opens a menu or marks the file under the pointer. The
+///       setting reaches the surface, and the surface is what the shell
+///       asks before it carries the action out (FR-17).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RightClickAction {
+    /// A menu of the application opens.
+    ///
+    /// WHY: the menu of the application is a native menu of the system, and
+    ///       it belongs to the milestone of the platform integration
+    ///       (FR-28). Until then the shell says that the menu comes later.
+    #[default]
+    ContextMenu,
+
+    /// The file under the pointer is marked, or unmarked.
+    ToggleSelection,
+}

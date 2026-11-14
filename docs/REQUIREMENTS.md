@@ -203,7 +203,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-14 | A directory tree can be toggled per panel | M2 | Should | Manual test |
 | FR-15 | A third area shows a preview of the marked file without opening it | M2 | Should | Manual test |
 | FR-16 | Operations act on the active panel; transfer to the other panel is always explicit | M1 | Must | State model test that asserts the target panel is never implied |
-| FR-17 | The column set is configurable: name, size, date, type | M1 | Must | Configuration test plus manual test |
+| FR-17 | The column set is configurable: name, size, date, type. The setting `right_click_action` decides what the right mouse button does, and the action `panel.right_click` carries it out | M1 | Must | Configuration test plus manual test |
 | FR-18 | The sort order is configurable and remembered per tab | M1 | Must | Configuration test |
 
 ### 4.3 File operations
@@ -233,7 +233,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-23 | Overwrite is not the default | M1 | Must | Configuration test |
 | FR-24 | Every job reports progress with a rate and can be cancelled | M1 | Must | Unit test on the job queue |
 | FR-25 | A job collects its errors instead of stopping at the first one | M1 | Should | Unit test with a partially failing copy |
-| FR-26 | Undo exists for copy operations and is labelled as partial | M2 | Should | Manual test plus documentation review |
+| FR-26 | Undo exists for copy operations and is labelled as partial. The action `panel.undo` takes the last copy back, and the notice of the undo area names the limitation | M2 | Should | Manual test plus documentation review |
 | FR-27 | The trash of the operating system is the default path for deletion; a synchronisation that the user confirmed deletes finally, and a drive without a trash reports the error instead of deleting silently | M1 | Must | Manual test |
 | FR-28 | The path length limit of the platform is detected and reported in plain language | M3 | Must | Manual test on Windows [35] |
 

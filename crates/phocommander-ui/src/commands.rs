@@ -184,6 +184,9 @@ pub enum Command {
         side: PanelSide,
     },
 
+    /// Take the last copy back.
+    Undo,
+
     /// Exchange the content of the two panels.
     SwapPanels,
 

@@ -41,6 +41,11 @@
 "panel.view" = "F3"
 # Synchronise the two panels.
 "panel.sync" = "F11"
+# Take the last copy back.
+"panel.undo" = "Ctrl+Z"
+# The right mouse button does what the user asked for. On the keyboard the
+# key of the context menu takes its place.
+"panel.right_click" = "Shift+F10"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "F4"
 # Filter the entries of the active pane while the user types.
@@ -157,6 +162,10 @@
 "panel.view" = "palette:file.view"
 # Synchronise the two panels.
 "panel.sync" = "palette:panel.sync"
+# Take the last copy back.
+"panel.undo" = "palette:panel.undo"
+# The right mouse button does what the user asked for.
+"panel.right_click" = "palette:panel.right_click"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:file.edit"
 # Filter the entries of the active pane while the user types.
@@ -272,6 +281,10 @@
 "panel.view" = "double-click"
 # Drag a file into the other panel to synchronise the two.
 "panel.sync" = "drag"
+# Take the last copy back.
+"panel.undo" = "palette:panel.undo"
+# The right mouse button does what the user asked for.
+"panel.right_click" = "right-click"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "F4"
 # Filter the entries of the active pane while the user types.
@@ -391,6 +404,10 @@
 "panel.view" = "tap"
 # Synchronise the two panels.
 "panel.sync" = "swipe-right"
+# Take the last copy back.
+"panel.undo" = "palette:panel.undo"
+# The right mouse button does what the user asked for.
+"panel.right_click" = "palette:panel.right_click"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:panel.edit"
 # Filter the entries of the active pane while the user types.
@@ -499,6 +516,10 @@
 "panel.view" = "palette:file.view"
 # Synchronise the two panels.
 "panel.sync" = "palette:panel.sync"
+# Take the last copy back.
+"panel.undo" = "palette:panel.undo"
+# The right mouse button does what the user asked for.
+"panel.right_click" = "palette:panel.right_click"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:file.edit"
 # Filter the entries of the active pane while the user types.

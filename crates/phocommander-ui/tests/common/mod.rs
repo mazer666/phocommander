@@ -50,8 +50,15 @@ fn keymap() -> KeymapView {
     keyboard.insert("app.menu".to_string(), "F9".to_string());
     keyboard.insert("panel.drives".to_string(), "Alt+F1".to_string());
 
+    // WHY: the tests of the pointer need a table of their own. The
+    //       bindings of the pointer are gestures and not keys.
+    let mut pointer = BTreeMap::new();
+    pointer.insert("selection.toggle".to_string(), "click".to_string());
+    pointer.insert("panel.right_click".to_string(), "right-click".to_string());
+
     let mut tables = BTreeMap::new();
     tables.insert(Context::Keyboard, keyboard);
+    tables.insert(Context::Pointer, pointer);
 
     match KeymapView::from_context_tables(&tables) {
         Ok(keymap) => keymap,

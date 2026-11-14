@@ -12,10 +12,10 @@ an acceptance document that does not name its own gaps is worth nothing.
 
 | What | Why it is open | Where |
 |---|---|---|
-| **The button that undoes does not show whether it can do anything.** The state of the undo exists (`undo_availability`), and the interface never reads it. The user sees a button that does nothing. | FR-26 — the undo exists for the copy operations and is marked as partial. | M2 |
+| **The undo takes the last copy back.** The ledger of the undo existed as a library, and no key reached it: the user copied a file and could not take it back. The action `panel.undo` is in the catalogue, the adapter records what it copies, and the notice of the undo area names the limitation — the undo removes the copies and restores nothing. | FR-26 — the undo exists for the copy operations and is marked as partial. | closed |
 | **The plan of the synchronisation is written nowhere.** The document of the plan exists (`to_document`), and the synchronisation of the files never writes it. The preview shows the plan and forgets it. | FR-22b — the default of the synchronisation is `sync-preview`. | M2 |
 | **The way of a synchronisation is applied.** The setting `sync_mode` reaches the job, and the action `panel.sync` starts the synchronisation. The comparison of the two directories became a job of the waiting room, and a test proves it. | FR-22b. | closed |
-| **The mouse button of the right does always the same.** The setting `right_click_action` is read and never used. | FR-17. | M2 |
+| **The mouse button of the right does what the user asked for.** The setting `right_click_action` reaches the shell, and the action `panel.right_click` carries it out: the button marks the file under the pointer, or it says that the menu of the system comes with the milestone of the platform integration (FR-28). | FR-17. | closed |
 
 The three settings and the two functions are in the gate `scripts/check-dead-code.py` with the
 reason why they stay. The gate asks every public function of the workspace: who calls it?

@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1472 green, 0 red, 0 skipped** |
+| Tests | **1475 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -171,6 +171,8 @@ and in the tests:
 60. **The synchronisation was unreachable.** The comparison of two directories, the plan of the synchronisation and the job that carries it out — all of it existed, and no key reached it. The setting `sync_mode` of the configuration file said which way the synchronisation goes, and the setting was read and never applied. The action `panel.sync` is in the catalogue now, in all five contexts, the adapter builds the plan and starts the job, and the way of the user reaches the job.
 61. **The advisories are all gone.** The check of the licences reported an unsound defect in `rustix` — the functions of the extended attributes marked bytes as written that the system call never wrote. That is undefined behaviour that safe code can reach. The update to `rustix` 1.1.6 fixed it, and it took the four unmaintained crates with it. The check says: advisories ok, bans ok, licences ok, sources ok.
 62. **Six tests shared one name in the temporary directory.** Two runs of the tests worked on the same file, and one of them removed what the other one needed. The test of the archive that is taken out of the container was flaky because of it, and it failed once in thirty runs. The names carry the number of the process now.
+63. **The undo existed and no key reached it.** The ledger of the undo was a library, the notice of the undo area was drawn — and the state that says "there is something to take back" was never set. The user copied a file and could not take it back. The action `panel.undo` is in the catalogue now, the adapter records what it copies, and the undo removes the copies — the notice names the limitation, because the undo of the product is partial (FR-26).
+64. **The right mouse button had no binding at all.** The setting `right_click_action` was read and never used, and the button itself was bound to nothing: the user pressed it and nothing happened. The action `panel.right_click` is in the catalogue, the setting reaches the shell, and the button either marks the file under the pointer or says that the menu of the system comes with the milestone of the platform integration (FR-17, FR-28).
 
 ## 6. The rules that follow from this milestone
 

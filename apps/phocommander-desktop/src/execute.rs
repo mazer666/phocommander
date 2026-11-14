@@ -1,4 +1,4 @@
-//! The translation of the commands of the surface into the jobs of the queue.
+//! The translation of the commands of the surface into the jobs of the adapter.queue.
 //!
 //! WHAT: the adapter that takes the commands the surface produced and
 //!       submits the matching jobs to the waiting room ([`submit`]).
@@ -19,20 +19,22 @@
 //!
 //! let queue = JobQueue::new(std::sync::Arc::new(phocommander_ops::fake_fs::FakeFileSystem::new()), 1);
 //! let mut surface = WorkSurface::new(std::path::PathBuf::from("/tmp"), std::path::PathBuf::from("/var"));
-//! let anzahl = submit(
-//!     &[],
-//!     &mut surface,
-//!     &queue,
-//!     &phocommander_ops::fake_fs::FakeFileSystem::new(),
-//!     &phocommander_desktop::preview::ViewerPreviewSource::new(
-//!         phocommander_viewer::reader::ViewerReader::new(
-//!             phocommander_viewer::policy::ReadPolicy::strict(),
-//!             10_485_760,
-//!         ),
+//! let viewer = phocommander_desktop::preview::ViewerPreviewSource::new(
+//!     phocommander_viewer::reader::ViewerReader::new(
+//!         phocommander_viewer::policy::ReadPolicy::strict(),
+//!         10_485_760,
 //!     ),
-//!     phocommander_desktop::execute::Ways::SAFE,
-//!     phocommander_ops::copy::CopyPolicy::strict(),
 //! );
+//! let mut undo = phocommander_ops::undo::UndoLedger::new();
+//! let mut adapter = phocommander_desktop::execute::Adapter {
+//!     queue: &queue,
+//!     fs: &phocommander_ops::fake_fs::FakeFileSystem::new(),
+//!     viewer: &viewer,
+//!     ways: phocommander_desktop::execute::Ways::SAFE,
+//!     rules: phocommander_ops::copy::CopyPolicy::strict(),
+//!     undo: &mut undo,
+//! };
+//! let anzahl = submit(&[], &mut surface, &mut adapter);
 //! assert_eq!(anzahl, 0);
 //! ```
 
@@ -40,6 +42,7 @@ use phocommander_ops::copy::{CopyMode, CopyPolicy};
 use phocommander_ops::job::{Job, JobKind, Priority};
 use phocommander_ops::port::FileSystem;
 use phocommander_ops::queue::JobQueue;
+use phocommander_ops::undo::UndoLedger;
 use phocommander_ui::commands::Command;
 use phocommander_ui::panel::ArchiveView;
 use phocommander_ui::surface::{WorkSurface, panel_path};
@@ -47,6 +50,45 @@ use phocommander_ui::surface::{WorkSurface, panel_path};
 use crate::archive::{entries_of_the_archive, entries_of_the_archive_at};
 use crate::listing::read_entries_with;
 use crate::preview::ViewerPreviewSource;
+
+/// The things the adapter needs to carry out a command.
+///
+/// WHY: the adapter reaches the file system, the waiting room and the
+///       ledger of the adapter.undo. A command needs all of them, and a list of
+///       eight parameters says less than one structure that names them.
+pub struct Adapter<'a> {
+    /// The waiting room that carries the jobs out.
+    pub queue: &'a JobQueue,
+
+    /// The file system of the host.
+    pub fs: &'a dyn FileSystem,
+
+    /// The reader of the quick view.
+    pub viewer: &'a ViewerPreviewSource,
+
+    /// The ways in which the files are copied and synchronised.
+    pub ways: Ways,
+
+    /// The rules of the copy.
+    pub rules: CopyPolicy,
+
+    /// What has been copied and can be taken back.
+    pub undo: &'a mut UndoLedger,
+}
+
+/// The scope of the undo, in the words of the interface.
+///
+/// WHY: the operations crate and the interface crate have their own scope,
+///       because no crate below `crates/` may depend on a sibling
+///       (ADR-0001, option B). The adapter is the place where the two
+///       meet, and it translates the one into the other (FR-26).
+fn scope_of(scope: phocommander_ops::UndoScope) -> phocommander_ui::undo::UndoScope {
+    match scope {
+        phocommander_ops::UndoScope::RemovesCopiesOnly => {
+            phocommander_ui::undo::UndoScope::RemovesCopiesOnly
+        }
+    }
+}
 
 /// The ways in which the files are copied and synchronised.
 ///
@@ -78,18 +120,10 @@ impl Ways {
 ///       command that the adapter does not know is skipped — the surface
 ///       knows commands that no file operation belongs to, like the command
 ///       that opens the menu.
-pub fn submit(
-    commands: &[Command],
-    surface: &mut WorkSurface,
-    queue: &JobQueue,
-    fs: &dyn FileSystem,
-    viewer: &ViewerPreviewSource,
-    ways: Ways,
-    rules: CopyPolicy,
-) -> usize {
+pub fn submit(commands: &[Command], surface: &mut WorkSurface, adapter: &mut Adapter<'_>) -> usize {
     let mut anzahl = 0;
     for command in commands {
-        if submit_one(command, surface, queue, fs, viewer, ways, rules) {
+        if submit_one(command, surface, adapter) {
             anzahl += 1;
         }
     }
@@ -97,15 +131,7 @@ pub fn submit(
 }
 
 /// Submits one command and says whether it became a job.
-fn submit_one(
-    command: &Command,
-    surface: &mut WorkSurface,
-    queue: &JobQueue,
-    fs: &dyn FileSystem,
-    viewer: &ViewerPreviewSource,
-    ways: Ways,
-    rules: CopyPolicy,
-) -> bool {
+fn submit_one(command: &Command, surface: &mut WorkSurface, adapter: &mut Adapter<'_>) -> bool {
     match command {
         Command::OpenEntry {
             side,
@@ -144,7 +170,7 @@ fn submit_one(
                 return true;
             }
 
-            let Ok(metadata) = fs.metadata(path) else {
+            let Ok(metadata) = adapter.fs.metadata(path) else {
                 return false;
             };
             if !metadata.kind.is_directory() {
@@ -152,7 +178,7 @@ fn submit_one(
                 //       viewer opens it, and the panel keeps what it shows.
                 return false;
             }
-            let Ok(eintraege) = read_entries_with(fs, path, surface.visibility()) else {
+            let Ok(eintraege) = read_entries_with(adapter.fs, path, surface.visibility()) else {
                 return false;
             };
             let panel = surface.panel_mut(*side);
@@ -179,7 +205,12 @@ fn submit_one(
             //       the user (FR-22b).
             let quelle = panel_path(surface.panel(*side)).to_path_buf();
             let ziel = panel_path(surface.panel(side.other())).to_path_buf();
-            let plan = match phocommander_ops::sync::build_plan(fs, &quelle, &ziel, ways.sync) {
+            let plan = match phocommander_ops::sync::build_plan(
+                adapter.fs,
+                &quelle,
+                &ziel,
+                adapter.ways.sync,
+            ) {
                 Ok(plan) => plan,
                 Err(error) => {
                     // WHY: a directory that cannot be compared is not an
@@ -196,13 +227,40 @@ fn submit_one(
             );
             match job {
                 Ok(job) => {
-                    queue.enqueue(job.with_rules(rules));
+                    adapter.queue.enqueue(job.with_rules(adapter.rules));
                 }
                 Err(error) => {
                     eprintln!("the job of the synchronisation was refused: {error}");
                     return false;
                 }
             }
+            true
+        }
+        Command::Undo => {
+            // WHY: the undo takes the last copy back. The ledger knows
+            //       what was copied, and the scope of the undo is partial:
+            //       the copies go, the state before them does not come
+            //       back (FR-26).
+            let outcome = match adapter.undo.undo_last(adapter.fs) {
+                Ok(outcome) => outcome,
+                Err(error) => {
+                    eprintln!("the undo failed: {error}");
+                    return false;
+                }
+            };
+            // WHY: the surface shows the notice of the undo area as long
+            //       as an undo is on offer. An empty ledger means that
+            //       there is nothing left to take back.
+            surface.set_undo(if adapter.undo.is_empty() {
+                phocommander_ui::undo::UndoAvailability::Unavailable
+            } else {
+                phocommander_ui::undo::UndoAvailability::available(scope_of(adapter.undo.scope()))
+            });
+            let removed = outcome.removed.len();
+            surface.set_status(phocommander_ui::surface::StatusMessage {
+                key: "panel-undo-done".to_string(),
+                arguments: vec![("count", removed.to_string())],
+            });
             true
         }
         Command::SwapPanels => {
@@ -218,7 +276,7 @@ fn submit_one(
             //       leave the application to look at a file (FR-50). The
             //       content comes from the reader of the viewer, and it
             //       travels to the area that shows it.
-            let preview = match viewer.open(entry) {
+            let preview = match adapter.viewer.open(entry) {
                 Some(preview) => preview,
                 None => return false,
             };
@@ -250,7 +308,7 @@ fn submit_one(
             //       A directory that cannot be read leaves the panel as it
             //       was. An empty panel and a reason in the log are better
             //       than a panel that pretends the directory is empty.
-            let Ok(eintraege) = read_entries_with(fs, path, surface.visibility()) else {
+            let Ok(eintraege) = read_entries_with(adapter.fs, path, surface.visibility()) else {
                 return false;
             };
             let panel = surface.panel_mut(*side);
@@ -266,11 +324,11 @@ fn submit_one(
             //       and the panel, and the adapter asks the file system
             //       what the entry is — a directory is shown in the panel,
             //       and a file is shown in the quick view of the panel.
-            let Ok(metadata) = fs.metadata(entry) else {
+            let Ok(metadata) = adapter.fs.metadata(entry) else {
                 return false;
             };
             if metadata.kind.is_directory() {
-                let eintraege = match read_entries_with(fs, entry, surface.visibility()) {
+                let eintraege = match read_entries_with(adapter.fs, entry, surface.visibility()) {
                     Ok(eintraege) => eintraege,
                     Err(_) => return false,
                 };
@@ -282,36 +340,50 @@ fn submit_one(
         }
         Command::Copy { transfer } => {
             let (quelle, ziel) = directories_of(transfer, surface);
-            queue.enqueue(
+            // WHY: the undo takes a copy back, and it can only take back
+            //       what it knows. The adapter records the copy before it
+            //       hands it to the waiting room (FR-26).
+            let erzeugt: Vec<std::path::PathBuf> = transfer
+                .entries()
+                .iter()
+                .map(|name| ziel.join(name))
+                .collect();
+            adapter
+                .undo
+                .record_copy(quelle.clone(), ziel.clone(), erzeugt);
+            surface.set_undo(phocommander_ui::undo::UndoAvailability::available(
+                scope_of(adapter.undo.scope()),
+            ));
+            adapter.queue.enqueue(
                 job(
                     JobKind::Copy {
                         source: quelle,
                         destination: ziel,
-                        mode: ways.copy,
+                        mode: adapter.ways.copy,
                     },
                     Some(transfer.entries().to_vec()),
                 )
-                .with_rules(rules),
+                .with_rules(adapter.rules),
             );
             true
         }
         Command::Move { transfer } => {
             let (quelle, ziel) = directories_of(transfer, surface);
-            queue.enqueue(
+            adapter.queue.enqueue(
                 job(
                     JobKind::Move {
                         source: quelle,
                         destination: ziel,
-                        mode: ways.copy,
+                        mode: adapter.ways.copy,
                     },
                     Some(transfer.entries().to_vec()),
                 )
-                .with_rules(rules),
+                .with_rules(adapter.rules),
             );
             true
         }
         Command::Delete { entries, .. } => {
-            queue.enqueue(job(
+            adapter.queue.enqueue(job(
                 JobKind::Delete {
                     paths: entries.clone(),
                 },
@@ -325,7 +397,7 @@ fn submit_one(
             //       command with five pairs therefore becomes five jobs,
             //       and the list of the jobs shows the user what is left.
             for pair in pairs {
-                queue.enqueue(job(
+                adapter.queue.enqueue(job(
                     JobKind::Rename {
                         source: pair.source.clone(),
                         destination: pair.target.clone(),
@@ -336,7 +408,9 @@ fn submit_one(
             true
         }
         Command::CreateDirectory { path, .. } => {
-            queue.enqueue(job(JobKind::CreateDirectory { path: path.clone() }, None));
+            adapter
+                .queue
+                .enqueue(job(JobKind::CreateDirectory { path: path.clone() }, None));
             true
         }
         // WHY: the other commands belong to the surface itself — the menu,
@@ -422,15 +496,16 @@ mod tests {
             ReadPolicy::strict(),
             10_485_760,
         )));
-        super::submit(
-            commands,
-            surface,
+        let mut undo = UndoLedger::new();
+        let mut adapter = Adapter {
             queue,
             fs,
-            &viewer,
-            Ways::SAFE,
-            CopyPolicy::strict(),
-        )
+            viewer: viewer.as_ref(),
+            ways: Ways::SAFE,
+            rules: CopyPolicy::strict(),
+            undo: &mut undo,
+        };
+        super::submit(commands, surface, &mut adapter)
     }
 
     #[test]
@@ -548,15 +623,16 @@ mod tests {
             ReadPolicy::strict(),
             10_485_760,
         )));
-        super::submit(
-            &commands,
-            &mut surface,
-            &queue,
-            &fs,
-            &viewer,
-            Ways::SAFE,
-            regeln,
-        );
+        let mut undo = UndoLedger::new();
+        let mut adapter = Adapter {
+            queue: &queue,
+            fs: &fs,
+            viewer: viewer.as_ref(),
+            ways: Ways::SAFE,
+            rules: regeln,
+            undo: &mut undo,
+        };
+        super::submit(&commands, &mut surface, &mut adapter);
 
         // assert
         let snapshot = queue.snapshot();

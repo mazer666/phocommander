@@ -44,12 +44,13 @@ use phocommander_i18n::Locale;
 use phocommander_ops::copy::{CopyMode, CopyPolicy};
 use phocommander_ops::port::FileSystem;
 use phocommander_ops::queue::JobQueue;
+use phocommander_ops::undo::UndoLedger;
 use phocommander_ui::WorkSurfaceApp;
 use phocommander_ui::commands::Command;
 use phocommander_viewer::policy::ReadPolicy;
 use phocommander_viewer::reader::ViewerReader;
 
-use crate::execute::{Ways, submit};
+use crate::execute::{Adapter, Ways, submit};
 use crate::filesystem::HostFileSystem;
 use crate::preview::ViewerPreviewSource;
 
@@ -93,6 +94,12 @@ pub struct DesktopApp {
     ///       the configuration file.
     copy_mode: CopyMode,
     sync_mode: CopyMode,
+    /// What has been copied and can be taken back.
+    ///
+    /// WHY: the undo takes a copy back, and it can only take back what it
+    ///       knows. The desktop keeps the ledger, because it is the place
+    ///       that copies (FR-26).
+    undo: UndoLedger,
 
     /// The source of the content of the files.
     ///
@@ -195,6 +202,7 @@ impl DesktopApp {
             viewer,
             copy_mode: CopyMode::Verified,
             sync_mode: CopyMode::SyncPreview,
+            undo: UndoLedger::new(),
             copy_rules: CopyPolicy::strict(),
         }
     }
@@ -353,18 +361,18 @@ impl eframe::App for DesktopApp {
                 ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                 return;
             }
-            submit(
-                &commands,
-                self.surface.surface_mut(),
-                &self.queue,
-                &self.file_system,
-                &self.viewer,
-                Ways {
+            let mut adapter = Adapter {
+                queue: &self.queue,
+                fs: self.file_system.as_ref(),
+                viewer: self.viewer.as_ref(),
+                ways: Ways {
                     copy: self.copy_mode,
                     sync: self.sync_mode,
                 },
-                self.copy_rules,
-            );
+                rules: self.copy_rules,
+                undo: &mut self.undo,
+            };
+            submit(&commands, self.surface.surface_mut(), &mut adapter);
         }
         self.surface.update(ui);
         // WHY: the configuration file is watched, so the program wakes up

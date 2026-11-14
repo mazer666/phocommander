@@ -81,7 +81,6 @@ pub struct WorkSurfaceApp {
     preview_source: Option<Box<dyn PreviewSource>>,
     job_source: Option<Box<dyn JobSource>>,
     pending_transfer: Option<PendingTransfer>,
-    undo: UndoAvailability,
     /// The dialog of the multiple rename, if it is open.
     ///
     /// WHY: the dialog is a part of the surface. It belongs to the panel
@@ -152,7 +151,6 @@ impl WorkSurfaceApp {
             preview_source: None,
             job_source: None,
             pending_transfer: None,
-            undo: UndoAvailability::Unavailable,
             rename: None,
             rename_engine: None,
             template_store: None,
@@ -221,7 +219,7 @@ impl WorkSurfaceApp {
     /// assert!(app.undo_availability().is_available());
     /// ```
     pub fn with_undo_availability(mut self, undo: UndoAvailability) -> Self {
-        self.undo = undo;
+        self.surface.set_undo(undo);
         self
     }
 
@@ -246,8 +244,8 @@ impl WorkSurfaceApp {
     /// );
     /// assert!(!app.undo_availability().is_available());
     /// ```
-    pub fn undo_availability(&self) -> &UndoAvailability {
-        &self.undo
+    pub fn undo_availability(&self) -> UndoAvailability {
+        self.surface.undo()
     }
 
     /// The shell with another rule for reading a directory again.
@@ -311,6 +309,15 @@ impl WorkSurfaceApp {
     /// The shell with another colour scheme.
     pub fn with_theme(mut self, theme: Theme) -> Self {
         self.theme = theme;
+        self
+    }
+
+    /// The shell with another behaviour of the right mouse button.
+    ///
+    /// WHY: the setting of the user is read once when the program starts,
+    ///       and the shell is what carries the action out (FR-17).
+    pub fn with_right_click(mut self, right_click: crate::visibility::RightClickAction) -> Self {
+        self.surface.set_right_click(right_click);
         self
     }
 
@@ -480,6 +487,28 @@ impl WorkSurfaceApp {
                 let side = self.surface.active_side();
                 let path = self.surface.active().path().to_path_buf();
                 self.commands.push(Command::CreateDirectory { side, path });
+            }
+            "panel.right_click" => {
+                // WHY: the user writes in the configuration file whether
+                //       the right mouse button opens a menu or marks the
+                //       file under the pointer. The setting decides, and
+                //       the menu of the system belongs to a later
+                //       milestone (FR-17, FR-28).
+                match self.surface.right_click() {
+                    crate::visibility::RightClickAction::ToggleSelection => {
+                        self.surface.active_mut().toggle_at_cursor();
+                    }
+                    crate::visibility::RightClickAction::ContextMenu => {
+                        self.defer(action);
+                    }
+                }
+            }
+            "panel.undo" => {
+                // WHY: the undo takes the last copy back. The surface
+                //       knows what can be taken back, and the adapter knows
+                //       the file system — the command carries the wish of
+                //       the user to the adapter (FR-26).
+                self.commands.push(Command::Undo);
             }
             "panel.sync" => {
                 // WHY: the synchronisation compares the two panels and
@@ -797,7 +826,7 @@ impl WorkSurfaceApp {
         // WHY: the notice is read before the fields of the shell are
         // borrowed, so that the text of the undo area is known when the
         // surface is drawn.
-        let undo_notice = self.undo.notice(self.catalogue.as_ref());
+        let undo_notice = self.surface.undo().notice(self.catalogue.as_ref());
         // WHY: the message of the status line is read from the catalogue in
         //       the frame that draws it, so that it speaks the language of
         //       the interface — also after a change of that language
