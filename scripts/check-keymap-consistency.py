@@ -73,6 +73,9 @@ EXTRA_BINDINGS: dict[str, str] = {
     # panels. The specification names the function in FR-50 and names no
     # key for it.
     "viewer.close": "Ctrl+Shift+W",
+    # The action that synchronises the two panels. The specification names
+    # the function in FR-22b and names no key for it.
+    "panel.sync": "F11",
     "panel.filter": "Ctrl+F",
     # The commands of the work surface of milestone M2 — the tabs, the
     # arrangement of the two panels, the tree of the directories, the quick

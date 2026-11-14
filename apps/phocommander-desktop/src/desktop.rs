@@ -49,7 +49,7 @@ use phocommander_ui::commands::Command;
 use phocommander_viewer::policy::ReadPolicy;
 use phocommander_viewer::reader::ViewerReader;
 
-use crate::execute::submit;
+use crate::execute::{Ways, submit};
 use crate::filesystem::HostFileSystem;
 use crate::preview::ViewerPreviewSource;
 
@@ -92,6 +92,7 @@ pub struct DesktopApp {
     /// WHY: the way is a setting of the user (FR-22b), and it stands in
     ///       the configuration file.
     copy_mode: CopyMode,
+    sync_mode: CopyMode,
 
     /// The source of the content of the files.
     ///
@@ -193,6 +194,7 @@ impl DesktopApp {
             file_system,
             viewer,
             copy_mode: CopyMode::Verified,
+            sync_mode: CopyMode::SyncPreview,
             copy_rules: CopyPolicy::strict(),
         }
     }
@@ -200,6 +202,21 @@ impl DesktopApp {
     /// Sets the way a file is copied.
     pub fn set_copy_mode(&mut self, mode: CopyMode) {
         self.copy_mode = mode;
+    }
+
+    /// The way a directory is synchronised.
+    pub const fn sync_mode(&self) -> CopyMode {
+        self.sync_mode
+    }
+
+    /// Sets the way a directory is synchronised.
+    ///
+    /// WHY: the way of the synchronisation is a setting of the user
+    ///       (FR-22b). The setting decides whether the synchronisation
+    ///       only shows the plan or also brings the target into the shape
+    ///       of the source.
+    pub fn set_sync_mode(&mut self, mode: CopyMode) {
+        self.sync_mode = mode;
     }
 
     /// Sets the rules that decide how a copy treats the files it copies.
@@ -342,7 +359,10 @@ impl eframe::App for DesktopApp {
                 &self.queue,
                 &self.file_system,
                 &self.viewer,
-                self.copy_mode,
+                Ways {
+                    copy: self.copy_mode,
+                    sync: self.sync_mode,
+                },
                 self.copy_rules,
             );
         }

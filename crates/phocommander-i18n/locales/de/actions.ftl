@@ -44,6 +44,7 @@ action-panel-tab-close = Reiter schließen
 action-panel-tab-move-to-other = Reiter in das andere Panel verschieben
 action-panel-tab-new = Neuer Reiter
 action-panel-tree-toggle = Verzeichnisbaum
+action-panel-sync = Synchronisieren
 action-panel-view = Ansehen
 action-rename-conflict-next = Nächster Konflikt
 action-rename-conflict-previous = Vorheriger Konflikt

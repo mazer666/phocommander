@@ -79,6 +79,8 @@ pub enum TextKey {
     ActionPanelTab8,
     /// The label of the action `action-panel-tab-9`.
     ActionPanelTab9,
+    /// The label of the action `action-panel-sync`.
+    ActionPanelSync,
     /// The label of the action `action-panel-view`.
     ActionPanelView,
     /// The label of the action `action-panel-tab-new`.
@@ -337,6 +339,7 @@ impl TextKey {
             TextKey::ActionPanelTab7 => "action-panel-tab-7",
             TextKey::ActionPanelTab8 => "action-panel-tab-8",
             TextKey::ActionPanelTab9 => "action-panel-tab-9",
+            TextKey::ActionPanelSync => "action-panel-sync",
             TextKey::ActionPanelView => "action-panel-view",
             TextKey::ActionPanelTabNew => "action-panel-tab-new",
             TextKey::ActionPanelTabClose => "action-panel-tab-close",
@@ -457,7 +460,7 @@ impl TextKey {
 /// WHY: the list is the contract between the code and the catalogue. The
 /// gate of the workspace compares it with the key sets of the catalogues, so
 /// that a key cannot be used without a translation.
-const KEYS: [TextKey; 135] = [
+const KEYS: [TextKey; 136] = [
     TextKey::ActionAppMenu,
     TextKey::ActionAppLanguageDe,
     TextKey::ActionAppLanguageEn,
@@ -490,6 +493,7 @@ const KEYS: [TextKey; 135] = [
     TextKey::ActionPanelTab7,
     TextKey::ActionPanelTab8,
     TextKey::ActionPanelTab9,
+    TextKey::ActionPanelSync,
     TextKey::ActionPanelView,
     TextKey::ActionPanelTabNew,
     TextKey::ActionPanelTabClose,

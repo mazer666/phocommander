@@ -45,6 +45,7 @@ action-panel-tab-close = Close the tab
 action-panel-tab-move-to-other = Move the tab to the other panel
 action-panel-tab-new = New tab
 action-panel-tree-toggle = Directory tree
+action-panel-sync = Synchronise
 action-panel-view = View
 action-rename-conflict-next = Next conflict
 action-rename-conflict-previous = Previous conflict

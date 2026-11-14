@@ -39,6 +39,8 @@
 "panel.rename" = "F2"
 # Open the built-in viewer for the selection.
 "panel.view" = "F3"
+# Synchronise the two panels.
+"panel.sync" = "F11"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "F4"
 # Filter the entries of the active pane while the user types.
@@ -153,6 +155,8 @@
 "panel.rename" = "palette:file.rename"
 # Open the built-in viewer for the selection.
 "panel.view" = "palette:file.view"
+# Synchronise the two panels.
+"panel.sync" = "palette:panel.sync"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:file.edit"
 # Filter the entries of the active pane while the user types.
@@ -266,6 +270,8 @@
 "panel.rename" = "F2"
 # Open the built-in viewer for the selection.
 "panel.view" = "double-click"
+# Drag a file into the other panel to synchronise the two.
+"panel.sync" = "drag"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "F4"
 # Filter the entries of the active pane while the user types.
@@ -383,6 +389,8 @@
 "panel.rename" = "palette:panel.rename"
 # Open the built-in viewer for the selection.
 "panel.view" = "tap"
+# Synchronise the two panels.
+"panel.sync" = "swipe-right"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:panel.edit"
 # Filter the entries of the active pane while the user types.
@@ -489,6 +497,8 @@
 "panel.rename" = "palette:file.rename"
 # Open the built-in viewer for the selection.
 "panel.view" = "palette:file.view"
+# Synchronise the two panels.
+"panel.sync" = "palette:panel.sync"
 # Open the text editor for the selection (planned for a later milestone).
 "panel.edit" = "palette:file.edit"
 # Filter the entries of the active pane while the user types.

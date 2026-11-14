@@ -214,7 +214,7 @@ unless a documented reason exists), **Could** (nice to have, may be deferred wit
 | FR-21 | Every operation runs in a background job; the interface stays responsive | M1 | Must | Test that asserts the UI thread is not blocked |
 | FR-22 | The conflict policy is configurable: ask, never, always, keep both | M1 | Must | Unit test per policy |
 | FR-22a | The copy mode is selectable: quick, verified, atomic, sync-mirror, sync-update, sync-two-way, sync-preview | M1 | Must | Unit test per mode |
-| FR-22b | The default copy mode is `verified` and the default synchronisation mode is `sync-preview` | M1 | Must | Configuration test |
+| FR-22b | The default copy mode is `verified` and the default synchronisation mode is `sync-preview`. The action `panel.sync` synchronises the directory of the panel that has the focus with the directory of the other panel | M1 | Must | Configuration test |
 | FR-22c | The `verified` mode compares the checksum of source and destination after the copy and reports a mismatch as a job error | M1 | Must | Unit test with a corrupted destination |
 | FR-22d | The `atomic` mode writes to a temporary file next to the destination, verifies it, and renames it into place | M2 | Must | Integration test plus a failed-verification case |
 | FR-22e | `sync-mirror` is the only mode that deletes, and the deletion appears in the plan before it runs | M2 | Must | Unit test on the plan |

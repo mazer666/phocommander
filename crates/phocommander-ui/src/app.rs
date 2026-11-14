@@ -481,6 +481,14 @@ impl WorkSurfaceApp {
                 let path = self.surface.active().path().to_path_buf();
                 self.commands.push(Command::CreateDirectory { side, path });
             }
+            "panel.sync" => {
+                // WHY: the synchronisation compares the two panels and
+                //       brings the one into the other. The shell knows the
+                //       panels; the adapter knows the file system and the
+                //       way of the synchronisation (FR-22b).
+                let side = self.surface.active_side();
+                self.commands.push(Command::Sync { side });
+            }
             "panel.view" => {
                 let side = self.surface.active_side();
                 if let Some(entry) = self.surface.active().cursor_entry() {

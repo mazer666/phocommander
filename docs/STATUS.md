@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1470 green, 0 red, 0 skipped** |
+| Tests | **1472 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -168,6 +168,7 @@ and in the tests:
 57. **The exchange of the two panels did nothing.** The command was produced and nobody carried it out — the user pressed Ctrl+U and the two panels stayed where they were. The adapter exchanges them now, and a test proves it.
 58. **The program could not be closed with the keyboard.** The command that leaves the application was produced and never carried out. The frame closes the window now, and the program ends with it. On macOS this is the difference between an application that can be left and one that cannot.
 59. **The menu of the application says that it comes later.** The menu is a native menu of the system, and it belongs to the milestone of the platform integration (FR-28). The action says so in the status line instead of pretending that a menu opened.
+60. **The synchronisation was unreachable.** The comparison of two directories, the plan of the synchronisation and the job that carries it out — all of it existed, and no key reached it. The setting `sync_mode` of the configuration file said which way the synchronisation goes, and the setting was read and never applied. The action `panel.sync` is in the catalogue now, in all five contexts, the adapter builds the plan and starts the job, and the way of the user reaches the job.
 
 ## 6. The rules that follow from this milestone
 

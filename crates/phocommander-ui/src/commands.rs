@@ -177,6 +177,13 @@ pub enum Command {
         path: PathBuf,
     },
 
+    /// Synchronise the directory of one panel with the directory of the
+    /// other panel.
+    Sync {
+        /// The panel whose directory is the source of the synchronisation.
+        side: PanelSide,
+    },
+
     /// Exchange the content of the two panels.
     SwapPanels,
 

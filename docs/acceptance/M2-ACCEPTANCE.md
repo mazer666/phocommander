@@ -14,7 +14,7 @@ an acceptance document that does not name its own gaps is worth nothing.
 |---|---|---|
 | **The button that undoes does not show whether it can do anything.** The state of the undo exists (`undo_availability`), and the interface never reads it. The user sees a button that does nothing. | FR-26 — the undo exists for the copy operations and is marked as partial. | M2 |
 | **The plan of the synchronisation is written nowhere.** The document of the plan exists (`to_document`), and the synchronisation of the files never writes it. The preview shows the plan and forgets it. | FR-22b — the default of the synchronisation is `sync-preview`. | M2 |
-| **The way of a synchronisation is not applied.** The setting `sync_mode` is read and never used. | FR-22b. | M2 |
+| **The way of a synchronisation is applied.** The setting `sync_mode` reaches the job, and the action `panel.sync` starts the synchronisation. The comparison of the two directories became a job of the waiting room, and a test proves it. | FR-22b. | closed |
 | **The mouse button of the right does always the same.** The setting `right_click_action` is read and never used. | FR-17. | M2 |
 
 The three settings and the two functions are in the gate `scripts/check-dead-code.py` with the

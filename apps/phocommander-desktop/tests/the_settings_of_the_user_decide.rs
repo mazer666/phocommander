@@ -106,3 +106,21 @@ fn the_setting_of_the_user_reaches_the_shell() {
         "the shell should hide the files of the system"
     );
 }
+
+#[test]
+fn the_way_of_the_synchronisation_comes_from_the_user() {
+    // arrange — a configuration in which the user wants the target to
+    // become the mirror of the source.
+    let mut config = phocommander_config::Config::default();
+    config.copy.sync_mode = phocommander_config::SyncMode::SyncMirror;
+
+    // act — the application is built out of the configuration.
+    let app = phocommander_desktop::composition::build_desktop_app(&config);
+
+    // assert — the way of the synchronisation reached the shell.
+    assert_eq!(
+        app.sync_mode(),
+        phocommander_ops::copy::CopyMode::SyncMirror,
+        "the way of the synchronisation should come from the user"
+    );
+}

@@ -38,6 +38,7 @@ action-panel-tab-6 = Onglet 6
 action-panel-tab-7 = Onglet 7
 action-panel-tab-8 = Onglet 8
 action-panel-tab-9 = Onglet 9
+action-panel-sync = Synchroniser
 action-panel-view = Afficher
 action-rename-conflict-next = Conflit suivant
 action-rename-conflict-previous = Conflit précédent

@@ -95,6 +95,9 @@ DERIVED_BINDINGS = {
     # The action that closes the viewer again. The specification names the
     # function in FR-50 and names no key for it.
     "viewer.close": "Ctrl+Shift+W",
+    # The action that synchronises the two panels. The specification names
+    # the function in FR-22b and names no key for it.
+    "panel.sync": "F11",
     # The three actions that change the language of the interface. The
     # specification names the function in FR-124 and names no key for it.
     "app.language.de": "Ctrl+Shift+D",

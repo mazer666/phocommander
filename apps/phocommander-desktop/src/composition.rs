@@ -30,7 +30,9 @@ use crate::language::{ConfigWatcher, InterfaceLanguage, locale_of};
 use crate::preview::ViewerPreviewSource;
 use crate::rename::{FileTemplateStore, OpsRenameEngine};
 use crate::security::SecurityPlan;
-use phocommander_config::{Config, CopyMode as ConfigCopyMode, resolve_security};
+use phocommander_config::{
+    Config, CopyMode as ConfigCopyMode, SyncMode as ConfigSyncMode, resolve_security,
+};
 use phocommander_ops::copy::CopyMode as OpsCopyMode;
 use phocommander_ops::queue::JobQueue;
 use phocommander_platform::config_directory;
@@ -161,6 +163,10 @@ pub fn build_desktop_app(config: &Config) -> DesktopApp {
     let mut app = DesktopApp::with_queue(application, locale, watcher, queue);
     // WHY: the way a file is copied is a setting of the user (FR-22b).
     app.set_copy_mode(copy_mode_of(config));
+    // WHY: the way of the synchronisation is a setting of the user, and it
+    //       decides whether the synchronisation only shows the plan or
+    //       also brings the target into the shape of the source (FR-22b).
+    app.set_sync_mode(sync_mode_of(config));
     // WHY: the rules that decide whether the copy compares the checksums
     //       and whether a link is dereferenced come from the security
     //       section of the configuration. Without them the plan would be
@@ -182,6 +188,22 @@ fn worker_count_of(config: &Config) -> usize {
         std::thread::available_parallelism().map_or(1, |n| n.get())
     } else {
         eingestellt
+    }
+}
+
+/// The way a directory is synchronised, out of the configuration file.
+///
+/// WHY: the configuration names the way in the spelling of the catalogue,
+///       and the operations know the way in their own spelling. The two
+///       meet here, in the one place that knows both. The setting of the
+///       user decides whether the synchronisation only shows the plan or
+///       also brings the target into the shape of the source (FR-22b).
+fn sync_mode_of(config: &Config) -> OpsCopyMode {
+    match config.copy.sync_mode {
+        ConfigSyncMode::SyncMirror => OpsCopyMode::SyncMirror,
+        ConfigSyncMode::SyncPreview => OpsCopyMode::SyncPreview,
+        ConfigSyncMode::SyncUpdate => OpsCopyMode::SyncUpdate,
+        ConfigSyncMode::SyncTwoWay => OpsCopyMode::SyncTwoWay,
     }
 }
 

@@ -85,6 +85,7 @@ milestone.
 | Parent directory `panel.parent` | `Ctrl+PgUp` | `keyboard`, palette | `Cmd+PgUp` on macOS/iPadOS | Goes up one level in the active pane. The specification names the binding but assigns it to no milestone. |
 | Find next in the viewer `viewer.find_next` | `F3` | viewer | — | The same key as "view" — the surface with the focus decides. Comes with the viewer (M1). |
 | Find previous in the viewer `viewer.find_previous` | `Shift+F3` | viewer | — | The backward variant of the viewer search. Comes with the viewer (M1). |
+| Synchronise the two panels `panel.sync` | `F11` | `keyboard`, palette | `Cmd+F11` on macOS/iPadOS | Compares the directory of the panel that has the focus with the directory of the other panel and brings the one into the other. The way of the synchronisation is the setting `sync_mode` of the configuration file. The specification names the function in FR-22b and names no key for it. M1 |
 | Close the viewer `viewer.close` | `Ctrl+Shift+W` | `keyboard`, palette | `Cmd+Shift+W` on macOS/iPadOS | The viewer takes the room of the panels below them. The action closes it again and gives the room back. The specification names the function in FR-50 and names no key for it. M1 |
 | Jump to the next conflict `rename.conflict_next` | `F3` | multiple-rename dialog | — | The conflict list of the rename dialog is walked with `F3` / `Shift+F3`. M1 |
 | Jump to the previous conflict `rename.conflict_previous` | `Shift+F3` | multiple-rename dialog | — | The backward variant of the conflict jump. M1 |

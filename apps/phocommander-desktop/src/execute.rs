@@ -30,7 +30,7 @@
 //!             10_485_760,
 //!         ),
 //!     ),
-//!     phocommander_ops::copy::CopyMode::Verified,
+//!     phocommander_desktop::execute::Ways::SAFE,
 //!     phocommander_ops::copy::CopyPolicy::strict(),
 //! );
 //! assert_eq!(anzahl, 0);
@@ -48,6 +48,30 @@ use crate::archive::{entries_of_the_archive, entries_of_the_archive_at};
 use crate::listing::read_entries_with;
 use crate::preview::ViewerPreviewSource;
 
+/// The ways in which the files are copied and synchronised.
+///
+/// WHY: the two ways belong together — both come from the configuration
+///       of the user, and both decide what a job does. A pair of values in
+///       one structure is easier to pass on than eight parameters, and the
+///       call reads as it means: "these ways, these rules" (FR-22b).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ways {
+    /// The way a file is copied.
+    pub copy: CopyMode,
+
+    /// The way a directory is synchronised.
+    pub sync: CopyMode,
+}
+
+impl Ways {
+    /// The ways of a user who wants every copy verified and every
+    /// synchronisation shown as a plan.
+    pub const SAFE: Ways = Ways {
+        copy: CopyMode::Verified,
+        sync: CopyMode::SyncPreview,
+    };
+}
+
 /// Submits the commands of the surface to the waiting room.
 ///
 /// WHY: the commands are read once and the jobs are submitted one by one. A
@@ -60,12 +84,12 @@ pub fn submit(
     queue: &JobQueue,
     fs: &dyn FileSystem,
     viewer: &ViewerPreviewSource,
-    mode: CopyMode,
+    ways: Ways,
     rules: CopyPolicy,
 ) -> usize {
     let mut anzahl = 0;
     for command in commands {
-        if submit_one(command, surface, queue, fs, viewer, mode, rules) {
+        if submit_one(command, surface, queue, fs, viewer, ways, rules) {
             anzahl += 1;
         }
     }
@@ -79,7 +103,7 @@ fn submit_one(
     queue: &JobQueue,
     fs: &dyn FileSystem,
     viewer: &ViewerPreviewSource,
-    mode: CopyMode,
+    ways: Ways,
     rules: CopyPolicy,
 ) -> bool {
     match command {
@@ -145,6 +169,40 @@ fn submit_one(
             //       the interface, and therefore the only place that can
             //       write the name of the action in that language.
             let _ = action;
+            true
+        }
+        Command::Sync { side } => {
+            // WHY: the synchronisation compares the two directories and
+            //       brings the one into the other. The plan is built here,
+            //       because the adapter knows the file system — and the
+            //       way of the synchronisation comes from the setting of
+            //       the user (FR-22b).
+            let quelle = panel_path(surface.panel(*side)).to_path_buf();
+            let ziel = panel_path(surface.panel(side.other())).to_path_buf();
+            let plan = match phocommander_ops::sync::build_plan(fs, &quelle, &ziel, ways.sync) {
+                Ok(plan) => plan,
+                Err(error) => {
+                    // WHY: a directory that cannot be compared is not an
+                    //       error that stops the application — the panels
+                    //       keep what they show.
+                    eprintln!("the comparison of the two directories failed: {error}");
+                    return false;
+                }
+            };
+            let job = phocommander_ops::executor::confirmed_job(
+                plan,
+                phocommander_ops::Approval::Granted,
+                Priority::Normal,
+            );
+            match job {
+                Ok(job) => {
+                    queue.enqueue(job.with_rules(rules));
+                }
+                Err(error) => {
+                    eprintln!("the job of the synchronisation was refused: {error}");
+                    return false;
+                }
+            }
             true
         }
         Command::SwapPanels => {
@@ -229,7 +287,7 @@ fn submit_one(
                     JobKind::Copy {
                         source: quelle,
                         destination: ziel,
-                        mode,
+                        mode: ways.copy,
                     },
                     Some(transfer.entries().to_vec()),
                 )
@@ -244,7 +302,7 @@ fn submit_one(
                     JobKind::Move {
                         source: quelle,
                         destination: ziel,
-                        mode,
+                        mode: ways.copy,
                     },
                     Some(transfer.entries().to_vec()),
                 )
@@ -370,7 +428,7 @@ mod tests {
             queue,
             fs,
             &viewer,
-            CopyMode::Verified,
+            Ways::SAFE,
             CopyPolicy::strict(),
         )
     }
@@ -496,7 +554,7 @@ mod tests {
             &queue,
             &fs,
             &viewer,
-            CopyMode::Verified,
+            Ways::SAFE,
             regeln,
         );
 
@@ -705,6 +763,35 @@ mod tests {
         assert!(
             queue.snapshot().is_empty(),
             "a deferred action starts no job"
+        );
+    }
+
+    #[test]
+    fn the_command_of_the_synchronisation_becomes_a_job() {
+        // arrange — two directories with a file in the one and nothing in
+        // the other.
+        let (mut surface, queue) = parts();
+        let fs = phocommander_ops::fake_fs::FakeFileSystem::new();
+        fs.write_file(Path::new("/photos/a.txt"), b"hallo")
+            .unwrap_or_else(|error| panic!("the file should be writable: {error:?}"));
+        fs.write_file(Path::new("/backup/b.txt"), b"welt")
+            .unwrap_or_else(|error| panic!("the file should be writable: {error:?}"));
+        let commands = vec![Command::Sync {
+            side: phocommander_ui::panel::PanelSide::Left,
+        }];
+
+        // act
+        let anzahl = submit_all(&commands, &mut surface, &queue, &fs);
+
+        // assert — the comparison of the two directories became a job of
+        // the waiting room. The synchronisation was reachable, and this is
+        // the proof (FR-22b).
+        assert_eq!(anzahl, 1);
+        let jobs = queue.snapshot();
+        assert_eq!(jobs.len(), 1, "{jobs:?}");
+        assert!(
+            matches!(jobs[0].kind, JobKind::Sync { .. }),
+            "the job should be the synchronisation: {jobs:?}"
         );
     }
 
