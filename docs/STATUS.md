@@ -36,7 +36,7 @@ commit — with the commit hash in the headline.
 
 | What | Number |
 |---|---|
-| Tests | **1480 green, 0 red, 0 skipped** |
+| Tests | **1485 green, 0 red, 0 skipped** |
 | Test binaries | 45 |
 | Gates that prove themselves | **39 gates in 42 runs** — every one of them turns red on a broken state and green again after the repair. Gate 9 checks two agreements and therefore runs four times. Last measured on 27.10.2026 after the seam of the input of M4 and the language of the documentation: **PASS**, 42 of 42 |
 | The linter | `cargo clippy --workspace --all-targets --locked -- -D warnings` — **no warning** |
@@ -176,6 +176,8 @@ and in the tests:
 65. **The plan of the synchronisation was shown nowhere.** The document of the plan was built and then thrown away: the user started the synchronisation and saw nothing that told him what it was going to do. The plan stands in the area of the viewer now, in the mode `sync-preview`, and the user reads it before he lets anything happen (FR-22b).
 66. **The state of the session was never written and never read.** The setting `restore_session` was read and never used, and the program always opened in the working directory — the user walked to the same place again and again. The two directories of the last time are the ones that the panels show now. The rule of the security section decides whether the state is written at all: the profile `safe` leaves nothing behind (FR-16).
 67. **The key of the menu said that the menu comes later.** The interface draws a menu bar in the top of the window, and it carries every action of the catalogue — the menu was there all the time. The action says now where it stands, so that the user who looks for it with the keyboard finds it.
+68. **The drawing promised a thing that it did not do.** The comment in the drawing said: "on a touch screen the panels are always stacked" — and the drawing took the arrangement of the user, whatever the context was. The panels stood next to each other on a tablet, and the finger had to reach a target of twenty points. The decision stands in a function now, and the function is tested.
+69. **The buttons of the menu bar and of the toolbar were not targets of a finger.** The rows of the list grew to forty-four points in the touch context, the fields and the buttons of the dialog as well — the buttons of the two bars did not. They used the measures of the platform and not those of the context, and on a Windows tablet that meant twenty points. The bars ask the profile now, and the profile knows the context (FR-106).
 
 ## 6. The rules that follow from this milestone
 

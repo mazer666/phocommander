@@ -56,7 +56,7 @@ pub use i18n::{Argument, ArgumentValue, Catalogue, TextKey, Texts};
 pub use input::PrimaryModifier;
 pub use jobs::{JobKind, JobSource, JobState, JobSummary};
 pub use keymap_view::{Binding, BindingError, InputEvent, Key, KeyStroke, KeymapView, Modifiers};
-pub use layout::{LayoutProfile, PanelArrangement, PanelStructure, VisibleAreas};
+pub use layout::{LayoutProfile, PanelArrangement, PanelStructure, VisibleAreas, arrangement_of};
 pub use listing::{Entry, EntryKind, ListingState, Sort, SortDirection, SortKey};
 pub use metrics::{Metrics, Platform};
 pub use panel::{

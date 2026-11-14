@@ -71,6 +71,13 @@ pub(crate) struct DrawStyle<'texts> {
 
     /// The profile of the layout: which areas exist and how they are placed.
     pub(crate) profile: &'texts LayoutProfile,
+
+    /// The context in which the user works.
+    ///
+    /// WHY: the context has the last word where the decision of the user
+    ///       cannot exist — on a touch screen the panels stand below each
+    ///       other (FR-106). The drawing therefore knows the context.
+    pub(crate) context: crate::context::Context,
 }
 
 impl<'texts> DrawStyle<'texts> {
@@ -81,6 +88,7 @@ impl<'texts> DrawStyle<'texts> {
         texts: &'texts Texts<'texts>,
         formats: &'texts dyn Formats,
         profile: &'texts LayoutProfile,
+        context: crate::context::Context,
     ) -> Self {
         Self {
             metrics,
@@ -88,6 +96,7 @@ impl<'texts> DrawStyle<'texts> {
             texts,
             formats,
             profile,
+            context,
         }
     }
 }
@@ -147,7 +156,7 @@ pub(crate) fn draw_surface(
             Vec2::new(area.width(), menu_height),
         );
         y += menu_height;
-        areas::draw_menu_bar(ui, rect, texts, requested);
+        areas::draw_menu_bar(ui, rect, texts, style.profile, requested);
     }
 
     if toolbar_height > 0.0 {
@@ -156,7 +165,7 @@ pub(crate) fn draw_surface(
             Vec2::new(area.width(), toolbar_height),
         );
         y += toolbar_height;
-        areas::draw_toolbar(ui, rect, texts, requested);
+        areas::draw_toolbar(ui, rect, texts, style.profile, requested);
     }
 
     // WHY: the quick view is the third area of the surface. It stands at
@@ -239,7 +248,10 @@ fn draw_panels(
             //       context has the last word where the decision cannot
             //       exist. On a touch screen the panels are always stacked
             //       (FR-106).
-            match profile.panel_arrangement(surface.arrangement()) {
+            match profile.panel_arrangement(crate::layout::arrangement_of(
+                style.context,
+                surface.arrangement(),
+            )) {
                 crate::layout::PanelArrangement::SideBySide => {
                     let gap = profile.panel_gap();
                     let width = ((rect.width() - gap) / 2.0).max(1.0);

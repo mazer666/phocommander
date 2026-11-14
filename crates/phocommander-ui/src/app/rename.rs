@@ -359,7 +359,14 @@ impl WorkSurfaceApp {
             ..
         } = self;
         let texts = Texts::new(catalogue.as_ref());
-        let style = draw::DrawStyle::new(metrics, &palette, &texts, formats.as_ref(), &profile);
+        let style = draw::DrawStyle::new(
+            metrics,
+            &palette,
+            &texts,
+            formats.as_ref(),
+            &profile,
+            self.context,
+        );
 
         // WHY: the borrow of the dialog ends with the block, so that the
         //       shell can put the dialog away when the user closed the

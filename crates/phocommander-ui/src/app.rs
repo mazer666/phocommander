@@ -835,7 +835,14 @@ impl WorkSurfaceApp {
         let mut requested: Vec<Request> = Vec::new();
         // WHY: the bundle carries everything the drawing needs besides the
         //       surface itself. It is built once per frame.
-        let style = draw::DrawStyle::new(metrics, &palette, &texts, formats.as_ref(), &profile);
+        let style = draw::DrawStyle::new(
+            metrics,
+            &palette,
+            &texts,
+            formats.as_ref(),
+            &profile,
+            self.context,
+        );
         let rows = draw::draw_surface(
             ui,
             surface,

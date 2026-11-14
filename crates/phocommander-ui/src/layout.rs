@@ -76,6 +76,45 @@ pub enum PanelArrangement {
     Stacked,
 }
 
+/// The arrangement of the two panels in a context.
+///
+/// WHY: the arrangement is the decision of the user — and the context has
+///       the last word where the decision of the user cannot exist. On a
+///       touch screen the panels stand below each other, because a finger
+///       reaches one panel and not two at the same time (FR-106). The
+///       function makes that decision visible and testable, instead of
+///       leaving it in a comment.
+///
+/// EXAMPLE:
+/// ```no_run
+/// use phocommander_ui::context::Context;
+/// use phocommander_ui::layout::{PanelArrangement, arrangement_of};
+///
+/// assert_eq!(
+///     arrangement_of(Context::Touch, PanelArrangement::SideBySide),
+///     PanelArrangement::Stacked
+/// );
+/// assert_eq!(
+///     arrangement_of(Context::Keyboard, PanelArrangement::SideBySide),
+///     PanelArrangement::SideBySide
+/// );
+/// ```
+pub fn arrangement_of(
+    context: crate::context::Context,
+    arrangement: PanelArrangement,
+) -> PanelArrangement {
+    match context {
+        // WHY: on a touch screen the panels stand below each other. A
+        //       finger reaches one panel, and the user scrolls to the
+        //       other one.
+        crate::context::Context::Touch => PanelArrangement::Stacked,
+        crate::context::Context::Keyboard
+        | crate::context::Context::Pointer
+        | crate::context::Context::Dpad
+        | crate::context::Context::Controller => arrangement,
+    }
+}
+
 impl PanelArrangement {
     /// Every arrangement, in a stable order.
     pub const fn all() -> [PanelArrangement; 2] {

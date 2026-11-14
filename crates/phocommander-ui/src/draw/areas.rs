@@ -19,6 +19,7 @@ use egui::{Align, Layout, Rect, RichText, Sense, Stroke, Vec2};
 use crate::actions::Action;
 use crate::commands::Request;
 use crate::i18n::{Argument, TextKey, Texts};
+use crate::layout::LayoutProfile;
 use crate::panel::{PanelFocus, PanelState};
 use crate::surface::WorkSurface;
 
@@ -34,9 +35,14 @@ pub(crate) fn draw_menu_bar(
     ui: &mut egui::Ui,
     rect: Rect,
     texts: &Texts<'_>,
+    profile: &LayoutProfile,
     requested: &mut Vec<Request>,
 ) {
     ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
+        // WHY: a finger needs a target of forty-four points. The buttons of
+        //       the menu bar are such targets, and the size of the target
+        //       comes from the metrics of the context (FR-106).
+        ui.spacing_mut().interact_size.y = profile.control_height();
         egui::MenuBar::new().ui(ui, |ui| {
             for group in Action::menu_groups() {
                 let title = texts.get(group.title);
@@ -66,6 +72,7 @@ pub(crate) fn draw_toolbar(
     ui: &mut egui::Ui,
     rect: Rect,
     texts: &Texts<'_>,
+    profile: &LayoutProfile,
     requested: &mut Vec<Request>,
 ) {
     ui.scope_builder(
@@ -73,6 +80,9 @@ pub(crate) fn draw_toolbar(
             .max_rect(rect)
             .layout(Layout::left_to_right(Align::Center)),
         |ui| {
+            // WHY: a finger needs a target of forty-four points, and the
+            //       buttons of the toolbar are such targets (FR-106).
+            ui.spacing_mut().interact_size.y = profile.control_height();
             for identifier in Action::toolbar_actions() {
                 let Some(action) = Action::from_id(identifier) else {
                     continue;
